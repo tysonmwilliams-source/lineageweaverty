@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import SearchBar from './SearchBar';
 import ThemeSelector from './ThemeSelector';
 import { useTheme } from './ThemeContext';
+import { UserMenu, SyncStatusIndicator } from './auth';
 
 /**
  * Navigation Component
@@ -113,6 +114,12 @@ function Navigation({ people = [], onSearchResults = null, showSearch = false, s
             
             {/* Theme Toggle */}
             <ThemeSelector variant="toggle" showLabel={false} />
+            
+            {/* Cloud Sync Status */}
+            <SyncStatusIndicator />
+            
+            {/* User Menu - Sign out */}
+            <UserMenu />
           </div>
         </div>
       </div>

@@ -22,6 +22,11 @@
  * - Database operations happen in the mutation functions
  * - State updates trigger re-renders in consuming components
  * - Error handling is centralized here
+ * 
+ * CLOUD SYNC INTEGRATION:
+ * - All mutations now sync to Firestore in the background
+ * - Initial data load checks cloud for existing data
+ * - Local-first approach: UI updates instantly, cloud syncs async
  */
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
@@ -45,18 +50,34 @@ import {
 // ═══════════════════════════════════════════════════════════════════════════════
 // 🔗 TREE-CODEX INTEGRATION (Phase 1: Light Integration)
 // ═══════════════════════════════════════════════════════════════════════════════
-// Import Codex service for automatic biography entry creation/deletion.
-// When a person is created, a skeleton Codex entry is auto-created.
-// When a person is deleted, their Codex entry is also deleted (cascade).
-// ═══════════════════════════════════════════════════════════════════════════════
 import { 
   createEntry as createCodexEntry, 
   deleteEntry as deleteCodexEntry,
   getEntry as getCodexEntry
 } from '../services/codexService';
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// ☁️ CLOUD SYNC INTEGRATION
+// ═══════════════════════════════════════════════════════════════════════════════
+import {
+  initializeSync,
+  syncAddPerson,
+  syncUpdatePerson,
+  syncDeletePerson,
+  syncAddHouse,
+  syncUpdateHouse,
+  syncDeleteHouse,
+  syncAddRelationship,
+  syncUpdateRelationship,
+  syncDeleteRelationship,
+  syncAddCodexEntry,
+  syncDeleteCodexEntry,
+  getSyncStatus
+} from '../services/dataSyncService';
+
+import { useAuth } from './AuthContext';
+
 // Create the context object
-// Think of this as creating an empty "container" that will hold our shared data
 const GenealogyContext = createContext(null);
 
 /**
@@ -64,49 +85,76 @@ const GenealogyContext = createContext(null);
  * 
  * This wraps your app (or part of it) and provides the shared data to all children.
  * Any component inside this provider can access the data via useGenealogy().
- * 
- * Usage in App.jsx:
- *   <GenealogyProvider>
- *     <Router>...</Router>
- *   </GenealogyProvider>
  */
 export function GenealogyProvider({ children }) {
   // ==================== STATE ====================
-  // These are the canonical copies of all genealogy data
-  // Every component that uses useGenealogy() sees these same values
-  
   const [people, setPeople] = useState([]);
   const [houses, setHouses] = useState([]);
   const [relationships, setRelationships] = useState([]);
-  
-  // Loading state - true while initial data fetch is happening
   const [loading, setLoading] = useState(true);
-  
-  // Error state - holds error message if something goes wrong
   const [error, setError] = useState(null);
-  
-  // Version counter - increments on every data change
-  // Components can use this to detect "something changed" without
-  // doing deep comparisons of the actual data arrays
   const [dataVersion, setDataVersion] = useState(0);
+  
+  // ☁️ Cloud sync state
+  const [syncStatus, setSyncStatus] = useState('idle'); // 'idle' | 'syncing' | 'synced' | 'error'
+  const [syncInitialized, setSyncInitialized] = useState(false);
+  
+  // Get current user from auth context
+  const { user } = useAuth();
 
-  // ==================== INITIAL DATA LOAD ====================
-  // Runs once when the provider mounts (app starts)
+  // ==================== INITIAL DATA LOAD + CLOUD SYNC ====================
   
   useEffect(() => {
-    loadAllData();
-  }, []);
+    if (user && !syncInitialized) {
+      // User is logged in, initialize sync
+      initializeSyncAndLoad();
+    } else if (!user) {
+      // User logged out, just load local data
+      loadAllData();
+    }
+  }, [user, syncInitialized]);
+
+  /**
+   * Initialize cloud sync and load data
+   * This runs when a user first logs in
+   */
+  const initializeSyncAndLoad = useCallback(async () => {
+    try {
+      setLoading(true);
+      setSyncStatus('syncing');
+      setError(null);
+      
+      console.log('🔄 Starting sync initialization...');
+      
+      // Initialize sync - this will either upload local data or download cloud data
+      const syncResult = await initializeSync(user.uid);
+      
+      console.log('📊 Sync result:', syncResult.status);
+      
+      // Now load whatever data we have (local DB is now authoritative)
+      await loadAllData();
+      
+      setSyncStatus('synced');
+      setSyncInitialized(true);
+      
+    } catch (err) {
+      console.error('❌ Sync initialization failed:', err);
+      setSyncStatus('error');
+      setError(err.message);
+      
+      // Still try to load local data
+      await loadAllData();
+    }
+  }, [user]);
 
   /**
    * Load all data from IndexedDB
-   * Called on initial mount and can be called manually to refresh
    */
   const loadAllData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       
-      // Fetch all three data types in parallel (faster than sequential)
       const [allPeople, allHouses, allRelationships] = await Promise.all([
         getAllPeople(),
         getAllHouses(),
@@ -132,34 +180,21 @@ export function GenealogyProvider({ children }) {
   }, []);
 
   // ==================== PERSON OPERATIONS ====================
-  // These functions update BOTH the database AND the local state
-  // This is what makes the "instant update" magic happen
 
   /**
    * Add a new person
-   * @param {Object} personData - The person data to add
-   * @returns {number} The new person's ID
-   * 
-   * TREE-CODEX INTEGRATION: Automatically creates a skeleton Codex entry
-   * for the new person, linking them to The Codex encyclopedia system.
+   * Now includes cloud sync!
    */
   const addPerson = useCallback(async (personData) => {
     try {
-      // 1. Add to database (returns the new ID)
+      // 1. Add to local database
       const newId = await dbAddPerson(personData);
       
-      // ═══════════════════════════════════════════════════════════════════
-      // 🔗 TREE-CODEX INTEGRATION: Auto-create skeleton Codex entry
-      // ═══════════════════════════════════════════════════════════════════
-      // Every person automatically gets a Codex entry for their biography.
-      // This creates a "skeleton" entry with genealogical data pre-filled.
-      // The user can add rich biographical content later via the Codex interface.
-      // ═══════════════════════════════════════════════════════════════════
+      // 2. Auto-create Codex entry
       let codexEntryId = null;
       try {
         const fullName = `${personData.firstName} ${personData.lastName}`;
         
-        // Build life dates string for subtitle
         let lifeDates = '';
         if (personData.dateOfBirth) {
           lifeDates = `b. ${personData.dateOfBirth}`;
@@ -170,7 +205,6 @@ export function GenealogyProvider({ children }) {
           lifeDates = `d. ${personData.dateOfDeath}`;
         }
         
-        // Build subtitle with maiden name and/or dates
         let subtitle = '';
         if (personData.maidenName && lifeDates) {
           subtitle = `née ${personData.maidenName} | ${lifeDates}`;
@@ -184,13 +218,12 @@ export function GenealogyProvider({ children }) {
           type: 'personage',
           title: fullName,
           subtitle: subtitle || null,
-          content: '', // Empty - user will fill in biography
+          content: '',
           category: 'Personages',
           tags: [],
           era: null,
-          personId: newId, // Critical: links Codex entry back to Person
-          houseId: personData.houseId || null, // Link to house for reference
-          // Store genealogical metadata for Codex display
+          personId: newId,
+          houseId: personData.houseId || null,
           genealogyData: {
             dateOfBirth: personData.dateOfBirth || null,
             dateOfDeath: personData.dateOfDeath || null,
@@ -198,24 +231,34 @@ export function GenealogyProvider({ children }) {
             legitimacyStatus: personData.legitimacyStatus || null,
             maidenName: personData.maidenName || null
           },
-          // Skeleton metadata flag - helps identify auto-generated entries
           isAutoGenerated: true
         });
         
-        // Update the person record with their Codex entry ID
         await dbUpdatePerson(newId, { codexEntryId: codexEntryId });
+        console.log('📖 Codex entry auto-created for:', fullName);
         
-        console.log('📖 Codex entry auto-created for:', fullName, '(ID:', codexEntryId, ')');
+        // ☁️ Sync codex entry to cloud
+        if (user) {
+          syncAddCodexEntry(user.uid, codexEntryId, {
+            type: 'personage',
+            title: fullName,
+            subtitle: subtitle || null,
+            personId: newId
+          });
+        }
       } catch (codexErr) {
-        // Don't fail person creation if Codex entry fails
-        // Just log the error - the link can be created manually later
         console.warn('⚠️ Failed to auto-create Codex entry:', codexErr.message);
       }
       
-      // 2. Update local state with the new person (including codexEntryId)
+      // 3. Update local state
       const newPerson = { ...personData, id: newId, codexEntryId: codexEntryId };
       setPeople(prev => [...prev, newPerson]);
       setDataVersion(v => v + 1);
+      
+      // ☁️ 4. Sync to cloud (async, non-blocking)
+      if (user) {
+        syncAddPerson(user.uid, newId, newPerson);
+      }
       
       console.log('✅ Person added:', newPerson.firstName, newPerson.lastName);
       return newId;
@@ -223,87 +266,76 @@ export function GenealogyProvider({ children }) {
       console.error('❌ Failed to add person:', err);
       throw err;
     }
-  }, []);
+  }, [user]);
 
   /**
    * Update an existing person
-   * @param {number} id - The person's ID
-   * @param {Object} updates - Fields to update
    */
   const updatePerson = useCallback(async (id, updates) => {
     try {
-      // 1. Update in database
       await dbUpdatePerson(id, updates);
       
-      // 2. Update local state
       setPeople(prev => prev.map(person => 
         person.id === id ? { ...person, ...updates } : person
       ));
       setDataVersion(v => v + 1);
+      
+      // ☁️ Sync to cloud
+      if (user) {
+        syncUpdatePerson(user.uid, id, updates);
+      }
       
       console.log('✅ Person updated:', id);
     } catch (err) {
       console.error('❌ Failed to update person:', err);
       throw err;
     }
-  }, []);
+  }, [user]);
 
   /**
-   * Delete a person (also deletes their relationships and Codex entry)
-   * @param {number} id - The person's ID
-   * 
-   * TREE-CODEX INTEGRATION: Cascade deletes the person's Codex entry
-   * to prevent orphaned biography entries.
+   * Delete a person
    */
   const deletePerson = useCallback(async (id) => {
     try {
-      // ═══════════════════════════════════════════════════════════════════
-      // 🔗 TREE-CODEX INTEGRATION: Get person's Codex entry ID before deletion
-      // ═══════════════════════════════════════════════════════════════════
-      // Find the person in local state to get their codexEntryId
       const personToDelete = people.find(p => p.id === id);
       const codexEntryId = personToDelete?.codexEntryId;
       
-      // 1. Delete from database
       await dbDeletePerson(id);
       
-      // ═══════════════════════════════════════════════════════════════════
-      // 🔗 TREE-CODEX INTEGRATION: Cascade delete Codex entry
-      // ═══════════════════════════════════════════════════════════════════
       if (codexEntryId) {
         try {
           await deleteCodexEntry(codexEntryId);
           console.log('📖 Codex entry cascade-deleted:', codexEntryId);
+          
+          // ☁️ Sync codex deletion to cloud
+          if (user) {
+            syncDeleteCodexEntry(user.uid, codexEntryId);
+          }
         } catch (codexErr) {
-          // Don't fail person deletion if Codex cleanup fails
-          // The orphaned entry can be cleaned up manually
           console.warn('⚠️ Failed to cascade-delete Codex entry:', codexErr.message);
         }
       }
       
-      // 2. Remove from local state
       setPeople(prev => prev.filter(person => person.id !== id));
-      
-      // 3. Also remove any relationships involving this person
       setRelationships(prev => prev.filter(rel => 
         rel.person1Id !== id && rel.person2Id !== id
       ));
       setDataVersion(v => v + 1);
+      
+      // ☁️ Sync to cloud
+      if (user) {
+        syncDeletePerson(user.uid, id);
+      }
       
       console.log('✅ Person deleted:', id);
     } catch (err) {
       console.error('❌ Failed to delete person:', err);
       throw err;
     }
-  }, [people]);
+  }, [people, user]);
 
   // ==================== HOUSE OPERATIONS ====================
 
-  /**
-   * Add a new house
-   * @param {Object} houseData - The house data to add
-   * @returns {number} The new house's ID
-   */
   const addHouse = useCallback(async (houseData) => {
     try {
       const newId = await dbAddHouse(houseData);
@@ -311,19 +343,19 @@ export function GenealogyProvider({ children }) {
       setHouses(prev => [...prev, newHouse]);
       setDataVersion(v => v + 1);
       
+      // ☁️ Sync to cloud
+      if (user) {
+        syncAddHouse(user.uid, newId, newHouse);
+      }
+      
       console.log('✅ House added:', newHouse.houseName);
       return newId;
     } catch (err) {
       console.error('❌ Failed to add house:', err);
       throw err;
     }
-  }, []);
+  }, [user]);
 
-  /**
-   * Update an existing house
-   * @param {number} id - The house's ID
-   * @param {Object} updates - Fields to update
-   */
   const updateHouse = useCallback(async (id, updates) => {
     try {
       await dbUpdateHouse(id, updates);
@@ -332,37 +364,38 @@ export function GenealogyProvider({ children }) {
       ));
       setDataVersion(v => v + 1);
       
+      // ☁️ Sync to cloud
+      if (user) {
+        syncUpdateHouse(user.uid, id, updates);
+      }
+      
       console.log('✅ House updated:', id);
     } catch (err) {
       console.error('❌ Failed to update house:', err);
       throw err;
     }
-  }, []);
+  }, [user]);
 
-  /**
-   * Delete a house
-   * @param {number} id - The house's ID
-   */
   const deleteHouse = useCallback(async (id) => {
     try {
       await dbDeleteHouse(id);
       setHouses(prev => prev.filter(house => house.id !== id));
       setDataVersion(v => v + 1);
       
+      // ☁️ Sync to cloud
+      if (user) {
+        syncDeleteHouse(user.uid, id);
+      }
+      
       console.log('✅ House deleted:', id);
     } catch (err) {
       console.error('❌ Failed to delete house:', err);
       throw err;
     }
-  }, []);
+  }, [user]);
 
   // ==================== RELATIONSHIP OPERATIONS ====================
 
-  /**
-   * Add a new relationship
-   * @param {Object} relationshipData - The relationship data to add
-   * @returns {number} The new relationship's ID
-   */
   const addRelationship = useCallback(async (relationshipData) => {
     try {
       const newId = await dbAddRelationship(relationshipData);
@@ -370,19 +403,19 @@ export function GenealogyProvider({ children }) {
       setRelationships(prev => [...prev, newRelationship]);
       setDataVersion(v => v + 1);
       
+      // ☁️ Sync to cloud
+      if (user) {
+        syncAddRelationship(user.uid, newId, newRelationship);
+      }
+      
       console.log('✅ Relationship added:', relationshipData.relationshipType);
       return newId;
     } catch (err) {
       console.error('❌ Failed to add relationship:', err);
       throw err;
     }
-  }, []);
+  }, [user]);
 
-  /**
-   * Update an existing relationship
-   * @param {number} id - The relationship's ID
-   * @param {Object} updates - Fields to update
-   */
   const updateRelationship = useCallback(async (id, updates) => {
     try {
       await dbUpdateRelationship(id, updates);
@@ -391,44 +424,48 @@ export function GenealogyProvider({ children }) {
       ));
       setDataVersion(v => v + 1);
       
+      // ☁️ Sync to cloud
+      if (user) {
+        syncUpdateRelationship(user.uid, id, updates);
+      }
+      
       console.log('✅ Relationship updated:', id);
     } catch (err) {
       console.error('❌ Failed to update relationship:', err);
       throw err;
     }
-  }, []);
+  }, [user]);
 
-  /**
-   * Delete a relationship
-   * @param {number} id - The relationship's ID
-   */
   const deleteRelationship = useCallback(async (id) => {
     try {
       await dbDeleteRelationship(id);
       setRelationships(prev => prev.filter(rel => rel.id !== id));
       setDataVersion(v => v + 1);
       
+      // ☁️ Sync to cloud
+      if (user) {
+        syncDeleteRelationship(user.uid, id);
+      }
+      
       console.log('✅ Relationship deleted:', id);
     } catch (err) {
       console.error('❌ Failed to delete relationship:', err);
       throw err;
     }
-  }, []);
+  }, [user]);
 
   // ==================== SPECIAL OPERATIONS ====================
 
-  /**
-   * Found a cadet house (complex operation involving person + house)
-   * @param {Object} ceremonyData - The cadet house ceremony data
-   * @returns {Object} The new house and updated founder
-   */
   const foundCadetHouse = useCallback(async (ceremonyData) => {
     try {
       const result = await dbFoundCadetHouse(ceremonyData);
-      
-      // Refresh all data since this operation touches multiple entities
-      // (A new house is created AND the founder's person record is updated)
       await loadAllData();
+      
+      // ☁️ Sync the new house and updated person
+      if (user) {
+        syncAddHouse(user.uid, result.house.id, result.house);
+        syncUpdatePerson(user.uid, result.founder.id, result.founder);
+      }
       
       console.log('✅ Cadet house founded:', result.house.houseName);
       return result;
@@ -436,23 +473,21 @@ export function GenealogyProvider({ children }) {
       console.error('❌ Failed to found cadet house:', err);
       throw err;
     }
-  }, [loadAllData]);
+  }, [loadAllData, user]);
 
-  /**
-   * Delete ALL data (nuclear option)
-   * Clears all people, houses, and relationships
-   */
   const deleteAllData = useCallback(async () => {
     try {
       await dbDeleteAllData();
       
-      // Clear local state
       setPeople([]);
       setHouses([]);
       setRelationships([]);
       setDataVersion(v => v + 1);
       
-      console.log('✅ All data deleted');
+      // Note: We don't delete cloud data here - user might want to restore it
+      // If you want to also clear cloud, add that logic here
+      
+      console.log('✅ All local data deleted');
     } catch (err) {
       console.error('❌ Failed to delete all data:', err);
       throw err;
@@ -460,40 +495,19 @@ export function GenealogyProvider({ children }) {
   }, []);
 
   // ==================== HELPER FUNCTIONS ====================
-  // Convenience functions for common lookups
 
-  /**
-   * Get a person by ID
-   * @param {number} id - The person's ID
-   * @returns {Object|undefined} The person object or undefined
-   */
   const getPersonById = useCallback((id) => {
     return people.find(p => p.id === id);
   }, [people]);
 
-  /**
-   * Get a house by ID
-   * @param {number} id - The house's ID
-   * @returns {Object|undefined} The house object or undefined
-   */
   const getHouseById = useCallback((id) => {
     return houses.find(h => h.id === id);
   }, [houses]);
 
-  /**
-   * Get people belonging to a specific house
-   * @param {number} houseId - The house's ID
-   * @returns {Array} Array of people in that house
-   */
   const getPeopleByHouse = useCallback((houseId) => {
     return people.filter(p => p.houseId === houseId);
   }, [people]);
 
-  /**
-   * Get relationships for a specific person
-   * @param {number} personId - The person's ID
-   * @returns {Array} Array of relationships involving that person
-   */
   const getRelationshipsForPerson = useCallback((personId) => {
     return relationships.filter(r => 
       r.person1Id === personId || r.person2Id === personId
@@ -501,11 +515,9 @@ export function GenealogyProvider({ children }) {
   }, [relationships]);
 
   // ==================== CONTEXT VALUE ====================
-  // This is the object that consuming components receive
-  // It contains all the data AND all the functions to modify it
   
   const contextValue = {
-    // Data (read-only from consumer's perspective)
+    // Data
     people,
     houses,
     relationships,
@@ -514,6 +526,7 @@ export function GenealogyProvider({ children }) {
     loading,
     error,
     dataVersion,
+    syncStatus, // ☁️ New: expose sync status
     
     // Person operations
     addPerson,
@@ -540,7 +553,7 @@ export function GenealogyProvider({ children }) {
     getPeopleByHouse,
     getRelationshipsForPerson,
     
-    // Manual refresh (usually not needed, but available)
+    // Manual refresh
     refreshData: loadAllData
   };
 
@@ -553,14 +566,6 @@ export function GenealogyProvider({ children }) {
 
 /**
  * useGenealogy Hook
- * 
- * This is how components access the shared genealogy data.
- * 
- * Usage:
- *   const { people, houses, addPerson, updateHouse } = useGenealogy();
- * 
- * The hook will throw an error if used outside of GenealogyProvider,
- * which helps catch setup mistakes early.
  */
 export function useGenealogy() {
   const context = useContext(GenealogyContext);
@@ -575,5 +580,4 @@ export function useGenealogy() {
   return context;
 }
 
-// Default export for convenience
 export default GenealogyContext;
