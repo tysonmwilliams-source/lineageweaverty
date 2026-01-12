@@ -1,24 +1,65 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import Home from './pages/Home';
-import FamilyTree from './pages/FamilyTree';
-import ManageData from './pages/ManageData';
-import CodexLanding from './pages/CodexLanding';
-import CodexEntryForm from './pages/CodexEntryForm';
-import CodexEntryView from './pages/CodexEntryView';
-import CodexBrowse from './pages/CodexBrowse';
-import CodexImport from './pages/CodexImport';
-import HeraldryLanding from './pages/HeraldryLanding';
-import HeraldryCreator from './pages/HeraldryCreator';
-import ChargesLibrary from './pages/ChargesLibrary';
-import DignitiesLanding from './pages/DignitiesLanding';
-import DignityForm from './pages/DignityForm';
-import DignityView from './pages/DignityView';
 import { initializeSampleData } from './services/sampleData';
+
+// Lazy-loaded page components for code-splitting
+// This reduces initial bundle size by loading pages on-demand
+const FamilyTree = lazy(() => import('./pages/FamilyTree'));
+const ManageData = lazy(() => import('./pages/ManageData'));
+const CodexLanding = lazy(() => import('./pages/CodexLanding'));
+const CodexEntryForm = lazy(() => import('./pages/CodexEntryForm'));
+const CodexEntryView = lazy(() => import('./pages/CodexEntryView'));
+const CodexBrowse = lazy(() => import('./pages/CodexBrowse'));
+const CodexImport = lazy(() => import('./pages/CodexImport'));
+const HeraldryLanding = lazy(() => import('./pages/HeraldryLanding'));
+const HeraldryCreator = lazy(() => import('./pages/HeraldryCreator'));
+const ChargesLibrary = lazy(() => import('./pages/ChargesLibrary'));
+const DignitiesLanding = lazy(() => import('./pages/DignitiesLanding'));
+const DignityForm = lazy(() => import('./pages/DignityForm'));
+const DignityView = lazy(() => import('./pages/DignityView'));
+
+// Loading fallback for lazy-loaded routes
+function PageLoader() {
+  return (
+    <div className="page-loader">
+      <div className="loader-content">
+        <div className="loader-spinner"></div>
+        <p>Loading...</p>
+      </div>
+      <style>{`
+        .page-loader {
+          min-height: 50vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: var(--bg-primary);
+        }
+        .loader-content {
+          text-align: center;
+          color: var(--text-secondary);
+        }
+        .loader-spinner {
+          width: 40px;
+          height: 40px;
+          border: 3px solid var(--border-primary);
+          border-top-color: var(--color-info);
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+          margin: 0 auto var(--space-3);
+        }
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
+    </div>
+  );
+}
 import { ThemeProvider } from './components/ThemeContext';
 import { GenealogyProvider } from './contexts/GenealogyContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/auth';
+import ErrorBoundary from './components/ErrorBoundary';
 
 /**
  * Main App Component
@@ -193,25 +234,29 @@ function AppContent() {
   return (
     <GenealogyProvider>
       <Router>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/tree" element={<FamilyTree />} />
-          <Route path="/manage" element={<ManageData />} />
-          <Route path="/codex" element={<CodexLanding />} />
-          <Route path="/codex/create" element={<CodexEntryForm />} />
-          <Route path="/codex/edit/:id" element={<CodexEntryForm />} />
-          <Route path="/codex/entry/:id" element={<CodexEntryView />} />
-          <Route path="/codex/browse/:type" element={<CodexBrowse />} />
-          <Route path="/codex/import" element={<CodexImport />} />
-          <Route path="/heraldry" element={<HeraldryLanding />} />
-          <Route path="/heraldry/create" element={<HeraldryCreator />} />
-          <Route path="/heraldry/edit/:id" element={<HeraldryCreator />} />
-          <Route path="/heraldry/charges" element={<ChargesLibrary />} />
-          <Route path="/dignities" element={<DignitiesLanding />} />
-          <Route path="/dignities/create" element={<DignityForm />} />
-          <Route path="/dignities/edit/:id" element={<DignityForm />} />
-          <Route path="/dignities/view/:id" element={<DignityView />} />
-        </Routes>
+        <ErrorBoundary>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/tree" element={<FamilyTree />} />
+            <Route path="/manage" element={<ManageData />} />
+            <Route path="/codex" element={<CodexLanding />} />
+            <Route path="/codex/create" element={<CodexEntryForm />} />
+            <Route path="/codex/edit/:id" element={<CodexEntryForm />} />
+            <Route path="/codex/entry/:id" element={<CodexEntryView />} />
+            <Route path="/codex/browse/:type" element={<CodexBrowse />} />
+            <Route path="/codex/import" element={<CodexImport />} />
+            <Route path="/heraldry" element={<HeraldryLanding />} />
+            <Route path="/heraldry/create" element={<HeraldryCreator />} />
+            <Route path="/heraldry/edit/:id" element={<HeraldryCreator />} />
+            <Route path="/heraldry/charges" element={<ChargesLibrary />} />
+            <Route path="/dignities" element={<DignitiesLanding />} />
+            <Route path="/dignities/create" element={<DignityForm />} />
+            <Route path="/dignities/edit/:id" element={<DignityForm />} />
+            <Route path="/dignities/view/:id" element={<DignityView />} />
+            </Routes>
+          </Suspense>
+        </ErrorBoundary>
       </Router>
     </GenealogyProvider>
   );
