@@ -1,0 +1,410 @@
+/**
+ * DignityAnalysis.css - Data Quality Analysis Dashboard Styles
+ *
+ * PURPOSE:
+ * Styles for the analysis dashboard page.
+ * Uses CSS custom properties for theming.
+ */
+
+/* ============================================
+   PAGE LAYOUT
+   ============================================ */
+
+.dignity-analysis {
+  min-height: 100vh;
+  background: var(--bg-primary);
+}
+
+.dignity-analysis__container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-4) var(--space-16);
+}
+
+.dignity-analysis__content {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* ============================================
+   HEADER
+   ============================================ */
+
+.dignity-analysis__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.dignity-analysis__header-content {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+}
+
+.dignity-analysis__back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-standard);
+  flex-shrink: 0;
+}
+
+.dignity-analysis__back:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border-color: var(--border-secondary);
+}
+
+.dignity-analysis__title-area {
+  flex: 1;
+}
+
+.dignity-analysis__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 var(--space-1) 0;
+  line-height: 1.2;
+}
+
+.dignity-analysis__title-icon {
+  color: var(--accent-primary);
+}
+
+.dignity-analysis__subtitle {
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+  margin: 0;
+}
+
+.dignity-analysis__actions {
+  flex-shrink: 0;
+}
+
+/* Spin animation for loading icon */
+.dignity-analysis .spin-icon svg,
+.dignity-analysis .spin-icon .icon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ============================================
+   ERROR STATE
+   ============================================ */
+
+.dignity-analysis__error {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--color-error-bg, rgba(239, 68, 68, 0.1));
+  border: 1px solid var(--color-error);
+  border-radius: var(--radius-md);
+  color: var(--color-error);
+  margin-bottom: var(--space-4);
+}
+
+.dignity-analysis__error button {
+  margin-left: auto;
+  padding: var(--space-1) var(--space-3);
+  background: var(--color-error);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+
+.dignity-analysis__error button:hover {
+  opacity: 0.9;
+}
+
+/* ============================================
+   SUMMARY SECTION
+   ============================================ */
+
+.dignity-analysis__summary {
+  margin-bottom: var(--space-6);
+}
+
+/* ============================================
+   EMPTY STATE
+   ============================================ */
+
+.dignity-analysis__empty,
+.dignity-analysis__loading {
+  padding: var(--space-12) var(--space-4);
+  text-align: center;
+}
+
+/* ============================================
+   TABS
+   ============================================ */
+
+.dignity-analysis__tabs {
+  margin-bottom: var(--space-4);
+}
+
+.dignity-analysis__tabs-list {
+  display: flex;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  overflow-x: auto;
+}
+
+.dignity-analysis__tab {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-standard);
+  white-space: nowrap;
+}
+
+.dignity-analysis__tab:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.dignity-analysis__tab--active {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.dignity-analysis__tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 var(--space-1);
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.dignity-analysis__tab-count--critical {
+  background: var(--color-error);
+  color: white;
+}
+
+.dignity-analysis__tab-count--warning {
+  background: var(--color-warning);
+  color: var(--color-warning-text, #000);
+}
+
+.dignity-analysis__tab-count--info {
+  background: var(--color-info);
+  color: white;
+}
+
+/* ============================================
+   CONTROLS BAR
+   ============================================ */
+
+.dignity-analysis__controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-4);
+}
+
+.dignity-analysis__filters {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.dignity-analysis__filter {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.dignity-analysis__filter label {
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+.dignity-analysis__filter select {
+  padding: var(--space-1) var(--space-2);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  min-width: 120px;
+}
+
+.dignity-analysis__filter select:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+
+.dignity-analysis__bulk-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* ============================================
+   SUGGESTIONS LIST
+   ============================================ */
+
+.dignity-analysis__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.dignity-analysis__list-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  padding: var(--space-12) var(--space-4);
+  text-align: center;
+  color: var(--text-tertiary);
+}
+
+.dignity-analysis__list-empty svg {
+  opacity: 0.5;
+}
+
+.dignity-analysis__list-empty p {
+  margin: 0;
+  max-width: 300px;
+}
+
+/* ============================================
+   RESULTS SUMMARY
+   ============================================ */
+
+.dignity-analysis__results-summary {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-4) 0;
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 768px) {
+  .dignity-analysis__header {
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+
+  .dignity-analysis__actions {
+    width: 100%;
+  }
+
+  .dignity-analysis__actions button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .dignity-analysis__controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
+  }
+
+  .dignity-analysis__filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dignity-analysis__filter {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dignity-analysis__filter label {
+    margin-bottom: var(--space-1);
+  }
+
+  .dignity-analysis__filter select {
+    width: 100%;
+  }
+
+  .dignity-analysis__bulk-actions {
+    justify-content: flex-end;
+  }
+
+  .dignity-analysis__tabs-list {
+    gap: 0;
+  }
+
+  .dignity-analysis__tab {
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--text-xs);
+  }
+
+  .dignity-analysis__tab span:not(.dignity-analysis__tab-count) {
+    display: none;
+  }
+
+  .dignity-analysis__tab--active span:not(.dignity-analysis__tab-count) {
+    display: inline;
+  }
+}
+
+@media (max-width: 480px) {
+  .dignity-analysis__container {
+    padding: var(--space-4) var(--space-3);
+  }
+
+  .dignity-analysis__title {
+    font-size: var(--text-xl);
+  }
+
+  .dignity-analysis__back {
+    width: 36px;
+    height: 36px;
+  }
+}

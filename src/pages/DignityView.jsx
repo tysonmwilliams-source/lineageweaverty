@@ -37,6 +37,8 @@ import Icon from '../components/icons/Icon';
 import LoadingState from '../components/shared/LoadingState';
 import EmptyState from '../components/shared/EmptyState';
 import ActionButton from '../components/shared/ActionButton';
+import { SuggestionCard } from '../components/suggestions';
+import { useDignityAnalysis } from '../hooks';
 import './DignityView.css';
 
 /**
@@ -160,6 +162,18 @@ function DignityView() {
     notes: ''
   });
   const [savingTenure, setSavingTenure] = useState(false);
+
+  // Entity-specific dignity analysis
+  const {
+    suggestions: entitySuggestions,
+    loading: analysisLoading,
+    applySuggestion,
+    dismissSuggestion
+  } = useDignityAnalysis({
+    scope: 'dignity',
+    entityId: id,
+    autoRun: true
+  });
 
   // Helper functions
   const getHouseName = useCallback((houseId) => {
@@ -1270,6 +1284,27 @@ function DignityView() {
                   </div>
                 </dl>
               </div>
+
+              {/* Data Quality Suggestions */}
+              {entitySuggestions.length > 0 && (
+                <div className="dignity-sidebar-section dignity-sidebar-section--suggestions">
+                  <h3 className="dignity-sidebar-section__title">
+                    <Icon name="lightbulb" size={14} />
+                    Suggestions
+                  </h3>
+                  <div className="dignity-sidebar-suggestions">
+                    {entitySuggestions.slice(0, 3).map(suggestion => (
+                      <SuggestionCard
+                        key={suggestion.id}
+                        suggestion={suggestion}
+                        onApply={applySuggestion}
+                        onDismiss={dismissSuggestion}
+                        compact
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
             </motion.aside>
           </div>
         </motion.div>

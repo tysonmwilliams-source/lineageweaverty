@@ -183,6 +183,23 @@
 }
 
 /* ============================================
+   ANALYSIS SECTION
+   ============================================ */
+
+.dignities-analysis {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.dignities-analysis__link {
+  display: flex;
+  justify-content: center;
+  padding-top: var(--space-2);
+}
+
+/* ============================================
    CONTROLS SECTION
    ============================================ */
 

@@ -18,6 +18,7 @@ const ChargesLibrary = lazy(() => import('./pages/ChargesLibrary'));
 const DignitiesLanding = lazy(() => import('./pages/DignitiesLanding'));
 const DignityForm = lazy(() => import('./pages/DignityForm'));
 const DignityView = lazy(() => import('./pages/DignityView'));
+const DignityAnalysis = lazy(() => import('./pages/DignityAnalysis'));
 const BugTracker = lazy(() => import('./pages/BugTracker'));
 
 // Loading fallback for lazy-loaded routes
@@ -259,6 +260,7 @@ function AppContent() {
               <Route path="/dignities/create" element={<DignityForm />} />
               <Route path="/dignities/edit/:id" element={<DignityForm />} />
               <Route path="/dignities/view/:id" element={<DignityView />} />
+              <Route path="/dignities/analysis" element={<DignityAnalysis />} />
               <Route path="/bugs" element={<BugTracker />} />
               </Routes>
             </Suspense>

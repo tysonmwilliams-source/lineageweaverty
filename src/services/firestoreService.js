@@ -942,6 +942,75 @@ export async function deleteHeraldryLinkCloud(userId, linkId) {
   }
 }
 
+// ==================== HOUSEHOLD ROLES OPERATIONS ====================
+
+/**
+ * Add a household role to Firestore
+ */
+export async function addHouseholdRoleCloud(userId, roleData) {
+  try {
+    const rolesRef = getUserCollection(userId, 'householdRoles');
+    const docRef = doc(rolesRef, String(roleData.id));
+
+    await setDoc(docRef, {
+      ...roleData,
+      localId: roleData.id,
+      createdAt: serverTimestamp()
+    });
+
+    console.log('☁️ Household role added to cloud');
+    return docRef.id;
+  } catch (error) {
+    console.error('☁️ Error adding household role to cloud:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get all household roles from Firestore
+ */
+export async function getAllHouseholdRolesCloud(userId) {
+  try {
+    const rolesRef = getUserCollection(userId, 'householdRoles');
+    const snapshot = await getDocs(rolesRef);
+    return snapshot.docs.map(docToObject);
+  } catch (error) {
+    console.error('☁️ Error getting all household roles from cloud:', error);
+    throw error;
+  }
+}
+
+/**
+ * Update a household role in Firestore
+ */
+export async function updateHouseholdRoleCloud(userId, roleId, updates) {
+  try {
+    const docRef = getUserDoc(userId, 'householdRoles', String(roleId));
+    await updateDoc(docRef, {
+      ...updates,
+      updatedAt: serverTimestamp()
+    });
+    console.log('☁️ Household role updated in cloud:', roleId);
+  } catch (error) {
+    console.error('☁️ Error updating household role in cloud:', error);
+    throw error;
+  }
+}
+
+/**
+ * Delete a household role from Firestore
+ */
+export async function deleteHouseholdRoleCloud(userId, roleId) {
+  try {
+    const docRef = getUserDoc(userId, 'householdRoles', String(roleId));
+    await deleteDoc(docRef);
+    console.log('☁️ Household role deleted from cloud:', roleId);
+  } catch (error) {
+    console.error('☁️ Error deleting household role from cloud:', error);
+    throw error;
+  }
+}
+
 // ==================== BULK OPERATIONS ====================
 
 /**
@@ -952,7 +1021,7 @@ export async function deleteAllCloudData(userId) {
   try {
     console.log('☁️ Deleting all cloud data...');
     
-    const collections = ['people', 'houses', 'relationships', 'codexEntries', 'codexLinks', 'acknowledgedDuplicates', 'heraldry', 'heraldryLinks', 'dignities', 'dignityTenures', 'dignityLinks', 'bugs'];
+    const collections = ['people', 'houses', 'relationships', 'codexEntries', 'codexLinks', 'acknowledgedDuplicates', 'heraldry', 'heraldryLinks', 'dignities', 'dignityTenures', 'dignityLinks', 'bugs', 'householdRoles'];
     
     for (const collName of collections) {
       const collRef = getUserCollection(userId, collName);
@@ -1031,7 +1100,13 @@ export default {
   addDignityLinkCloud,
   getAllDignityLinksCloud,
   deleteDignityLinkCloud,
-  
+
+  // Household Roles
+  addHouseholdRoleCloud,
+  getAllHouseholdRolesCloud,
+  updateHouseholdRoleCloud,
+  deleteHouseholdRoleCloud,
+
   // Bulk operations
   syncAllToCloud,
   downloadAllFromCloud,

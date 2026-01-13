@@ -23,6 +23,8 @@ import SearchBar from './SearchBar';
 import ThemeSelector from './ThemeSelector';
 import { useTheme } from './ThemeContext';
 import { UserMenu, SyncStatusIndicator } from './auth';
+import { SuggestionsBadge } from './suggestions';
+import { useDignityAnalysis } from '../hooks';
 import './Navigation.css';
 
 // Navigation link configuration
@@ -59,6 +61,7 @@ const MOBILE_MENU_VARIANTS = {
  * @param {boolean} props.showControlsToggle - Whether to show controls toggle (tree page)
  * @param {boolean} props.controlsExpanded - Controls expanded state
  * @param {Function} props.onToggleControls - Controls toggle callback
+ * @param {boolean} props.compactMode - Use icon-only nav links to save space
  */
 function Navigation({
   people = [],
@@ -66,11 +69,15 @@ function Navigation({
   showSearch = false,
   showControlsToggle = false,
   controlsExpanded = false,
-  onToggleControls = null
+  onToggleControls = null,
+  compactMode = false
 }) {
   const location = useLocation();
   const { isDarkTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Get critical suggestion count for nav badge
+  const { criticalCount } = useDignityAnalysis({ autoRun: false });
 
   // Check if link is active
   const isActive = useCallback((path, exact = false) => {
@@ -103,17 +110,31 @@ function Navigation({
           </Link>
 
           {/* Desktop Navigation Links */}
-          <div className="nav__links">
+          <div className={`nav__links ${compactMode ? 'nav__links--compact' : ''}`}>
             {NAV_LINKS.map(({ path, label, icon, exact }) => (
               <Link
                 key={path}
                 to={path}
-                className={`nav__link ${isActive(path, exact) ? 'nav__link--active' : ''}`}
+                className={`nav__link ${isActive(path, exact) ? 'nav__link--active' : ''} ${compactMode ? 'nav__link--icon-only' : ''}`}
               >
                 <span className="nav__link-icon">
-                  <Icon name={icon} size={18} strokeWidth={1.5} />
+                  <Icon name={icon} size={compactMode ? 20 : 18} strokeWidth={1.5} />
                 </span>
-                <span>{label}</span>
+                {/* In compact mode, show label in hover tooltip; otherwise inline */}
+                {compactMode ? (
+                  <span className="nav__link-tooltip">{label}</span>
+                ) : (
+                  <span className="nav__link-label">{label}</span>
+                )}
+                {/* Show suggestion badge for Dignities link */}
+                {path === '/dignities' && criticalCount > 0 && (
+                  <SuggestionsBadge
+                    count={criticalCount}
+                    severity="critical"
+                    size="sm"
+                    pulse
+                  />
+                )}
               </Link>
             ))}
           </div>
@@ -187,6 +208,13 @@ function Navigation({
                   >
                     <Icon name={icon} size={20} strokeWidth={1.5} />
                     <span>{label}</span>
+                    {path === '/dignities' && criticalCount > 0 && (
+                      <SuggestionsBadge
+                        count={criticalCount}
+                        severity="critical"
+                        size="sm"
+                      />
+                    )}
                   </Link>
                 ))}
               </div>

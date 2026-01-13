@@ -31,6 +31,8 @@ import { getAllHouses, getAllPeople } from '../services/database';
 import Navigation from '../components/Navigation';
 import Icon from '../components/icons';
 import { LoadingState, EmptyState, SectionHeader, Card, ActionButton } from '../components/shared';
+import { AnalysisSummary, SuggestionsPanel } from '../components/suggestions';
+import { useDignityAnalysis } from '../hooks';
 import './DignitiesLanding.css';
 
 // Animation variants
@@ -87,6 +89,17 @@ function DignitiesLanding() {
   const [filterRank, setFilterRank] = useState('all');
   const [sortBy, setSortBy] = useState('name');
   const [viewMode, setViewMode] = useState('hierarchy');
+
+  // Dignity analysis hook
+  const {
+    suggestions,
+    stats: analysisStats,
+    lastAnalyzed,
+    loading: analysisLoading,
+    runAnalysis,
+    applySuggestion,
+    dismissSuggestion
+  } = useDignityAnalysis({ autoRun: true });
 
   // Load data
   useEffect(() => {
@@ -434,6 +447,48 @@ function DignitiesLanding() {
                 </div>
               </motion.section>
             )}
+
+            {/* Data Quality Analysis */}
+            <motion.section
+              className="dignities-analysis"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.15 }}
+            >
+              <AnalysisSummary
+                stats={analysisStats}
+                lastAnalyzed={lastAnalyzed}
+                dataSnapshot={{
+                  peopleCount: people.length,
+                  housesCount: houses.length,
+                  dignitiesCount: dignities.length
+                }}
+                loading={analysisLoading}
+                onRunAnalysis={runAnalysis}
+                compact
+              />
+              {suggestions.length > 0 && (
+                <SuggestionsPanel
+                  suggestions={suggestions.slice(0, 5)}
+                  onApply={applySuggestion}
+                  onDismiss={dismissSuggestion}
+                  compact
+                  maxVisible={3}
+                />
+              )}
+              {(analysisStats || suggestions.length > 0) && (
+                <div className="dignities-analysis__link">
+                  <ActionButton
+                    icon="external-link"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => navigate('/dignities/analysis')}
+                  >
+                    View Full Analysis Dashboard
+                  </ActionButton>
+                </div>
+              )}
+            </motion.section>
 
             {/* Search & Controls */}
             <motion.section

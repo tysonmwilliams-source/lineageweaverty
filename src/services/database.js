@@ -211,6 +211,26 @@ db.version(11).stores({
   bugs: '++id, title, status, priority, system, page, created, resolved'
 });
 
+// Version 12: Add Household Roles System
+// Tracks non-hereditary household positions like Master-at-Arms, Steward, etc.
+// These are service roles tied to a house, not hereditary titles.
+db.version(12).stores({
+  people: '++id, firstName, lastName, houseId, dateOfBirth, dateOfDeath, bastardStatus, codexEntryId, heraldryId',
+  houses: '++id, houseName, parentHouseId, houseType, codexEntryId, heraldryId',
+  relationships: '++id, person1Id, person2Id, relationshipType',
+  codexEntries: '++id, type, title, category, *tags, era, created, updated',
+  codexLinks: '++id, sourceId, targetId, type',
+  acknowledgedDuplicates: '++id, person1Id, person2Id, acknowledgedAt',
+  heraldry: '++id, name, category, *tags, created, updated',
+  heraldryLinks: '++id, heraldryId, entityType, entityId, linkType',
+  dignities: '++id, name, shortName, dignityClass, dignityRank, swornToId, currentHolderId, currentHouseId, codexEntryId, created, updated',
+  dignityTenures: '++id, dignityId, personId, dateStarted, dateEnded, acquisitionType, endType, created',
+  dignityLinks: '++id, dignityId, entityType, entityId, linkType, created',
+  bugs: '++id, title, status, priority, system, page, created, resolved',
+  // NEW: Household Roles System
+  householdRoles: '++id, houseId, roleType, currentHolderId, startDate, created, updated'
+});
+
 // Version 3: Add heraldry system fields
 db.version(3).stores({
   // No changes to indexes, just adding new fields through upgrade function

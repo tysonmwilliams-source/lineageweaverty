@@ -1,0 +1,230 @@
+/**
+ * SuggestionsPanel.css - Suggestions Panel Styles
+ *
+ * Container for displaying multiple suggestion cards
+ * with filtering and bulk actions.
+ */
+
+/* ============================================
+   BASE PANEL STYLES
+   ============================================ */
+
+.suggestions-panel {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+/* ============================================
+   HEADER
+   ============================================ */
+
+.suggestions-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border-primary);
+  background: var(--bg-secondary);
+}
+
+.suggestions-panel__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.suggestions-panel__title svg {
+  color: var(--color-warning);
+}
+
+.suggestions-panel__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--bg-primary);
+  border-radius: var(--radius-full);
+}
+
+.suggestions-panel__bulk-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+/* ============================================
+   FILTERS
+   ============================================ */
+
+.suggestions-panel__filters {
+  display: flex;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--border-primary);
+  background: var(--bg-primary);
+  overflow-x: auto;
+}
+
+.suggestions-panel__filter {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-standard);
+  white-space: nowrap;
+}
+
+.suggestions-panel__filter:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.suggestions-panel__filter--active {
+  background: var(--accent-primary);
+  color: var(--accent-primary-text, white);
+  border-color: var(--accent-primary);
+}
+
+.suggestions-panel__filter--active:hover {
+  background: var(--accent-primary-hover, var(--accent-primary));
+  color: var(--accent-primary-text, white);
+}
+
+.suggestions-panel__filter-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  font-size: 10px;
+  font-weight: 600;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-full);
+}
+
+.suggestions-panel__filter--active .suggestions-panel__filter-count {
+  background: rgba(255, 255, 255, 0.2);
+  color: inherit;
+}
+
+/* ============================================
+   CONTENT
+   ============================================ */
+
+.suggestions-panel__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  min-height: 100px;
+}
+
+.suggestions-panel__content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.suggestions-panel__content::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-full);
+}
+
+.suggestions-panel__content::-webkit-scrollbar-thumb {
+  background: var(--border-secondary);
+  border-radius: var(--radius-full);
+}
+
+.suggestions-panel__content::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+}
+
+/* ============================================
+   FOOTER
+   ============================================ */
+
+.suggestions-panel__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-4);
+  border-top: 1px solid var(--border-primary);
+  background: var(--bg-secondary);
+}
+
+.suggestions-panel__stats {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.suggestions-panel__stat {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+}
+
+.suggestions-panel__stat--critical {
+  color: var(--color-error);
+}
+
+.suggestions-panel__stat--warning {
+  color: var(--color-warning);
+}
+
+.suggestions-panel__stat--info {
+  color: var(--color-info);
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 640px) {
+  .suggestions-panel__header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+  }
+
+  .suggestions-panel__bulk-actions {
+    justify-content: flex-end;
+  }
+
+  .suggestions-panel__filters {
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .suggestions-panel__content {
+    padding: var(--space-2);
+  }
+
+  .suggestions-panel__footer {
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .suggestions-panel__stats {
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+}

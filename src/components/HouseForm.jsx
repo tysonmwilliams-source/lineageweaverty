@@ -18,6 +18,7 @@ import { motion } from 'framer-motion';
 import HeraldryPickerModal from './heraldry/HeraldryPickerModal';
 import Icon from './icons/Icon';
 import ActionButton from './shared/ActionButton';
+import { HouseholdRolesPanel } from './household';
 import {
   getHeraldry,
   linkHeraldryToEntity,
@@ -37,6 +38,7 @@ const SECTION_VARIANTS = {
 
 function HouseForm({
   house = null,
+  people = [],
   onSave,
   onCancel
 }) {
@@ -453,6 +455,23 @@ function HouseForm({
             />
           </div>
         </motion.div>
+
+        {/* Household Roles Section - Only show when editing */}
+        {house?.id && (
+          <motion.div
+            className="house-form__section house-form__section--roles"
+            variants={SECTION_VARIANTS}
+            initial="hidden"
+            animate="visible"
+            transition={{ delay: 0.25 }}
+          >
+            <HouseholdRolesPanel
+              houseId={house.id}
+              people={people}
+              defaultExpanded={false}
+            />
+          </motion.div>
+        )}
 
         {/* Form Actions */}
         <div className="house-form__actions">

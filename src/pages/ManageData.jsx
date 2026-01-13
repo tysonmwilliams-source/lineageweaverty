@@ -542,6 +542,7 @@ function ManageData() {
       >
         <HouseForm
           house={editingHouse}
+          people={people}
           onSave={handleSaveHouse}
           onCancel={() => {
             setShowHouseModal(false);

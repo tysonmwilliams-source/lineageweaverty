@@ -68,6 +68,9 @@ import {
   deleteDignityTenureCloud,
   addDignityLinkCloud,
   deleteDignityLinkCloud,
+  addHouseholdRoleCloud,
+  updateHouseholdRoleCloud,
+  deleteHouseholdRoleCloud,
   syncAllToCloud,
   downloadAllFromCloud,
   hasCloudData
@@ -689,11 +692,55 @@ export async function syncAddDignityLink(userId, linkId, linkData) {
  */
 export async function syncDeleteDignityLink(userId, linkId) {
   if (!userId || !isOnline) return;
-  
+
   try {
     await deleteDignityLinkCloud(userId, linkId);
   } catch (error) {
     console.error('☁️ Failed to sync dignity link delete:', error);
+  }
+}
+
+// ==================== HOUSEHOLD ROLES SYNC ====================
+
+/**
+ * Add household role (local + cloud)
+ * @param {string} userId - The user's Firebase UID
+ * @param {number} roleId - The local role ID (after local add)
+ * @param {Object} roleData - The role data
+ */
+export async function syncAddHouseholdRole(userId, roleId, roleData) {
+  if (!userId || !isOnline) return;
+
+  try {
+    await addHouseholdRoleCloud(userId, { ...roleData, id: roleId });
+  } catch (error) {
+    console.error('☁️ Failed to sync household role add:', error);
+  }
+}
+
+/**
+ * Update household role (local + cloud)
+ */
+export async function syncUpdateHouseholdRole(userId, roleId, updates) {
+  if (!userId || !isOnline) return;
+
+  try {
+    await updateHouseholdRoleCloud(userId, roleId, updates);
+  } catch (error) {
+    console.error('☁️ Failed to sync household role update:', error);
+  }
+}
+
+/**
+ * Delete household role (local + cloud)
+ */
+export async function syncDeleteHouseholdRole(userId, roleId) {
+  if (!userId || !isOnline) return;
+
+  try {
+    await deleteHouseholdRoleCloud(userId, roleId);
+  } catch (error) {
+    console.error('☁️ Failed to sync household role delete:', error);
   }
 }
 

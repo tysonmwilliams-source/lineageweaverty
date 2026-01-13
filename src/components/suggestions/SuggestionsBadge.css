@@ -1,0 +1,115 @@
+/**
+ * SuggestionsBadge.css - Badge indicator styles
+ *
+ * Compact badge for showing suggestion counts.
+ */
+
+/* ============================================
+   BASE BADGE STYLES
+   ============================================ */
+
+.suggestions-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  font-weight: 600;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+  border: none;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+}
+
+/* ============================================
+   SIZE VARIANTS
+   ============================================ */
+
+.suggestions-badge--sm {
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  font-size: 10px;
+}
+
+.suggestions-badge--md {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  font-size: 11px;
+}
+
+.suggestions-badge--lg {
+  min-width: 24px;
+  height: 24px;
+  padding: 0 8px;
+  font-size: 12px;
+}
+
+/* ============================================
+   SEVERITY VARIANTS
+   ============================================ */
+
+.suggestions-badge--critical {
+  background: var(--color-error);
+  color: white;
+}
+
+.suggestions-badge--warning {
+  background: var(--color-warning);
+  color: var(--color-warning-text, #000);
+}
+
+.suggestions-badge--info {
+  background: var(--color-info);
+  color: white;
+}
+
+/* ============================================
+   INTERACTIVE STATE
+   ============================================ */
+
+.suggestions-badge--clickable {
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-standard);
+}
+
+.suggestions-badge--clickable:hover {
+  filter: brightness(1.1);
+}
+
+.suggestions-badge--clickable:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* ============================================
+   PULSE ANIMATION
+   ============================================ */
+
+.suggestions-badge--pulse {
+  animation: badge-pulse 2s ease-in-out infinite;
+}
+
+@keyframes badge-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 var(--color-error);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.3);
+  }
+}
+
+/* ============================================
+   ICON
+   ============================================ */
+
+.suggestions-badge__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.suggestions-badge__count {
+  line-height: 1;
+}

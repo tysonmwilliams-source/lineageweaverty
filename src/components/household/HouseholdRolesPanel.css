@@ -1,0 +1,243 @@
+/**
+ * HouseholdRolesPanel.css - Household Roles Panel Styles
+ *
+ * Collapsible panel for displaying household roles.
+ */
+
+/* ============================================
+   PANEL BASE
+   ============================================ */
+
+.household-roles-panel {
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  background: var(--bg-secondary);
+  overflow: hidden;
+}
+
+/* ============================================
+   HEADER
+   ============================================ */
+
+.household-roles-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+.household-roles-panel__header:hover {
+  background: var(--bg-tertiary);
+}
+
+.household-roles-panel__header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.household-roles-panel__header-icon {
+  color: var(--accent-primary);
+}
+
+.household-roles-panel__title {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+}
+
+.household-roles-panel__count {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  background: var(--bg-tertiary);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+}
+
+.household-roles-panel__toggle {
+  color: var(--text-tertiary);
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+
+/* ============================================
+   CONTENT
+   ============================================ */
+
+.household-roles-panel__content {
+  border-top: 1px solid var(--border-primary);
+  overflow: hidden;
+}
+
+.household-roles-panel__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-6);
+  color: var(--text-tertiary);
+  font-size: var(--text-sm);
+}
+
+.household-roles-panel__loading .spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.household-roles-panel__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-6);
+  text-align: center;
+  color: var(--text-tertiary);
+}
+
+.household-roles-panel__empty svg {
+  opacity: 0.5;
+}
+
+.household-roles-panel__empty p {
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+/* ============================================
+   ROLES LIST
+   ============================================ */
+
+.household-roles-panel__list {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-2);
+}
+
+.household-roles-panel__footer {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-2) var(--space-3);
+  border-top: 1px solid var(--border-primary);
+}
+
+/* ============================================
+   ROLE ITEM
+   ============================================ */
+
+.household-role {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+.household-role:hover {
+  background: var(--bg-tertiary);
+}
+
+.household-role--vacant {
+  opacity: 0.7;
+}
+
+.household-role__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  color: var(--accent-primary);
+  flex-shrink: 0;
+}
+
+.household-role--vacant .household-role__icon {
+  color: var(--text-tertiary);
+  border-style: dashed;
+}
+
+.household-role__info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.household-role__title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.household-role__holder {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.household-role__holder--vacant {
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+
+.household-role__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+
+.household-role:hover .household-role__actions {
+  opacity: 1;
+}
+
+.household-role__action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-standard);
+}
+
+.household-role__action:hover {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.household-role__action--danger:hover {
+  background: var(--color-error-bg, rgba(239, 68, 68, 0.1));
+  color: var(--color-error);
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 480px) {
+  .household-role__actions {
+    opacity: 1;
+  }
+
+  .household-role__action {
+    width: 32px;
+    height: 32px;
+  }
+}
