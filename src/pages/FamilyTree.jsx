@@ -54,12 +54,7 @@ function FamilyTree() {
   const [dignities, setDignities] = useState([]);
   const [dignitiesByPerson, setDignitiesByPerson] = useState(new Map());
 
-  // Layout mode: 'vertical' (top-to-bottom) or 'horizontal' (left-to-right)
-  // Persisted in localStorage for user preference
-  const [layoutMode, setLayoutMode] = useState(() => {
-    const saved = localStorage.getItem('lineageweaver-layout-mode');
-    return saved === 'horizontal' ? 'horizontal' : 'vertical';
-  });
+
 
   // ==================== HOUSE VIEW CONTROLS ====================
   // Centre On: which person to use as the tree root
@@ -67,62 +62,22 @@ function FamilyTree() {
   // or a specific person ID
   const [centreOnPersonId, setCentreOnPersonId] = useState('auto');
 
-  // Handle layout change with persistence
-  const handleLayoutChange = (newMode) => {
-    setLayoutMode(newMode);
-    localStorage.setItem('lineageweaver-layout-mode', newMode);
-  };
-
-  // Card dimensions - can swap in horizontal mode for better flow
+  // Card dimensions
   const CARD_WIDTH = 150;
   const CARD_HEIGHT = 70;
   const SPACING = 35;
   const GROUP_SPACING = 50;
   
-  // Anchor and start positions - depend on layout mode
-  // Vertical: anchor is X position (center column), start is Y position (top)
-  // Horizontal: anchor is Y position (center row), start is X position (left)
-  const ANCHOR_X = 1500;  // Used in vertical mode
-  const ANCHOR_Y = 800;   // Used in horizontal mode
-  const START_Y = 100;    // Used in vertical mode
-  const START_X = 100;    // Used in horizontal mode
+  // Anchor and start positions
+  const ANCHOR_X = 1500;  // X position for centering tree
+  const START_Y = 100;    // Y position for first generation
   
-  // Generation spacing - controls distance between generations
-  // In vertical mode: vertical distance
-  // In horizontal mode: horizontal distance
+  // Generation spacing - controls vertical distance between generations
   const GENERATION_SPACING = verticalSpacing + CARD_HEIGHT;
   
   // Fragment gap - extra space between disconnected fragments
   // This creates visual breathing room between unconnected family trees
   const FRAGMENT_GAP = 200;
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // LAYOUT HELPERS
-  // ═══════════════════════════════════════════════════════════════════════════
-  // These functions abstract away the X/Y coordinate logic so we can switch
-  // between vertical and horizontal layouts without duplicating drawing code.
-  //
-  // Conceptual axes:
-  // - "Gen axis": The axis along which generations flow (down in vertical, right in horizontal)
-  // - "Sib axis": The axis along which siblings spread (left-right in vertical, up-down in horizontal)
-  // ═══════════════════════════════════════════════════════════════════════════
-  
-  const isHorizontal = layoutMode === 'horizontal';
-  
-  // Get the anchor position for centering content
-  const getAnchor = () => isHorizontal ? ANCHOR_Y : ANCHOR_X;
-  
-  // Get the starting position for first generation
-  const getStart = () => isHorizontal ? START_X : START_Y;
-  
-  // Convert logical (siblingPos, genPos) to actual (x, y) coordinates
-  // In vertical: siblingPos = x, genPos = y
-  // In horizontal: siblingPos = y, genPos = x
-  const toCoords = (siblingPos, genPos) => {
-    return isHorizontal 
-      ? { x: genPos, y: siblingPos }
-      : { x: siblingPos, y: genPos };
-  };
 
   // Helper function to harmonize house colors with current theme
   const harmonizeColor = (hexColor) => {
@@ -663,7 +618,7 @@ function FamilyTree() {
   // which triggers this effect and redraws the tree
   useEffect(() => {
     if (selectedHouseId && people.length > 0) drawTree();
-  }, [selectedHouseId, people, houses, relationships, showCadetHouses, theme, searchResults, relationshipMap, verticalSpacing, layoutMode, dataVersion, centreOnPersonId, fragmentSeparatorStyle, dignitiesByPerson]);
+  }, [selectedHouseId, people, houses, relationships, showCadetHouses, theme, searchResults, relationshipMap, verticalSpacing, dataVersion, centreOnPersonId, fragmentSeparatorStyle, dignitiesByPerson]);
 
   const handleSearchResults = (results) => {
     setSearchResults(results);
@@ -776,6 +731,8 @@ function FamilyTree() {
     let borderColor = themeColors.statusBorders.legitimate;
     if (person.legitimacyStatus === 'bastard') borderColor = themeColors.statusBorders.bastard;
     if (person.legitimacyStatus === 'adopted') borderColor = themeColors.statusBorders.adopted;
+    if (person.legitimacyStatus === 'commoner') borderColor = themeColors.statusBorders.commoner;
+    if (person.legitimacyStatus === 'unknown') borderColor = themeColors.statusBorders.unknown;
 
     const card = g.append('g')
       .attr('class', 'person-card')
@@ -901,21 +858,11 @@ function FamilyTree() {
   const drawMarriageLine = (g, pos1, pos2, themeColors) => {
     const marriageColor = isDarkTheme() ? '#c08a7a' : '#b87a8a';
     
-    let x1, y1, x2, y2;
-    
-    if (isHorizontal) {
-      // Horizontal layout: spouses are stacked vertically, line goes down
-      x1 = pos1.x + pos1.width / 2;
-      y1 = pos1.y + pos1.height;
-      x2 = pos2.x + pos2.width / 2;
-      y2 = pos2.y;
-    } else {
-      // Vertical layout: spouses are side by side, line goes right
-      x1 = pos1.x + pos1.width;
-      y1 = pos1.y + pos1.height / 2;
-      x2 = pos2.x;
-      y2 = pos2.y + pos2.height / 2;
-    }
+    // Vertical layout: spouses are side by side, line goes right
+    const x1 = pos1.x + pos1.width;
+    const y1 = pos1.y + pos1.height / 2;
+    const x2 = pos2.x;
+    const y2 = pos2.y + pos2.height / 2;
     
     g.append('line').attr('class', 'marriage-line')
       .attr('x1', x1).attr('y1', y1).attr('x2', x2).attr('y2', y2)
@@ -1062,18 +1009,10 @@ function FamilyTree() {
     
     // NOTE: We'll set the transform AFTER drawing so we can center on content
 
-    // Draw anchor line based on layout mode
-    // Vertical: vertical line at center X
-    // Horizontal: horizontal line at center Y
-    if (layoutMode === 'vertical') {
-      g.append('line').attr('class', 'anchor-line')
-        .attr('x1', ANCHOR_X).attr('y1', 0).attr('x2', ANCHOR_X).attr('y2', 5000)
-        .attr('stroke', themeColors.lines.anchor);
-    } else {
-      g.append('line').attr('class', 'anchor-line')
-        .attr('x1', 0).attr('y1', ANCHOR_Y).attr('x2', 5000).attr('y2', ANCHOR_Y)
-        .attr('stroke', themeColors.lines.anchor);
-    }
+    // Draw anchor line (vertical line at center X)
+    g.append('line').attr('class', 'anchor-line')
+      .attr('x1', ANCHOR_X).attr('y1', 0).attr('x2', ANCHOR_X).attr('y2', 5000)
+      .attr('stroke', themeColors.lines.anchor);
 
     if (people.length === 0) {
       g.append('text').attr('x', ANCHOR_X).attr('y', 200).attr('text-anchor', 'middle').attr('font-size', '20px').attr('fill', '#e9dcc9').text('No data available.');
@@ -1146,29 +1085,18 @@ function FamilyTree() {
       return;
     }
     
-    // ════════════════════════════════════════════════════════════════════════
-    // LAYOUT-AWARE POSITIONING
-    // ════════════════════════════════════════════════════════════════════════
-    // In vertical mode: generations go down (Y increases), siblings spread horizontally (X varies)
-    // In horizontal mode: generations go right (X increases), siblings spread vertically (Y varies)
-    // 
-    // We use "genPos" for the generation axis and "sibPos" for the sibling axis
-    // Then map to actual X/Y based on layout mode
-    // ════════════════════════════════════════════════════════════════════════
+    // Positioning variables for vertical layout
+    let currentGenPos = START_Y;  // Position along generation axis (Y)
+    const anchorSibPos = ANCHOR_X;  // Anchor along sibling axis (X)
     
-    let currentGenPos = isHorizontal ? START_X : START_Y;  // Position along generation axis
-    const anchorSibPos = isHorizontal ? ANCHOR_Y : ANCHOR_X;  // Anchor along sibling axis
-    
-    // Helper to convert layout positions to X,Y
+    // Helper to convert layout positions to X,Y (vertical layout)
     const layoutToXY = (sibPos, genPos) => {
-      return isHorizontal 
-        ? { x: genPos, y: sibPos }
-        : { x: sibPos, y: genPos };
+      return { x: sibPos, y: genPos };
     };
     
-    // Get the "sibling size" (width in vertical, height in horizontal)
-    const siblingSize = isHorizontal ? CARD_HEIGHT : CARD_WIDTH;
-    const genSize = isHorizontal ? CARD_WIDTH : CARD_HEIGHT;
+    // Get the "sibling size" (width in vertical layout)
+    const siblingSize = CARD_WIDTH;
+    const genSize = CARD_HEIGHT;
     const genSpacing = verticalSpacing;
     
     // ════════════════════════════════════════════════════════════════════════
@@ -1214,7 +1142,7 @@ function FamilyTree() {
       console.log(`🌳 Drawing fragment ${fragmentIndex + 1}/${fragmentsToDraw.length}: ${fragment.rootPerson?.firstName} ${fragment.rootPerson?.lastName} (${generations.length} generations)`);
     
     generations.forEach((genIds, genIndex) => {
-      console.log(`Drawing generation ${genIndex} with ${genIds.length} people (${layoutMode} layout)`);
+      console.log(`Drawing generation ${genIndex} with ${genIds.length} people`);
       
       // Special handling for Gen 0 (single root person + spouse if exists)
       if (genIndex === 0) {
@@ -1244,11 +1172,8 @@ function FamilyTree() {
           const spousePos = drawPersonCard(g, rootSpouse, spouseCoords.x, spouseCoords.y, housesById, themeColors);
           positionMap.set(rootSpouse.id, spousePos);
           
-          // Store marriage center
-          const mc = isHorizontal ? {
-            x: (rootPos.x + spousePos.x + CARD_WIDTH) / 2,
-            y: (rootPos.y + rootPos.height + spousePos.y) / 2
-          } : {
+          // Store marriage center (vertical layout: spouses side by side)
+          const mc = {
             x: (rootPos.x + rootPos.width + spousePos.x) / 2,
             y: (rootPos.y + rootPos.height/2 + spousePos.y + spousePos.height/2) / 2
           };
@@ -1482,11 +1407,8 @@ function FamilyTree() {
             const spousePos = drawPersonCard(g, spouse, spouseCoords.x, spouseCoords.y, housesById, themeColors);
             positionMap.set(childSpouseId, spousePos);
             
-            // Marriage center depends on layout
-            const mc = isHorizontal ? {
-              x: (childPos.x + spousePos.x + CARD_WIDTH) / 2,
-              y: (childPos.y + childPos.height + spousePos.y) / 2
-            } : {
+            // Marriage center (vertical layout: spouses side by side)
+            const mc = {
               x: (childPos.x + childPos.width + spousePos.x) / 2,
               y: (childPos.y + childPos.height/2 + spousePos.y + spousePos.height/2) / 2
             };
@@ -1497,8 +1419,7 @@ function FamilyTree() {
           }
         });
         
-        // Draw child lines (only in vertical mode for now - horizontal needs different line logic)
-        if (!isHorizontal) {
+        // Draw child lines
           const mcKey = group.spouseId ? [group.parentId, group.spouseId].sort().join('-') : group.parentId.toString();
           const parentPos = positionMap.get(group.parentId);
           
@@ -1524,7 +1445,6 @@ function FamilyTree() {
           
           // Draw child lines using the classic triple-offset system
           drawChildLines(g, parentMC, groupPositions, prevGenY + CARD_HEIGHT, currentGenPos, fragmentPeopleById, parentMap, positionMap, themeColors, yOffset, group.parentId, group.spouseId);
-        }
         
         if (groupIdx < groups.length - 1) {
           currentSibPos += GROUP_SPACING;
@@ -1767,6 +1687,7 @@ function FamilyTree() {
         showControlsToggle={true}
         controlsExpanded={controlsPanelExpanded}
         onToggleControls={() => setControlsPanelExpanded(!controlsPanelExpanded)}
+        compactMode={true}
       />
 
       <div className="fixed top-20 right-6 z-10">
@@ -1905,8 +1826,6 @@ function FamilyTree() {
         zoomLevel={zoomLevel}
         onZoomChange={(level) => setZoomLevel(level)} 
         isDarkTheme={isDarkTheme()}
-        layoutMode={layoutMode}
-        onLayoutChange={handleLayoutChange}
       />
 
       {/* ════════════════════════════════════════════════════════════════════════

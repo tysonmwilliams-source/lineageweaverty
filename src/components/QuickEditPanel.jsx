@@ -549,36 +549,53 @@ function QuickEditPanel({
         await addRelationship({
           person1Id: person.id,
           person2Id: targetPersonId,
-          relationshipType: 'spouse'
+          relationshipType: 'spouse',
+          marriageStatus: 'married',  // Default to married when creating via tree
+          marriageDate: null,
+          divorceDate: null
         });
         break;
       case 'parent':
         await addRelationship({
           person1Id: targetPersonId,
           person2Id: person.id,
-          relationshipType: 'parent'
+          relationshipType: 'parent',
+          biologicalParent: true  // Default to biological when adding parent via tree
         });
         break;
-      case 'child':
+      case 'child': {
+        // For new people, check if adopted via form; for existing people, default to biological
+        const isAdopted = addMode === 'new' && newPersonForm?.legitimacyStatus === 'adopted';
+        const relType = isAdopted ? 'adopted-parent' : 'parent';
+        
         await addRelationship({
           person1Id: person.id,
           person2Id: targetPersonId,
-          relationshipType: newPersonForm?.legitimacyStatus === 'adopted' ? 'adopted-parent' : 'parent'
+          relationshipType: relType,
+          // Only set biologicalParent for 'parent' type, not 'adopted-parent'
+          biologicalParent: relType === 'parent' ? true : null
         });
-        if (newPersonForm?.coParentId) {
+        
+        // If there's a co-parent selected (only available when creating new), create their relationship too
+        if (addMode === 'new' && newPersonForm?.coParentId) {
           await addRelationship({
             person1Id: newPersonForm.coParentId,
             person2Id: targetPersonId,
-            relationshipType: newPersonForm.legitimacyStatus === 'adopted' ? 'adopted-parent' : 'parent'
+            relationshipType: relType,
+            biologicalParent: relType === 'parent' ? true : null
           });
         }
         break;
+      }
       case 'sibling':
+        // Create parent relationships to link siblings through shared parents
         for (const parentData of parents) {
           await addRelationship({
             person1Id: parentData.person.id,
             person2Id: targetPersonId,
-            relationshipType: parentData.type
+            relationshipType: parentData.type,
+            // Preserve the biological status from the existing parent relationship
+            biologicalParent: parentData.type === 'parent' ? true : null
           });
         }
         break;
@@ -1153,6 +1170,7 @@ function QuickEditPanel({
                           <option value="legitimate">Legitimate</option>
                           <option value="bastard">Bastard</option>
                           <option value="adopted">Adopted</option>
+                          <option value="commoner">Commoner</option>
                           <option value="unknown">Unknown</option>
                         </select>
                       </div>

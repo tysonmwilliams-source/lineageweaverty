@@ -4,7 +4,6 @@
  * PURPOSE:
  * Provides interactive controls for the family tree visualization:
  * - Zoom in/out/reset buttons
- * - Layout toggle (vertical/horizontal)
  * - Current zoom level display
  * - Keyboard shortcuts
  *
@@ -46,9 +45,7 @@ function TreeControls({
   showCadetHouses,
   onToggleCadetHouses,
   zoomLevel,
-  onZoomChange,
-  layoutMode = 'vertical',
-  onLayoutChange
+  onZoomChange
 }) {
   // ==================== ZOOM HANDLERS ====================
   const handleZoomIn = () => {
@@ -79,13 +76,6 @@ function TreeControls({
     }
   };
 
-  const handleToggleLayout = () => {
-    if (onLayoutChange) {
-      const newMode = layoutMode === 'vertical' ? 'horizontal' : 'vertical';
-      onLayoutChange(newMode);
-    }
-  };
-
   // ==================== KEYBOARD SHORTCUTS ====================
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -106,10 +96,6 @@ function TreeControls({
         case '0':
           handleResetView();
           break;
-        case 'h':
-        case 'H':
-          handleToggleLayout();
-          break;
         default:
           break;
       }
@@ -117,84 +103,10 @@ function TreeControls({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [layoutMode, onLayoutChange]);
+  }, []);
 
   return (
     <>
-      {/* Layout Toggle - Bottom Left */}
-      <motion.div
-        className="tree-controls tree-controls--layout"
-        variants={PANEL_VARIANTS}
-        initial="hidden"
-        animate="visible"
-      >
-        <span className="tree-controls__label">Layout</span>
-
-        <div className="tree-controls__button-group">
-          {/* Vertical Layout Button */}
-          <button
-            className={`tree-controls__layout-btn ${layoutMode === 'vertical' ? 'tree-controls__layout-btn--active' : ''}`}
-            onClick={() => onLayoutChange && onLayoutChange('vertical')}
-            title="Vertical Layout (ancestors at top) - Press H to toggle"
-          >
-            <svg className="tree-controls__layout-icon" viewBox="0 0 24 24" fill="currentColor">
-              <rect x="10" y="2" width="4" height="4" rx="1" />
-              <rect x="4" y="10" width="4" height="4" rx="1" />
-              <rect x="16" y="10" width="4" height="4" rx="1" />
-              <rect x="1" y="18" width="4" height="4" rx="1" />
-              <rect x="7" y="18" width="4" height="4" rx="1" />
-              <rect x="13" y="18" width="4" height="4" rx="1" />
-              <rect x="19" y="18" width="4" height="4" rx="1" />
-              <line x1="12" y1="6" x2="12" y2="8" stroke="currentColor" strokeWidth="1.5" />
-              <line x1="6" y1="8" x2="18" y2="8" stroke="currentColor" strokeWidth="1.5" />
-              <line x1="6" y1="8" x2="6" y2="10" stroke="currentColor" strokeWidth="1.5" />
-              <line x1="18" y1="8" x2="18" y2="10" stroke="currentColor" strokeWidth="1.5" />
-              <line x1="6" y1="14" x2="6" y2="16" stroke="currentColor" strokeWidth="1.5" />
-              <line x1="3" y1="16" x2="9" y2="16" stroke="currentColor" strokeWidth="1.5" />
-              <line x1="3" y1="16" x2="3" y2="18" stroke="currentColor" strokeWidth="1.5" />
-              <line x1="9" y1="16" x2="9" y2="18" stroke="currentColor" strokeWidth="1.5" />
-              <line x1="18" y1="14" x2="18" y2="16" stroke="currentColor" strokeWidth="1.5" />
-              <line x1="15" y1="16" x2="21" y2="16" stroke="currentColor" strokeWidth="1.5" />
-              <line x1="15" y1="16" x2="15" y2="18" stroke="currentColor" strokeWidth="1.5" />
-              <line x1="21" y1="16" x2="21" y2="18" stroke="currentColor" strokeWidth="1.5" />
-            </svg>
-          </button>
-
-          {/* Horizontal Layout Button */}
-          <button
-            className={`tree-controls__layout-btn ${layoutMode === 'horizontal' ? 'tree-controls__layout-btn--active' : ''}`}
-            onClick={() => onLayoutChange && onLayoutChange('horizontal')}
-            title="Horizontal Layout (ancestors on left) - Press H to toggle"
-          >
-            <svg className="tree-controls__layout-icon" viewBox="0 0 24 24" fill="currentColor">
-              <rect x="2" y="10" width="4" height="4" rx="1" />
-              <rect x="10" y="4" width="4" height="4" rx="1" />
-              <rect x="10" y="16" width="4" height="4" rx="1" />
-              <rect x="18" y="1" width="4" height="4" rx="1" />
-              <rect x="18" y="7" width="4" height="4" rx="1" />
-              <rect x="18" y="13" width="4" height="4" rx="1" />
-              <rect x="18" y="19" width="4" height="4" rx="1" />
-              <line x1="6" y1="12" x2="8" y2="12" stroke="currentColor" strokeWidth="1.5" />
-              <line x1="8" y1="6" x2="8" y2="18" stroke="currentColor" strokeWidth="1.5" />
-              <line x1="8" y1="6" x2="10" y2="6" stroke="currentColor" strokeWidth="1.5" />
-              <line x1="8" y1="18" x2="10" y2="18" stroke="currentColor" strokeWidth="1.5" />
-              <line x1="14" y1="6" x2="16" y2="6" stroke="currentColor" strokeWidth="1.5" />
-              <line x1="16" y1="3" x2="16" y2="9" stroke="currentColor" strokeWidth="1.5" />
-              <line x1="16" y1="3" x2="18" y2="3" stroke="currentColor" strokeWidth="1.5" />
-              <line x1="16" y1="9" x2="18" y2="9" stroke="currentColor" strokeWidth="1.5" />
-              <line x1="14" y1="18" x2="16" y2="18" stroke="currentColor" strokeWidth="1.5" />
-              <line x1="16" y1="15" x2="16" y2="21" stroke="currentColor" strokeWidth="1.5" />
-              <line x1="16" y1="15" x2="18" y2="15" stroke="currentColor" strokeWidth="1.5" />
-              <line x1="16" y1="21" x2="18" y2="21" stroke="currentColor" strokeWidth="1.5" />
-            </svg>
-          </button>
-        </div>
-
-        <span className="tree-controls__hint">
-          Press <kbd className="tree-controls__kbd">H</kbd> to toggle
-        </span>
-      </motion.div>
-
       {/* Zoom Controls - Bottom Right */}
       <motion.div
         className="tree-controls tree-controls--zoom"
@@ -242,8 +154,6 @@ function TreeControls({
         <kbd className="tree-controls__kbd">+</kbd>/<kbd className="tree-controls__kbd">-</kbd> zoom
         <span className="tree-controls__shortcuts-divider">•</span>
         <kbd className="tree-controls__kbd">0</kbd> reset
-        <span className="tree-controls__shortcuts-divider">•</span>
-        <kbd className="tree-controls__kbd">H</kbd> layout
       </motion.div>
     </>
   );

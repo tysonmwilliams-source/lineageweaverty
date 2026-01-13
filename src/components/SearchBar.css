@@ -14,6 +14,9 @@
 .search-bar {
   position: relative;
   width: 280px;
+  /* Allow shrinking on smaller screens */
+  min-width: 160px;
+  flex-shrink: 1;
 }
 
 /* ============================================
@@ -200,6 +203,35 @@
 /* ============================================
    RESPONSIVE
    ============================================ */
+
+/* Medium screens: narrower search */
+@media (max-width: 1200px) {
+  .search-bar {
+    width: 200px;
+  }
+}
+
+/* Smaller screens: even narrower */
+@media (max-width: 900px) {
+  .search-bar {
+    width: 160px;
+    min-width: 120px;
+  }
+
+  .search-bar__input-wrapper {
+    height: 38px;
+  }
+
+  .search-bar__input {
+    padding-left: var(--space-8);
+    padding-right: var(--space-8);
+  }
+
+  .search-bar__input::placeholder {
+    /* Shorter placeholder on small screens */
+    font-size: var(--text-xs);
+  }
+}
 
 @media (max-width: 480px) {
   .search-bar {

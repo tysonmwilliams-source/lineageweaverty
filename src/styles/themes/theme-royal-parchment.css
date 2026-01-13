@@ -119,6 +119,12 @@
   --unknown-light: #8d8d8d;        /* Lighter variant */
   --unknown-dark: #6d6d6d;         /* Darker variant */
   --unknown-bg: #3a3a3a;           /* Background tint */
+  
+  /* Commoner (non-noble) */
+  --commoner-primary: #8e7a5f;     /* Warm brown - earthy, humble */
+  --commoner-light: #9e8a6f;       /* Lighter variant */
+  --commoner-dark: #7e6a4f;        /* Darker variant */
+  --commoner-bg: #3d3526;          /* Background tint */
 
   /* ============================================
      HOUSE COLOR PALETTE (Desaturated for dark mode)

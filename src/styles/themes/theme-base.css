@@ -109,6 +109,10 @@
   --z-modal: 500;
   --z-popover: 600;
   --z-tooltip: 700;
+
+  /* Navigation height - used by nav and sidebars for coordination */
+  --nav-height: 64px;
+  --nav-height-mobile: 56px;
 }
 
 /* ===============================================

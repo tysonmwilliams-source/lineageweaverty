@@ -120,14 +120,14 @@ export const ThemeSelector = ({
     const isDark = currentConfig.category === 'dark';
 
     return (
-      <div className={`theme-selector theme-selector--toggle ${className}`}>
+      <div className={`theme-selector theme-selector--toggle ${!showLabel ? 'theme-selector--icon-only' : ''} ${className}`}>
         {showLabel && <label className="theme-selector__label">Theme:</label>}
         
         <button 
-          className="theme-selector__toggle-button"
+          className={`theme-selector__toggle-button ${!showLabel ? 'theme-selector__toggle-button--icon-only' : ''}`}
           onClick={toggleTheme}
           aria-label={`Switch to ${isDark ? 'light' : 'dark'} theme`}
-          title={`Switch to ${isDark ? 'light' : 'dark'} theme`}
+          title={`Current: ${currentConfig.name}. Click to switch to ${isDark ? 'light' : 'dark'} theme`}
         >
           {isDark ? (
             // Moon icon for dark theme
@@ -151,9 +151,11 @@ export const ThemeSelector = ({
               <line x1="6" y1="6" x2="4.5" y2="4.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
             </svg>
           )}
-          <span className="theme-selector__toggle-text">
-            {currentConfig.name}
-          </span>
+          {showLabel && (
+            <span className="theme-selector__toggle-text">
+              {currentConfig.name}
+            </span>
+          )}
         </button>
       </div>
     );

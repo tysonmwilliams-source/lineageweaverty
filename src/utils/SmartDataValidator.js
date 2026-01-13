@@ -863,9 +863,13 @@ export function runHealthCheck(data, options = {}) {
       report.summary.infoCount++;
     }
     
+    // Single parent check - but DON'T flag for bastards, commoners, adopted, or unknown
+    // These statuses commonly have incomplete parental records and that's okay
     const parentRels = getParentRelationships(person.id, relationships);
-    if (parentRels.length === 1) {
-      const parent = getPersonById(parentRels[0].person1Id, people);
+    const status = person.legitimacyStatus?.toLowerCase();
+    const skipSingleParentWarning = ['bastard', 'commoner', 'adopted', 'unknown'].includes(status);
+    
+    if (parentRels.length === 1 && !skipSingleParentWarning) {
       report.suggestions.push({
         type: 'SINGLE_PARENT', personId: person.id,
         personName: `${person.firstName} ${person.lastName}`,

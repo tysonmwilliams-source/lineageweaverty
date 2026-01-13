@@ -75,6 +75,7 @@ export function getRelationshipColors() {
     legitimate: rootStyle.getPropertyValue('--legitimate-primary').trim(),
     bastard: rootStyle.getPropertyValue('--bastard-primary').trim(),
     adopted: rootStyle.getPropertyValue('--adopted-primary').trim(),
+    commoner: rootStyle.getPropertyValue('--commoner-primary').trim(),
     unknown: rootStyle.getPropertyValue('--unknown-primary').trim()
   };
 }

@@ -53,8 +53,11 @@ const RELATIONSHIP_CONFIG = {
   parent: {
     icon: 'users',
     color: 'blue',
-    getDescription: (p1, p2, rel) =>
-      `${p1} is the ${rel.biologicalParent ? 'biological' : 'non-biological'} parent of ${p2}`
+    getDescription: (p1, p2, rel) => {
+      // Handle missing biologicalParent field gracefully - assume biological if not specified
+      const isBiological = rel.biologicalParent !== false;  // true or undefined = biological
+      return `${p1} is the ${isBiological ? 'biological' : 'non-biological'} parent of ${p2}`;
+    }
   },
   spouse: {
     icon: 'heart',

@@ -15,12 +15,19 @@
   position: sticky;
   top: 0;
   z-index: var(--z-sticky);
+  /* Fixed height prevents layout shift and sidebar overlap */
+  height: var(--nav-height);
+  /* Allow tooltips to overflow below */
+  overflow: visible;
 }
 
 .nav__container {
   max-width: 1400px;
   margin: 0 auto;
   padding: var(--space-3) var(--space-4);
+  height: 100%;
+  /* Allow tooltips to overflow */
+  overflow: visible;
 }
 
 .nav__content {
@@ -28,6 +35,11 @@
   justify-content: space-between;
   align-items: center;
   gap: var(--space-4);
+  height: 100%;
+  /* Prevent wrapping - items should shrink or hide instead */
+  flex-wrap: nowrap;
+  /* Allow tooltips to overflow */
+  overflow: visible;
 }
 
 /* ============================================
@@ -65,6 +77,9 @@
   display: flex;
   align-items: center;
   gap: var(--space-1);
+  /* Allow links to shrink on smaller screens */
+  flex-shrink: 1;
+  min-width: 0;
 }
 
 .nav__link {
@@ -114,6 +129,146 @@
 }
 
 /* ============================================
+   COMPACT MODE (Icon-only nav links with hover labels)
+   Used on pages like Family Tree where search bar needs space.
+   Icons spread to fill available space with hover tooltips.
+   ============================================ */
+
+.nav__links--compact {
+  /* Spread icons evenly across available space */
+  flex: 1;
+  justify-content: space-evenly;
+  gap: 0;
+  max-width: 400px;
+  margin: 0 var(--space-4);
+  /* Allow tooltips to overflow */
+  overflow: visible;
+}
+
+.nav__link--icon-only {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+.nav__link--icon-only .nav__link-icon {
+  opacity: 0.75;
+  transition: all var(--duration-fast) var(--ease-standard);
+}
+
+.nav__link--icon-only:hover {
+  background: var(--bg-tertiary);
+}
+
+.nav__link--icon-only:hover .nav__link-icon {
+  opacity: 1;
+  transform: translateY(-2px);
+}
+
+.nav__link--icon-only.nav__link--active .nav__link-icon {
+  opacity: 1;
+  color: var(--accent-primary);
+}
+
+/* Remove underline indicator in compact mode, use background instead */
+.nav__link--icon-only.nav__link--active::after {
+  display: none;
+}
+
+.nav__link--icon-only.nav__link--active {
+  background: var(--accent-muted);
+}
+
+/* Hide inline label in compact mode */
+.nav__link--icon-only .nav__link-label {
+  display: none;
+}
+
+/* ============================================
+   HOVER TOOLTIP for compact mode
+   Styled dropdown label that appears on hover
+   ============================================ */
+
+.nav__link-tooltip {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  
+  /* Styling */
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: var(--tracking-wide);
+  white-space: nowrap;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-secondary);
+  box-shadow: var(--shadow-md);
+  
+  /* Hidden by default */
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  
+  /* Smooth transition */
+  transition: 
+    opacity 0.15s ease-out,
+    visibility 0.15s ease-out,
+    transform 0.15s ease-out;
+  
+  /* Ensure it's above other elements */
+  z-index: calc(var(--z-sticky) + 10);
+}
+
+/* Small arrow pointing up */
+.nav__link-tooltip::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-bottom-color: var(--border-secondary);
+}
+
+.nav__link-tooltip::after {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-bottom-color: var(--bg-elevated);
+}
+
+/* Show tooltip on hover - immediate appearance */
+.nav__link--icon-only:hover .nav__link-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(8px);
+}
+
+/* Active state tooltip has accent styling */
+.nav__link--icon-only.nav__link--active .nav__link-tooltip {
+  background: var(--accent-primary);
+  color: white;
+  border-color: var(--accent-primary);
+}
+
+.nav__link--icon-only.nav__link--active .nav__link-tooltip::before {
+  border-bottom-color: var(--accent-primary);
+}
+
+.nav__link--icon-only.nav__link--active .nav__link-tooltip::after {
+  border-bottom-color: var(--accent-primary);
+}
+
+/* ============================================
    NAV ACTIONS (Right Side)
    ============================================ */
 
@@ -121,6 +276,8 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
+  /* Prevent actions from being squished too much, but allow some flex */
+  flex-shrink: 0;
 }
 
 /* ============================================
@@ -243,17 +400,45 @@
    RESPONSIVE
    ============================================ */
 
-@media (max-width: 1024px) {
-  .nav__link {
+/* Medium screens: Collapse link text to icons only (non-compact mode) */
+@media (max-width: 1200px) {
+  /* Only apply to non-compact mode links */
+  .nav__links:not(.nav__links--compact) .nav__link {
     padding: var(--space-2);
   }
 
+  .nav__links:not(.nav__links--compact) .nav__link-label {
+    /* Hide text labels, keep icons */
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+  }
+
   .nav__link-icon {
-    display: none;
+    display: flex;
+  }
+
+  .nav__actions {
+    gap: var(--space-2);
   }
 }
 
+/* Adjust compact mode for medium screens */
+@media (max-width: 1000px) {
+  .nav__links--compact {
+    max-width: 300px;
+    margin: 0 var(--space-2);
+  }
+}
+
+/* Smaller screens: Hide desktop links entirely, show mobile toggle */
 @media (max-width: 768px) {
+  .nav {
+    height: var(--nav-height-mobile);
+  }
+
   .nav__links {
     display: none;
   }
@@ -267,6 +452,7 @@
   }
 }
 
+/* Smallest screens: Minimal branding */
 @media (max-width: 480px) {
   .nav__container {
     padding: var(--space-2) var(--space-3);

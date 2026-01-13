@@ -336,6 +336,7 @@ function PersonForm({ person = null, houses = [], onSave, onCancel }) {
             <option value="legitimate">Legitimate</option>
             <option value="bastard">Bastard</option>
             <option value="adopted">Adopted</option>
+            <option value="commoner">Commoner</option>
             <option value="unknown">Unknown</option>
           </select>
           <span className="person-form__hint">
