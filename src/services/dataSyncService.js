@@ -86,6 +86,9 @@ import {
   addStoryPlanCloud,
   updateStoryPlanCloud,
   deleteStoryPlanCloud,
+  addStoryArcCloud,
+  updateStoryArcCloud,
+  deleteStoryArcCloud,
   addStoryBeatCloud,
   updateStoryBeatCloud,
   deleteStoryBeatCloud,
@@ -163,6 +166,7 @@ import {
 import {
   getAllStoryPlans as localGetAllStoryPlans,
   restoreStoryPlan as localRestoreStoryPlan,
+  restoreStoryArc as localRestoreStoryArc,
   restoreStoryBeat as localRestoreStoryBeat,
   restoreScenePlan as localRestoreScenePlan,
   restoreCharacterArc as localRestoreCharacterArc,
@@ -353,6 +357,11 @@ async function syncSingleChange(userId, datasetId, entityType, change) {
       add: () => addStoryPlanCloud(userId, datasetId, { ...data, id: entityId }),
       update: () => updateStoryPlanCloud(userId, datasetId, entityId, data),
       delete: () => deleteStoryPlanCloud(userId, datasetId, entityId)
+    },
+    storyArc: {
+      add: () => addStoryArcCloud(userId, datasetId, { ...data, id: entityId }),
+      update: () => updateStoryArcCloud(userId, datasetId, entityId, data),
+      delete: () => deleteStoryArcCloud(userId, datasetId, entityId)
     },
     storyBeat: {
       add: () => addStoryBeatCloud(userId, datasetId, { ...data, id: entityId }),
@@ -592,6 +601,7 @@ export async function initializeSync(userId, datasetId = DEFAULT_DATASET_ID) {
 
       // Get planning data
       let storyPlans = [];
+      let storyArcs = [];
       let storyBeats = [];
       let scenePlans = [];
       let plotThreads = [];
@@ -599,6 +609,7 @@ export async function initializeSync(userId, datasetId = DEFAULT_DATASET_ID) {
       let arcMilestones = [];
       try {
         storyPlans = await localDb.storyPlans.toArray();
+        storyArcs = await localDb.storyArcs.toArray();
         storyBeats = await localDb.storyBeats.toArray();
         scenePlans = await localDb.scenePlans.toArray();
         plotThreads = await localDb.plotThreads.toArray();
@@ -624,6 +635,7 @@ export async function initializeSync(userId, datasetId = DEFAULT_DATASET_ID) {
         chapters,
         writingLinks,
         storyPlans,
+        storyArcs,
         storyBeats,
         scenePlans,
         plotThreads,
@@ -807,6 +819,16 @@ export async function initializeSync(userId, datasetId = DEFAULT_DATASET_ID) {
         await localRestoreStoryPlan({ ...planData, id: parseInt(plan.id) || plan.id }, dsId);
       } catch (e) {
         console.warn('Could not restore story plan:', e);
+      }
+    }
+
+    // Handle story arcs if they exist
+    for (const arc of cloudData.storyArcs || []) {
+      const { createdAt, updatedAt, syncedAt, localId, ...arcData } = arc;
+      try {
+        await localRestoreStoryArc({ ...arcData, id: parseInt(arc.id) || arc.id }, dsId);
+      } catch (e) {
+        console.warn('Could not restore story arc:', e);
       }
     }
 
@@ -1624,6 +1646,56 @@ export async function syncDeleteStoryPlan(userId, datasetId, planId) {
   }
 }
 
+// ==================== PLANNING: STORY ARCS SYNC ====================
+
+/**
+ * Add story arc (local + cloud)
+ */
+export async function syncAddStoryArc(userId, datasetId, arcId, arcData) {
+  await addToSyncQueue({ entityType: 'storyArc', entityId: arcId, operation: 'add', data: arcData }, datasetId);
+
+  if (!userId || !isOnline) return;
+
+  try {
+    await addStoryArcCloud(userId, datasetId, { ...arcData, id: arcId });
+    await markEntitySynced('storyArc', arcId, datasetId);
+  } catch (error) {
+    console.error('☁️ Failed to sync story arc add:', error);
+  }
+}
+
+/**
+ * Update story arc (local + cloud)
+ */
+export async function syncUpdateStoryArc(userId, datasetId, arcId, updates) {
+  await addToSyncQueue({ entityType: 'storyArc', entityId: arcId, operation: 'update', data: updates }, datasetId);
+
+  if (!userId || !isOnline) return;
+
+  try {
+    await updateStoryArcCloud(userId, datasetId, arcId, updates);
+    await markEntitySynced('storyArc', arcId, datasetId);
+  } catch (error) {
+    console.error('☁️ Failed to sync story arc update:', error);
+  }
+}
+
+/**
+ * Delete story arc (local + cloud)
+ */
+export async function syncDeleteStoryArc(userId, datasetId, arcId) {
+  await addToSyncQueue({ entityType: 'storyArc', entityId: arcId, operation: 'delete' }, datasetId);
+
+  if (!userId || !isOnline) return;
+
+  try {
+    await deleteStoryArcCloud(userId, datasetId, arcId);
+    await markEntitySynced('storyArc', arcId, datasetId);
+  } catch (error) {
+    console.error('☁️ Failed to sync story arc delete:', error);
+  }
+}
+
 // ==================== PLANNING: STORY BEATS SYNC ====================
 
 /**
@@ -2064,6 +2136,16 @@ export async function forceCloudSync(userId, datasetId = DEFAULT_DATASET_ID, opt
       }
     }
 
+    // Restore story arcs
+    for (const arc of cloudData.storyArcs || []) {
+      const { createdAt, updatedAt, syncedAt, localId, ...arcData } = arc;
+      try {
+        await localRestoreStoryArc({ ...arcData, id: parseInt(arc.id) || arc.id }, dsId);
+      } catch (e) {
+        console.warn('Could not restore story arc during force sync:', e);
+      }
+    }
+
     // Restore story beats
     for (const beat of cloudData.storyBeats || []) {
       const { createdAt, updatedAt, syncedAt, localId, ...beatData } = beat;
@@ -2200,6 +2282,7 @@ export async function forceUploadToCloud(userId, datasetId = DEFAULT_DATASET_ID)
 
     // Get planning data
     let storyPlans = [];
+    let storyArcs = [];
     let storyBeats = [];
     let scenePlans = [];
     let plotThreads = [];
@@ -2207,6 +2290,7 @@ export async function forceUploadToCloud(userId, datasetId = DEFAULT_DATASET_ID)
     let arcMilestones = [];
     try {
       storyPlans = await localDb.storyPlans.toArray();
+      storyArcs = await localDb.storyArcs.toArray();
       storyBeats = await localDb.storyBeats.toArray();
       scenePlans = await localDb.scenePlans.toArray();
       plotThreads = await localDb.plotThreads.toArray();
@@ -2233,6 +2317,7 @@ export async function forceUploadToCloud(userId, datasetId = DEFAULT_DATASET_ID)
       chapters,
       writingLinks,
       storyPlans,
+      storyArcs,
       storyBeats,
       scenePlans,
       plotThreads,
@@ -2332,6 +2417,11 @@ export default {
   syncAddStoryPlan,
   syncUpdateStoryPlan,
   syncDeleteStoryPlan,
+
+  // Sync wrappers - Planning: Story Arcs
+  syncAddStoryArc,
+  syncUpdateStoryArc,
+  syncDeleteStoryArc,
 
   // Sync wrappers - Planning: Story Beats
   syncAddStoryBeat,

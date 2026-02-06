@@ -209,7 +209,17 @@ export async function deleteDataset(userId, datasetId) {
       'dignityTenures',
       'dignityLinks',
       'bugs',
-      'householdRoles'
+      'householdRoles',
+      'writings',
+      'chapters',
+      'writingLinks',
+      'storyPlans',
+      'storyArcs',
+      'storyBeats',
+      'scenePlans',
+      'plotThreads',
+      'characterArcs',
+      'arcMilestones'
     ];
 
     // Delete documents in each collection

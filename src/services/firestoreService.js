@@ -582,6 +582,74 @@ export async function deleteStoryPlanCloud(userId, datasetId, planId) {
   }
 }
 
+// ==================== PLANNING: STORY ARCS ====================
+
+/**
+ * Add story arc to Firestore
+ */
+export async function addStoryArcCloud(userId, datasetId, arcData) {
+  try {
+    const arcsRef = getUserCollection(userId, datasetId, 'storyArcs');
+    const docRef = doc(arcsRef, String(arcData.id));
+    await setDoc(docRef, {
+      ...arcData,
+      localId: arcData.id,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+    console.log('☁️ Story arc added to cloud:', arcData.name);
+    return docRef.id;
+  } catch (error) {
+    console.error('☁️ Error adding story arc to cloud:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get all story arcs from Firestore
+ */
+export async function getAllStoryArcsCloud(userId, datasetId) {
+  try {
+    const arcsRef = getUserCollection(userId, datasetId, 'storyArcs');
+    const snapshot = await getDocs(arcsRef);
+    return snapshot.docs.map(docToObject);
+  } catch (error) {
+    console.error('☁️ Error getting story arcs from cloud:', error);
+    throw error;
+  }
+}
+
+/**
+ * Update story arc in Firestore
+ */
+export async function updateStoryArcCloud(userId, datasetId, arcId, updates) {
+  try {
+    const docRef = getUserDoc(userId, datasetId, 'storyArcs', String(arcId));
+    await updateDoc(docRef, {
+      ...updates,
+      updatedAt: serverTimestamp()
+    });
+    console.log('☁️ Story arc updated in cloud:', arcId);
+  } catch (error) {
+    console.error('☁️ Error updating story arc in cloud:', error);
+    throw error;
+  }
+}
+
+/**
+ * Delete story arc from Firestore
+ */
+export async function deleteStoryArcCloud(userId, datasetId, arcId) {
+  try {
+    const docRef = getUserDoc(userId, datasetId, 'storyArcs', String(arcId));
+    await deleteDoc(docRef);
+    console.log('☁️ Story arc deleted from cloud:', arcId);
+  } catch (error) {
+    console.error('☁️ Error deleting story arc from cloud:', error);
+    throw error;
+  }
+}
+
 // ==================== PLANNING: STORY BEATS ====================
 
 /**
@@ -936,7 +1004,7 @@ export async function syncAllToCloud(userId, datasetId, localData) {
   try {
     console.log('☁️ Starting full sync to cloud for dataset:', datasetId);
 
-    const { people, houses, relationships, codexEntries, codexLinks, heraldry, heraldryLinks, dignities, dignityTenures, dignityLinks, householdRoles, writings, chapters, writingLinks, storyPlans, storyBeats, scenePlans, plotThreads, characterArcs, arcMilestones } = localData;
+    const { people, houses, relationships, codexEntries, codexLinks, heraldry, heraldryLinks, dignities, dignityTenures, dignityLinks, householdRoles, writings, chapters, writingLinks, storyPlans, storyArcs, storyBeats, scenePlans, plotThreads, characterArcs, arcMilestones } = localData;
 
     // Use batched writes for efficiency (max 500 operations per batch)
     // We'll create multiple batches if needed
@@ -1120,6 +1188,17 @@ export async function syncAllToCloud(userId, datasetId, localData) {
       await checkBatch();
     }
 
+    // Sync story arcs
+    for (const arc of storyArcs || []) {
+      const docRef = getUserDoc(userId, datasetId, 'storyArcs', String(arc.id));
+      batch.set(docRef, {
+        ...arc,
+        localId: arc.id,
+        syncedAt: serverTimestamp()
+      });
+      await checkBatch();
+    }
+
     // Sync story beats
     for (const beat of storyBeats || []) {
       const docRef = getUserDoc(userId, datasetId, 'storyBeats', String(beat.id));
@@ -1197,6 +1276,7 @@ export async function syncAllToCloud(userId, datasetId, localData) {
       chapters: chapters?.length || 0,
       writingLinks: writingLinks?.length || 0,
       storyPlans: storyPlans?.length || 0,
+      storyArcs: storyArcs?.length || 0,
       storyBeats: storyBeats?.length || 0,
       scenePlans: scenePlans?.length || 0,
       plotThreads: plotThreads?.length || 0,
@@ -1223,7 +1303,7 @@ export async function downloadAllFromCloud(userId, datasetId) {
   try {
     console.log('☁️ Downloading all data from cloud for dataset:', datasetId);
 
-    const [people, houses, relationships, codexEntries, codexLinks, heraldry, heraldryLinks, dignities, dignityTenures, dignityLinks, householdRoles, writings, chapters, writingLinks, storyPlans, storyBeats, scenePlans, plotThreads, characterArcs, arcMilestones] = await Promise.all([
+    const [people, houses, relationships, codexEntries, codexLinks, heraldry, heraldryLinks, dignities, dignityTenures, dignityLinks, householdRoles, writings, chapters, writingLinks, storyPlans, storyArcs, storyBeats, scenePlans, plotThreads, characterArcs, arcMilestones] = await Promise.all([
       getAllPeopleCloud(userId, datasetId),
       getAllHousesCloud(userId, datasetId),
       getAllRelationshipsCloud(userId, datasetId),
@@ -1239,6 +1319,7 @@ export async function downloadAllFromCloud(userId, datasetId) {
       getAllChaptersCloud(userId, datasetId),
       getAllWritingLinksCloud(userId, datasetId),
       getAllStoryPlansCloud(userId, datasetId),
+      getAllStoryArcsCloud(userId, datasetId),
       getAllStoryBeatsCloud(userId, datasetId),
       getAllScenePlansCloud(userId, datasetId),
       getAllPlotThreadsCloud(userId, datasetId),
@@ -1263,6 +1344,7 @@ export async function downloadAllFromCloud(userId, datasetId) {
       chapters: chapters.length,
       writingLinks: writingLinks.length,
       storyPlans: storyPlans.length,
+      storyArcs: storyArcs.length,
       storyBeats: storyBeats.length,
       scenePlans: scenePlans.length,
       plotThreads: plotThreads.length,
@@ -1270,7 +1352,7 @@ export async function downloadAllFromCloud(userId, datasetId) {
       arcMilestones: arcMilestones.length
     });
 
-    return { people, houses, relationships, codexEntries, codexLinks, heraldry, heraldryLinks, dignities, dignityTenures, dignityLinks, householdRoles, writings, chapters, writingLinks, storyPlans, storyBeats, scenePlans, plotThreads, characterArcs, arcMilestones };
+    return { people, houses, relationships, codexEntries, codexLinks, heraldry, heraldryLinks, dignities, dignityTenures, dignityLinks, householdRoles, writings, chapters, writingLinks, storyPlans, storyArcs, storyBeats, scenePlans, plotThreads, characterArcs, arcMilestones };
   } catch (error) {
     console.error('☁️ Error downloading from cloud:', error);
     throw error;
@@ -1998,7 +2080,7 @@ export async function deleteAllCloudData(userId, datasetId) {
   try {
     console.log('☁️ Deleting all cloud data for dataset:', datasetId);
 
-    const collections = ['people', 'houses', 'relationships', 'codexEntries', 'codexLinks', 'acknowledgedDuplicates', 'heraldry', 'heraldryLinks', 'dignities', 'dignityTenures', 'dignityLinks', 'bugs', 'householdRoles', 'writings', 'chapters', 'writingLinks', 'storyPlans', 'storyBeats', 'scenePlans', 'plotThreads', 'characterArcs', 'arcMilestones'];
+    const collections = ['people', 'houses', 'relationships', 'codexEntries', 'codexLinks', 'acknowledgedDuplicates', 'heraldry', 'heraldryLinks', 'dignities', 'dignityTenures', 'dignityLinks', 'bugs', 'householdRoles', 'writings', 'chapters', 'writingLinks', 'storyPlans', 'storyArcs', 'storyBeats', 'scenePlans', 'plotThreads', 'characterArcs', 'arcMilestones'];
 
     for (const collName of collections) {
       const collRef = getUserCollection(userId, datasetId, collName);
@@ -2111,6 +2193,12 @@ export default {
   getAllStoryPlansCloud,
   updateStoryPlanCloud,
   deleteStoryPlanCloud,
+
+  // Story Arcs
+  addStoryArcCloud,
+  getAllStoryArcsCloud,
+  updateStoryArcCloud,
+  deleteStoryArcCloud,
 
   // Story Beats
   addStoryBeatCloud,
