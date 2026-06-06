@@ -122,15 +122,28 @@ export function harmonizeColor(hexColor, isDark) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
+ * Determine if a house is a bastard-elevation cadet branch.
+ * Uses cadetTier/foundingType as primary, falls back to Dum/Dun name prefix for legacy data.
+ */
+export function isBastardCadet(house) {
+  if (!house) return false;
+  if (house.cadetTier === 2 || house.foundingType === 'bastard-elevation') return true;
+  if (house.cadetTier === 1) return false;
+  return /^(Dum|Dun)/i.test(house.houseName);
+}
+
+/**
  * Get the set of house IDs that are "in scope" for a target house
- * Optionally includes cadet houses (child houses)
+ * Includes noble cadets (tier 1) when includeCadets is true.
+ * Bastard-elevation cadets (tier 2 / Dum/Dun prefix) are always excluded —
+ * they get their own separate tree views.
  */
 export function getHouseIdsInScope(targetHouseId, allHouses, includeCadets) {
   const houseIds = new Set([targetHouseId]);
 
   if (includeCadets) {
     allHouses.forEach(house => {
-      if (house.parentHouseId === targetHouseId) {
+      if (house.parentHouseId === targetHouseId && !isBastardCadet(house)) {
         houseIds.add(house.id);
       }
     });
@@ -154,7 +167,8 @@ export function getHouseScopedPeopleIds(
   spouseMap,
   childrenMap,
   parentMap,
-  includeCadets
+  includeCadets,
+  personallySwornPeople = []
 ) {
   const scopedIds = new Set();
   const houseIds = getHouseIdsInScope(targetHouseId, allHouses, includeCadets);
@@ -230,6 +244,14 @@ export function getHouseScopedPeopleIds(
     if (isHouseMember(id)) {
       findDescendants(id);
     }
+  });
+
+  // Add people personally sworn to this house (from bastard-elevation cadets)
+  personallySwornPeople.forEach(p => {
+    scopedIds.add(p.id);
+    // Include their spouses too
+    const spouseId = spouseMap.get(p.id);
+    if (spouseId) scopedIds.add(spouseId);
   });
 
   return scopedIds;
@@ -408,4 +430,93 @@ export function getLineageGapConnections(fragments, allRelationships, peopleById
   });
 
   return connections;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// GENERATION DETECTION
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Detect generations using BFS from a root person.
+ * Returns an array of arrays, where each inner array contains person IDs in that generation.
+ *
+ * @param {Map} peopleById - Map of personId -> person object (scoped to fragment)
+ * @param {Map} parentMap - Map of childId -> [parentIds]
+ * @param {Map} childrenMap - Map of parentId -> [childIds]
+ * @param {Map} spouseMap - Map of personId -> spouseId
+ * @param {number|null} overrideRootId - Optional person ID to use as root
+ * @returns {Array<Array<number>>} Array of generation arrays
+ */
+export function detectGenerations(peopleById, parentMap, childrenMap, spouseMap, overrideRootId = null) {
+  let rootPerson;
+
+  if (overrideRootId && peopleById.has(overrideRootId)) {
+    rootPerson = peopleById.get(overrideRootId);
+    console.log(`Using override root: ${rootPerson.firstName} ${rootPerson.lastName}`);
+  } else {
+    const gen0People = Array.from(peopleById.values())
+      .filter(p => !parentMap.has(p.id))
+      .sort((a, b) => parseInt(a.dateOfBirth) - parseInt(b.dateOfBirth));
+
+    if (gen0People.length === 0) {
+      console.warn('No root people found (everyone has parents)');
+      return [];
+    }
+
+    console.log('Root candidates (no parents):', gen0People.map(p => `${p.firstName} ${p.lastName} (b.${p.dateOfBirth})`));
+
+    rootPerson = gen0People[0];
+  }
+
+  console.log(`Root (Gen 0): ${rootPerson.firstName} ${rootPerson.lastName}`);
+
+  const generations = [];
+  const processedIds = new Set();
+
+  generations.push([rootPerson.id]);
+  processedIds.add(rootPerson.id);
+
+  const rootSpouseId = spouseMap.get(rootPerson.id);
+  if (rootSpouseId) {
+    processedIds.add(rootSpouseId);
+  }
+
+  let currentGenIndex = 0;
+  while (currentGenIndex < generations.length) {
+    const currentGen = generations[currentGenIndex];
+    const nextGenIds = new Set();
+
+    currentGen.forEach(personId => {
+      const children = childrenMap.get(personId) || [];
+      children.forEach(childId => {
+        // CRITICAL: Only include children that are IN this fragment (peopleById)
+        // This prevents generation detection from following relationships outside the fragment
+        if (!processedIds.has(childId) && peopleById.has(childId)) {
+          nextGenIds.add(childId);
+          processedIds.add(childId);
+        }
+      });
+
+      const spouseId = spouseMap.get(personId);
+      if (spouseId && peopleById.has(spouseId)) {
+        const spouseChildren = childrenMap.get(spouseId) || [];
+        spouseChildren.forEach(childId => {
+          // CRITICAL: Only include children that are IN this fragment (peopleById)
+          if (!processedIds.has(childId) && peopleById.has(childId)) {
+            nextGenIds.add(childId);
+            processedIds.add(childId);
+          }
+        });
+      }
+    });
+
+    if (nextGenIds.size > 0) {
+      generations.push(Array.from(nextGenIds));
+    }
+
+    currentGenIndex++;
+  }
+
+  console.log('Generations detected:', generations.map((g, i) => `Gen ${i}: ${g.length} people`));
+  return generations;
 }

@@ -698,60 +698,53 @@ The second Lord of House Wilson, first to be born a Wilson.
 
 ### Core Data
 - [ ] YES `Name: Baudin Wilson I` (establishing the numbering)
-- [ ] NO - Alternative: ___________
 
 - [ ] YES `Birth: ~1778`
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Death: ~1850` (aged ~72)
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Became Lord: ~1815` (upon Lennis's death)
-- [ ] NO - Alternative: ___________
 
 ### Wife (NEW)
 The Wilsons, as a new house, would need to build alliances. Without access to Wilfrey marriages, they'd marry into northern nobility.
 
 - [ ] YES `Name: Cereline Northmere`
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Origin: House Northmere (fictional northern house - not connected to Wilfrey)`
-- [ ] NO - Alternative house: ___________
 
 - [ ] YES `Birth: ~1782`
-- [ ] NO - Alternative: ___________
 
 - [ ] YES `Death: ~1855`
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Marriage: ~1800` (Baudin age 22)
-- [ ] NO - Alternative: ___________
 
 ### Children of Baudin I (NEW)
 
 #### Heir:
 - [ ] YES `Name: Baudin Wilson II`
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Birth: ~1802`
-- [ ] NO - Alternative: ___________
 
 - [ ] YES `Death: ~1875`
-- [ ] NO - Alternative: ___________
+
 
 #### Second Child:
 - [ ] YES `Name: Niveline Wilson` (daughter, honoring grandmother Nivette)
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Birth: ~1805`
-- [ ] NO - Alternative: ___________
+
 
 #### Third Child:
 - [ ] YES `Name: Cerald Wilson` (son, honoring mother's name)
-- [ ] NO - Alternative: ___________
 
 - [ ] YES `Birth: ~1808`
-- [ ] NO - Alternative: ___________
+
 
 ---
 
@@ -759,58 +752,56 @@ The Wilsons, as a new house, would need to build alliances. Without access to Wi
 
 ### Core Data
 - [ ] YES `Name: Baudin Wilson II`
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Birth: ~1802`
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Death: ~1875` (aged ~73)
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Became Lord: ~1850`
-- [ ] NO - Alternative: ___________
+
 
 ### Wife (NEW)
 - [ ] YES `Name: Isolda Kingsward`
-- [ ] NO - Alternative: ___________
 
 - [ ] YES `Origin: House Kingsward (fictional northern house with royal connections)`
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Birth: ~1808`
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Death: ~1880`
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Marriage: ~1828` (Baudin II age 26)
-- [ ] NO - Alternative: ___________
+
 
 ### Children of Baudin II (NEW)
 
 #### Heir:
 - [ ] YES `Name: Baudin Wilson III`
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Birth: ~1830`
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Death: ~1905`
-- [ ] NO - Alternative: ___________
+
 
 #### Second Child:
 - [ ] YES `Name: Iselde Wilson` (daughter)
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Birth: ~1833`
-- [ ] NO - Alternative: ___________
+
 
 #### Third Child:
 - [ ] YES `Name: Lenard Wilson` (son, honoring founder Lennis)
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Birth: ~1836`
-- [ ] NO - Alternative: ___________
 
 ---
 
@@ -818,58 +809,52 @@ The Wilsons, as a new house, would need to build alliances. Without access to Wi
 
 ### Core Data
 - [ ] YES `Name: Baudin Wilson III`
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Birth: ~1830`
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Death: ~1905` (aged ~75)
-- [ ] NO - Alternative: ___________
 
 - [ ] YES `Became Lord: ~1875`
-- [ ] NO - Alternative: ___________
 
 ### Wife (NEW)
 - [ ] YES `Name: Hamelina Granford`
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Origin: House Granford (fictional northern house)`
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Birth: ~1835`
-- [ ] NO - Alternative: ___________
 
 - [ ] YES `Death: ~1910`
-- [ ] NO - Alternative: ___________
 
 - [ ] YES `Marriage: ~1855` (Baudin III age 25)
-- [ ] NO - Alternative: ___________
+
 
 ### Children of Baudin III (NEW)
 
 #### Heir:
 - [ ] YES `Name: Baudin Wilson IV`
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Birth: ~1858`
-- [ ] NO - Alternative: ___________
 
-- [ ] YES `Death: ~1935`
-- [ ] NO - Alternative: ___________
+
+
 
 #### Second Child:
 - [ ] YES `Name: Hameline Wilson` (daughter)
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Birth: ~1861`
-- [ ] NO - Alternative: ___________
+
 
 #### Third Child:
 - [ ] YES `Name: Granard Wilson` (son)
-- [ ] NO - Alternative: ___________
 
 - [ ] YES `Birth: ~1865`
-- [ ] NO - Alternative: ___________
+
 
 ---
 
@@ -877,58 +862,53 @@ The Wilsons, as a new house, would need to build alliances. Without access to Wi
 
 ### Core Data
 - [ ] YES `Name: Baudin Wilson IV`
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Birth: ~1858`
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Death: ~1935` (aged ~77)
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Became Lord: ~1905`
-- [ ] NO - Alternative: ___________
+
 
 ### Wife (NEW)
 - [ ] YES `Name: Aureline Croftmoor`
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Origin: House Croftmoor (fictional northern house)`
-- [ ] NO - Alternative: ___________
 
 - [ ] YES `Birth: ~1865`
-- [ ] NO - Alternative: ___________
 
 - [ ] YES `Death: ~1945`
-- [ ] NO - Alternative: ___________
 
 - [ ] YES `Marriage: ~1885` (Baudin IV age 27)
-- [ ] NO - Alternative: ___________
 
 ### Children of Baudin IV (NEW)
 
 #### Heir:
 - [ ] YES `Name: Baudin Wilson V`
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Birth: ~1888`
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Death: ~1965`
-- [ ] NO - Alternative: ___________
+
 
 #### Second Child:
 - [ ] YES `Name: Aurel Wilson` (son)
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Birth: ~1891`
-- [ ] NO - Alternative: ___________
+
 
 #### Third Child:
 - [ ] YES `Name: Croftine Wilson` (daughter)
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Birth: ~1895`
-- [ ] NO - Alternative: ___________
 
 ---
 
@@ -936,58 +916,53 @@ The Wilsons, as a new house, would need to build alliances. Without access to Wi
 
 ### Core Data
 - [ ] YES `Name: Baudin Wilson V`
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Birth: ~1888`
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Death: ~1965` (aged ~77)
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Became Lord: ~1935`
-- [ ] NO - Alternative: ___________
 
 ### Wife (NEW)
 - [ ] YES `Name: Doreline Helmward`
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Origin: House Helmward (fictional northern house with military tradition)`
-- [ ] NO - Alternative: ___________
 
 - [ ] YES `Birth: ~1895`
-- [ ] NO - Alternative: ___________
 
 - [ ] YES `Death: ~1975`
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Marriage: ~1918` (Baudin V age 30 - later marriage, perhaps due to military service)
-- [ ] NO - Alternative: ___________
+
 
 ### Children of Baudin V (NEW)
 
 #### Heir:
 - [ ] YES `Name: Baudin Wilson VI`
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Birth: ~1920`
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Death: ~1995`
-- [ ] NO - Alternative: ___________
 
 #### Second Child:
 - [ ] YES `Name: Dorric Wilson` (son)
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Birth: ~1923`
-- [ ] NO - Alternative: ___________
+
 
 #### Third Child:
 - [ ] YES `Name: Helmina Wilson` (daughter)
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Birth: ~1927`
-- [ ] NO - Alternative: ___________
 
 ---
 
@@ -995,58 +970,54 @@ The Wilsons, as a new house, would need to build alliances. Without access to Wi
 
 ### Core Data
 - [ ] YES `Name: Baudin Wilson VI`
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Birth: ~1920`
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Death: ~1995` (aged ~75)
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Became Lord: ~1965`
-- [ ] NO - Alternative: ___________
+
 
 ### Wife (NEW)
 - [ ] YES `Name: Sireline Blackmoor`
-- [ ] NO - Alternative: ___________
 
 - [ ] YES `Origin: House Blackmoor (fictional northern house)`
-- [ ] NO - Alternative: ___________
 
 - [ ] YES `Birth: ~1928`
-- [ ] NO - Alternative: ___________
 
 - [ ] YES `Death: ~2010`
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Marriage: ~1948` (Baudin VI age 28)
-- [ ] NO - Alternative: ___________
+
 
 ### Children of Baudin VI (NEW)
 
 #### Heir:
 - [ ] YES `Name: Baudin Wilson VII`
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Birth: ~1950`
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Status: Living` (current Lord)
-- [ ] NO - Alternative: ___________
+
 
 #### Second Child:
 - [ ] YES `Name: Siric Wilson` (son)
-- [ ] NO - Alternative: ___________
 
 - [ ] YES `Birth: ~1953`
-- [ ] NO - Alternative: ___________
+
 
 #### Third Child:
 - [ ] YES `Name: Moraine Wilson` (daughter)
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Birth: ~1957`
-- [ ] NO - Alternative: ___________
+
 
 ---
 
@@ -1054,55 +1025,50 @@ The Wilsons, as a new house, would need to build alliances. Without access to Wi
 
 ### Core Data
 - [ ] YES `Name: Baudin Wilson VII`
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Birth: ~1950`
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Status: Living, current Lord of House Wilson`
-- [ ] NO - Alternative: ___________
 
 - [ ] YES `Became Lord: ~1995`
-- [ ] NO - Alternative: ___________
 
 ### Wife (NEW)
 - [ ] YES `Name: Eveline Stormcrest`
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Origin: House Stormcrest (fictional northern coastal house)`
-- [ ] NO - Alternative: ___________
 
 - [ ] YES `Birth: ~1955`
-- [ ] NO - Alternative: ___________
 
 - [ ] YES `Marriage: ~1975` (Baudin VII age 25)
-- [ ] NO - Alternative: ___________
+
 
 ### Children of Baudin VII (NEW) - The Current Generation
 
 #### Heir:
 - [ ] YES `Name: Baudin Wilson VIII`
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Birth: ~1978`
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Notes: Heir to Grantholm, not yet succeeded`
-- [ ] NO - Alternative: ___________
+
 
 #### Second Child:
 - [ ] YES `Name: Evelind Wilson` (daughter)
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Birth: ~1982`
-- [ ] NO - Alternative: ___________
+
 
 #### Third Child:
 - [ ] YES `Name: Lenric Wilson` (son, honoring founder Lennis)
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Birth: ~1985`
-- [ ] NO - Alternative: ___________
 
 ---
 
@@ -1110,39 +1076,37 @@ The Wilsons, as a new house, would need to build alliances. Without access to Wi
 
 ### Core Data
 - [ ] YES `Name: Baudin Wilson VIII`
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Birth: ~1978`
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Status: Living, heir to House Wilson`
-- [ ] NO - Alternative: ___________
+
 
 ### Wife (NEW)
 - [ ] YES `Name: Marelisse Thornwick`
-- [ ] NO - Alternative: ___________
 
 - [ ] YES `Birth: ~1982`
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Marriage: ~2005` (Baudin VIII age 27)
-- [ ] NO - Alternative: ___________
+
 
 ### Children of Baudin VIII (NEW)
 
 #### Heir:
 - [ ] YES `Name: Baudin Wilson IX` (continuing the tradition)
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Birth: ~2007`
-- [ ] NO - Alternative: ___________
 
 #### Second Child:
 - [ ] YES `Name: Marelle Wilson` (daughter)
-- [ ] NO - Alternative: ___________
+
 
 - [ ] YES `Birth: ~2010`
-- [ ] NO - Alternative: ___________
+
 
 ---
 
@@ -1184,15 +1148,13 @@ The current Baudin Wilson VII is the eighth generation to bear the name. When as
 
 ### Historical Stance
 - [ ] YES `For the first 100 years (~1776-1876), contact between House Wilson and House Wilfrey was minimal - not forbidden, but avoided by mutual unspoken agreement.`
-- [ ] NO - Different approach: ___________
+
 
 ### Modern Relationship
 - [ ] YES `In the modern era, relations are cordial but distant. There has never been a marriage between the houses - neither side has proposed one, and neither would refuse if the other did.`
-- [ ] NO - Different approach: ___________
 
 ### The Unasked Question
-- [ ] YES `Neither house has ever formally addressed whether House Wilson could return to the Wilfrey fold or whether reconciliation is possible. The question hangs in the air, unasked for 250 years.`
-- [ ] NO - Different approach: ___________
+- [ ] YES `Neither house has ever formally addressed whether House Wilson could return to the Wilfrey fold or whether reconciliation is possible. The question hangs in the air, unasked for 250 years.
 
 ---
 

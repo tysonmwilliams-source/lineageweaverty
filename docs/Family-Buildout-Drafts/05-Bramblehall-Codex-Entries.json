@@ -1,0 +1,190 @@
+{
+  "description": "Codex entries and enhancements for Bramblehall Wilfrey lineage. New entries for woodland cadet seats, the Woodland Marriage Tradition, and key personages. Enhancements to update existing entries for Lord Constann, Raylegh, The Old Knight, and the three cadet branch houses.",
+  "instructions": "Import via unified import. The codexEntries array creates NEW entries. The codexEnhancements array UPDATES existing entries by title match (appending sections, adding tags). The three cadet branch house codex entries (#7 Wilfbauer, #8 Wilfbole, #9 Wilfbark) already exist with placeholder content and should be REPLACED.",
+
+  "codexEntries": [
+    {
+      "type": "location",
+      "title": "Bauerholt",
+      "subtitle": "Seat of House Wilfbauer",
+      "category": "Castles & Seats",
+      "tags": ["bauerholt", "wilfbauer", "bramblehall", "woodland", "cadet-branch", "seat"],
+      "content": "**Bauerholt** is the seat of [[House Wilfbauer]], located in the western woods of the [[Bramblehall]] region where the forest thins enough for modest farming.\n\n## Setting\n\nUnlike the deep-forest seats, Bauerholt has some open land — enough for grain and livestock. The hall itself is timber-framed, sprawling rather than tall, surrounded by workshops and granaries. Of the three cadet seats, Bauerholt feels the most like a village.\n\n## Character\n\nThe Wilfbauers are the most outward-looking of the three woodland branches, their farming bringing them into regular contact with traders and merchants. Where [[Bolewood]] is hidden and [[Barkhollow]] is invisible, Bauerholt welcomes visitors — or at least tolerates them.\n\n## The Woodland Marriage Tradition\n\nBauerholt has provided brides for Bramblehall's lords as part of the broader [[Woodland Marriage Tradition]]:\n- Woodline Wilfbauer → Bors Wilfrey (~1948)\n\n## See Also\n- [[House Wilfbauer]]: The house seated here\n- [[Bramblehall]]: The principal seat they serve\n- [[Bolewood]]: Sister cadet seat (Wilfbole)\n- [[Barkhollow]]: Sister cadet seat (Wilfbark)",
+      "sections": [
+        {"heading": "Setting", "content": "Western woods, open clearing, timber-framed hall", "order": 1},
+        {"heading": "Character", "content": "Most outward-looking of the three woodland seats", "order": 2},
+        {"heading": "The Woodland Marriage Tradition", "content": "Provided brides for Bramblehall lords", "order": 3}
+      ]
+    },
+
+    {
+      "type": "location",
+      "title": "Bolewood",
+      "subtitle": "Seat of House Wilfbole",
+      "category": "Castles & Seats",
+      "tags": ["bolewood", "wilfbole", "bramblehall", "woodland", "cadet-branch", "seat"],
+      "content": "**Bolewood** is the seat of [[House Wilfbole]], built among ancient oaks so vast that some of the lower chambers are carved into living trunks.\n\n## Setting\n\nThe Wilfboles are woodcrafters — carpenters, coopers, bowyers — and their seat reflects their trade. Every beam is hand-selected, every joint mortised with the precision of generations of practice. The oaks here are immense, and the Wilfboles claim some predate the founding of [[House Wilfrey]] itself.\n\n## Character\n\nOf the three cadet branches, the Wilfboles are the most traditional. They keep the old forest rites that even [[Bramblehall]] has half-forgotten. Their knowledge of timber and woodcraft is renowned across the region.\n\n## The Woodland Marriage Tradition\n\nBolewood has provided brides for Bramblehall's lords as part of the broader [[Woodland Marriage Tradition]]:\n- Beraline Wilfbole → Alec Wilfrey (~1975)\n\n## See Also\n- [[House Wilfbole]]: The house seated here\n- [[Bramblehall]]: The principal seat they serve\n- [[Bauerholt]]: Sister cadet seat (Wilfbauer)\n- [[Barkhollow]]: Sister cadet seat (Wilfbark)",
+      "sections": [
+        {"heading": "Setting", "content": "Ancient oaks, chambers carved into living trunks", "order": 1},
+        {"heading": "Character", "content": "Most traditional of the three woodland branches", "order": 2},
+        {"heading": "The Woodland Marriage Tradition", "content": "Provided brides for Bramblehall lords", "order": 3}
+      ]
+    },
+
+    {
+      "type": "location",
+      "title": "Barkhollow",
+      "subtitle": "Seat of House Wilfbark",
+      "category": "Castles & Seats",
+      "tags": ["barkhollow", "wilfbark", "bramblehall", "woodland", "cadet-branch", "seat"],
+      "content": "**Barkhollow** is the seat of [[House Wilfbark]], occupying a natural depression in the deep forest where three streams converge.\n\n## Setting\n\nHalf-underground, half-timbered, the seat is nearly invisible from more than a hundred paces — a characteristic the Wilfbarks cultivate deliberately. Approaching Barkhollow without a guide is nearly impossible; the Wilfbarks prefer it that way.\n\n## Character\n\nThe Wilfbarks are the hunters, trackers, and wardens of the deep wood. Of the three cadet branches, they are the most insular — which is saying something among [[Bramblehall]]'s already insular people. They know every path, every clearing, every animal run in the forest. Their knowledge of the wood is Bramblehall's greatest strategic asset.\n\n## The Woodland Marriage Tradition\n\nBarkhollow has provided brides for Bramblehall's lords as part of the broader [[Woodland Marriage Tradition]]:\n- Mirette Wilfbark → Aldwin Wilfrey (~1825) — the first woodland bride to marry a lord's heir\n- Branelisse Wilfbark → Aldric Wilfrey II (~1918)\n\nBorsham Wilfrey (Lord Alec's brother) also married Griseline Wilfbark (~1978).\n\n## See Also\n- [[House Wilfbark]]: The house seated here\n- [[Bramblehall]]: The principal seat they serve\n- [[Bauerholt]]: Sister cadet seat (Wilfbauer)\n- [[Bolewood]]: Sister cadet seat (Wilfbole)",
+      "sections": [
+        {"heading": "Setting", "content": "Half-underground depression where three streams converge", "order": 1},
+        {"heading": "Character", "content": "Most insular — hunters, trackers, wardens of the deep wood", "order": 2},
+        {"heading": "The Woodland Marriage Tradition", "content": "Provided the first woodland bride for a lord's heir", "order": 3}
+      ]
+    },
+
+    {
+      "type": "concept",
+      "title": "The Woodland Marriage Tradition",
+      "subtitle": "Bramblehall's Custom of Marrying Within the Forest",
+      "category": "Customs & Traditions",
+      "tags": ["woodland-marriage-tradition", "bramblehall", "wilfbauer", "wilfbole", "wilfbark", "custom", "marriage"],
+      "content": "**The Woodland Marriage Tradition** is the long-standing custom among the people of [[Bramblehall]] of marrying within the three woodland cadet branches: [[House Wilfbauer]], [[House Wilfbole]], and [[House Wilfbark]].\n\n## The Tradition\n\nAmong the broader Bramblehall population — common folk, minor knights, cadet branch members — marrying within the woodland is the norm rather than the exception. The forest is vast, the communities close-knit, and the outside world far away. For most Bramblehall people, a spouse from another woodland family is the natural and expected choice.\n\n## The Heir's Exception\n\nFor the lord's heir, however, the expectation has traditionally been different. An heir is expected to marry politically — to strengthen alliances with the other Wilfrey seats or with sworn houses. When a lord's heir DOES marry woodland, it is noteworthy and unusual, even at Bramblehall.\n\nIn nine generations of Bramblehall lords, only four have married woodland brides:\n- **Aldwin** (Gen 3, ~1825) — married Mirette Wilfbark, the first heir to break convention\n- **Aldric II** (Gen 6, ~1918) — married Branelisse Wilfbark\n- **Bors** (Gen 7, ~1948) — married Woodline Wilfbauer\n- **Alec** (Gen 8, ~1975) — married Beraline Wilfbole\n\nThe clustering of three consecutive woodland marriages in the modern era (Aldric II, Bors, Alec) is unprecedented and a source of quiet comment among the other seats.\n\n## Advantages\n\n- Deep loyalty from the woodland cadet branches\n- Preservation of old traditions and forest knowledge\n- Strong internal cohesion — the Bramblehall people are more closely related than those of any other seat\n\n## Concerns\n\n- Limited genetic diversity among the lordly line (when woodland marriages occur)\n- Political isolation from the other Wilfrey seats\n- Bramblehall is less connected to the wider Wilfrey network than [[Breakmount Castle|Breakmount]], [[Fourhearth Castle|Fourhearth]], or [[House Wilfrey of Riverhead|Riverhead]]\n\n## The Broader Pattern\n\nWhile the lord's marriage choice attracts attention, the true strength of the tradition lies in the hundreds of marriages among the common folk, cadet branch members, and minor knights of the Bramblehall woodlands. These marriages — unremarked upon and unremarkable — are the fabric of Bramblehall's insular character.\n\n## See Also\n- [[Bramblehall]]: The seat at the centre of the tradition\n- [[House Wilfbauer]]: The farming branch (seat: [[Bauerholt]])\n- [[House Wilfbole]]: The woodcraft branch (seat: [[Bolewood]])\n- [[House Wilfbark]]: The hunting branch (seat: [[Barkhollow]])",
+      "sections": [
+        {"heading": "The Tradition", "content": "Common among broader Bramblehall population", "order": 1},
+        {"heading": "The Heir's Exception", "content": "Only 4 of 9 lords married woodland — unusual when it happens", "order": 2},
+        {"heading": "The Broader Pattern", "content": "Hundreds of unremarkable woodland marriages form the fabric of Bramblehall", "order": 3}
+      ]
+    },
+
+    {
+      "type": "other",
+      "title": "The Legend of the Ten Daughters",
+      "subtitle": "How Six Became Ten",
+      "category": "Customs & Traditions",
+      "tags": ["ten-daughters", "constann", "bramblehall", "legend", "daughters"],
+      "content": "**The Legend of the Ten Daughters** refers to the widely-held belief that Lord [[Constann Wilfrey]] of [[Bramblehall]] fathered ten daughters of extraordinary beauty. In truth, Constann had six daughters — Constance, Floriselle, Belisent, Adelise, [[Raylegh]], and [[Giseline Wilfson|Giseline]] — along with two sons.\n\n## The Inflation\n\nThe daughters of Bramblehall travelled with retainers and companions, many of them beautiful women in their own right. In the retelling, over generations, the serving women became daughters, the companions became sisters, and six became ten. Stories change. Details shift over the years.\n\n## The Truth\n\nConstann and his wife Florine (of [[House Wilfrey of Riverhead|Riverhead]]) had eight children total, including two sets of boy-girl twins:\n- Aldric + Constance (twins, ~1743)\n- Floriselle (~1747)\n- Borsward + Belisent (twins, ~1749)\n- Adelise (~1753)\n- Raylegh (~1755)\n- Giseline (1758)\n\n## Why It Persists\n\nThe Bramblehall people see no reason to correct the legend. Ten daughters sounds grander than six, and the truth — that serving women were confused with highborn ladies — reflects well on Bramblehall's egalitarian character. In the forest, they might say, beauty does not care for rank.\n\n## The Marriages\n\nThe six daughters' marriages created a diplomatic web binding Bramblehall to the wider Wilfrey world:\n- Constance → [[House Wilfrey of Breakmount]]\n- Floriselle → [[House Wilfrey of Fourhearth]]\n- Belisent → [[House Hendry]]\n- Adelise → [[House Vespen]]\n- Raylegh → [[The Old Knight]] (died in childbirth ~1778)\n- Giseline → [[House Wilfson]] (married Colard, post-scandal reconciliation)\n\n## See Also\n- [[Constann Wilfrey]]: Their father\n- [[Bramblehall]]: Where the legend originated\n- [[The Scandal of 1776]]: Triggered by daughter Raylegh",
+      "sections": [
+        {"heading": "The Inflation", "content": "Retainers confused with daughters over generations", "order": 1},
+        {"heading": "The Truth", "content": "Six daughters and two sons, including twin pairs", "order": 2},
+        {"heading": "The Marriages", "content": "Diplomatic web across Wilfrey seats and allies", "order": 3}
+      ]
+    },
+
+    {
+      "type": "personage",
+      "title": "Constann Wilfrey",
+      "subtitle": "Lord of Bramblehall — Father of the 'Ten Daughters'",
+      "category": "Historical Figures",
+      "tags": ["constann", "bramblehall", "ten-daughters", "scandal", "lord"],
+      "content": "**Constann Wilfrey** (~1725-~1790) was Lord of [[Bramblehall]] during [[The Scandal of 1776]]. He is best known as the father of the legendary 'ten daughters,' though in truth he fathered six daughters and two sons.\n\n## The 'Ten' Daughters\n\nWhile Lord Constann's daughters became legendary for their beauty, the famed 'ten daughters' is an inflation of history. In truth, Constann fathered six daughters — Constance, Floriselle, Belisent, Adelise, [[Raylegh]], and [[Giseline Wilfson|Giseline]] — along with two sons, Aldric (the heir) and Borsward. The sons came as twins alongside their sisters: Aldric with Constance, Borsward with Belisent.\n\nThe legend of ten arose because the daughters travelled with beautiful retainers and companions. Over generations of retelling, the serving women became daughters, the companions became sisters, and six became ten. The Bramblehall people see no reason to correct the story.\n\nThe daughters' marriages:\n- Constance → [[House Wilfrey of Breakmount]]\n- Floriselle → [[House Wilfrey of Fourhearth]]\n- Belisent → [[House Hendry]]\n- Adelise → [[House Vespen]]\n- Raylegh → married [[The Old Knight]]; died in childbirth ~1778\n- Giseline → [[House Wilfson]] (Colard, post-scandal reconciliation)\n\n## After the Scandal\n\nConstann lived another 14 years after the scandal (~1776-1790). He watched his daughter Giseline marry the kinslayer [[Colard Wilfson]] in 1778 — a gesture of reconciliation from Bramblehall, forgiving the chaos that originated from their seat. He honoured the original betrothal of Raylegh to [[The Old Knight]], and when she died in childbirth shortly after, he never spoke publicly of it. Whether his silence was grief, guilt, or dignity, no one can say.\n\n## See Also\n- [[Bramblehall]]: His seat\n- [[The Scandal of 1776]]: The crisis of his lordship\n- [[Raylegh]]: His daughter who triggered the scandal\n- [[The Legend of the Ten Daughters]]: The myth that grew from his family\n- [[Giseline Wilfson]]: His daughter who married the kinslayer as reconciliation",
+      "sections": [
+        {"heading": "The Ten Daughters", "content": "Six daughters, legendarily inflated to ten", "order": 1},
+        {"heading": "After the Scandal", "content": "Lived 14 more years in silence", "order": 2}
+      ]
+    }
+  ],
+
+  "codexEnhancements": [
+    {
+      "_comment": "Update existing Raylegh codex entry #21",
+      "targetTitle": "Raylegh",
+      "appendSection": {
+        "heading": "Her Fate",
+        "content": "After the scandal, Lord Constann honoured the original betrothal. Raylegh married [[The Old Knight]] as planned. She bore him twin boys before dying in childbirth ~1778. She was roughly 23 years old.\n\nThe twins' fate is unknown. Whether they lived among the woodland people of [[Bramblehall]] or left entirely has been lost to history. Their names, if they were ever named, are forgotten.\n\nRaylegh's death added a final tragedy to an already tragic story. The woman whose night with [[Lennis Wilfrey]] shattered two houses did not live to see either the consequences or the legacy of what she set in motion."
+      },
+      "addTags": ["death", "childbirth", "twins", "old-knight", "bramblehall", "fate-resolved"]
+    },
+
+    {
+      "_comment": "Update existing The Old Knight codex entry #25",
+      "targetTitle": "The Old Knight",
+      "appendSection": {
+        "heading": "After the Scandal",
+        "content": "The Old Knight married [[Raylegh]] as originally agreed — the betrothal was honoured despite the scandal. She bore him twin boys before dying in childbirth ~1778. He survived her by roughly seven years.\n\nHis true name was deliberately lost. The Bramblehall people chose to forget it — perhaps out of pity for a man who married a woman who had lain with another, perhaps out of respect for one who endured without complaint."
+      },
+      "addTags": ["marriage", "raylegh", "twins", "bramblehall", "name-lost"]
+    },
+
+    {
+      "_comment": "Replace placeholder House Wilfbauer codex entry #7",
+      "targetTitle": "House Wilfbauer",
+      "replaceContent": "**House Wilfbauer** is a cadet branch of [[House Wilfrey]] based in the [[Bramblehall]] region. Their name combines \"Wilf-\" (from Wilfrey) with \"bauer\" (farmer/cultivator), reflecting their role as the most agricultural of the woodland branches.\n\n## Seat\n\nTheir seat is [[Bauerholt]], a timber-framed hall in the western woods where the forest thins enough for farming. Of the three woodland branches, the Wilfbauers are the most outward-looking, their farming bringing them into regular contact with the wider world.\n\n## Notable Marriages\n\nHouse Wilfbauer has provided a bride for a Bramblehall lord as part of the [[Woodland Marriage Tradition]]:\n- Woodline Wilfbauer → Bors Wilfrey (~1948)\n\n## Character\n\nThe Wilfbauers are practical people — clearers of ground, growers of grain, keepers of livestock. Where the [[House Wilfbole|Wilfboles]] are artisans and the [[House Wilfbark|Wilfbarks]] are hunters, the Wilfbauers feed the forest.",
+      "addTags": ["wilfbauer", "cadet-branch", "bramblehall", "woodland", "farming", "bauerholt"]
+    },
+
+    {
+      "_comment": "Replace placeholder House Wilfbole codex entry #8",
+      "targetTitle": "House Wilfbole",
+      "replaceContent": "**House Wilfbole** (bole = tree trunk) is a cadet branch of [[House Wilfrey]] based in the [[Bramblehall]] region. Their name reflects their identity as woodcrafters — people of the trunk, the heartwood.\n\n## Seat\n\nTheir seat is [[Bolewood]], built among ancient oaks so vast that some chambers are carved into living trunks. The Wilfboles are carpenters, coopers, and bowyers whose craft is renowned across Bramblehall's lands.\n\n## Notable Marriages\n\nHouse Wilfbole has provided a bride for a Bramblehall lord as part of the [[Woodland Marriage Tradition]]:\n- Beraline Wilfbole → Alec Wilfrey (~1975)\n\n## Character\n\nThe most traditional of the three branches. They keep old forest rites that even [[Bramblehall]] has half-forgotten. Their claim that some of their oaks predate the founding of [[House Wilfrey]] is impossible to disprove.",
+      "addTags": ["wilfbole", "cadet-branch", "bramblehall", "woodland", "woodcraft", "bolewood"]
+    },
+
+    {
+      "_comment": "Replace placeholder House Wilfbark codex entry #9",
+      "targetTitle": "House Wilfbark",
+      "replaceContent": "**House Wilfbark** is a cadet branch of [[House Wilfrey]] based in the [[Bramblehall]] region. Their name evokes the bark of trees — the outer layer, the boundary between the forest and everything else.\n\n## Seat\n\nTheir seat is [[Barkhollow]], a half-underground settlement in a natural depression where three streams converge. Nearly invisible from a distance, Barkhollow reflects the Wilfbarks' role as the hunters, trackers, and wardens of the deep wood.\n\n## Notable Marriages\n\nHouse Wilfbark has provided brides for Bramblehall's lords as part of the [[Woodland Marriage Tradition]]:\n- Mirette Wilfbark → Aldwin Wilfrey (~1825) — the first woodland bride to marry a lord's heir\n- Branelisse Wilfbark → Aldric Wilfrey II (~1918)\n\nBorsham Wilfrey (Lord Alec's brother) also married Griseline Wilfbark (~1978).\n\n## Character\n\nThe most insular of the three branches — which is saying something among [[Bramblehall]]'s already insular people. The Wilfbarks know every path, clearing, and animal run in the forest. Their knowledge of the deep wood is Bramblehall's greatest strategic asset.",
+      "addTags": ["wilfbark", "cadet-branch", "bramblehall", "woodland", "hunting", "barkhollow"]
+    },
+
+    {
+      "_comment": "Enhance House Wilfrey of Bramblehall codex entry #2439",
+      "targetTitle": "House Wilfrey of Bramblehall",
+      "appendSection": {
+        "heading": "The Lords of Bramblehall",
+        "content": "Nine generations from Lord Constann to Lord Alec:\n\n| Gen | Lord | Ruled | Wife's House | Woodland? |\n|-----|------|-------|-------------|------------|\n| 0 | [[Constann Wilfrey|Constann]] | ~1750-1790 | Riverhead | No |\n| 1 | Aldric | ~1790-1815 | Riverhead | No |\n| 2 | Constann II | ~1815-1845 | Fourhearth | No |\n| 3 | Aldwin | ~1845-1875 | [[House Wilfbark|Wilfbark]] | Yes |\n| 4 | Miric | ~1875-1905 | Breakmount | No |\n| 5 | Borswin | ~1905-1935 | Riverhead | No |\n| 6 | Aldric II | ~1935-1965 | [[House Wilfbark|Wilfbark]] | Yes |\n| 7 | Bors | ~1965-1975 | [[House Wilfbauer|Wilfbauer]] | Yes |\n| 8 | Alec | 1975-present | [[House Wilfbole|Wilfbole]] | Yes |"
+      },
+      "addTags": ["lords-of-bramblehall", "succession", "woodland-marriage-tradition"]
+    },
+    {
+      "_comment": "Enhance House Wilfrey of Bramblehall — Ten Daughters section",
+      "targetTitle": "House Wilfrey of Bramblehall",
+      "appendSection": {
+        "heading": "The 'Ten' Daughters of Constann",
+        "content": "Lord [[Constann Wilfrey|Constann]]'s six daughters — legendarily inflated to 'ten' as their retainers' beauty blurred with their own — married across the Wilfrey seats and allied houses, creating a diplomatic web that bound Bramblehall to the wider world. See [[The Legend of the Ten Daughters]]."
+      }
+    },
+    {
+      "_comment": "Enhance House Wilfrey of Bramblehall — Woodland Marriage Tradition",
+      "targetTitle": "House Wilfrey of Bramblehall",
+      "appendSection": {
+        "heading": "The Woodland Marriage Tradition",
+        "content": "Among the broader Bramblehall population, marrying within the three woodland cadet branches — [[House Wilfbauer]], [[House Wilfbole]], and [[House Wilfbark]] — is the norm. For the lord's heir, however, it remains unusual. Only four of nine lords have married woodland brides, with three of those occurring in the last three generations — an unprecedented clustering that defines modern Bramblehall. See [[The Woodland Marriage Tradition]]."
+      }
+    },
+    {
+      "_comment": "Enhance House Wilfrey of Bramblehall — Sworn Houses",
+      "targetTitle": "House Wilfrey of Bramblehall",
+      "appendSection": {
+        "heading": "Sworn Houses",
+        "content": "- [[House Athelmere]] — sworn to Bramblehall; the bond deepened when Lord Bors's daughter Woodina married Aldwin Athelmere\n- [[House Vespen]] — sworn to Bramblehall; the bond was strengthened when Constann's daughter Adelise married Vesmund Vespen (~1774)"
+      }
+    },
+
+    {
+      "_comment": "Enhance House Vespen — sworn to Bramblehall",
+      "targetTitle": "House Vespen",
+      "appendSection": {
+        "heading": "Feudal Allegiance",
+        "content": "House Vespen is sworn to [[House Wilfrey of Bramblehall]]. The bond was strengthened in the 18th century when Adelise, one of Lord [[Constann Wilfrey|Constann]]'s six daughters, married Vesmund Vespen (~1774)."
+      },
+      "addTags": ["vespen", "bramblehall-sworn", "adelise"]
+    }
+  ],
+
+  "existingEntriesToUpdate": {
+    "description": "The following existing codex entries should have cross-references added",
+    "updates": [
+      {
+        "entry": "Lord Constann (id: 28)",
+        "change": "Cross-reference with new [[Constann Wilfrey]] personage entry, [[The Legend of the Ten Daughters]], and daughter entries [[Raylegh]], [[Giseline Wilfson]]."
+      },
+      {
+        "entry": "Bramblehall (id: 14)",
+        "change": "Cross-reference with [[The Woodland Marriage Tradition]], [[Bauerholt]], [[Bolewood]], [[Barkhollow]], [[The Legend of the Ten Daughters]]."
+      }
+    ]
+  }
+}

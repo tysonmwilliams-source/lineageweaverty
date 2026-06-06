@@ -1,0 +1,606 @@
+{
+  "_template_info": {
+    "name": "Cadet Houses, Stub Families & Bastards Import",
+    "version": "2.0",
+    "created": "2026-02-01",
+    "description": "Creates 4 new cadet house records (Wilfsbane, Wilfour, Wilfsands, Wilfmarsh), populates all 7 empty cadet houses with stub families, and sprinkles bastards (Dun/Dum-named) across non-Breakmount seats and cadet branches. Breakmount already has 15 Dunwilfrey bastards."
+  },
+
+  "_manual_updates_required": [
+    {
+      "action": "Remove stale 'wilfriend' tag from House Wilfern codex entry",
+      "entity": "Codex entry for House Wilfern",
+      "change": "Remove tag 'wilfriend' — this is leftover from when Wilfriend was replaced by Wilfern",
+      "reason": "Data cleanup"
+    }
+  ],
+
+  "houses": [
+    {
+      "_tempId": "house_wilfsbane",
+      "houseName": "House Wilfsbane",
+      "type": "cadet"
+    },
+    {
+      "_tempId": "house_wilfour",
+      "houseName": "House Wilfour",
+      "type": "cadet"
+    },
+    {
+      "_tempId": "house_wilfsands",
+      "houseName": "House Wilfsands",
+      "type": "cadet"
+    },
+    {
+      "_tempId": "house_wilfmarsh",
+      "houseName": "House Wilfmarsh",
+      "type": "cadet"
+    }
+  ],
+
+  "people": [
+    {
+      "_comment": "=== HOUSE WILFBAUER (ID 87) — BRAMBLEHALL WOODLAND STUB ===",
+      "_tempId": "person_garmund_wilfbauer",
+      "firstName": "Garmund",
+      "lastName": "Wilfbauer",
+      "gender": "male",
+      "houseId": 87,
+      "dateOfBirth": "1955",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Head of House Wilfbauer and master of Bauerholt. The most outward-looking of the three woodland branch heads, Garmund manages the farming clearings that feed much of Bramblehall's population. Father of Aldmund."
+    },
+    {
+      "_tempId": "person_seline_wilfbauer",
+      "firstName": "Seline",
+      "lastName": "Wilfbauer",
+      "gender": "female",
+      "houseId": 87,
+      "dateOfBirth": "1958",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Wife of Garmund Wilfbauer. Born locally in the Bramblehall woodlands."
+    },
+    {
+      "_tempId": "person_aldmund_wilfbauer",
+      "firstName": "Aldmund",
+      "lastName": "Wilfbauer",
+      "gender": "male",
+      "houseId": 87,
+      "dateOfBirth": "1982",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Heir to Bauerholt. Son of Garmund Wilfbauer."
+    },
+
+    {
+      "_comment": "=== HOUSE WILFBOLE (ID 88) — BRAMBLEHALL WOODLAND STUB ===",
+      "_tempId": "person_torwin_wilfbole",
+      "firstName": "Torwin",
+      "lastName": "Wilfbole",
+      "gender": "male",
+      "houseId": 88,
+      "dateOfBirth": "1950",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Head of House Wilfbole and master of Bolewood. A master woodcrafter whose joinery is sought across the region. The most traditional of the three woodland heads — he maintains the old forest rites that even Bramblehall has half-forgotten."
+    },
+    {
+      "_tempId": "person_haveline_wilfbole",
+      "firstName": "Haveline",
+      "lastName": "Wilfbole",
+      "gender": "female",
+      "houseId": 88,
+      "dateOfBirth": "1953",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Wife of Torwin Wilfbole. Born locally in the Bramblehall woodlands."
+    },
+    {
+      "_tempId": "person_borwen_wilfbole",
+      "firstName": "Borwen",
+      "lastName": "Wilfbole",
+      "gender": "male",
+      "houseId": 88,
+      "dateOfBirth": "1978",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Heir to Bolewood. Son of Torwin Wilfbole. Learning his father's craft."
+    },
+
+    {
+      "_comment": "=== HOUSE WILFBARK (ID 89) — BRAMBLEHALL WOODLAND STUB ===",
+      "_tempId": "person_aldhelm_wilfbark",
+      "firstName": "Aldhelm",
+      "lastName": "Wilfbark",
+      "gender": "male",
+      "houseId": 89,
+      "dateOfBirth": "1948",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Head of House Wilfbark and warden of Barkhollow. Chief hunter and tracker of the deep wood. Knows every path, clearing, and animal run in the forest. The most insular of the three woodland heads."
+    },
+    {
+      "_tempId": "person_elswyn_wilfbark",
+      "firstName": "Elswyn",
+      "lastName": "Wilfbark",
+      "gender": "female",
+      "houseId": 89,
+      "dateOfBirth": "1952",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Wife of Aldhelm Wilfbark. Born locally in the Bramblehall deep woods."
+    },
+    {
+      "_tempId": "person_godhelm_wilfbark",
+      "firstName": "Godhelm",
+      "lastName": "Wilfbark",
+      "gender": "male",
+      "houseId": 89,
+      "dateOfBirth": "1976",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Heir to Barkhollow. Son of Aldhelm Wilfbark. Already reckoned the best tracker of his generation."
+    },
+
+    {
+      "_comment": "=== HOUSE WILFSBANE (NEW) — BREAKMOUNT CADET STUB ===",
+      "_tempId": "person_merric_wilfsbane",
+      "firstName": "Merric",
+      "lastName": "Wilfsbane",
+      "gender": "male",
+      "houseId": "house_wilfsbane",
+      "dateOfBirth": "1958",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Head of House Wilfsbane and master of Banehold. His house guards the high passes above the silver mines of Night Mountain — harsh country that breeds harsh men. A loyal vassal of Breakmount."
+    },
+    {
+      "_tempId": "person_iselde_wilfsbane",
+      "firstName": "Iselde",
+      "lastName": "Wilfsbane",
+      "maidenName": "Wilfern",
+      "gender": "female",
+      "houseId": "house_wilfsbane",
+      "dateOfBirth": "1960",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Wife of Merric Wilfsbane, born of House Wilfern. Marriage between the two Breakmount cadet branches strengthened both."
+    },
+    {
+      "_tempId": "person_edwyn_wilfsbane",
+      "firstName": "Edwyn",
+      "lastName": "Wilfsbane",
+      "gender": "male",
+      "houseId": "house_wilfsbane",
+      "dateOfBirth": "1985",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Heir to Banehold. Son of Merric Wilfsbane."
+    },
+    {
+      "_tempId": "person_torline_wilfsbane",
+      "firstName": "Torline",
+      "lastName": "Wilfsbane",
+      "gender": "female",
+      "houseId": "house_wilfsbane",
+      "dateOfBirth": "1988",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Daughter of Merric Wilfsbane."
+    },
+
+    {
+      "_comment": "=== HOUSE WILFOUR (NEW) — FOURHEARTH CADET STUB ===",
+      "_tempId": "person_gareth_wilfour",
+      "firstName": "Gareth",
+      "lastName": "Wilfour",
+      "gender": "male",
+      "houseId": "house_wilfour",
+      "dateOfBirth": "1955",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Head of House Wilfour and master of Fourgate. His house controls the harbour entrance at Fourhearth — every vessel that enters or leaves passes under Wilfour eyes. A profitable position that makes them the wealthiest of Fourhearth's cadets."
+    },
+    {
+      "_tempId": "person_merryn_wilfour",
+      "firstName": "Merryn",
+      "lastName": "Wilfour",
+      "gender": "female",
+      "houseId": "house_wilfour",
+      "dateOfBirth": "1958",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Wife of Gareth Wilfour. A merchant's daughter who brought trade connections to the marriage."
+    },
+    {
+      "_tempId": "person_colwin_wilfour",
+      "firstName": "Colwin",
+      "lastName": "Wilfour",
+      "gender": "male",
+      "houseId": "house_wilfour",
+      "dateOfBirth": "1983",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Heir to Fourgate. Son of Gareth Wilfour. Already involved in the harbour trade."
+    },
+    {
+      "_tempId": "person_brielle_wilfour",
+      "firstName": "Brielle",
+      "lastName": "Wilfour",
+      "gender": "female",
+      "houseId": "house_wilfour",
+      "dateOfBirth": "1986",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Daughter of Gareth Wilfour."
+    },
+
+    {
+      "_comment": "=== HOUSE WILFSANDS (NEW) — FOURHEARTH CADET STUB ===",
+      "_tempId": "person_rowan_wilfsands",
+      "firstName": "Rowan",
+      "lastName": "Wilfsands",
+      "gender": "male",
+      "houseId": "house_wilfsands",
+      "dateOfBirth": "1952",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Head of House Wilfsands and master of Sandholme. His house holds the tidal flats and sandbanks south of Fourhearth — salt-panning, shellfish, and salvage rights from wrecked vessels. Less wealthy than the Wilfours but more self-sufficient."
+    },
+    {
+      "_tempId": "person_anneth_wilfsands",
+      "firstName": "Anneth",
+      "lastName": "Wilfsands",
+      "gender": "female",
+      "houseId": "house_wilfsands",
+      "dateOfBirth": "1955",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Wife of Rowan Wilfsands. A fisher's daughter from the coastal villages."
+    },
+    {
+      "_tempId": "person_barric_wilfsands",
+      "firstName": "Barric",
+      "lastName": "Wilfsands",
+      "gender": "male",
+      "houseId": "house_wilfsands",
+      "dateOfBirth": "1980",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Heir to Sandholme. Son of Rowan Wilfsands. Knows the tides and sandbanks better than anyone his age."
+    },
+
+    {
+      "_comment": "=== HOUSE WILFMARSH (NEW) — RIVERHEAD CADET STUB ===",
+      "_tempId": "person_godwin_wilfmarsh",
+      "firstName": "Godwin",
+      "lastName": "Wilfmarsh",
+      "gender": "male",
+      "houseId": "house_wilfmarsh",
+      "dateOfBirth": "1950",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Head of House Wilfmarsh and master of Fenholm. His house controls the marshy lowlands where the river broadens into wetlands — drainage, flood management, and eel-catching. Less prestigious than the Wilfrivers but more dependable. Where Wilfriver has moderate standing and ill repute, Wilfmarsh has low standing but good repute."
+    },
+    {
+      "_tempId": "person_tamsyn_wilfmarsh",
+      "firstName": "Tamsyn",
+      "lastName": "Wilfmarsh",
+      "gender": "female",
+      "houseId": "house_wilfmarsh",
+      "dateOfBirth": "1953",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Wife of Godwin Wilfmarsh. Born in the fen villages along the river."
+    },
+    {
+      "_tempId": "person_harwin_wilfmarsh",
+      "firstName": "Harwin",
+      "lastName": "Wilfmarsh",
+      "gender": "male",
+      "houseId": "house_wilfmarsh",
+      "dateOfBirth": "1978",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Heir to Fenholm. Son of Godwin Wilfmarsh."
+    },
+    {
+      "_tempId": "person_fenneth_wilfmarsh",
+      "firstName": "Fenneth",
+      "lastName": "Wilfmarsh",
+      "gender": "female",
+      "houseId": "house_wilfmarsh",
+      "dateOfBirth": "1981",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Daughter of Godwin Wilfmarsh."
+    },
+
+    {
+      "_comment": "=== BASTARDS — DUN- PREFIX (FATHER'S NAME, ACKNOWLEDGED) ===",
+      "_tempId": "person_osbert_dunwilfrey_bramble",
+      "firstName": "Osbert",
+      "lastName": "Dunwilfrey",
+      "gender": "male",
+      "houseId": 18,
+      "dateOfBirth": "1920",
+      "dateOfDeath": "1990",
+      "legitimacyStatus": "bastard",
+      "notes": "Bastard son of a younger Bramblehall Wilfrey — the first recorded Dunwilfrey at Bramblehall. Breakmount had its bastards, but the insular woodland people had kept their indiscretions quieter until Osbert's father acknowledged the boy publicly. Worked as a forester his whole life."
+    },
+    {
+      "_tempId": "person_margery_dunwilfrey_river",
+      "firstName": "Margery",
+      "lastName": "Dunwilfrey",
+      "gender": "female",
+      "houseId": 62,
+      "dateOfBirth": "1960",
+      "dateOfDeath": null,
+      "legitimacyStatus": "bastard",
+      "notes": "Bastard daughter of a Riverhead Wilfrey lord's younger son and a barge-woman. Acknowledged but never fully accepted at Riverhead. Lives on the river, like her mother."
+    },
+    {
+      "_tempId": "person_torald_dunwilfrey_four",
+      "firstName": "Torald",
+      "lastName": "Dunwilfrey",
+      "gender": "male",
+      "houseId": 22,
+      "dateOfBirth": "1875",
+      "dateOfDeath": "1945",
+      "legitimacyStatus": "bastard",
+      "notes": "Bastard son of a Fourhearth Wilfrey and a harbour-side tavern keeper. The first recorded Dunwilfrey at Fourhearth. Made a modest living as a chandler. His descendants, if any, likely live among the dockside communities."
+    },
+    {
+      "_tempId": "person_cedwin_dunwilfson",
+      "firstName": "Cedwin",
+      "lastName": "Dunwilfson",
+      "gender": "male",
+      "houseId": 24,
+      "dateOfBirth": "1850",
+      "dateOfDeath": "1920",
+      "legitimacyStatus": "bastard",
+      "notes": "Bastard son of a Wilfson lord's brother. The Wilfson name already carried the stain of the kinslaying — a bastard branch of a tainted house was doubly marginal. Cedwin worked the silver mines, as many Dunwilfson men did after him."
+    },
+    {
+      "_tempId": "person_beric_dunwilfern",
+      "firstName": "Beric",
+      "lastName": "Dunwilfern",
+      "gender": "male",
+      "houseId": 72,
+      "dateOfBirth": "1910",
+      "dateOfDeath": "1985",
+      "legitimacyStatus": "bastard",
+      "notes": "Bastard son of a Wilfern knight and a village woman from the western foothills. Acknowledged by his father but raised by his mother. The Wilfern cadets held a minor castle, and Beric was permitted to serve there as a man-at-arms — close to the family but never truly of it."
+    },
+    {
+      "_tempId": "person_halla_dunwilfriver",
+      "firstName": "Halla",
+      "lastName": "Dunwilfriver",
+      "gender": "female",
+      "houseId": 63,
+      "dateOfBirth": "1935",
+      "dateOfDeath": null,
+      "legitimacyStatus": "bastard",
+      "notes": "Bastard daughter of a Wilfriver man and a river trader's wife. The Wilfrivers are widely suspected of smuggling, and Halla's mother was likely involved in the barge trade. Acknowledged — the Wilfrivers are not proud enough to deny their blood, only proud enough to put their name on it."
+    },
+    {
+      "_tempId": "person_farren_dunwilson",
+      "firstName": "Farren",
+      "lastName": "Dunwilson",
+      "gender": "male",
+      "houseId": 75,
+      "dateOfBirth": "1870",
+      "dateOfDeath": "1940",
+      "legitimacyStatus": "bastard",
+      "notes": "Bastard son of an early Wilson lord's younger brother and a northern farmwoman. Even in exile, the Wilfrey blood ran hot. The Wilsons acknowledged Farren quietly — they had spent a century building legitimacy and a bastard was an inconvenience, not a scandal. He farmed near Grantholm his whole life."
+    },
+
+    {
+      "_comment": "=== BASTARDS — DUM- PREFIX (MOTHER'S NAME, RARE) ===",
+      "_tempId": "person_cerys_dumwilfrey",
+      "firstName": "Cerys",
+      "lastName": "Dumwilfrey",
+      "gender": "female",
+      "houseId": 70,
+      "dateOfBirth": "1890",
+      "dateOfDeath": "1965",
+      "legitimacyStatus": "bastard",
+      "notes": "Born to a woman of House Wilfrey of Fourhearth and a common sailor. Her mother was a younger daughter with no marriage prospects — the sailor was a passing indiscretion. But the Wilfrey name was too valuable to abandon. Cerys bore it her whole life as a Dumwilfrey — not quite Wilfrey, but close enough to open some doors and close others. Lived in the harbour communities of Fourhearth."
+    },
+    {
+      "_tempId": "person_annis_dumwilfrey",
+      "firstName": "Annis",
+      "lastName": "Dumwilfrey",
+      "gender": "female",
+      "houseId": 70,
+      "dateOfBirth": "1945",
+      "dateOfDeath": null,
+      "legitimacyStatus": "bastard",
+      "notes": "Born to a woman of House Wilfrey of Bramblehall and a travelling merchant. Dum-named bastards are rare — most children take their father's name. But in the Wilfrey context, the mother's name carries enough weight that some choose it deliberately. Annis grew up on the edges of Bramblehall's woodland communities, neither fully inside nor fully outside."
+    }
+  ],
+
+  "relationships": [
+    {
+      "_comment": "Wilfbauer family",
+      "person1Id": "person_garmund_wilfbauer",
+      "person2Id": "person_seline_wilfbauer",
+      "relationshipType": "spouse",
+      "marriageStatus": "married"
+    },
+    {
+      "person1Id": "person_garmund_wilfbauer",
+      "person2Id": "person_aldmund_wilfbauer",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_seline_wilfbauer",
+      "person2Id": "person_aldmund_wilfbauer",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+
+    {
+      "_comment": "Wilfbole family",
+      "person1Id": "person_torwin_wilfbole",
+      "person2Id": "person_haveline_wilfbole",
+      "relationshipType": "spouse",
+      "marriageStatus": "married"
+    },
+    {
+      "person1Id": "person_torwin_wilfbole",
+      "person2Id": "person_borwen_wilfbole",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_haveline_wilfbole",
+      "person2Id": "person_borwen_wilfbole",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+
+    {
+      "_comment": "Wilfbark family",
+      "person1Id": "person_aldhelm_wilfbark",
+      "person2Id": "person_elswyn_wilfbark",
+      "relationshipType": "spouse",
+      "marriageStatus": "married"
+    },
+    {
+      "person1Id": "person_aldhelm_wilfbark",
+      "person2Id": "person_godhelm_wilfbark",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_elswyn_wilfbark",
+      "person2Id": "person_godhelm_wilfbark",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+
+    {
+      "_comment": "Wilfsbane family",
+      "person1Id": "person_merric_wilfsbane",
+      "person2Id": "person_iselde_wilfsbane",
+      "relationshipType": "spouse",
+      "marriageStatus": "married"
+    },
+    {
+      "person1Id": "person_merric_wilfsbane",
+      "person2Id": "person_edwyn_wilfsbane",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_iselde_wilfsbane",
+      "person2Id": "person_edwyn_wilfsbane",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_merric_wilfsbane",
+      "person2Id": "person_torline_wilfsbane",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_iselde_wilfsbane",
+      "person2Id": "person_torline_wilfsbane",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+
+    {
+      "_comment": "Wilfour family",
+      "person1Id": "person_gareth_wilfour",
+      "person2Id": "person_merryn_wilfour",
+      "relationshipType": "spouse",
+      "marriageStatus": "married"
+    },
+    {
+      "person1Id": "person_gareth_wilfour",
+      "person2Id": "person_colwin_wilfour",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_merryn_wilfour",
+      "person2Id": "person_colwin_wilfour",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_gareth_wilfour",
+      "person2Id": "person_brielle_wilfour",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_merryn_wilfour",
+      "person2Id": "person_brielle_wilfour",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+
+    {
+      "_comment": "Wilfsands family",
+      "person1Id": "person_rowan_wilfsands",
+      "person2Id": "person_anneth_wilfsands",
+      "relationshipType": "spouse",
+      "marriageStatus": "married"
+    },
+    {
+      "person1Id": "person_rowan_wilfsands",
+      "person2Id": "person_barric_wilfsands",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_anneth_wilfsands",
+      "person2Id": "person_barric_wilfsands",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+
+    {
+      "_comment": "Wilfmarsh family",
+      "person1Id": "person_godwin_wilfmarsh",
+      "person2Id": "person_tamsyn_wilfmarsh",
+      "relationshipType": "spouse",
+      "marriageStatus": "married"
+    },
+    {
+      "person1Id": "person_godwin_wilfmarsh",
+      "person2Id": "person_harwin_wilfmarsh",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_tamsyn_wilfmarsh",
+      "person2Id": "person_harwin_wilfmarsh",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_godwin_wilfmarsh",
+      "person2Id": "person_fenneth_wilfmarsh",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_tamsyn_wilfmarsh",
+      "person2Id": "person_fenneth_wilfmarsh",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    }
+  ],
+
+  "codexEntries": [],
+  "heraldry": [],
+  "dignities": []
+}

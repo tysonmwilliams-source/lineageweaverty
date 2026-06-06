@@ -1,19 +1,19 @@
 {
-  "exportedAt": "2026-01-29T21:45:10.206Z",
+  "exportedAt": "2026-06-06T22:55:28.116Z",
   "stats": {
-    "people": 180,
-    "houses": 43,
-    "codexEntries": 332,
-    "relationships": 284,
-    "dignities": 24,
-    "heraldry": 30
+    "people": 320,
+    "houses": 52,
+    "codexEntries": 403,
+    "relationships": 477,
+    "dignities": 26,
+    "heraldry": 33
   },
   "houses": [
     {
       "id": 5,
       "name": "House Wilfrey of Breakmount",
       "type": "great",
-      "memberCount": 57
+      "memberCount": 59
     },
     {
       "id": 7,
@@ -29,12 +29,12 @@
       "id": 9,
       "name": "House Vespen",
       "type": "great",
-      "memberCount": 3
+      "memberCount": 5
     },
     {
       "id": 10,
       "name": "House Hendry",
-      "memberCount": 5
+      "memberCount": 7
     },
     {
       "id": 11,
@@ -65,13 +65,14 @@
     {
       "id": 18,
       "name": "House Wilfrey of Bramblehall",
-      "memberCount": 3
+      "type": "great",
+      "memberCount": 38
     },
     {
       "id": 19,
       "name": "House Athelmere",
       "type": "minor",
-      "memberCount": 6
+      "memberCount": 8
     },
     {
       "id": 20,
@@ -87,7 +88,7 @@
       "id": 22,
       "name": "House Wilfrey of Fourhearth ",
       "type": "great",
-      "memberCount": 5
+      "memberCount": 8
     },
     {
       "id": 23,
@@ -99,7 +100,7 @@
       "id": 24,
       "name": "House Wilfson",
       "type": "cadet",
-      "memberCount": 25
+      "memberCount": 26
     },
     {
       "id": 25,
@@ -110,13 +111,13 @@
       "id": 62,
       "name": "House Wilfrey of Riverhead",
       "type": "main",
-      "memberCount": 20
+      "memberCount": 21
     },
     {
       "id": 63,
       "name": "House Wilfriver",
       "type": "cadet",
-      "memberCount": 3
+      "memberCount": 4
     },
     {
       "id": 64,
@@ -157,7 +158,7 @@
     {
       "id": 70,
       "name": "Commoner",
-      "memberCount": 4
+      "memberCount": 10
     },
     {
       "id": 71,
@@ -169,7 +170,7 @@
       "id": 72,
       "name": "House Wilfern ",
       "type": "cadet",
-      "memberCount": 14
+      "memberCount": 15
     },
     {
       "id": 73,
@@ -186,7 +187,7 @@
       "id": 75,
       "name": "House Wilson ",
       "type": "great",
-      "memberCount": 1
+      "memberCount": 29
     },
     {
       "id": 76,
@@ -198,43 +199,43 @@
       "id": 77,
       "name": "House Northmere",
       "type": "minor",
-      "memberCount": 0
+      "memberCount": 2
     },
     {
       "id": 78,
       "name": "House Kingsward",
       "type": "minor",
-      "memberCount": 0
+      "memberCount": 2
     },
     {
       "id": 79,
       "name": "House Granford",
       "type": "minor",
-      "memberCount": 0
+      "memberCount": 2
     },
     {
       "id": 80,
       "name": "House Croftmoor",
       "type": "minor",
-      "memberCount": 0
+      "memberCount": 2
     },
     {
       "id": 81,
       "name": "House Helmward",
       "type": "minor",
-      "memberCount": 0
+      "memberCount": 2
     },
     {
       "id": 82,
       "name": "House Blackmoor",
       "type": "minor",
-      "memberCount": 0
+      "memberCount": 2
     },
     {
       "id": 83,
       "name": "House Stormcrest",
       "type": "minor",
-      "memberCount": 0
+      "memberCount": 2
     },
     {
       "id": 84,
@@ -246,13 +247,67 @@
       "id": 85,
       "name": "House Ashford",
       "type": "minor",
-      "memberCount": 0
+      "memberCount": 2
     },
     {
       "id": 86,
       "name": "House Fenwick",
       "type": "minor",
-      "memberCount": 0
+      "memberCount": 2
+    },
+    {
+      "id": 87,
+      "name": "House Wilfbauer",
+      "type": "cadet",
+      "memberCount": 3
+    },
+    {
+      "id": 88,
+      "name": "House Wilfbole",
+      "type": "cadet",
+      "memberCount": 3
+    },
+    {
+      "id": 89,
+      "name": "House Wilfbark",
+      "type": "cadet",
+      "memberCount": 3
+    },
+    {
+      "id": 90,
+      "name": "House Wilfsbane",
+      "type": "cadet",
+      "memberCount": 4
+    },
+    {
+      "id": 91,
+      "name": "House Wilfour",
+      "type": "cadet",
+      "memberCount": 4
+    },
+    {
+      "id": 92,
+      "name": "House Wilfsands",
+      "type": "cadet",
+      "memberCount": 3
+    },
+    {
+      "id": 93,
+      "name": "House Wilfmarsh",
+      "type": "cadet",
+      "memberCount": 4
+    },
+    {
+      "id": 96,
+      "name": "House Shadash",
+      "type": "minor",
+      "memberCount": 13
+    },
+    {
+      "id": 97,
+      "name": "House Shadmoor",
+      "type": "cadet",
+      "memberCount": 1
     }
   ],
   "codexCategories": [
@@ -281,7 +336,22 @@
     "Traditions & Customs",
     "Houses & Factions",
     "minor",
-    "Northern Crown Seats"
+    "Northern Crown Seats",
+    "Castles & Seats",
+    "Regions",
+    "Customs & Traditions",
+    "Lords of House Wilson",
+    "cadet",
+    "Regions & Territories",
+    "Resources & Trade",
+    "Families & Organizations",
+    "Laws & Customs",
+    "Sacred Sites",
+    "Flora & Lore",
+    "Mythic Figures",
+    "Contemporary Figures",
+    "Noble Houses",
+    "Magic & Mystery"
   ],
   "codexTypes": [
     "house",
@@ -294,7 +364,8 @@
     "factions",
     "people",
     "locations",
-    "custom"
+    "custom",
+    "other"
   ],
   "dignityClasses": [
     "driht",

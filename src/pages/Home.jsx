@@ -1,27 +1,13 @@
 /**
- * Home.jsx - Reimagined Home Page
- * 
- * PURPOSE:
+ * Home.jsx - Home Page
+ *
  * The landing page for LineageWeaver, featuring an animated hero,
  * statistics dashboard, quick actions, recent activity, and navigation
- * to the four major systems.
- * 
- * ARCHITECTURE:
- * - Uses modular components from /components/home/
- * - Feature flags allow toggling sections on/off for testing
- * - Adapts to empty vs populated data states
- * - Respects theme system
- * 
- * FEATURES:
- * - Animated hero with illuminated initial letter
- * - Count-up statistics dashboard
- * - Quick action buttons
- * - Recent activity feed (or onboarding for empty state)
- * - Four major system navigation cards
- * - Dev panel for testing feature toggles
+ * to the major systems (Family Tree, Codex, Armory, Dignities,
+ * Writing Studio, Data Forge).
  */
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import Navigation from '../components/Navigation';
 import { useGenealogy } from '../contexts/GenealogyContext';
@@ -30,13 +16,11 @@ import { getHeraldryCount } from '../services/heraldryService';
 
 // Import home page components
 import {
-  DevFeaturePanel,
   HeroSection,
   StatsGlance,
   QuickActions,
   RecentActivity,
-  SystemCard,
-  loadFeatures
+  SystemCard
 } from '../components/home';
 
 import './Home.css';
@@ -47,8 +31,18 @@ import './Home.css';
 export default function Home() {
   // ==================== STATE ====================
 
-  // Feature flags for toggling sections
-  const [features, setFeatures] = useState(loadFeatures);
+  // All features enabled by default
+  const features = {
+    heroAnimations: true,
+    statsGlance: true,
+    particleBackground: false,
+    recentActivity: true,
+    quickActions: true,
+    cardAnimations: true,
+    countUpAnimation: true,
+    staggeredEntrance: true,
+    decorativeFlourishes: true,
+  };
 
   // Additional data not in GenealogyContext (counts only for performance)
   const [codexEntriesCount, setCodexEntriesCount] = useState(0);
@@ -116,12 +110,11 @@ export default function Home() {
   
   // ==================== SYSTEM CARDS CONFIG ====================
   
-  // Using Lucide icon names instead of emojis
   const systemCards = [
     {
       iconName: 'tree-deciduous',
       title: 'Family Tree',
-      subtitle: 'Visualize lineages with interactive genealogy trees',
+      subtitle: 'Browse houses and explore interactive genealogy trees',
       path: '/tree',
       accentColor: 'accent-tree',
       delay: 0
@@ -132,7 +125,7 @@ export default function Home() {
       subtitle: 'Wiki-style encyclopedia for your world\'s lore',
       path: '/codex',
       accentColor: 'accent-codex',
-      delay: 0.1
+      delay: 0.05
     },
     {
       iconName: 'shield',
@@ -140,6 +133,22 @@ export default function Home() {
       subtitle: 'Design heraldic arms and coats of arms',
       path: '/heraldry',
       accentColor: 'accent-armory',
+      delay: 0.1
+    },
+    {
+      iconName: 'crown',
+      title: 'Dignities',
+      subtitle: 'Titles, offices, and the seats of power',
+      path: '/dignities',
+      accentColor: 'accent-dignities',
+      delay: 0.15
+    },
+    {
+      iconName: 'quill',
+      title: 'Writing Studio',
+      subtitle: 'Draft narratives and chronicles for your world',
+      path: '/writing',
+      accentColor: 'accent-writing',
       delay: 0.2
     },
     {
@@ -148,7 +157,7 @@ export default function Home() {
       subtitle: 'Manage people, houses, and relationships',
       path: '/manage',
       accentColor: 'accent-forge',
-      delay: 0.3
+      delay: 0.25
     }
   ];
   
@@ -187,15 +196,15 @@ export default function Home() {
               />
             )}
             
-            {/* The Four Pillars - System Navigation */}
+            {/* System Navigation */}
             <section className="systems-section">
-              <motion.h2 
+              <motion.h2
                 className="systems-title"
                 initial={features.staggeredEntrance ? { opacity: 0, y: -10 } : false}
                 animate={features.staggeredEntrance ? { opacity: 1, y: 0 } : false}
                 transition={{ duration: 0.4 }}
               >
-                The Four Pillars
+                Your Systems
               </motion.h2>
               
               <div className="systems-grid">
@@ -222,11 +231,6 @@ export default function Home() {
         </div>
       </div>
       
-      {/* Dev Feature Toggle Panel */}
-      <DevFeaturePanel 
-        features={features} 
-        setFeatures={setFeatures}
-      />
     </>
   );
 }

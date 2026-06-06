@@ -1,0 +1,100 @@
+{
+  "_meta": {
+    "description": "Manual import data for the Wytherns of Wyrmwood Forest",
+    "codex_entries_file": "11-Wythern-Codex-Entries.json",
+    "codex_id_range": "2912-2933 (22 entries)",
+    "notes": "The Wytherns are NOT a noble house. They do not need a house record in the traditional sense. Contemporary characters can be assigned to 'Commoner' (house ID 70) or a new house record can be created for 'The Wytherns' if the app requires a house assignment for all people."
+  },
+
+  "people_to_create": [
+    {
+      "id": 523,
+      "firstName": "Bram",
+      "lastName": "Wilfrey",
+      "houseName": "House Wilfrey of Bramblehall",
+      "houseId": 18,
+      "birth": "1155",
+      "death": null,
+      "titles": [],
+      "notes": "Second son of the Breakmount Wilfreys. Founded Bramblehall in 1176 after being granted Wyrmwood Forest and surrounding lands by the Crown for extraordinary military service. Made Drithen equal to Great Drithen. Formalized the Wood-Warden's Oath with the forest-folk he found already managing Wyrmwood, recognizing that partnership served better than conquest."
+    },
+    {
+      "id": 524,
+      "firstName": "Eldric",
+      "lastName": "Wythern",
+      "houseName": "Commoner",
+      "houseId": 70,
+      "birth": null,
+      "death": null,
+      "titles": [],
+      "notes": "Eldest Steward of Haligdene. Has tended the sacred valley for thirty-two years. Leads the Midwinter delegation to Bramblehall and personally cuts the Mirellune stem for presentation. Deeply involved in thirren management. Traditionalist who believes the Wood-Warden's Oath must be honoured scrupulously. Grandfather of Theren Wythern."
+    },
+    {
+      "id": 525,
+      "firstName": "Maris",
+      "lastName": "Wythern",
+      "houseName": "Commoner",
+      "houseId": 70,
+      "birth": null,
+      "death": null,
+      "titles": [],
+      "notes": "Keeper of Greenweft. Skilled herbalist and healer who maintains the medicinal gardens of Wyrmwood. More open to outsiders than most Wytherns. Argues for a stronger negotiating position with Bramblehall — not breaking the Compact, but ensuring it evolves. Believes thirren management gives forest-folk leverage that should be used wisely."
+    },
+    {
+      "id": 526,
+      "firstName": "Theren",
+      "lastName": "Wythern",
+      "houseName": "Commoner",
+      "houseId": 70,
+      "birth": null,
+      "death": null,
+      "titles": [],
+      "notes": "Young steward who recently swore the Stewardship Oath at Haligdene. Grandson of Eldric Wythern. Represents the new generation questioning traditional isolation. Interested in formal trade partnerships with Bramblehall. Questions whether the Mustering-Right still serves forest-folk interests. His views create tension with his grandfather."
+    },
+    {
+      "id": 527,
+      "firstName": "Corven",
+      "lastName": "Ashwood",
+      "houseName": "Commoner",
+      "houseId": 70,
+      "birth": null,
+      "death": null,
+      "titles": [],
+      "notes": "Influential voice among non-Wythern forest families of Wyrmwood. Skilled tracker, hunter, and expert thirren cultivator with knowledge equal to any Wythern. Argues that Wythern soft-leadership perpetuates unfair hierarchy. Advocates for rotating the Mirellune presentation among all forest-folk families. Significant support among younger forest-folk."
+    }
+  ],
+
+  "relationships_to_create": [
+    {
+      "note": "Eldric Wythern is grandfather of Theren Wythern",
+      "person1_id": 524,
+      "person2_id": 526,
+      "type": "grandparent-grandchild"
+    }
+  ],
+
+  "existing_entries_to_update": [
+    {
+      "target": "Bramblehall (codex #14)",
+      "action": "ADD to content",
+      "addition": "Add reference to Wyrmwood Forest as the forest's name. Add mention of thirren as specific strategic resource. Add reference to the Wood-Warden's Oath and the forest-folk. Add note that the forest lies along the southern border of Wilfrey lands. Add Bram Wilfrey as founder (1176).",
+      "notes": "The current entry says 'at the edge of a vast forest' and lists generic 'Timber' as resource. These additions enrich without contradicting."
+    },
+    {
+      "target": "House Wilfrey of Bramblehall (codex #2439)",
+      "action": "ADD to content",
+      "addition": "Add Bram Wilfrey as founder (1176). Add reference to the Wood-Warden's Oath and forest-folk relationship. Add thirren as key economic resource. Add note about the Midwinter Tribute ceremony.",
+      "notes": "Lords table currently starts at Constann (~1750). Bram Wilfrey predates this by 574 years — no conflict, just fills origin."
+    }
+  ],
+
+  "optional_house_record": {
+    "note": "If the app requires a house record for all people, create this. Otherwise the Commoner assignment works.",
+    "id": 94,
+    "name": "The Wytherns",
+    "type": null,
+    "parentHouseId": null,
+    "motto": "",
+    "notes": "Ancient forest-dwelling family of Wyrmwood Forest. Not a noble house. Predate the Wilfreys' arrival. Sworn to House Wilfrey of Bramblehall through the Wood-Warden's Oath. Carry unspoken authority among the forest-folk — the gravity of deep roots and unchanging ways."
+  }
+}

@@ -86,7 +86,8 @@ function HouseForm({
     parentHouseId: house?.parentHouseId || null,
     cadetTier: house?.cadetTier || null,
     foundingType: house?.foundingType || null,
-    foundedBy: house?.foundedBy || null
+    foundedBy: house?.foundedBy || null,
+    swornTo: house?.swornTo || null
   });
 
   // Heraldry State
@@ -478,6 +479,38 @@ function HouseForm({
                     ))}
                   </select>
                 </div>
+
+                {/* Default Allegiance — for bastard-elevation cadets */}
+                {(formData.cadetTier === 2 || formData.foundingType === 'bastard-elevation' ||
+                  /^(Dum|Dun)/i.test(formData.houseName)) && (
+                  <div className="house-form__group">
+                    <label htmlFor="swornTo" className="house-form__label">
+                      Default Allegiance
+                    </label>
+                    <select
+                      id="swornTo"
+                      name="swornTo"
+                      value={formData.swornTo || ''}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        swornTo: e.target.value ? parseInt(e.target.value) : null
+                      }))}
+                      className="house-form__select"
+                    >
+                      <option value="">No default allegiance</option>
+                      {houses
+                        .filter(h => h.id !== house?.id)
+                        .sort((a, b) => a.houseName.localeCompare(b.houseName))
+                        .map(h => (
+                          <option key={h.id} value={h.id}>{h.houseName}</option>
+                        ))
+                      }
+                    </select>
+                    <p className="house-form__help-text" style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', marginTop: '0.25rem' }}>
+                      Members without personal allegiance default to this house
+                    </p>
+                  </div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>

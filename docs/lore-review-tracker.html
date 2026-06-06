@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wythern Lore Review Tracker</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Georgia', serif;
+    background: #1a1a1a;
+    color: #d4c5a9;
+    padding: 2rem;
+    line-height: 1.6;
+  }
+  h1 {
+    text-align: center;
+    color: #c9a84c;
+    margin-bottom: 0.5rem;
+    font-size: 1.8rem;
+  }
+  .subtitle {
+    text-align: center;
+    color: #8a7d65;
+    margin-bottom: 2rem;
+    font-size: 0.9rem;
+  }
+  .summary-bar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: #252525;
+    border: 1px solid #3a3a3a;
+    border-radius: 8px;
+    padding: 1rem 1.5rem;
+    margin-bottom: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .summary-bar .counts span {
+    margin-right: 1.5rem;
+    font-size: 0.95rem;
+  }
+  .count-accepted { color: #5b8a5b; }
+  .count-modified { color: #c9a84c; }
+  .count-rejected { color: #8a4a4a; }
+  .count-pending { color: #6a6a6a; }
+  .export-btn {
+    background: #c9a84c;
+    color: #1a1a1a;
+    border: none;
+    padding: 0.5rem 1.2rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: bold;
+    font-size: 0.85rem;
+  }
+  .export-btn:hover { background: #dbb85c; }
+  .piece {
+    background: #222;
+    border: 1px solid #3a3a3a;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+    transition: border-color 0.3s;
+  }
+  .piece.accepted { border-color: #5b8a5b; }
+  .piece.modified { border-color: #c9a84c; }
+  .piece.rejected { border-color: #8a4a4a; }
+  .piece-header {
+    padding: 1rem 1.5rem;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+  }
+  .piece-header:hover { background: #2a2a2a; }
+  .piece-number {
+    display: inline-block;
+    background: #333;
+    color: #c9a84c;
+    width: 2rem;
+    height: 2rem;
+    line-height: 2rem;
+    text-align: center;
+    border-radius: 50%;
+    margin-right: 1rem;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+  }
+  .piece-title {
+    font-size: 1.1rem;
+    color: #e0d5bc;
+    flex-grow: 1;
+  }
+  .piece-status {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+    margin-left: 1rem;
+  }
+  .status-pending { background: #333; color: #6a6a6a; }
+  .status-accepted { background: #2a3d2a; color: #7dba7d; }
+  .status-modified { background: #3d3520; color: #dbb85c; }
+  .status-rejected { background: #3d2020; color: #ba6a6a; }
+  .piece-body {
+    display: none;
+    padding: 0 1.5rem 1.5rem;
+  }
+  .piece.open .piece-body { display: block; }
+  .piece-description {
+    color: #a89b80;
+    margin-bottom: 1rem;
+    font-size: 0.95rem;
+  }
+  .piece-description strong { color: #d4c5a9; }
+  .piece-description em { color: #8a7d65; }
+  .existing-note {
+    background: #2a2520;
+    border-left: 3px solid #8a4a4a;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    font-size: 0.85rem;
+    color: #ba8a6a;
+  }
+  .existing-note strong { color: #d4a06a; }
+  .btn-group {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+  .btn {
+    padding: 0.5rem 1.2rem;
+    border: 1px solid #3a3a3a;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.85rem;
+    background: #2a2a2a;
+    color: #d4c5a9;
+    transition: all 0.2s;
+  }
+  .btn:hover { background: #333; }
+  .btn.active-accept { background: #2a3d2a; border-color: #5b8a5b; color: #7dba7d; }
+  .btn.active-modify { background: #3d3520; border-color: #c9a84c; color: #dbb85c; }
+  .btn.active-reject { background: #3d2020; border-color: #8a4a4a; color: #ba6a6a; }
+  .notes-area {
+    width: 100%;
+    min-height: 60px;
+    background: #1a1a1a;
+    border: 1px solid #3a3a3a;
+    border-radius: 4px;
+    color: #d4c5a9;
+    padding: 0.75rem;
+    font-family: inherit;
+    font-size: 0.9rem;
+    resize: vertical;
+  }
+  .notes-area:focus { outline: none; border-color: #c9a84c; }
+  .notes-label {
+    font-size: 0.8rem;
+    color: #6a6a6a;
+    margin-bottom: 0.25rem;
+  }
+  .chevron {
+    color: #6a6a6a;
+    transition: transform 0.2s;
+    flex-shrink: 0;
+    margin-left: 0.5rem;
+  }
+  .piece.open .chevron { transform: rotate(180deg); }
+  .detail-list {
+    list-style: none;
+    padding: 0;
+    margin: 0.5rem 0;
+  }
+  .detail-list li {
+    padding: 0.25rem 0;
+    padding-left: 1rem;
+    position: relative;
+    font-size: 0.9rem;
+  }
+  .detail-list li::before {
+    content: "\2022";
+    position: absolute;
+    left: 0;
+    color: #c9a84c;
+  }
+  .export-output {
+    display: none;
+    background: #1a1a1a;
+    border: 1px solid #3a3a3a;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+    white-space: pre-wrap;
+    font-family: 'Courier New', monospace;
+    font-size: 0.85rem;
+    color: #d4c5a9;
+    max-height: 400px;
+    overflow-y: auto;
+  }
+</style>
+</head>
+<body>
+
+<h1>The Wytherns of Wyrmwood Forest</h1>
+<p class="subtitle">Lore Review Tracker &mdash; 16 pieces for approval</p>
+
+<div class="summary-bar">
+  <div class="counts">
+    <span class="count-accepted" id="count-accepted">0 Accepted</span>
+    <span class="count-modified" id="count-modified">0 Modified</span>
+    <span class="count-rejected" id="count-rejected">0 Rejected</span>
+    <span class="count-pending" id="count-pending">16 Pending</span>
+  </div>
+  <button class="export-btn" onclick="exportDecisions()">Export Decisions</button>
+</div>
+
+<div id="pieces-container"></div>
+<div class="export-output" id="export-output"></div>
+
+<script>
+const pieces = [
+  {
+    id: 1,
+    title: "Wyrmwood Forest",
+    category: "Location",
+    existing: "Bramblehall codex says 'at the edge of a vast forest' \u2014 no name given.",
+    description: "The forest is called <strong>Wyrmwood Forest</strong> (colloquially 'the Wyrmwood'). Home to the forest-folk sworn to Bramblehall. Slots into existing Bramblehall entry with zero conflict.",
+    details: []
+  },
+  {
+    id: 2,
+    title: "Bram Wilfrey, Founder of Bramblehall",
+    category: "Historical Figure",
+    existing: "No founder exists in codex. Lords of Bramblehall start at Constann (~1750). 574-year gap.",
+    description: "<strong>Bram Wilfrey</strong> (b.1155), second son of the Breakmount Wilfreys, granted Wyrmwood Forest and surrounding lands by the Estargenn crown in 1176 for extraordinary military service. Made Drithen, equal to Great Drithen. Found the forest already inhabited and managed by forest-folk. Formalized the Wood-Warden's Oath rather than displacing them.",
+    details: [
+      "Born 1155, second son of Breakmount",
+      "Granted lands in 1176 for military service",
+      "Made Drithen equal to Great Drithen",
+      "Recognized forest-folk expertise, chose partnership over conquest"
+    ]
+  },
+  {
+    id: 3,
+    title: "Thirren (Greyfast / Shieldwood / Lignum Tenax)",
+    category: "Flora / Resource",
+    existing: "Bramblehall resources listed as generic 'Timber.'",
+    description: "<strong>Thirren</strong> is a specific strategic timber growing only in Wyrmwood under proper cultivation. Lighter than oak, equal strength, resists shattering, valuable sap for medicines and adhesives. Known across Estargenn. Forest-folk possess irreplaceable expertise in its management. This is the economic engine undergirding the entire Bramblehall\u2013forest-folk relationship.",
+    details: [
+      "Trade name: Greyfast",
+      "Military term: Shieldwood",
+      "Scholarly term: Lignum Tenax",
+      "Grows only in Wyrmwood under proper cultivation",
+      "Forest-folk expertise is irreplaceable"
+    ]
+  },
+  {
+    id: 4,
+    title: "The Wytherns \u2014 Core Identity",
+    category: "Family / Organization",
+    existing: "No existing entry. Completely separate from House Wilfbole.",
+    description: "The <strong>Wytherns</strong> are an ancient forest-dwelling family of Wyrmwood. They predate the Wilfreys' arrival. They claim descent from the legendary Harfalene Greenfinger. Not nobles and never attempted nobility, but carry a soft, unspoken authority among forest-folk \u2014 the gravity of deep roots, ancient knowledge, and unchanging ways. Semi-nomadic, following seasonal circulation. Sworn to Bramblehall through the Wood-Warden's Oath.",
+    details: [
+      "Pre-Wilfrey forest folk, never attempted nobility",
+      "Soft authority \u2014 'like' nobility among their own",
+      "Semi-nomadic seasonal circulation",
+      "Sworn to Bramblehall via Wood-Warden's Oath",
+      "Completely separate from House Wilfbole"
+    ]
+  },
+  {
+    id: 5,
+    title: "The Wood-Warden's Oath / Warden's Compact",
+    category: "Political Structure",
+    existing: "No oath system exists for forest-folk currently. Compatible with existing Driht/Ward system.",
+    description: "Formal arrangement between forest-folk and Bramblehall, formalized by Bram Wilfrey in 1176.<br><br><strong>Forest-folk owe:</strong> stewardship, thirren cultivation, right of passage, wood-knowledge, Midwinter Tribute, Mustering-Right.<br><strong>Forest-folk do NOT owe:</strong> regular military service, court attendance, coin taxes, submission to Bramblehall's justice in internal matters.<br><strong>Bramblehall owes:</strong> protection of forest-rights, defense, non-interference, fair trade in thirren.<br><br>Renewed ceremonially each generation when a new Lord/Lady takes seat. Also called the <strong>Green Covenant</strong>.",
+    details: [
+      "Formalized 1176 but built on older patterns",
+      "Forest-folk self-govern internally",
+      "Economic foundation: thirren expertise",
+      "Renewed each generation ceremonially"
+    ]
+  },
+  {
+    id: 6,
+    title: "The Sacred Gardens",
+    category: "Locations",
+    existing: "None of these locations exist in the codex.",
+    description: "Four stewarded garden sites within Wyrmwood Forest:<br><br><strong>Haligdene</strong> (Holy Vale) \u2014 moon-garden, Mirellune blooms here, most sacred site<br><strong>Greenweft</strong> \u2014 medicinal herbs, healing grounds, seasonal gathering site<br><strong>Thornweald</strong> \u2014 ancient half-wild orchards (unique fruit varieties)<br><strong>Mosshollow</strong> \u2014 fungal gardens, preservation beds, dried goods",
+    details: [
+      "Haligdene: spiritual heart, accessible only to those the valley 'chooses'",
+      "Greenweft: site of quarterly gatherings and Midwinter assembly",
+      "Thornweald: apples, pears, plums that grow nowhere else",
+      "Mosshollow: fungal cultivation and preservation"
+    ]
+  },
+  {
+    id: 7,
+    title: "Mirellune and the Sacred Flowers",
+    category: "Flora / Lore",
+    existing: "No flora entries exist for Wyrmwood.",
+    description: "<strong>Mirellune</strong> (Moon's Mercy / The Pale Flower) \u2014 blooms only beneath moonrise, central to Wythern identity, taboo against taking more than one, single stem presented at Midwinter Tribute.<br><br>Other flowers: <strong>Thistrelace</strong> (Wind's Gift), <strong>Aelwynne</strong> (Dawn's Breath), <strong>Eiribel</strong> (The Silent Bell), <strong>Halithrae</strong> (Veilpetal). All tied to the Flower-Naming tradition for Wythern children.",
+    details: [
+      "Mirellune: most sacred, blooms under moonrise only",
+      "Thistrelace: for fey-touched or windstorm births",
+      "Aelwynne: for dawn/dusk births",
+      "Eiribel: for storm births",
+      "Halithrae: for children who 'walk between worlds'"
+    ]
+  },
+  {
+    id: 8,
+    title: "The Midwinter Tribute",
+    category: "Ceremony / Tradition",
+    existing: "No ceremony exists in codex.",
+    description: "Annual ceremony on the longest night. Forest-folk assemble at Greenweft three days prior, select delegation, travel to Bramblehall. Present: herbs from Greenweft, fruits from Thornweald, preserved foods from Mosshollow, thirren samples, and a single Mirellune stem from Haligdene.<br><br>Mirellune always presented by a Wythern directly to the Lord/Lady \u2014 never to a proxy. Compact renewed through ritual words. Forest-folk hosted for feast. Mirellune said to bloom twelve days if Compact holds, wither if broken. <em>Never withered in living memory.</em>",
+    details: [
+      "Gathering at Greenweft 3 days before",
+      "Delegation led by Wythern (soft tradition, not rule)",
+      "Single Mirellune stem \u2014 only one that ever leaves Haligdene",
+      "Ritual renewal of the Compact",
+      "Feast hosting forest-folk at Bramblehall"
+    ]
+  },
+  {
+    id: 9,
+    title: "The Mustering-Right",
+    category: "Military / Political",
+    existing: "No military obligation for forest-folk exists in codex.",
+    description: "Bramblehall's power to call forest-folk to arms under the Compact. Invoked only <strong>7 times</strong> since the Oath was first sworn. Forest-folk fight as scouts, guerrilla fighters, ambushers, terrain specialists \u2014 not as armored knights.<br><br>Source of contemporary tension: younger folk question whether this obligation still serves when it pulls them from thirren management during growing seasons.",
+    details: [
+      "Only invoked in existential threats",
+      "Forest-folk fight in their own way (scouts, ambush, terrain)",
+      "Small in number but devastating in home territory",
+      "Tension between generations over continued relevance"
+    ]
+  },
+  {
+    id: 10,
+    title: "Harfalene Greenfinger (Legendary)",
+    category: "Mythic Figure",
+    existing: "No entry exists.",
+    description: "Legendary founder figure of the Wythern tradition. Pre-Wilfrey era. Said to have settled Haligdene, met a faire in the valley, devoted himself to stewardship of the land. Called <strong>Greenfinger</strong> for his extraordinary skill with growing things. Whether he truly existed is unclear, but the Wytherns claim descent.",
+    details: [
+      "Pre-Wilfrey, pre-1176",
+      "Foundling myth of the Wytherns",
+      "Met a faire in Haligdene",
+      "Existence debatable \u2014 legend or history?"
+    ]
+  },
+  {
+    id: 11,
+    title: "Harfalene Wythern (Historical, early 13th c.)",
+    category: "Historical Figure",
+    existing: "No entry exists.",
+    description: "A forest-folk man with uncommon gifts for growing things. Found or refounded Haligdene. Cultivated the first recorded Mirellune beds. Called Greenfinger by those who saw his work, echoing the ancient tale. Married a woodwoman. His life seemed to fulfill the legendary pattern, merging myth and history.<br><br><em>Reworked: no longer a noble's son. Just a Wythern \u2014 a forest-folk man.</em>",
+    details: [
+      "Forest-folk, not nobility",
+      "Found/refounded Haligdene",
+      "First recorded Mirellune cultivation",
+      "Called Greenfinger \u2014 echoing or fulfilling the legend"
+    ]
+  },
+  {
+    id: 12,
+    title: "The Faire of Haligdene",
+    category: "Legendary / Historical Figure",
+    existing: "No entry exists.",
+    description: "In folklore: a supernatural woman whom the original Harfalene Greenfinger met in the valley. In the historical record: the historical Harfalene Wythern's unnamed wife, a practical woodwoman. May be two different women centuries apart, or the same story told differently. True nature remains between myth and documentation.",
+    details: [
+      "Legendary version: supernatural faire",
+      "Historical version: unnamed practical woodwoman",
+      "Deliberate ambiguity \u2014 both may be true"
+    ]
+  },
+  {
+    id: 13,
+    title: "Contemporary Wythern Characters",
+    category: "Characters",
+    existing: "No existing entries for any of these people.",
+    description: "<strong>Eldric Wythern</strong> \u2014 Eldest Steward of Haligdene (32 years). Traditionalist. Leads Midwinter delegation. Cuts the Mirellune. Deeply involved in thirren management. Believes the Compact must be honored scrupulously.<br><br><strong>Maris Wythern</strong> \u2014 Keeper of Greenweft. Herbalist/healer. Pragmatist. Argues for stronger negotiating position with Bramblehall. Believes thirren gives forest-folk leverage.<br><br><strong>Theren Wythern</strong> \u2014 Young steward, Eldric's grandson. Questions old isolation and Mustering-Right. Wants formal trade partnerships. Tension with grandfather but shared love of Haligdene.",
+    details: [
+      "Eldric: tradition, duty, the oath above all",
+      "Maris: pragmatic evolution, use leverage wisely",
+      "Theren: young generation, questioning, forward-looking",
+      "Three perspectives on the same community's future"
+    ]
+  },
+  {
+    id: 14,
+    title: "Corven Ashwood (Non-Wythern Forest-Folk)",
+    category: "Character",
+    existing: "No existing entry. No 'Ashwood' family in codex.",
+    description: "Influential voice among non-Wythern forest families. Expert thirren cultivator with knowledge equal to any Wythern. Argues that Wythern soft-leadership of the Midwinter delegation perpetuates an unfair hierarchy. Wants Mirellune presentation rotated among all families. Points out non-Wythern families manage thirren just as expertly. Significant support among younger forest-folk who resent Wythern mystique.",
+    details: [
+      "Skilled tracker, hunter, thirren expert",
+      "Challenges Wythern 'soft nobility' from a position of equal competence",
+      "Resentment is about mystique, not bloodline",
+      "Represents broader forest-folk political voice"
+    ]
+  },
+  {
+    id: 15,
+    title: "The Stewardship Oath & Flower-Naming",
+    category: "Cultural Practices",
+    existing: "No existing entries.",
+    description: "<strong>Stewardship Oath:</strong> Sworn at Haligdene during first moonrise in the valley. Witnessed by three elder stewards. Separate from and older than the Wood-Warden's Oath. Breaking it means you'll never find Haligdene again.<br><br><em>'By root and leaf, by moon and seed, / I bind my days to beauty's need...'</em><br><br><strong>Flower-Naming:</strong> Wythern children receive whispered second names from Wyrmwood flora, spoken only by close kin. Each flower carries birth-circumstance associations.",
+    details: [
+      "Stewardship Oath: older than the Wood-Warden's Oath",
+      "Must be spoken during moonrise with Mirellune blooming",
+      "Three elder witnesses required",
+      "Flower-names: secret spiritual identity, not public names"
+    ]
+  },
+  {
+    id: 16,
+    title: "Story-Tradition & Seasonal Gatherings",
+    category: "Cultural Practices",
+    existing: "No existing entries.",
+    description: "<strong>Story-Tradition:</strong> The tale of Harfalene Greenfinger is never written, only spoken. Each family maintains its own version. Multiplicity is richness, not contradiction.<br><br><strong>Seasonal Gatherings:</strong> Four times a year at Greenweft. Eldest Stewards hold informal authority. Decisions by consensus. The Midwinter gathering (3 days before Tribute) is the largest \u2014 delegation chosen, tribute assembled, thirren harvest assessed, grievances discussed.",
+    details: [
+      "Oral tradition only \u2014 deliberate choice",
+      "Multiple versions of the same story coexist",
+      "Quarterly gatherings at Greenweft",
+      "Consensus governance, not decree"
+    ]
+  }
+];
+
+let decisions = {};
+
+function init() {
+  const container = document.getElementById('pieces-container');
+  const saved = localStorage.getItem('wythern-lore-decisions');
+  if (saved) {
+    try { decisions = JSON.parse(saved); } catch(e) { decisions = {}; }
+  }
+
+  pieces.forEach(p => {
+    const saved = decisions[p.id] || { status: 'pending', notes: '' };
+    const div = document.createElement('div');
+    div.className = `piece ${saved.status}`;
+    div.id = `piece-${p.id}`;
+    div.innerHTML = `
+      <div class="piece-header" onclick="togglePiece(${p.id})">
+        <div style="display:flex;align-items:center;flex-grow:1;min-width:0">
+          <span class="piece-number">${p.id}</span>
+          <span class="piece-title">${p.title} <span style="color:#6a6a6a;font-size:0.8rem;margin-left:0.5rem">${p.category}</span></span>
+        </div>
+        <span class="piece-status status-${saved.status}" id="status-badge-${p.id}">${saved.status}</span>
+        <span class="chevron">&#9660;</span>
+      </div>
+      <div class="piece-body">
+        ${p.existing ? `<div class="existing-note"><strong>Existing codex:</strong> ${p.existing}</div>` : ''}
+        <div class="piece-description">${p.description}</div>
+        ${p.details.length ? `<ul class="detail-list">${p.details.map(d => `<li>${d}</li>`).join('')}</ul>` : ''}
+        <div class="btn-group">
+          <button class="btn ${saved.status === 'accepted' ? 'active-accept' : ''}" onclick="setStatus(${p.id}, 'accepted', event)">Accept</button>
+          <button class="btn ${saved.status === 'modified' ? 'active-modify' : ''}" onclick="setStatus(${p.id}, 'modified', event)">Modify</button>
+          <button class="btn ${saved.status === 'rejected' ? 'active-reject' : ''}" onclick="setStatus(${p.id}, 'rejected', event)">Reject</button>
+        </div>
+        <div class="notes-label">Notes (modifications, reasoning, etc.):</div>
+        <textarea class="notes-area" id="notes-${p.id}" oninput="saveNotes(${p.id})" placeholder="Any notes on this piece...">${saved.notes}</textarea>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+  updateCounts();
+}
+
+function togglePiece(id) {
+  document.getElementById(`piece-${id}`).classList.toggle('open');
+}
+
+function setStatus(id, status, event) {
+  event.stopPropagation();
+  if (!decisions[id]) decisions[id] = { status: 'pending', notes: '' };
+  decisions[id].status = status;
+  save();
+
+  const piece = document.getElementById(`piece-${id}`);
+  piece.className = `piece open ${status}`;
+  const badge = document.getElementById(`status-badge-${id}`);
+  badge.className = `piece-status status-${status}`;
+  badge.textContent = status;
+
+  // Update button states
+  const btns = piece.querySelectorAll('.btn-group .btn');
+  btns[0].className = `btn ${status === 'accepted' ? 'active-accept' : ''}`;
+  btns[1].className = `btn ${status === 'modified' ? 'active-modify' : ''}`;
+  btns[2].className = `btn ${status === 'rejected' ? 'active-reject' : ''}`;
+
+  updateCounts();
+}
+
+function saveNotes(id) {
+  if (!decisions[id]) decisions[id] = { status: 'pending', notes: '' };
+  decisions[id].notes = document.getElementById(`notes-${id}`).value;
+  save();
+}
+
+function save() {
+  localStorage.setItem('wythern-lore-decisions', JSON.stringify(decisions));
+}
+
+function updateCounts() {
+  let a = 0, m = 0, r = 0, p = 0;
+  pieces.forEach(piece => {
+    const s = (decisions[piece.id] || {}).status || 'pending';
+    if (s === 'accepted') a++;
+    else if (s === 'modified') m++;
+    else if (s === 'rejected') r++;
+    else p++;
+  });
+  document.getElementById('count-accepted').textContent = `${a} Accepted`;
+  document.getElementById('count-modified').textContent = `${m} Modified`;
+  document.getElementById('count-rejected').textContent = `${r} Rejected`;
+  document.getElementById('count-pending').textContent = `${p} Pending`;
+}
+
+function exportDecisions() {
+  let output = "WYTHERN LORE REVIEW \u2014 DECISIONS\n";
+  output += "=".repeat(40) + "\n\n";
+  pieces.forEach(p => {
+    const d = decisions[p.id] || { status: 'pending', notes: '' };
+    const statusIcon = d.status === 'accepted' ? '\u2705' : d.status === 'modified' ? '\u270f\ufe0f' : d.status === 'rejected' ? '\u274c' : '\u23f3';
+    output += `${statusIcon} PIECE ${p.id}: ${p.title}\n`;
+    output += `   Status: ${d.status.toUpperCase()}\n`;
+    if (d.notes.trim()) output += `   Notes: ${d.notes.trim()}\n`;
+    output += "\n";
+  });
+
+  const el = document.getElementById('export-output');
+  el.style.display = 'block';
+  el.textContent = output;
+
+  // Also copy to clipboard
+  navigator.clipboard.writeText(output).then(() => {
+    const btn = document.querySelector('.export-btn');
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = orig, 2000);
+  });
+}
+
+init();
+</script>
+</body>
+</html>

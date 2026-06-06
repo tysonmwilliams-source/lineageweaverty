@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getEntry, getAllLinksForEntry, getEntry as getBacklinkEntry, updateEntry } from '../services/codexService';
+import { getEntry, getAllLinksForEntry, getEntry as getBacklinkEntry, updateEntry, deleteEntry } from '../services/codexService';
 import { getHeraldry } from '../services/heraldryService';
 import { getDatabase } from '../services/database';
 import { useDataset } from '../contexts/DatasetContext';
@@ -261,6 +261,20 @@ function CodexEntryView() {
       navigate(`/heraldry/edit/${entry.heraldryId}`);
     }
   }, [navigate, entry?.heraldryId]);
+
+  // Delete this codex entry
+  const handleDelete = useCallback(async () => {
+    if (!entry) return;
+    if (!window.confirm(`Delete "${entry.title}"?\n\nThis action cannot be undone.`)) return;
+
+    try {
+      await deleteEntry(parseInt(id), activeDataset?.id);
+      navigate('/codex');
+    } catch (err) {
+      console.error('Error deleting entry:', err);
+      alert('Failed to delete entry: ' + err.message);
+    }
+  }, [entry, id, activeDataset?.id, navigate]);
 
   // Move mysteria entry to Dignities & Titles subsection
   const handleMoveToTitles = useCallback(async () => {
@@ -546,6 +560,14 @@ function CodexEntryView() {
                     Move to Dignities & Titles
                   </ActionButton>
                 )}
+
+                <ActionButton
+                  icon="trash-2"
+                  onClick={handleDelete}
+                  variant="danger"
+                >
+                  Delete Entry
+                </ActionButton>
               </div>
 
               {/* Linked Heraldry Display */}

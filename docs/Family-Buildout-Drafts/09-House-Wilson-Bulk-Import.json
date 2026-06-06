@@ -1,0 +1,1095 @@
+{
+  "_template_info": {
+    "name": "House Wilson Complete Lineage Import",
+    "version": "2.0",
+    "created": "2026-01-30",
+    "description": "10 generations of House Wilson from Lennis (~1755) to Baudin IX (~2007). Uses existing entity references for House Wilson (75), Nivette Wilson (371), and all 10 Northern Crown Houses (77-86). Also creates husbands for Wilson daughters and wives marrying into Wilson from Northern Crown Houses."
+  },
+
+  "_manual_updates_required": [
+    {
+      "action": "Update Nivette Wilson death year",
+      "entity": "Person ID 371 (Nivette Wilson)",
+      "change": "Set dateOfDeath to '1822' (currently null)",
+      "reason": "Lineage doc specifies death ~1822, aged ~70, outlived her husband"
+    },
+    {
+      "action": "Update Lennis Wilfrey codex entry",
+      "entity": "Codex entry ID 20 (Lennis Wilfrey)",
+      "change": "Add birth/death years (~1755-~1815) and note his transformation into Lennis Wilson",
+      "reason": "Existing codex entry lacks dates and Wilson identity"
+    }
+  ],
+
+  "houses": [],
+
+  "people": [
+    {
+      "_comment": "=== GENERATION 0: THE FOUNDERS ===",
+      "_tempId": "person_lennis",
+      "_generation": 0,
+      "firstName": "Lennis",
+      "lastName": "Wilson",
+      "maidenName": "Wilfrey",
+      "gender": "male",
+      "houseId": 75,
+      "dateOfBirth": "1755",
+      "dateOfDeath": "1815",
+      "legitimacyStatus": "legitimate",
+      "notes": "Founder and first Lord of House Wilson. Born Lennis Wilfrey, heir to Fourhearth Castle. Fled north with Nivette Wilfson after The Scandal of 1776. Received royal grant of lands at Grantholm ~1778, with formal Crown recognition of House Wilson in 1785. Chose the name 'Wilson' — close enough to 'Wilfson' to claim the lineage, different enough to mark independence. Ruled ~1778-1815."
+    },
+
+    {
+      "_comment": "=== GENERATION 1: CHILDREN OF LENNIS AND NIVETTE ===",
+      "_tempId": "person_baudin_i",
+      "_generation": 1,
+      "firstName": "Baudin",
+      "lastName": "Wilson",
+      "gender": "male",
+      "houseId": 75,
+      "dateOfBirth": "1778",
+      "dateOfDeath": "1850",
+      "legitimacyStatus": "legitimate",
+      "notes": "Second Lord of House Wilson (1815-1850). First child of Lennis and Nivette, named for the uncle who died defending their marriage — Baudin Wilfson. This began the Wilson tradition: every firstborn son bears the name Baudin. Born shortly after settlement at Grantholm."
+    },
+    {
+      "_tempId": "person_colardine",
+      "_generation": 1,
+      "firstName": "Colardine",
+      "lastName": "Ashford",
+      "maidenName": "Wilson",
+      "gender": "female",
+      "houseId": 85,
+      "dateOfBirth": "1780",
+      "dateOfDeath": "1845",
+      "legitimacyStatus": "legitimate",
+      "notes": "Second child of Lennis and Nivette Wilson. Named as a feminine form honoring Colard Wilfson — the brother who killed Baudin. Lennis reportedly said: 'Colard did what he believed was right. We do not hate him for it.' Married Rodric Ashford ~1798, the first Wilson daughter to wed. House Ashford's acceptance helped legitimize the exiled family among northern nobility."
+    },
+    {
+      "_tempId": "person_faramund_wilson",
+      "_generation": 1,
+      "firstName": "Faramund",
+      "lastName": "Wilson",
+      "gender": "male",
+      "houseId": 75,
+      "dateOfBirth": "1783",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Third child of Lennis and Nivette Wilson. Named to honor Nivette's father Faramund Wilfson. The 'spare heir' — if something happened to Baudin, the line would continue."
+    },
+    {
+      "_tempId": "person_lenniselle",
+      "_generation": 1,
+      "firstName": "Lenniselle",
+      "lastName": "Fenwick",
+      "maidenName": "Wilson",
+      "gender": "female",
+      "houseId": 86,
+      "dateOfBirth": "1786",
+      "dateOfDeath": "1860",
+      "legitimacyStatus": "legitimate",
+      "notes": "Fourth child of Lennis and Nivette Wilson. Named as a feminine form of her father's name. Married Aldric Fenwick ~1805. House Fenwick's ancient lineage (founded ~980) accepting a Wilson bride reinforced that House Wilson was northern now, not Wilfrey."
+    },
+
+    {
+      "_comment": "=== GENERATION 1: SPOUSES MARRYING IN/OUT ===",
+      "_tempId": "person_cereline",
+      "_generation": 1,
+      "firstName": "Cereline",
+      "lastName": "Wilson",
+      "maidenName": "Northmere",
+      "gender": "female",
+      "houseId": 75,
+      "dateOfBirth": "1782",
+      "dateOfDeath": "1855",
+      "legitimacyStatus": "legitimate",
+      "notes": "Wife of Baudin Wilson I. Born to House Northmere, an ancient Northern Crown House seated at Merehall. Married ~1800. The first bride to join the exiled house from the northern nobility, helping legitimize House Wilson among their new neighbors."
+    },
+    {
+      "_tempId": "person_rodric_ashford",
+      "_generation": 1,
+      "firstName": "Rodric",
+      "lastName": "Ashford",
+      "gender": "male",
+      "houseId": 85,
+      "dateOfBirth": "1775",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Husband of Colardine Wilson. Son of House Ashford, a minor but respectable Northern Crown House seated at Ashford Hall. Married ~1798. His family's acceptance of a Wilson bride helped legitimize the exiled house among northern nobility."
+    },
+    {
+      "_tempId": "person_aldric_fenwick",
+      "_generation": 1,
+      "firstName": "Aldric",
+      "lastName": "Fenwick",
+      "gender": "male",
+      "houseId": 86,
+      "dateOfBirth": "1782",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Husband of Lenniselle Wilson. Son of House Fenwick, one of the most ancient Northern Crown Houses (founded ~980), seated at Fenwick Keep. Married ~1805. The Fenwicks' deep roots predating the Wilfrey ascendancy gave this match particular significance."
+    },
+
+    {
+      "_comment": "=== GENERATION 2: CHILDREN OF BAUDIN I AND CERELINE ===",
+      "_tempId": "person_baudin_ii",
+      "_generation": 2,
+      "firstName": "Baudin",
+      "lastName": "Wilson",
+      "gender": "male",
+      "houseId": 75,
+      "dateOfBirth": "1802",
+      "dateOfDeath": "1875",
+      "legitimacyStatus": "legitimate",
+      "notes": "Third Lord of House Wilson (1850-1875). Baudin Wilson II, continuing the naming tradition. Married Isolda Kingsward ~1828, reinforcing House Wilson's legitimacy as a Crown-favored house."
+    },
+    {
+      "_tempId": "person_niveline",
+      "_generation": 2,
+      "firstName": "Niveline",
+      "lastName": "Northmere",
+      "maidenName": "Wilson",
+      "gender": "female",
+      "houseId": 77,
+      "dateOfBirth": "1805",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Second child of Baudin Wilson I and Cereline. Named to honor grandmother Nivette. Married Beric Northmere ~1825, creating a reciprocal bond with House Northmere (her mother's birth house)."
+    },
+    {
+      "_tempId": "person_cerald",
+      "_generation": 2,
+      "firstName": "Cerald",
+      "lastName": "Wilson",
+      "gender": "male",
+      "houseId": 75,
+      "dateOfBirth": "1808",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Third child of Baudin Wilson I and Cereline. Named to honor his mother's name."
+    },
+
+    {
+      "_comment": "=== GENERATION 2: SPOUSES ===",
+      "_tempId": "person_isolda",
+      "_generation": 2,
+      "firstName": "Isolda",
+      "lastName": "Wilson",
+      "maidenName": "Kingsward",
+      "gender": "female",
+      "houseId": 75,
+      "dateOfBirth": "1808",
+      "dateOfDeath": "1880",
+      "legitimacyStatus": "legitimate",
+      "notes": "Wife of Baudin Wilson II. Born to House Kingsward, a Northern Crown House seated at Wardkeep, guarding the northern royal road. Married ~1828. The Kingsward connection reinforced House Wilson's legitimacy as a Crown-favored house."
+    },
+    {
+      "_tempId": "person_beric_northmere",
+      "_generation": 2,
+      "firstName": "Beric",
+      "lastName": "Northmere",
+      "gender": "male",
+      "houseId": 77,
+      "dateOfBirth": "1800",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Husband of Niveline Wilson. Son of House Northmere. Married ~1825, creating a double bond between Wilson and Northmere (Cereline Northmere had married Baudin I)."
+    },
+
+    {
+      "_comment": "=== GENERATION 3: CHILDREN OF BAUDIN II AND ISOLDA ===",
+      "_tempId": "person_baudin_iii",
+      "_generation": 3,
+      "firstName": "Baudin",
+      "lastName": "Wilson",
+      "gender": "male",
+      "houseId": 75,
+      "dateOfBirth": "1830",
+      "dateOfDeath": "1905",
+      "legitimacyStatus": "legitimate",
+      "notes": "Fourth Lord of House Wilson (1875-1905). Baudin Wilson III. Married Hamelina Granford ~1855."
+    },
+    {
+      "_tempId": "person_iselde",
+      "_generation": 3,
+      "firstName": "Iselde",
+      "lastName": "Kingsward",
+      "maidenName": "Wilson",
+      "gender": "female",
+      "houseId": 78,
+      "dateOfBirth": "1833",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Second child of Baudin Wilson II and Isolda. Married Garen Kingsward ~1853, strengthening the Wilson-Kingsward bond."
+    },
+    {
+      "_tempId": "person_lenard",
+      "_generation": 3,
+      "firstName": "Lenard",
+      "lastName": "Wilson",
+      "gender": "male",
+      "houseId": 75,
+      "dateOfBirth": "1836",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Third child of Baudin Wilson II and Isolda. Named to honor founder Lennis."
+    },
+
+    {
+      "_comment": "=== GENERATION 3: SPOUSES ===",
+      "_tempId": "person_hamelina",
+      "_generation": 3,
+      "firstName": "Hamelina",
+      "lastName": "Wilson",
+      "maidenName": "Granford",
+      "gender": "female",
+      "houseId": 75,
+      "dateOfBirth": "1835",
+      "dateOfDeath": "1910",
+      "legitimacyStatus": "legitimate",
+      "notes": "Wife of Baudin Wilson III. Born to House Granford, a Northern Crown House seated at Granford Keep amid rich farmland. Married ~1855. Her daughter Hameline Wilson later married Tormund Granford (~1882), creating a double bond."
+    },
+    {
+      "_tempId": "person_garen_kingsward",
+      "_generation": 3,
+      "firstName": "Garen",
+      "lastName": "Kingsward",
+      "gender": "male",
+      "houseId": 78,
+      "dateOfBirth": "1828",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Husband of Iselde Wilson. Son of House Kingsward. Married ~1853."
+    },
+
+    {
+      "_comment": "=== GENERATION 4: CHILDREN OF BAUDIN III AND HAMELINA ===",
+      "_tempId": "person_baudin_iv",
+      "_generation": 4,
+      "firstName": "Baudin",
+      "lastName": "Wilson",
+      "gender": "male",
+      "houseId": 75,
+      "dateOfBirth": "1858",
+      "dateOfDeath": "1935",
+      "legitimacyStatus": "legitimate",
+      "notes": "Fifth Lord of House Wilson (1905-1935). Baudin Wilson IV. Married Aureline Croftmoor ~1885."
+    },
+    {
+      "_tempId": "person_hameline",
+      "_generation": 4,
+      "firstName": "Hameline",
+      "lastName": "Granford",
+      "maidenName": "Wilson",
+      "gender": "female",
+      "houseId": 79,
+      "dateOfBirth": "1861",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Second child of Baudin Wilson III and Hamelina. Married Tormund Granford ~1882, creating a double bond with House Granford (her mother was born Granford)."
+    },
+    {
+      "_tempId": "person_granard",
+      "_generation": 4,
+      "firstName": "Granard",
+      "lastName": "Wilson",
+      "gender": "male",
+      "houseId": 75,
+      "dateOfBirth": "1865",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Third child of Baudin Wilson III and Hamelina."
+    },
+
+    {
+      "_comment": "=== GENERATION 4: SPOUSES ===",
+      "_tempId": "person_aureline",
+      "_generation": 4,
+      "firstName": "Aureline",
+      "lastName": "Wilson",
+      "maidenName": "Croftmoor",
+      "gender": "female",
+      "houseId": 75,
+      "dateOfBirth": "1865",
+      "dateOfDeath": "1945",
+      "legitimacyStatus": "legitimate",
+      "notes": "Wife of Baudin Wilson IV. Born to House Croftmoor, a Northern Crown House seated at Moorstead in the remote moorlands. Married ~1885. Her daughter Croftine Wilson later married Aldwin Croftmoor (~1916), strengthening the bond."
+    },
+    {
+      "_tempId": "person_tormund_granford",
+      "_generation": 4,
+      "firstName": "Tormund",
+      "lastName": "Granford",
+      "gender": "male",
+      "houseId": 79,
+      "dateOfBirth": "1856",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Husband of Hameline Wilson. Son of House Granford. Married ~1882."
+    },
+
+    {
+      "_comment": "=== GENERATION 5: CHILDREN OF BAUDIN IV AND AURELINE ===",
+      "_tempId": "person_baudin_v",
+      "_generation": 5,
+      "firstName": "Baudin",
+      "lastName": "Wilson",
+      "gender": "male",
+      "houseId": 75,
+      "dateOfBirth": "1888",
+      "dateOfDeath": "1965",
+      "legitimacyStatus": "legitimate",
+      "notes": "Sixth Lord of House Wilson (1935-1965). Baudin Wilson V. Married Doreline Helmward ~1918 — a later marriage, age 30, perhaps due to the wars or military service of that era."
+    },
+    {
+      "_tempId": "person_aurel",
+      "_generation": 5,
+      "firstName": "Aurel",
+      "lastName": "Wilson",
+      "gender": "male",
+      "houseId": 75,
+      "dateOfBirth": "1891",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Second child of Baudin Wilson IV and Aureline."
+    },
+    {
+      "_tempId": "person_croftine",
+      "_generation": 5,
+      "firstName": "Croftine",
+      "lastName": "Croftmoor",
+      "maidenName": "Wilson",
+      "gender": "female",
+      "houseId": 80,
+      "dateOfBirth": "1895",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Third child of Baudin Wilson IV and Aureline. Married Aldwin Croftmoor ~1916, creating a double bond with House Croftmoor (her mother was born Croftmoor)."
+    },
+
+    {
+      "_comment": "=== GENERATION 5: SPOUSES ===",
+      "_tempId": "person_doreline",
+      "_generation": 5,
+      "firstName": "Doreline",
+      "lastName": "Wilson",
+      "maidenName": "Helmward",
+      "gender": "female",
+      "houseId": 75,
+      "dateOfBirth": "1895",
+      "dateOfDeath": "1975",
+      "legitimacyStatus": "legitimate",
+      "notes": "Wife of Baudin Wilson V. Born to House Helmward, a Northern Crown House of military tradition seated at Helm Castle on the northern border. Married ~1918. Her daughter Helmina Wilson later married Roderick Helmward (~1948)."
+    },
+    {
+      "_tempId": "person_aldwin_croftmoor",
+      "_generation": 5,
+      "firstName": "Aldwin",
+      "lastName": "Croftmoor",
+      "gender": "male",
+      "houseId": 80,
+      "dateOfBirth": "1890",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Husband of Croftine Wilson. Son of House Croftmoor. Married ~1916."
+    },
+
+    {
+      "_comment": "=== GENERATION 6: CHILDREN OF BAUDIN V AND DORELINE ===",
+      "_tempId": "person_baudin_vi",
+      "_generation": 6,
+      "firstName": "Baudin",
+      "lastName": "Wilson",
+      "gender": "male",
+      "houseId": 75,
+      "dateOfBirth": "1920",
+      "dateOfDeath": "1995",
+      "legitimacyStatus": "legitimate",
+      "notes": "Seventh Lord of House Wilson (1965-1995). Baudin Wilson VI. Married Sireline Blackmoor ~1948."
+    },
+    {
+      "_tempId": "person_dorric",
+      "_generation": 6,
+      "firstName": "Dorric",
+      "lastName": "Wilson",
+      "gender": "male",
+      "houseId": 75,
+      "dateOfBirth": "1923",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Second child of Baudin Wilson V and Doreline."
+    },
+    {
+      "_tempId": "person_helmina",
+      "_generation": 6,
+      "firstName": "Helmina",
+      "lastName": "Helmward",
+      "maidenName": "Wilson",
+      "gender": "female",
+      "houseId": 81,
+      "dateOfBirth": "1927",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Third child of Baudin Wilson V and Doreline. Married Roderick Helmward ~1948, creating a double bond with House Helmward (her mother was born Helmward)."
+    },
+
+    {
+      "_comment": "=== GENERATION 6: SPOUSES ===",
+      "_tempId": "person_sireline",
+      "_generation": 6,
+      "firstName": "Sireline",
+      "lastName": "Wilson",
+      "maidenName": "Blackmoor",
+      "gender": "female",
+      "houseId": 75,
+      "dateOfBirth": "1928",
+      "dateOfDeath": "2010",
+      "legitimacyStatus": "legitimate",
+      "notes": "Wife of Baudin Wilson VI. Born to House Blackmoor, an ancient and insular Northern Crown House seated at Blackmoor Hall in the dark peatlands. Married ~1948. Her daughter Moraine Wilson later married Cedric Blackmoor (~1978)."
+    },
+    {
+      "_tempId": "person_roderick_helmward",
+      "_generation": 6,
+      "firstName": "Roderick",
+      "lastName": "Helmward",
+      "gender": "male",
+      "houseId": 81,
+      "dateOfBirth": "1922",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Husband of Helmina Wilson. Son of House Helmward. Married ~1948."
+    },
+
+    {
+      "_comment": "=== GENERATION 7: CHILDREN OF BAUDIN VI AND SIRELINE ===",
+      "_tempId": "person_baudin_vii",
+      "_generation": 7,
+      "firstName": "Baudin",
+      "lastName": "Wilson",
+      "gender": "male",
+      "houseId": 75,
+      "dateOfBirth": "1950",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Eighth Lord of House Wilson (1995-present). Baudin Wilson VII, the current Lord. Married Eveline Stormcrest ~1975. When asked about the Baudin naming tradition, Wilsons typically respond: 'We remember Baudin. We always will.'"
+    },
+    {
+      "_tempId": "person_siric",
+      "_generation": 7,
+      "firstName": "Siric",
+      "lastName": "Wilson",
+      "gender": "male",
+      "houseId": 75,
+      "dateOfBirth": "1953",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Second child of Baudin Wilson VI and Sireline."
+    },
+    {
+      "_tempId": "person_moraine",
+      "_generation": 7,
+      "firstName": "Moraine",
+      "lastName": "Blackmoor",
+      "maidenName": "Wilson",
+      "gender": "female",
+      "houseId": 82,
+      "dateOfBirth": "1957",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Third child of Baudin Wilson VI and Sireline. Married Cedric Blackmoor ~1978, creating a double bond with House Blackmoor (her mother was born Blackmoor)."
+    },
+
+    {
+      "_comment": "=== GENERATION 7: SPOUSES ===",
+      "_tempId": "person_eveline",
+      "_generation": 7,
+      "firstName": "Eveline",
+      "lastName": "Wilson",
+      "maidenName": "Stormcrest",
+      "gender": "female",
+      "houseId": 75,
+      "dateOfBirth": "1955",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Wife of Baudin Wilson VII, current Lady of House Wilson. Born to House Stormcrest, a seafaring Northern Crown House seated at Cresthold on the northern coast. Married ~1975."
+    },
+    {
+      "_tempId": "person_cedric_blackmoor",
+      "_generation": 7,
+      "firstName": "Cedric",
+      "lastName": "Blackmoor",
+      "gender": "male",
+      "houseId": 82,
+      "dateOfBirth": "1952",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Husband of Moraine Wilson. Son of House Blackmoor. Married ~1978."
+    },
+
+    {
+      "_comment": "=== GENERATION 8: CHILDREN OF BAUDIN VII AND EVELINE ===",
+      "_tempId": "person_baudin_viii",
+      "_generation": 8,
+      "firstName": "Baudin",
+      "lastName": "Wilson",
+      "gender": "male",
+      "houseId": 75,
+      "dateOfBirth": "1978",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Heir to House Wilson. Baudin Wilson VIII, ninth generation to bear the name. Not yet succeeded. Married Marelisse Thornwick ~2005. This match elevated House Thornwick's status considerably."
+    },
+    {
+      "_tempId": "person_evelind",
+      "_generation": 8,
+      "firstName": "Evelind",
+      "lastName": "Stormcrest",
+      "maidenName": "Wilson",
+      "gender": "female",
+      "houseId": 83,
+      "dateOfBirth": "1982",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Second child of Baudin Wilson VII and Eveline. Married Garrett Stormcrest ~2005, creating a double bond with House Stormcrest (her mother was born Stormcrest)."
+    },
+    {
+      "_tempId": "person_lenric",
+      "_generation": 8,
+      "firstName": "Lenric",
+      "lastName": "Wilson",
+      "gender": "male",
+      "houseId": 75,
+      "dateOfBirth": "1985",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Third child of Baudin Wilson VII and Eveline. Named to honor founder Lennis."
+    },
+
+    {
+      "_comment": "=== GENERATION 8: SPOUSES ===",
+      "_tempId": "person_marelisse",
+      "_generation": 8,
+      "firstName": "Marelisse",
+      "lastName": "Wilson",
+      "maidenName": "Thornwick",
+      "gender": "female",
+      "houseId": 75,
+      "dateOfBirth": "1982",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Wife of Baudin Wilson VIII. Born to House Thornwick, the youngest of the Northern Crown Houses (founded ~1920), seated at Thornwick Manor. Married ~2005. This match elevated House Thornwick's status considerably."
+    },
+    {
+      "_tempId": "person_garrett_stormcrest",
+      "_generation": 8,
+      "firstName": "Garrett",
+      "lastName": "Stormcrest",
+      "gender": "male",
+      "houseId": 83,
+      "dateOfBirth": "1978",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Husband of Evelind Wilson. Son of House Stormcrest. Married ~2005."
+    },
+
+    {
+      "_comment": "=== GENERATION 9: CHILDREN OF BAUDIN VIII AND MARELISSE ===",
+      "_tempId": "person_baudin_ix",
+      "_generation": 9,
+      "firstName": "Baudin",
+      "lastName": "Wilson",
+      "gender": "male",
+      "houseId": 75,
+      "dateOfBirth": "2007",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Heir to Baudin Wilson VIII. Baudin Wilson IX, tenth generation to bear the name. Continuing the tradition established when Lennis and Nivette named their firstborn for the uncle who gave his life for their marriage."
+    },
+    {
+      "_tempId": "person_marelle",
+      "_generation": 9,
+      "firstName": "Marelle",
+      "lastName": "Wilson",
+      "gender": "female",
+      "houseId": 75,
+      "dateOfBirth": "2010",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Second child of Baudin Wilson VIII and Marelisse. Too young to marry."
+    }
+  ],
+
+  "relationships": [
+    {
+      "_comment": "Lennis + Nivette (existing #371)",
+      "person1Id": "person_lennis",
+      "person2Id": 371,
+      "relationshipType": "spouse",
+      "marriageStatus": "widowed"
+    },
+
+    {
+      "_comment": "Generation 1: Baudin I + Cereline",
+      "person1Id": "person_baudin_i",
+      "person2Id": "person_cereline",
+      "relationshipType": "spouse",
+      "marriageStatus": "widowed"
+    },
+    {
+      "_comment": "Generation 1: Colardine + Rodric Ashford",
+      "person1Id": "person_rodric_ashford",
+      "person2Id": "person_colardine",
+      "relationshipType": "spouse",
+      "marriageStatus": "married"
+    },
+    {
+      "_comment": "Generation 1: Lenniselle + Aldric Fenwick",
+      "person1Id": "person_aldric_fenwick",
+      "person2Id": "person_lenniselle",
+      "relationshipType": "spouse",
+      "marriageStatus": "married"
+    },
+
+    {
+      "_comment": "Generation 2: Baudin II + Isolda",
+      "person1Id": "person_baudin_ii",
+      "person2Id": "person_isolda",
+      "relationshipType": "spouse",
+      "marriageStatus": "widowed"
+    },
+    {
+      "_comment": "Generation 2: Niveline + Beric Northmere",
+      "person1Id": "person_beric_northmere",
+      "person2Id": "person_niveline",
+      "relationshipType": "spouse",
+      "marriageStatus": "married"
+    },
+
+    {
+      "_comment": "Generation 3: Baudin III + Hamelina",
+      "person1Id": "person_baudin_iii",
+      "person2Id": "person_hamelina",
+      "relationshipType": "spouse",
+      "marriageStatus": "widowed"
+    },
+    {
+      "_comment": "Generation 3: Iselde + Garen Kingsward",
+      "person1Id": "person_garen_kingsward",
+      "person2Id": "person_iselde",
+      "relationshipType": "spouse",
+      "marriageStatus": "married"
+    },
+
+    {
+      "_comment": "Generation 4: Baudin IV + Aureline",
+      "person1Id": "person_baudin_iv",
+      "person2Id": "person_aureline",
+      "relationshipType": "spouse",
+      "marriageStatus": "widowed"
+    },
+    {
+      "_comment": "Generation 4: Hameline + Tormund Granford",
+      "person1Id": "person_tormund_granford",
+      "person2Id": "person_hameline",
+      "relationshipType": "spouse",
+      "marriageStatus": "married"
+    },
+
+    {
+      "_comment": "Generation 5: Baudin V + Doreline",
+      "person1Id": "person_baudin_v",
+      "person2Id": "person_doreline",
+      "relationshipType": "spouse",
+      "marriageStatus": "widowed"
+    },
+    {
+      "_comment": "Generation 5: Croftine + Aldwin Croftmoor",
+      "person1Id": "person_aldwin_croftmoor",
+      "person2Id": "person_croftine",
+      "relationshipType": "spouse",
+      "marriageStatus": "married"
+    },
+
+    {
+      "_comment": "Generation 6: Baudin VI + Sireline",
+      "person1Id": "person_baudin_vi",
+      "person2Id": "person_sireline",
+      "relationshipType": "spouse",
+      "marriageStatus": "widowed"
+    },
+    {
+      "_comment": "Generation 6: Helmina + Roderick Helmward",
+      "person1Id": "person_roderick_helmward",
+      "person2Id": "person_helmina",
+      "relationshipType": "spouse",
+      "marriageStatus": "married"
+    },
+
+    {
+      "_comment": "Generation 7: Baudin VII + Eveline",
+      "person1Id": "person_baudin_vii",
+      "person2Id": "person_eveline",
+      "relationshipType": "spouse",
+      "marriageStatus": "married"
+    },
+    {
+      "_comment": "Generation 7: Moraine + Cedric Blackmoor",
+      "person1Id": "person_cedric_blackmoor",
+      "person2Id": "person_moraine",
+      "relationshipType": "spouse",
+      "marriageStatus": "married"
+    },
+
+    {
+      "_comment": "Generation 8: Baudin VIII + Marelisse",
+      "person1Id": "person_baudin_viii",
+      "person2Id": "person_marelisse",
+      "relationshipType": "spouse",
+      "marriageStatus": "married"
+    },
+    {
+      "_comment": "Generation 8: Evelind + Garrett Stormcrest",
+      "person1Id": "person_garrett_stormcrest",
+      "person2Id": "person_evelind",
+      "relationshipType": "spouse",
+      "marriageStatus": "married"
+    },
+
+    {
+      "person1Id": "person_lennis",
+      "person2Id": "person_baudin_i",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": 371,
+      "person2Id": "person_baudin_i",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_lennis",
+      "person2Id": "person_colardine",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": 371,
+      "person2Id": "person_colardine",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_lennis",
+      "person2Id": "person_faramund_wilson",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": 371,
+      "person2Id": "person_faramund_wilson",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_lennis",
+      "person2Id": "person_lenniselle",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": 371,
+      "person2Id": "person_lenniselle",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+
+    {
+      "person1Id": "person_baudin_i",
+      "person2Id": "person_baudin_ii",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_cereline",
+      "person2Id": "person_baudin_ii",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_baudin_i",
+      "person2Id": "person_niveline",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_cereline",
+      "person2Id": "person_niveline",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_baudin_i",
+      "person2Id": "person_cerald",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_cereline",
+      "person2Id": "person_cerald",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+
+    {
+      "person1Id": "person_baudin_ii",
+      "person2Id": "person_baudin_iii",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_isolda",
+      "person2Id": "person_baudin_iii",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_baudin_ii",
+      "person2Id": "person_iselde",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_isolda",
+      "person2Id": "person_iselde",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_baudin_ii",
+      "person2Id": "person_lenard",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_isolda",
+      "person2Id": "person_lenard",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+
+    {
+      "person1Id": "person_baudin_iii",
+      "person2Id": "person_baudin_iv",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_hamelina",
+      "person2Id": "person_baudin_iv",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_baudin_iii",
+      "person2Id": "person_hameline",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_hamelina",
+      "person2Id": "person_hameline",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_baudin_iii",
+      "person2Id": "person_granard",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_hamelina",
+      "person2Id": "person_granard",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+
+    {
+      "person1Id": "person_baudin_iv",
+      "person2Id": "person_baudin_v",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_aureline",
+      "person2Id": "person_baudin_v",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_baudin_iv",
+      "person2Id": "person_aurel",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_aureline",
+      "person2Id": "person_aurel",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_baudin_iv",
+      "person2Id": "person_croftine",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_aureline",
+      "person2Id": "person_croftine",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+
+    {
+      "person1Id": "person_baudin_v",
+      "person2Id": "person_baudin_vi",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_doreline",
+      "person2Id": "person_baudin_vi",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_baudin_v",
+      "person2Id": "person_dorric",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_doreline",
+      "person2Id": "person_dorric",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_baudin_v",
+      "person2Id": "person_helmina",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_doreline",
+      "person2Id": "person_helmina",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+
+    {
+      "person1Id": "person_baudin_vi",
+      "person2Id": "person_baudin_vii",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_sireline",
+      "person2Id": "person_baudin_vii",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_baudin_vi",
+      "person2Id": "person_siric",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_sireline",
+      "person2Id": "person_siric",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_baudin_vi",
+      "person2Id": "person_moraine",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_sireline",
+      "person2Id": "person_moraine",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+
+    {
+      "person1Id": "person_baudin_vii",
+      "person2Id": "person_baudin_viii",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_eveline",
+      "person2Id": "person_baudin_viii",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_baudin_vii",
+      "person2Id": "person_evelind",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_eveline",
+      "person2Id": "person_evelind",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_baudin_vii",
+      "person2Id": "person_lenric",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_eveline",
+      "person2Id": "person_lenric",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+
+    {
+      "person1Id": "person_baudin_viii",
+      "person2Id": "person_baudin_ix",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_marelisse",
+      "person2Id": "person_baudin_ix",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_baudin_viii",
+      "person2Id": "person_marelle",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_marelisse",
+      "person2Id": "person_marelle",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    }
+  ],
+
+  "codexEntries": [],
+  "heraldry": [],
+  "dignities": []
+}

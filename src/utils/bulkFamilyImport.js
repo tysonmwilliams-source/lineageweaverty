@@ -486,6 +486,11 @@ export async function processFamilyImport(template, options = {}) {
           continue;
         }
 
+        // Resolve swornToHouseId (can be temp ID or existing DB ID)
+        const resolvedSwornTo = person.swornToHouseId
+          ? resolveHouseId(person.swornToHouseId, houseIdMap) || null
+          : null;
+
         // Clean the person data
         const personData = {
           firstName: person.firstName,
@@ -495,6 +500,7 @@ export async function processFamilyImport(template, options = {}) {
           dateOfDeath: person.dateOfDeath || null,
           gender: person.gender,
           houseId: realHouseId,
+          swornToHouseId: resolvedSwornTo,
           legitimacyStatus: person.legitimacyStatus || 'legitimate',
           bastardStatus: person.bastardStatus || null,
           notes: person.notes || '',

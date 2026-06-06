@@ -8,8 +8,10 @@ import TreeSettingsPanel from '../components/TreeSettingsPanel';
 import FragmentNavigator from '../components/FragmentNavigator';
 import QuickEditPanel from '../components/QuickEditPanel';
 import BranchView from '../components/BranchView';
+import TreeLandingView from '../components/TreeLandingView';
 import Icon from '../components/icons';
 import { calculateAllRelationships } from '../utils/RelationshipCalculator';
+import { buildRelationshipMaps as buildRelationshipMapsUtil } from '../utils/treeRelationshipMaps';
 import { useTheme } from '../components/ThemeContext';
 import { getAllThemeColors, getHouseColor } from '../utils/themeColors';
 import { getPrimaryEpithet } from '../utils/epithetUtils';
@@ -20,20 +22,14 @@ import {
   truncateText,
   truncateName,
   harmonizeColor as harmonizeColorUtil,
+  isBastardCadet,
   getHouseIdsInScope,
   getHouseScopedPeopleIds,
   findRootPersonForHouse,
   detectFragments,
-  getLineageGapConnections
+  getLineageGapConnections,
+  detectGenerations
 } from '../utils/treeHelpers';
-
-// 🛠️ DEV LAYOUT TOOLS - PARKED (drag and drop feature available here)
-// import { useDevLayout } from '../hooks/useDevLayout';
-// import {
-//   DevModeToggle,
-//   RuleBuilderPanel
-// } from '../components/dev';
-// import { getImmediateFamily } from '../utils/layoutPatternAnalyser';
 
 function FamilyTree() {
   // ==================== URL PARAMETERS ====================
@@ -120,51 +116,7 @@ function FamilyTree() {
   // Generation spacing
   const GENERATION_SPACING = verticalSpacing + CARD_HEIGHT;
 
-  // 🛠️ DEV LAYOUT - PARKED (drag and drop feature available here)
-  // To re-enable: uncomment the imports at top and uncomment this block
-  /*
-  const algorithmPositionsRef = useRef({});
-  const [ruleBuilderOpen, setRuleBuilderOpen] = useState(false);
-  const {
-    mode,
-    isManualMode,
-    hasOverrides,
-    overrideCount,
-    effectivePositions,
-    manualPositions,
-    getPosition,
-    setPosition,
-    setPositions,
-    getDelta,
-    draggingPersonId,
-    setDraggingPersonId,
-    selectedPersonId: devSelectedPersonId,
-    setSelectedPersonId: setDevSelectedPersonId,
-    auraPersonId,
-    draftRules,
-    updateRule,
-    updateNestedRule,
-    showRulePreview,
-    setShowRulePreview,
-    toggleMode,
-    resetAllPositions,
-    clearSession,
-    exportRules
-  } = useDevLayout(algorithmPositionsRef.current);
-
-  const [isShiftHeld, setIsShiftHeld] = useState(false);
-  useEffect(() => {
-    const handleKeyDown = (e) => { if (e.key === 'Shift') setIsShiftHeld(true); };
-    const handleKeyUp = (e) => { if (e.key === 'Shift') setIsShiftHeld(false); };
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-    };
-  }, []);
-  */
-  // Stub values when dev layout is disabled (must be stable references to avoid re-renders)
+  // Dev layout stubs (dev tools removed — stubs kept for drawTree compatibility)
   const isManualMode = false;
   const effectivePositions = useMemo(() => ({}), []);
   const auraPersonId = null;
@@ -189,35 +141,8 @@ function FamilyTree() {
     return houseMembers;
   }, [selectedHouseId, people, houses, showCadetHouses]);
 
-  // RELATIONSHIP MAP BUILDER
-  const buildRelationshipMaps = () => {
-    const peopleById = new Map(people.map(p => [p.id, p]));
-    const housesById = new Map(houses.map(h => [h.id, h]));
-    const parentMap = new Map();
-    const childrenMap = new Map();
-    const spouseMap = new Map();
-    const spouseRelationshipMap = new Map();
-
-    relationships.forEach(rel => {
-      if (rel.relationshipType === 'spouse') {
-        if (peopleById.has(rel.person1Id) && peopleById.has(rel.person2Id)) {
-          spouseMap.set(rel.person1Id, rel.person2Id);
-          spouseMap.set(rel.person2Id, rel.person1Id);
-          const key = [rel.person1Id, rel.person2Id].sort((a, b) => a - b).join('-');
-          spouseRelationshipMap.set(key, rel);
-        }
-      } else if (rel.relationshipType === 'parent' || rel.relationshipType === 'adopted-parent') {
-        const parentId = rel.person1Id;
-        const childId = rel.person2Id;
-        if (!parentMap.has(childId)) parentMap.set(childId, []);
-        parentMap.get(childId).push(parentId);
-        if (!childrenMap.has(parentId)) childrenMap.set(parentId, []);
-        childrenMap.get(parentId).push(childId);
-      }
-    });
-
-    return { peopleById, housesById, parentMap, childrenMap, spouseMap, spouseRelationshipMap };
-  };
+  // RELATIONSHIP MAP BUILDER (delegates to extracted utility)
+  const buildRelationshipMaps = () => buildRelationshipMapsUtil(people, houses, relationships);
 
   const fragmentInfo = useMemo(() => {
     if (!selectedHouseId || people.length === 0) {
@@ -249,6 +174,33 @@ function FamilyTree() {
       hasMultipleFragments: fragments.length > 1
     };
   }, [selectedHouseId, people, houses, relationships, showCadetHouses]);
+
+  // People personally sworn to the currently selected house (from bastard-elevation cadets)
+  const personallySwornToHouse = useMemo(() => {
+    if (!selectedHouseId) return [];
+    return people.filter(p => p.swornToHouseId === selectedHouseId);
+  }, [people, selectedHouseId]);
+
+  // Bastard-elevation cadet houses of the selected house (for navigation)
+  const bastardCadetsOfSelected = useMemo(() => {
+    if (!selectedHouseId) return [];
+    return houses.filter(h => h.parentHouseId === selectedHouseId && isBastardCadet(h));
+  }, [houses, selectedHouseId]);
+
+  // Noble cadet houses of the selected house (for info display — they're already merged in the tree)
+  const nobleCadetsOfSelected = useMemo(() => {
+    if (!selectedHouseId) return [];
+    return houses.filter(h => h.parentHouseId === selectedHouseId && !isBastardCadet(h));
+  }, [houses, selectedHouseId]);
+
+  // Parent house if the selected house is a cadet branch
+  const parentHouseOfSelected = useMemo(() => {
+    if (!selectedHouseId) return null;
+    const selected = houses.find(h => h.id === selectedHouseId);
+    return selected?.parentHouseId
+      ? houses.find(h => h.id === selected.parentHouseId)
+      : null;
+  }, [houses, selectedHouseId]);
 
   const [fragmentSeparatorStyle, setFragmentSeparatorStyle] = useState(() => {
     const saved = localStorage.getItem('lineageweaver-fragment-style');
@@ -336,17 +288,7 @@ function FamilyTree() {
     return () => clearTimeout(timer);
   }, [urlPersonId, people, houses, location.key]); // location.key forces re-run on navigation
 
-  useEffect(() => {
-    // Don't set default house if we're navigating via URL - let the URL nav effect handle it
-    if (urlPersonId) {
-      console.log(`🏠 Skipping default house selection - URL navigation in progress`);
-      return;
-    }
-    if (houses.length > 0 && !selectedHouseId) {
-      console.log(`🏠 Setting default house to ${houses[0].id}`);
-      setSelectedHouseId(houses[0].id);
-    }
-  }, [houses, selectedHouseId, urlPersonId]);
+  // Auto-select removed — landing view shown when selectedHouseId is null
 
   useEffect(() => {
     // Don't reset centreOnPersonId if we're navigating via URL - we want to keep the target person
@@ -407,7 +349,7 @@ function FamilyTree() {
     }
 
     drawTree();
-  }, [selectedHouseId, people, houses, relationships, showCadetHouses, theme, searchResults, relationshipMap, verticalSpacing, dataVersion, centreOnPersonId, fragmentSeparatorStyle, dignitiesByPerson, highlightedPersonId, isManualMode, effectivePositions, useBlockLayout, branchSpacing, showBranchView, urlPersonId]);
+  }, [selectedHouseId, people, houses, relationships, showCadetHouses, personallySwornToHouse, theme, searchResults, relationshipMap, verticalSpacing, dataVersion, centreOnPersonId, fragmentSeparatorStyle, dignitiesByPerson, highlightedPersonId, isManualMode, effectivePositions, useBlockLayout, branchSpacing, showBranchView, urlPersonId]);
 
   const handleSearchResults = (results) => {
     setSearchResults(results);
@@ -427,80 +369,6 @@ function FamilyTree() {
       const relationships = calculateAllRelationships(person.id, people, parentMap, childrenMap, spouseMap);
       setRelationshipMap(relationships);
     }
-  };
-
-  const detectGenerations = (peopleById, parentMap, childrenMap, spouseMap, overrideRootId = null) => {
-    let rootPerson;
-
-    if (overrideRootId && peopleById.has(overrideRootId)) {
-      rootPerson = peopleById.get(overrideRootId);
-      console.log(`Using override root: ${rootPerson.firstName} ${rootPerson.lastName}`);
-    } else {
-      const gen0People = Array.from(peopleById.values())
-        .filter(p => !parentMap.has(p.id))
-        .sort((a, b) => parseInt(a.dateOfBirth) - parseInt(b.dateOfBirth));
-
-      if (gen0People.length === 0) {
-        console.warn('No root people found (everyone has parents)');
-        return [];
-      }
-
-      console.log('Root candidates (no parents):', gen0People.map(p => `${p.firstName} ${p.lastName} (b.${p.dateOfBirth})`));
-
-      rootPerson = gen0People[0];
-    }
-
-    console.log(`Root (Gen 0): ${rootPerson.firstName} ${rootPerson.lastName}`);
-
-    const generations = [];
-    const processedIds = new Set();
-
-    generations.push([rootPerson.id]);
-    processedIds.add(rootPerson.id);
-
-    const rootSpouseId = spouseMap.get(rootPerson.id);
-    if (rootSpouseId) {
-      processedIds.add(rootSpouseId);
-    }
-
-    let currentGenIndex = 0;
-    while (currentGenIndex < generations.length) {
-      const currentGen = generations[currentGenIndex];
-      const nextGenIds = new Set();
-
-      currentGen.forEach(personId => {
-        const children = childrenMap.get(personId) || [];
-        children.forEach(childId => {
-          // CRITICAL: Only include children that are IN this fragment (peopleById)
-          // This prevents generation detection from following relationships outside the fragment
-          if (!processedIds.has(childId) && peopleById.has(childId)) {
-            nextGenIds.add(childId);
-            processedIds.add(childId);
-          }
-        });
-
-        const spouseId = spouseMap.get(personId);
-        if (spouseId && peopleById.has(spouseId)) {
-          const spouseChildren = childrenMap.get(spouseId) || [];
-          spouseChildren.forEach(childId => {
-            // CRITICAL: Only include children that are IN this fragment (peopleById)
-            if (!processedIds.has(childId) && peopleById.has(childId)) {
-              nextGenIds.add(childId);
-              processedIds.add(childId);
-            }
-          });
-        }
-      });
-
-      if (nextGenIds.size > 0) {
-        generations.push(Array.from(nextGenIds));
-      }
-
-      currentGenIndex++;
-    }
-
-    console.log('Generations detected:', generations.map((g, i) => `Gen ${i}: ${g.length} people`));
-    return generations;
   };
 
   // 🛠️ DEV LAYOUT: Draw person card - modified to support dragging
@@ -931,8 +799,7 @@ function FamilyTree() {
     }
   };
 
-  // 🛠️ DEV LAYOUT - PARKED (aura overlay for measuring distances)
-  /*
+  /* Dev aura overlay removed — was used for layout measurement
   const drawDevAuraOverlay = (g, selectedPersonId, positionMap, themeColors) => {
     if (!selectedPersonId || !positionMap.has(selectedPersonId)) return;
 
@@ -1145,7 +1012,8 @@ function FamilyTree() {
         spouseMap,
         childrenMap,
         parentMap,
-        showCadetHouses
+        showCadetHouses,
+        personallySwornToHouse
       );
       
       scopedPeopleById = new Map();
@@ -1883,9 +1751,28 @@ function FamilyTree() {
     );
   }
 
+  // Show landing view when no house is selected and no URL navigation is pending
+  if (!selectedHouseId && !urlPersonId) {
+    return (
+      <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
+        <Navigation
+          people={people}
+          onSearchResults={handleSearchResults}
+          showSearch={false}
+          compactMode={false}
+        />
+        <TreeLandingView
+          houses={houses}
+          people={people}
+          onSelectHouse={handleHouseChange}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="h-screen overflow-hidden" style={{ backgroundColor: 'var(--bg-primary)' }}>
-      <Navigation 
+      <Navigation
         people={people}
         onSearchResults={handleSearchResults}
         showSearch={true}
@@ -1895,36 +1782,20 @@ function FamilyTree() {
         compactMode={true}
       />
 
-      {/* 🛠️ DEV LAYOUT - PARKED (drag and drop feature available here)
-      <DevModeToggle
-        isManualMode={isManualMode}
-        onToggle={toggleMode}
-        onOpenRuleBuilder={() => setRuleBuilderOpen(true)}
-        hasOverrides={hasOverrides}
-        overrideCount={overrideCount}
-        isDarkTheme={isDarkTheme()}
-      />
-      <RuleBuilderPanel
-        isOpen={ruleBuilderOpen}
-        onClose={() => setRuleBuilderOpen(false)}
-        people={people}
-        positions={manualPositions}
-        relationships={relationships}
-        draftRules={draftRules}
-        onUpdateRule={updateRule}
-        onUpdateNestedRule={updateNestedRule}
-        showRulePreview={showRulePreview}
-        onToggleRulePreview={setShowRulePreview}
-        onExportRules={exportRules}
-        onResetPositions={resetAllPositions}
-        onClearSession={clearSession}
-        isDarkTheme={isDarkTheme()}
-      />
-      */}
+      {/* Back to Houses button */}
+      <button
+        className="tree-back-btn"
+        onClick={() => setSelectedHouseId(null)}
+        title="Back to house selection"
+      >
+        <Icon name="arrow-left" size={16} />
+        <span>All Houses</span>
+      </button>
 
       <TreeSettingsPanel
         isExpanded={controlsPanelExpanded}
         houses={houses}
+        people={people}
         selectedHouseId={selectedHouseId}
         onHouseChange={handleHouseChange}
         centreOnPersonId={centreOnPersonId}
@@ -1942,6 +1813,9 @@ function FamilyTree() {
         showBranchView={showBranchView}
         onShowBranchViewChange={setShowBranchView}
         hasMultipleFragments={fragmentInfo.hasMultipleFragments}
+        bastardCadets={bastardCadetsOfSelected}
+        nobleCadets={nobleCadetsOfSelected}
+        parentHouse={parentHouseOfSelected}
       />
 
       <TreeControls
@@ -2010,6 +1884,30 @@ function FamilyTree() {
       )}
 
       <style>{`
+        .tree-back-btn {
+          position: fixed;
+          bottom: 6rem;
+          left: 1.5rem;
+          z-index: 20;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.625rem 1rem;
+          background: var(--bg-secondary);
+          color: var(--text-primary);
+          border: 1px solid var(--border-primary);
+          border-radius: var(--radius-lg, 8px);
+          box-shadow: var(--shadow-lg);
+          cursor: pointer;
+          font-family: var(--font-body);
+          font-size: 0.875rem;
+          font-weight: 500;
+          transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .tree-back-btn:hover {
+          border-color: var(--accent-primary);
+          box-shadow: var(--shadow-lg), 0 0 0 1px var(--accent-primary);
+        }
         .person-card { cursor: pointer; transition: all 0.2s ease; }
         .person-card:hover { filter: brightness(${isDarkTheme() ? '1.15' : '0.95'}); }
         .person-name { 

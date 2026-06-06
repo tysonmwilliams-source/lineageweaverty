@@ -6,6 +6,7 @@
 
 import { useCallback } from 'react';
 import Icon from '../../icons';
+import useDictation from '../../../hooks/useDictation';
 import './EditorToolbar.css';
 
 /**
@@ -45,6 +46,15 @@ export default function EditorToolbar({ editor, onInsertWikiLink }) {
   const isEditorReady = useCallback(() => {
     return editor && editor.view && !editor.isDestroyed;
   }, [editor]);
+
+  // Dictation
+  const {
+    isListening,
+    isSupported: isDictationSupported,
+    interimText,
+    error: dictationError,
+    toggleDictation,
+  } = useDictation({ editor, enabled: !!editor });
 
   // Text formatting - all hooks must be before conditional returns
   const toggleBold = useCallback(() => {
@@ -233,6 +243,34 @@ export default function EditorToolbar({ editor, onInsertWikiLink }) {
           <span className="toolbar-btn__label">[[Link]]</span>
         </button>
       </div>
+
+      {/* Dictation */}
+      {isDictationSupported && (
+        <>
+          <ToolbarDivider />
+          <div className="toolbar-group toolbar-group--dictation">
+            <button
+              className={`toolbar-btn toolbar-btn--dictation ${isListening ? 'toolbar-btn--recording' : ''}`}
+              onClick={toggleDictation}
+              title={isListening ? 'Stop Dictation (Ctrl+Shift+D)' : 'Start Dictation (Ctrl+Shift+D)'}
+              type="button"
+            >
+              <Icon name="mic" size={18} strokeWidth={2} />
+              {isListening && <span className="toolbar-btn__recording-dot" />}
+            </button>
+            {interimText && (
+              <span className="toolbar-dictation-preview" title={interimText}>
+                {interimText.length > 40 ? '...' + interimText.slice(-40) : interimText}
+              </span>
+            )}
+            {dictationError && (
+              <span className="toolbar-dictation-error" title={dictationError}>
+                <Icon name="alert-circle" size={14} strokeWidth={2} />
+              </span>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

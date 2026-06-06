@@ -76,7 +76,8 @@ import {
   getEntryByHouseId,
   getEntryByDignityId,
   getOutgoingLinks,
-  getAllEntries
+  getAllEntries,
+  updateEntry
 } from './codexService';
 import { getAllDignities, updateDignity, DIGNITY_CLASSES, DIGNITY_NATURES } from './dignityService';
 import { syncAddCodexLink } from './dataSyncService';
@@ -142,7 +143,7 @@ export async function migrateHousesToCodex() {
         // Create a new Codex entry for this house
         const codexEntryId = await createEntry({
           type: 'house',
-          title: `House ${house.houseName}`,
+          title: house.houseName.startsWith('House ') ? house.houseName : `House ${house.houseName}`,
           subtitle: house.houseType === 'cadet' ? 'Cadet Branch' : 'Noble House',
           content: house.notes || '',
           category: house.houseType || 'main',
@@ -258,6 +259,42 @@ export async function migrateDignitiesToCodex() {
 // ==================== CROSS-LINKING MIGRATIONS ====================
 
 /**
+ * Build a Set-based index from an array of codex links for O(1) existence checks.
+ * Keys use min:max ID ordering so bidirectional links are found regardless of direction.
+ *
+ * @param {Array} allLinks - Array of codex link records from the DB
+ * @returns {Set<string>} Set of normalized keys like "member-of:42:108"
+ */
+function buildLinkIndex(allLinks) {
+  const index = new Set();
+  for (const link of allLinks) {
+    const a = Number(link.sourceId);
+    const b = Number(link.targetId);
+    const lo = Math.min(a, b);
+    const hi = Math.max(a, b);
+    index.add(`${link.type}:${lo}:${hi}`);
+  }
+  return index;
+}
+
+/**
+ * O(1) check whether a link of the given type exists between two entries.
+ *
+ * @param {Set<string>} linkIndex - Index built by buildLinkIndex()
+ * @param {number} sourceId
+ * @param {number} targetId
+ * @param {string} linkType
+ * @returns {boolean}
+ */
+function linkExistsInIndex(linkIndex, sourceId, targetId, linkType) {
+  const a = Number(sourceId);
+  const b = Number(targetId);
+  const lo = Math.min(a, b);
+  const hi = Math.max(a, b);
+  return linkIndex.has(`${linkType}:${lo}:${hi}`);
+}
+
+/**
  * Check if a link of a specific type already exists between two Codex entries
  * Handles bidirectional links correctly by checking both directions
  *
@@ -303,13 +340,16 @@ async function linkExistsOfType(sourceId, targetId, linkType) {
  * @param {string} type - Link type
  * @param {string} label - Link label
  * @param {Object} syncContext - Optional sync context { userId, datasetId }
+ * @param {Set<string>|null} linkIndex - Optional pre-built index for O(1) lookups
  * @returns {Promise<boolean>} True if link was created
  */
-async function createBidirectionalLink(entryId1, entryId2, type, label, syncContext = null) {
+async function createBidirectionalLink(entryId1, entryId2, type, label, syncContext = null, linkIndex = null) {
   if (!entryId1 || !entryId2 || entryId1 === entryId2) return false;
 
-  // Check if a link of this specific type already exists
-  const exists = await linkExistsOfType(entryId1, entryId2, type);
+  // Use index for O(1) check if provided, otherwise fall back to DB query
+  const exists = linkIndex
+    ? linkExistsInIndex(linkIndex, entryId1, entryId2, type)
+    : await linkExistsOfType(entryId1, entryId2, type);
   if (exists) return false;
 
   const linkData = {
@@ -321,6 +361,15 @@ async function createBidirectionalLink(entryId1, entryId2, type, label, syncCont
   };
 
   const linkId = await createLink(linkData);
+
+  // Add to index so subsequent checks in the same batch are correct
+  if (linkIndex) {
+    const a = Number(entryId1);
+    const b = Number(entryId2);
+    const lo = Math.min(a, b);
+    const hi = Math.max(a, b);
+    linkIndex.add(`${type}:${lo}:${hi}`);
+  }
 
   // Sync to cloud if userId is provided
   if (syncContext?.userId && linkId) {
@@ -453,6 +502,10 @@ export async function migratePersonHouseLinks(syncContext = null) {
     const people = await db.people.toArray();
     results.total = people.length;
 
+    // Build link index once for O(1) existence checks
+    const allLinks = await db.codexLinks.toArray();
+    const linkIndex = buildLinkIndex(allLinks);
+
     for (const person of people) {
       try {
         // Skip if person has no house
@@ -484,7 +537,8 @@ export async function migratePersonHouseLinks(syncContext = null) {
           houseEntry.id,
           'member-of',
           'House Member',
-          syncContext
+          syncContext,
+          linkIndex
         );
 
         if (created) {
@@ -541,6 +595,10 @@ export async function migratePersonDignityLinks(syncContext = null) {
     const dignities = await getAllDignities();
     results.total = dignities.length;
 
+    // Build link index once for O(1) existence checks
+    const allLinks = await db.codexLinks.toArray();
+    const linkIndex = buildLinkIndex(allLinks);
+
     for (const dignity of dignities) {
       try {
         // Skip if dignity has no current holder
@@ -569,7 +627,8 @@ export async function migratePersonDignityLinks(syncContext = null) {
           dignityEntry.id,
           'holds-title',
           'Current Holder',
-          syncContext
+          syncContext,
+          linkIndex
         );
 
         if (created) {
@@ -619,6 +678,10 @@ export async function migrateHouseDignityLinks(syncContext = null) {
     const dignities = await getAllDignities();
     results.total = dignities.length;
 
+    // Build link index once for O(1) existence checks
+    const allLinks = await db.codexLinks.toArray();
+    const linkIndex = buildLinkIndex(allLinks);
+
     for (const dignity of dignities) {
       try {
         // Skip if dignity has no current house
@@ -647,7 +710,8 @@ export async function migrateHouseDignityLinks(syncContext = null) {
           dignityEntry.id,
           'house-holds',
           'House Title',
-          syncContext
+          syncContext,
+          linkIndex
         );
 
         if (created) {
@@ -797,6 +861,31 @@ export async function runAllMigrations(syncContext = null) {
     results.errors.push({ type: 'fatal', error: error.message });
     return results;
   }
+}
+
+// ==================== FIX "HOUSE HOUSE" PREFIX ====================
+
+/**
+ * Fix codex entries with duplicate "House House" prefix
+ *
+ * Finds all codex entries whose title starts with "House House " and
+ * renames them to remove the duplicate prefix.
+ *
+ * @param {string} [datasetId] - Dataset ID (optional)
+ * @returns {Promise<Object>} { fixed: number, entries: string[] }
+ */
+export async function fixHouseHousePrefixes(datasetId) {
+  const allEntries = await getAllEntries(datasetId);
+  const bad = allEntries.filter(e => e.title && e.title.startsWith('House House '));
+  const fixed = [];
+
+  for (const entry of bad) {
+    const newTitle = entry.title.replace(/^House /, '');
+    await updateEntry(entry.id, { title: newTitle }, datasetId);
+    fixed.push(`${entry.title} → ${newTitle}`);
+  }
+
+  return { fixed: fixed.length, entries: fixed };
 }
 
 // ==================== MIGRATION STATUS ====================
@@ -1299,6 +1388,8 @@ export async function runDatasetMigration(userId, datasetId = 'default', forceMi
 
 // ==================== EXPORTS ====================
 
+export { buildLinkIndex, linkExistsInIndex };
+
 export default {
   migrateHousesToCodex,
   migrateDignitiesToCodex,
@@ -1309,6 +1400,8 @@ export default {
   runCrossLinkingMigrations,
   runAllMigrations,
   getMigrationStatus,
+  buildLinkIndex,
+  linkExistsInIndex,
   // Dataset migration
   needsDatasetMigration,
   needsMigrationCheck,

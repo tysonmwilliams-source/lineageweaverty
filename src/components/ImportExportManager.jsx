@@ -36,7 +36,6 @@ import {
   exportAllContexts,
   subscribeToContextUpdates
 } from '../services/contextService';
-import CodexMigrationTool from './CodexMigrationTool';
 import Icon from './icons';
 import './ImportExportManager.css';
 
@@ -827,24 +826,6 @@ function ImportExportManager() {
             )}
           </AnimatePresence>
         </motion.div>
-      </motion.section>
-
-      {/* Codex Integration Section */}
-      <motion.section
-        className="import-export__section"
-        variants={SECTION_VARIANTS}
-        initial="hidden"
-        animate="visible"
-        transition={{ delay: 0.2 }}
-      >
-        <h2 className="import-export__header">
-          <Icon name="link" size={24} />
-          <span>Codex Integration</span>
-        </h2>
-        <p className="import-export__description">
-          Create Codex biography entries for people added before the Tree-Codex integration.
-        </p>
-        <CodexMigrationTool />
       </motion.section>
 
       {/* Context Library Section */}

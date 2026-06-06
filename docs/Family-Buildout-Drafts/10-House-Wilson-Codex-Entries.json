@@ -1,0 +1,235 @@
+{
+  "description": "Codex entries and enhancements for House Wilson lineage. New entries for locations, traditions, and personages. Enhancements to update existing house entries with richer content.",
+  "instructions": "Import via unified import. The codexEntries array creates NEW entries. The codexEnhancements array UPDATES existing entries by title match (appending sections, adding tags). The 10 Northern Crown House entries and 10 seat entries already exist with full content and do NOT need re-creation.",
+
+  "codexEntries": [
+    {
+      "type": "location",
+      "title": "Grantholm",
+      "subtitle": "Seat of House Wilson",
+      "category": "Castles & Seats",
+      "tags": ["grantholm", "wilson", "northern-crown-marches", "castle"],
+      "content": "**Grantholm** is the seat of [[House Wilson]], located in the [[Northern Crown Marches]] approximately two weeks' ride from [[Breakmount Castle]].\n\n## The Northern Crown Marches\n\nGrantholm lies within lands held directly by the Crown — territory administered by royal officers rather than any Wilfrey Drith. This placement was deliberate: the king granted Lennis and Nivette lands where they would be neighbors to loyal Crown houses ([[House Northmere]], [[House Kingsward]], [[House Granford]], etc.) rather than Wilfrey vassals.\n\n## Origin\n\nThe castle and surrounding lands were granted by royal charter ~1778, with formal Crown recognition of House Wilson in 1785. The king welcomed [[Lennis Wilfrey]] and [[Nivette Wilfson]] after their exile, giving them a place beyond Wilfrey authority where their marriage could not be challenged.\n\n## Architecture\n\nUnlike the great castles of the four Wilfrey seats, Grantholm is modest but well-built. The original structure was small — little more than a fortified manor granted from an extinct line. Each generation has added to it, but the Wilsons have never sought to rival the grandeur of [[Breakmount Castle]] or [[Fourhearth Castle]].\n\n## Economy\n\nThe surrounding lands produce:\n- Sheep (wool trade)\n- Grain (wheat and barley)\n- Some forestry\n\nThe wealth is modest but steady. House Wilson has never been rich, but they have never been poor either. Their northern neighbors — the Crown Houses — are their primary trading partners and marriage allies.\n\n## The Grant\n\nThe name \"Grantholm\" reflects the royal grant that established it. Some say the founders chose the name deliberately — a constant reminder that their house exists by the king's grace, not the Wilfrey council's permission.\n\n## See Also\n- [[House Wilson]]: The house seated here\n- [[Lennis Wilfrey]]: Founder who received the grant\n- [[Northern Crown Marches]]: The region where Grantholm sits\n- [[Breakmount Castle]]: The Wilfrey principal seat, two weeks' ride south",
+      "sections": [
+        {"heading": "The Northern Crown Marches", "content": "Crown lands beyond Wilfrey authority", "order": 1},
+        {"heading": "Architecture", "content": "Modest castle, each generation adding to it", "order": 2},
+        {"heading": "Economy", "content": "Sheep, grain, forestry — modest but steady", "order": 3}
+      ]
+    },
+
+    {
+      "type": "location",
+      "title": "Northern Crown Marches",
+      "subtitle": "Crown Lands Beyond Wilfrey Authority",
+      "category": "Regions",
+      "tags": ["northern-crown-marches", "crown-lands", "wilson", "northern-houses"],
+      "content": "**The Northern Crown Marches** are a region of the kingdom held directly by the Crown, lying beyond the traditional Wilfrey sphere of influence. Approximately two weeks' ride north of [[Breakmount Castle]], these lands are administered by royal officers rather than any Wilfrey Drith.\n\n## Character\n\nThe Northern Crown Marches are rugged, remote, and independent. The land is poorer than the Wilfrey heartland — more moorland than meadow, more sheep than cattle — but the people who live here are proud of their self-sufficiency.\n\n## The Northern Crown Houses\n\nTen minor houses hold lands directly from the Crown in this region, forming a loose network of families who:\n1. Hold lands directly from the Crown (not through any Wilfrey intermediary)\n2. Intermarry primarily among themselves and with [[House Wilson]]\n3. Maintain cordial but distant relations with Wilfrey territory\n4. Share a common identity as \"northerners\" distinct from the Wilfrey web\n\nThese houses are: [[House Northmere]], [[House Kingsward]], [[House Granford]], [[House Croftmoor]], [[House Helmward]], [[House Blackmoor]], [[House Stormcrest]], [[House Thornwick]], [[House Ashford]], and [[House Fenwick]].\n\n## House Wilson\n\n[[House Wilson]], despite its Wilfrey blood, is accepted as part of this northern network due to the royal grant that established them outside Wilfrey authority. Over 250 years, they have become deeply integrated through marriage alliances with all ten Northern Crown Houses.\n\n## See Also\n- [[Grantholm]]: Seat of House Wilson\n- [[House Wilson]]: The broken branch at the heart of the network",
+      "sections": [
+        {"heading": "The Northern Crown Houses", "content": "Ten minor houses holding directly from the Crown", "order": 1},
+        {"heading": "House Wilson's Integration", "content": "Accepted as northern despite Wilfrey blood", "order": 2}
+      ]
+    },
+
+    {
+      "type": "other",
+      "title": "The Baudin Tradition",
+      "subtitle": "We Remember Baudin — The Wilson Naming Custom",
+      "category": "Customs & Traditions",
+      "tags": ["baudin-tradition", "wilson", "naming", "baudin", "custom"],
+      "content": "**The Baudin Tradition** is the custom of [[House Wilson]] whereby every firstborn son is named Baudin (or a variant), honoring [[Baudin Wilfson]] — the fostering brother who died defending the founders' marriage.\n\n## Origin\n\nWhen [[Lennis Wilfrey]] and [[Nivette Wilfson]] fled north after [[The Scandal of 1776]], Baudin Wilfson — Nivette's brother — had just been killed by their younger brother [[Colard Wilfson]] for defending their union. The founders named their firstborn son Baudin. The name was deliberate and defiant — honoring the brother who gave his life.\n\n## Purpose\n\nThe practice serves multiple purposes:\n1. **Memory**: Ensures Baudin Wilfson is never forgotten\n2. **Identity**: Distinguishes Wilsons from other houses\n3. **Defiance**: A constant reminder that they exist because someone chose love over duty\n4. **Healing**: Transforms a tragedy into a blessing — \"Baudin gave his life so we could live\"\n\n## The Line of Baudins\n\n| Generation | Name | Born | Died |\n|-----------|------|------|------|\n| 1 | Baudin Wilson I | ~1778 | ~1850 |\n| 2 | Baudin Wilson II | ~1802 | ~1875 |\n| 3 | Baudin Wilson III | ~1830 | ~1905 |\n| 4 | Baudin Wilson IV | ~1858 | ~1935 |\n| 5 | Baudin Wilson V | ~1888 | ~1965 |\n| 6 | Baudin Wilson VI | ~1920 | ~1995 |\n| 7 | Baudin Wilson VII | ~1950 | living |\n| 8 | Baudin Wilson VIII | ~1978 | living |\n| 9 | Baudin Wilson IX | ~2007 | living |\n\n## Contrast with House Wilfson\n\nInterestingly, [[House Wilfson]] — the house that remained after the kinslaying — also kept Baudin's memory through naming variants: Baudric, Bauric, and eventually the full name Baudin reclaimed 250 years later. The two houses, separated by exile, independently honored the same man through the same practice.\n\n## The Response\n\nWhen asked about the naming tradition, Wilsons typically respond: \"We remember Baudin. We always will.\"\n\n## See Also\n- [[Baudin Wilfson]]: The original Baudin\n- [[House Wilson]]: The house that keeps the tradition\n- [[The Scandal of 1776]]: The tragedy that inspired it\n- [[Lennis Wilfrey]]: Who named the first Baudin Wilson\n- [[Nivette Wilfson]]: Baudin's sister, co-founder of House Wilson",
+      "sections": [
+        {"heading": "Origin", "content": "Named for the brother who died defending their marriage", "order": 1},
+        {"heading": "The Line of Baudins", "content": "Nine generations bearing the name", "order": 2},
+        {"heading": "Contrast with House Wilfson", "content": "Both houses honor Baudin independently", "order": 3}
+      ]
+    },
+
+    {
+      "type": "personage",
+      "title": "Baudin Wilson VII",
+      "subtitle": "Eighth Lord of House Wilson — The Current Lord",
+      "category": "Lords of House Wilson",
+      "tags": ["baudin", "wilson", "lord", "current", "grantholm", "baudin-tradition"],
+      "content": "**Baudin Wilson VII** (b. ~1950) is the current and eighth Lord of [[House Wilson]], having succeeded his father [[Baudin Wilson VI]] in ~1995. He is the eighth generation to bear the name Baudin, continuing the tradition established when the founders named their firstborn for [[Baudin Wilfson]].\n\n## The Current Lord\n\nBaudin VII has led House Wilson through the modern era, maintaining the family's position in the [[Northern Crown Marches]] and its network of alliances with the Northern Crown Houses.\n\n## Marriage to House Stormcrest\n\nBaudin VII married Eveline of [[House Stormcrest]] (~1975), a seafaring Northern Crown House seated at [[Cresthold]]. Their daughter Evelind later married Garrett Stormcrest (~2005), creating a double bond.\n\n## Children\n\n- [[Baudin Wilson VIII]] (b. ~1978) — heir, married Marelisse of [[House Thornwick]]\n- Evelind Stormcrest (b. ~1982) — daughter, married Garrett Stormcrest\n- Lenric Wilson (b. ~1985) — son, named to honor founder [[Lennis Wilfrey]]\n\n## The Tradition's Weight\n\nWhen asked about the naming tradition, Wilsons typically respond: \"We remember Baudin. We always will.\" Baudin VII embodies this — a steady lord carrying 250 years of family memory.\n\n## See Also\n- [[House Wilson]]: The house he leads\n- [[Grantholm]]: His seat\n- [[Baudin Wilson VIII]]: His heir\n- [[The Baudin Tradition]]: The naming custom he continues\n- [[Baudin Wilfson]]: The ancestor all Baudins honor",
+      "sections": [
+        {"heading": "The Current Lord", "content": "Eighth generation to bear the name", "order": 1},
+        {"heading": "Marriage and Children", "content": "Stormcrest alliance, three children", "order": 2}
+      ]
+    },
+
+    {
+      "type": "personage",
+      "title": "Baudin Wilson VIII",
+      "subtitle": "Heir to House Wilson",
+      "category": "Lords of House Wilson",
+      "tags": ["baudin", "wilson", "heir", "current", "grantholm", "baudin-tradition"],
+      "content": "**Baudin Wilson VIII** (b. ~1978) is the heir to [[House Wilson]], eldest son of [[Baudin Wilson VII]] and Eveline Stormcrest. He is the ninth generation to bear the name Baudin.\n\n## Marriage to House Thornwick\n\nBaudin VIII married Marelisse of [[House Thornwick]] (~2005), the youngest of the Northern Crown Houses (founded ~1920). This match elevated House Thornwick's status considerably — marriage to the Wilson heir was a significant honor for a house only three generations old.\n\n## Children\n\n- Baudin Wilson IX (b. ~2007) — heir, tenth generation to bear the name\n- Marelle Wilson (b. ~2010) — daughter, too young to marry\n\n## The Name Continues\n\nWith Baudin IX, the tradition stretches to its tenth generation. The name that began as a defiant memorial — honoring [[Baudin Wilfson]] who died in [[The Scandal of 1776]] — has become the defining characteristic of House Wilson's identity.\n\n## See Also\n- [[Baudin Wilson VII]]: His father\n- [[House Wilson]]: The house he will lead\n- [[The Baudin Tradition]]: The naming custom\n- [[House Thornwick]]: His wife's house",
+      "sections": [
+        {"heading": "The Heir", "content": "Ninth generation Baudin, married to Thornwick", "order": 1},
+        {"heading": "The Next Generation", "content": "Baudin IX continues the tradition", "order": 2}
+      ]
+    },
+
+    {
+      "type": "personage",
+      "title": "Baudin Wilson I",
+      "subtitle": "Second Lord — First Born a Wilson",
+      "category": "Lords of House Wilson",
+      "tags": ["baudin", "wilson", "lord", "first-generation", "baudin-tradition"],
+      "content": "**Baudin Wilson I** (~1778-~1850) was the second Lord of [[House Wilson]], ruling from ~1815 to ~1850. He was the first child born to [[Lennis Wilfrey]] and [[Nivette Wilfson]] after their settlement at [[Grantholm]], and the first person to bear the name Baudin Wilson.\n\n## The Name\n\nHis parents named him for [[Baudin Wilfson]] — Nivette's brother who died defending their marriage in [[The Scandal of 1776]]. The name was deliberate and defiant, establishing [[The Baudin Tradition]] that would continue for nine generations and counting.\n\n## Marriage to House Northmere\n\nBaudin I married Cereline of [[House Northmere]] (~1800), the first bride from the northern nobility to join House Wilson. This match helped legitimize the exiled house among their new neighbors.\n\n## Children\n\n- Baudin Wilson II (b. ~1802) — heir, continuing the tradition\n- Niveline (b. ~1805) — daughter, married Beric Northmere\n- Cerald Wilson (b. ~1808) — son, named for his mother\n\n## Legacy\n\nBaudin I was the bridge between exile and establishment. Born in the shadow of scandal, he lived to see House Wilson become an accepted part of the northern nobility.\n\n## See Also\n- [[Lennis Wilfrey]]: His father\n- [[Nivette Wilfson]]: His mother\n- [[Baudin Wilfson]]: His namesake\n- [[House Northmere]]: His wife's house\n- [[The Baudin Tradition]]: The custom he inaugurated",
+      "sections": [
+        {"heading": "The First Baudin Wilson", "content": "Named for the uncle who died for love", "order": 1},
+        {"heading": "Bridge to Legitimacy", "content": "From exile to accepted northern nobility", "order": 2}
+      ]
+    },
+
+    {
+      "type": "personage",
+      "title": "Colardine Wilson",
+      "subtitle": "First Wilson Daughter — Named for the Kinslayer",
+      "category": "Historical Figures",
+      "tags": ["colardine", "wilson", "ashford", "first-generation", "naming"],
+      "content": "**Colardine Wilson** (~1780-~1845) was the second child of [[Lennis Wilfrey]] and [[Nivette Wilfson]], and the first Wilson daughter to marry.\n\n## The Controversial Name\n\nColardine was named as a feminine form honoring [[Colard Wilfson]] — the brother who killed [[Baudin Wilfson]]. This seemed an odd choice for the child of exiles, but [[Lennis Wilfrey]] reportedly said: \"Colard did what he believed was right. We do not hate him for it.\"\n\nThis generosity of spirit — naming a child for the man who killed your wife's brother — says much about the founders' character. They chose forgiveness over bitterness.\n\n## Marriage to House Ashford\n\nColardine married Rodric Ashford (~1798), becoming the first Wilson daughter to wed. [[House Ashford]]'s acceptance of this match was significant — it signaled that the northern nobility was willing to embrace the exiled family.\n\n## See Also\n- [[Lennis Wilfrey]]: Her father\n- [[Nivette Wilfson]]: Her mother\n- [[Colard Wilfson]]: The kinslayer she was named for\n- [[House Ashford]]: Her husband's house",
+      "sections": [
+        {"heading": "The Controversial Name", "content": "Named for the kinslayer — forgiveness over bitterness", "order": 1},
+        {"heading": "First Wilson Bride", "content": "House Ashford accepted the exiled family", "order": 2}
+      ]
+    }
+  ],
+
+  "codexEnhancements": [
+    {
+      "targetTitle": "House Wilson",
+      "appendSection": {
+        "heading": "The Northern Crown Network",
+        "content": "House Wilson is deeply integrated into a network of Northern Crown Houses — minor nobility holding directly from the Crown, not from any Wilfrey Drith. Over 250 years, Wilson sons have married daughters from these houses and Wilson daughters have married their sons, creating a web of reciprocal alliances:\n\n- [[House Northmere]] (Cereline → Baudin I; Niveline → Beric)\n- [[House Kingsward]] (Isolda → Baudin II; Iselde → Garen)\n- [[House Granford]] (Hamelina → Baudin III; Hameline → Tormund)\n- [[House Croftmoor]] (Aureline → Baudin IV; Croftine → Aldwin)\n- [[House Helmward]] (Doreline → Baudin V; Helmina → Roderick)\n- [[House Blackmoor]] (Sireline → Baudin VI; Moraine → Cedric)\n- [[House Stormcrest]] (Eveline → Baudin VII; Evelind → Garrett)\n- [[House Thornwick]] (Marelisse → Baudin VIII)\n- [[House Ashford]] (Colardine → Rodric)\n- [[House Fenwick]] (Lenniselle → Aldric)"
+      },
+      "addTags": ["northern-crown-network", "marriage-alliances", "baudin-tradition"],
+      "addToSections": {
+        "heading": "The Northern Crown Network",
+        "content": "250 years of reciprocal marriage alliances with 10 Crown houses",
+        "order": 5
+      }
+    },
+    {
+      "targetTitle": "House Wilson",
+      "appendSection": {
+        "heading": "The Lords of House Wilson",
+        "content": "| Gen | Lord | Reign |\n|-----|------|-------|\n| 0 | [[Lennis Wilfrey]] | ~1778-1815 |\n| 1 | [[Baudin Wilson I]] | ~1815-1850 |\n| 2 | Baudin Wilson II | ~1850-1875 |\n| 3 | Baudin Wilson III | ~1875-1905 |\n| 4 | Baudin Wilson IV | ~1905-1935 |\n| 5 | Baudin Wilson V | ~1935-1965 |\n| 6 | Baudin Wilson VI | ~1965-1995 |\n| 7 | [[Baudin Wilson VII]] | ~1995-present |\n| 8 | [[Baudin Wilson VIII]] | heir |"
+      },
+      "addToSections": {
+        "heading": "The Lords of House Wilson",
+        "content": "Nine generations of Wilson lords from Lennis to Baudin VIII",
+        "order": 6
+      }
+    },
+    {
+      "targetTitle": "House Northmere",
+      "addTags": ["northern-crown", "merehall", "lake", "wilson-ally"],
+      "addToSections": {
+        "heading": "Wilson Connection",
+        "content": "Cereline Northmere married Baudin Wilson I (~1800); Niveline Wilson married Beric Northmere (~1825)",
+        "order": 3
+      }
+    },
+    {
+      "targetTitle": "House Kingsward",
+      "addTags": ["northern-crown", "wardkeep", "garrison", "wilson-ally"],
+      "addToSections": {
+        "heading": "Wilson Connection",
+        "content": "Isolda Kingsward married Baudin Wilson II (~1828); Iselde Wilson married Garen Kingsward (~1853)",
+        "order": 3
+      }
+    },
+    {
+      "targetTitle": "House Granford",
+      "addTags": ["northern-crown", "granford-keep", "farming", "wilson-ally"],
+      "addToSections": {
+        "heading": "Wilson Connection",
+        "content": "Hamelina Granford married Baudin Wilson III (~1855); Hameline Wilson married Tormund Granford (~1882)",
+        "order": 3
+      }
+    },
+    {
+      "targetTitle": "House Croftmoor",
+      "addTags": ["northern-crown", "moorstead", "moorland", "wilson-ally"],
+      "addToSections": {
+        "heading": "Wilson Connection",
+        "content": "Aureline Croftmoor married Baudin Wilson IV (~1885); Croftine Wilson married Aldwin Croftmoor (~1916)",
+        "order": 3
+      }
+    },
+    {
+      "targetTitle": "House Helmward",
+      "addTags": ["northern-crown", "helm-castle", "military", "wilson-ally"],
+      "addToSections": {
+        "heading": "Wilson Connection",
+        "content": "Doreline Helmward married Baudin Wilson V (~1918); Helmina Wilson married Roderick Helmward (~1948)",
+        "order": 3
+      }
+    },
+    {
+      "targetTitle": "House Blackmoor",
+      "addTags": ["northern-crown", "blackmoor-hall", "peatlands", "wilson-ally"],
+      "addToSections": {
+        "heading": "Wilson Connection",
+        "content": "Sireline Blackmoor married Baudin Wilson VI (~1948); Moraine Wilson married Cedric Blackmoor (~1978)",
+        "order": 3
+      }
+    },
+    {
+      "targetTitle": "House Stormcrest",
+      "addTags": ["northern-crown", "cresthold", "seafaring", "wilson-ally"],
+      "addToSections": {
+        "heading": "Wilson Connection",
+        "content": "Eveline Stormcrest married Baudin Wilson VII (~1975); Evelind Wilson married Garrett Stormcrest (~2005)",
+        "order": 3
+      }
+    },
+    {
+      "targetTitle": "House Thornwick",
+      "addTags": ["northern-crown", "thornwick-manor", "new-nobility", "wilson-ally"],
+      "addToSections": {
+        "heading": "Wilson Connection",
+        "content": "Marelisse Thornwick married Baudin Wilson VIII (~2005), elevating Thornwick's status",
+        "order": 3
+      }
+    },
+    {
+      "targetTitle": "House Ashford",
+      "addTags": ["northern-crown", "ashford-hall", "wilson-ally"],
+      "addToSections": {
+        "heading": "Wilson Connection",
+        "content": "Rodric Ashford married Colardine Wilson (~1798), first Wilson daughter to wed",
+        "order": 3
+      }
+    },
+    {
+      "targetTitle": "House Fenwick",
+      "addTags": ["northern-crown", "fenwick-keep", "ancient", "wilson-ally"],
+      "addToSections": {
+        "heading": "Wilson Connection",
+        "content": "Aldric Fenwick married Lenniselle Wilson (~1805), ancient lineage accepting Wilson as northern",
+        "order": 3
+      }
+    }
+  ],
+
+  "existingEntriesToUpdate": {
+    "description": "The following existing codex entries should have cross-references added manually",
+    "updates": [
+      {
+        "entry": "Lennis Wilfrey (id: 20)",
+        "change": "Add birth/death dates (~1755-~1815). Add reference to transformation into Lennis Wilson. Cross-reference [[Baudin Wilson I]], [[Colardine Wilson]], [[Grantholm]], [[The Baudin Tradition]]."
+      },
+      {
+        "entry": "Nivette Wilfson (id: 23)",
+        "change": "Add death date (~1822). Add reference to children: [[Baudin Wilson I]], [[Colardine Wilson]], Faramund Wilson, Lenniselle Fenwick. Cross-reference [[Grantholm]], [[The Baudin Tradition]]."
+      },
+      {
+        "entry": "The Founding of House Wilson (id: 19)",
+        "change": "Add reference to [[Grantholm]] as the seat, [[Northern Crown Marches]] as the region, and the Northern Crown Houses as marriage allies."
+      }
+    ]
+  }
+}

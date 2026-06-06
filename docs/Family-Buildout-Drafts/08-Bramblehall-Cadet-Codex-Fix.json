@@ -1,0 +1,54 @@
+{
+  "description": "Fix for Wilfbauer, Wilfbole, Wilfbark codex entries. The 05 import used replaceContent which is not supported — these three entries still only have stub text. This file appends the full content using appendSection instead.",
+  "instructions": "Import via unified import. Only codexEnhancements — no people, houses, or relationships.",
+
+  "codexEntries": [],
+
+  "codexEnhancements": [
+    {
+      "targetTitle": "House Wilfbauer",
+      "appendSection": {
+        "heading": "Seat",
+        "content": "Their seat is [[Bauerholt]], a timber-framed hall in the western woods where the forest thins enough for farming. Of the three woodland branches, the Wilfbauers are the most outward-looking, their farming bringing them into regular contact with the wider world.\n\n## Notable Marriages\n\nHouse Wilfbauer has provided a bride for a Bramblehall lord as part of the [[Woodland Marriage Tradition]]:\n- Woodline Wilfbauer → Bors Wilfrey (~1948)\n\n## Character\n\nThe Wilfbauers are practical people — clearers of ground, growers of grain, keepers of livestock. Where the [[House Wilfbole|Wilfboles]] are artisans and the [[House Wilfbark|Wilfbarks]] are hunters, the Wilfbauers feed the forest.\n\n## Current Head\n\n[[Garmund Wilfbauer]] (b. 1955) is master of Bauerholt. His heir is [[Aldmund Wilfbauer]].\n\n**See Also:** [[House Wilfrey of Bramblehall]] · [[Bauerholt]] · [[House Wilfbole]] · [[House Wilfbark]] · [[Woodland Marriage Tradition]]"
+      },
+      "addTags": ["wilfbauer", "cadet-branch", "bramblehall", "woodland", "farming", "bauerholt"],
+      "addToSections": {
+        "heading": "Seat & Character",
+        "content": "Bauerholt — farming branch, most outward-looking of the three",
+        "order": 2
+      }
+    },
+    {
+      "targetTitle": "House Wilfbole",
+      "appendSection": {
+        "heading": "Seat",
+        "content": "Their seat is [[Bolewood]], built among ancient oaks so vast that some chambers are carved into living trunks. The Wilfboles are carpenters, coopers, and bowyers whose craft is renowned across Bramblehall's lands.\n\n## Notable Marriages\n\nHouse Wilfbole has provided a bride for a Bramblehall lord as part of the [[Woodland Marriage Tradition]]:\n- Beraline Wilfbole → Alec Wilfrey (~1975)\n\n## Character\n\nThe most traditional of the three branches. They keep old forest rites that even [[Bramblehall]] has half-forgotten. Their claim that some of their oaks predate the founding of [[House Wilfrey]] is impossible to disprove.\n\n## Current Head\n\n[[Torwin Wilfbole]] (b. 1950) is master of Bolewood. His heir is [[Borwen Wilfbole]].\n\n**See Also:** [[House Wilfrey of Bramblehall]] · [[Bolewood]] · [[House Wilfbauer]] · [[House Wilfbark]] · [[Woodland Marriage Tradition]]"
+      },
+      "addTags": ["wilfbole", "cadet-branch", "bramblehall", "woodland", "woodcraft", "bolewood"],
+      "addToSections": {
+        "heading": "Seat & Character",
+        "content": "Bolewood — woodcraft branch, most traditional of the three",
+        "order": 2
+      }
+    },
+    {
+      "targetTitle": "House Wilfbark",
+      "appendSection": {
+        "heading": "Seat",
+        "content": "Their seat is [[Barkhollow]], a half-underground settlement in a natural depression where three streams converge. Nearly invisible from a distance, Barkhollow reflects the Wilfbarks' role as the hunters, trackers, and wardens of the deep wood.\n\n## Notable Marriages\n\nHouse Wilfbark has provided brides for Bramblehall's lords as part of the [[Woodland Marriage Tradition]]:\n- Mirette Wilfbark → Aldwin Wilfrey (~1825) — the first woodland bride to marry a lord's heir\n- Branelisse Wilfbark → Aldric Wilfrey II (~1918)\n\nBorsham Wilfrey (Lord Alec's brother) also married Griseline Wilfbark (~1978).\n\n## Character\n\nThe most insular of the three branches — which is saying something among [[Bramblehall]]'s already insular people. The Wilfbarks know every path, clearing, and animal run in the forest. Their knowledge of the deep wood is Bramblehall's greatest strategic asset.\n\n## Current Head\n\n[[Aldhelm Wilfbark]] (b. 1948) is master of Barkhollow. His heir is [[Godhelm Wilfbark]], already reckoned the best tracker of his generation.\n\n**See Also:** [[House Wilfrey of Bramblehall]] · [[Barkhollow]] · [[House Wilfbauer]] · [[House Wilfbole]] · [[Woodland Marriage Tradition]]"
+      },
+      "addTags": ["wilfbark", "cadet-branch", "bramblehall", "woodland", "hunting", "barkhollow"],
+      "addToSections": {
+        "heading": "Seat & Character",
+        "content": "Barkhollow — hunting branch, most insular of the three",
+        "order": 2
+      }
+    }
+  ],
+
+  "houses": [],
+  "people": [],
+  "relationships": [],
+  "heraldry": [],
+  "dignities": []
+}

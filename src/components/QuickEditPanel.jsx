@@ -32,6 +32,7 @@ import EpithetsSection from './EpithetsSection';
 import { getPrimaryEpithet } from '../utils/epithetUtils';
 import Icon from './icons/Icon';
 import ActionButton from './shared/ActionButton';
+import { isBastardCadet } from '../utils/treeHelpers';
 import './QuickEditPanel.css';
 
 const PANEL_VARIANTS = {
@@ -533,6 +534,7 @@ function QuickEditPanel({
       dateOfBirth: '',
       dateOfDeath: '',
       houseId: null,
+      swornToHouseId: null,
       legitimacyStatus: 'legitimate',
       notes: ''
     };
@@ -881,6 +883,30 @@ function QuickEditPanel({
             {house && (
               <div className="quick-edit__house-display">
                 <span>{house.houseName}</span>
+              </div>
+            )}
+
+            {/* Personal Allegiance */}
+            {house && (
+              <div className="quick-edit__field" style={{ marginTop: '0.5rem' }}>
+                <label className="quick-edit__label">Personal Allegiance</label>
+                <select
+                  value={editedPerson.swornToHouseId || ''}
+                  onChange={(e) => setEditedPerson({
+                    ...editedPerson,
+                    swornToHouseId: e.target.value ? parseInt(e.target.value) : null
+                  })}
+                  className="quick-edit__input"
+                >
+                  <option value="">Unset (house default)</option>
+                  {houses
+                    .filter(h => h.id !== house.id)
+                    .sort((a, b) => a.houseName.localeCompare(b.houseName))
+                    .map(h => (
+                      <option key={h.id} value={h.id}>{h.houseName}</option>
+                    ))
+                  }
+                </select>
               </div>
             )}
           </motion.section>

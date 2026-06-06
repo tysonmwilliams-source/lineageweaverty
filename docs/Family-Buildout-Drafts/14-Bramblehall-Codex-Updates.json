@@ -1,0 +1,66 @@
+{
+  "_meta": {
+    "description": "Updates to existing Bramblehall codex entries to reference Wyrmwood Forest, thirren, Bram Wilfrey, and the Wood-Warden's Oath",
+    "instructions": "These are UPDATES to existing entries. The Unified Import Tool will create new entries — so after import, you should delete the old stubs (codex #14 and #2500) manually if duplicates appear, or simply paste the updated content into the existing entries via the codex editor."
+  },
+
+  "codexEntries": [
+    {
+      "_tempId": "codex_bramblehall_updated",
+      "type": "location",
+      "title": "Bramblehall",
+      "subtitle": "Woodland Seat of House Wilfrey",
+      "category": "Castles & Fortifications",
+      "tags": ["bramblehall", "holdfast", "forest", "woodland", "regional-seat", "wilfrey-voice", "wyrmwood"],
+      "content": "**Bramblehall** (also considered: Hardwood Hall) is a regional seat of [[House Wilfrey]], located at the southern edge of **[[Wyrmwood Forest]]**, a vast and ancient woodland.\n\n## Architecture\n\nA huge wooden holdfast with some stone elements, Bramblehall is built in harmony with its forest environment. The primary use of timber reflects both the available resources and the woodland culture of its people.\n\n## The People\n\nThe seat is home to woodsmen and general woods folk - an insular population somewhat disconnected from the wider context of [[House Wilfrey]]'s realm. Of all four seats, Bramblehall maintains the strongest connection to old traditions and ways.\n\n## The Wood-Warden's Oath\n\nWhen **Bram Wilfrey** founded Bramblehall in 1176 — granted Wyrmwood and its surrounding lands by the Crown for extraordinary military service — he found the forest already tended by an ancient folk led by [[The Wytherns]]. Rather than conquer, he formalized partnership through the **Wood-Warden's Oath**: the forest-folk manage the woodland and its resources (particularly [[thirren]]) while Bramblehall provides protection and political representation.\n\nEach Midwinter, the Wythern delegation travels to Bramblehall bearing a cutting of [[Mirellune]] — the sacred ghost-bloom — as a ceremonial renewal of the Compact. This tradition has continued unbroken since the founding.\n\n## Resources\n\n- **Timber**: Primary export and building material\n- **[[Thirren]]**: A rare, slow-growing hardwood unique to Wyrmwood. Prized for its extraordinary density and deep colouring. Managed exclusively by the forest-folk under the terms of the [[Wood-Warden's Oath]]\n- **Forestry**: Sustainable woodland management\n- **Hunting**: Both subsistence and sport\n\n## Culture\n\nBramblehall stands in stark contrast to cosmopolitan [[Fourhearth Castle]]. While Fourhearth connects to the wider world, Bramblehall deliberately maintains its isolation and traditional ways.\n\nThis cultural independence sometimes creates tension with the other seats, but also preserves knowledge and customs that might otherwise be lost to time.\n\n## The Fostering System\n\nHeirs sent to do a season at Bramblehall learn:\n- Forestry and timber management\n- Hunting and woodland survival\n- Leading insular, independent-minded people\n- Woodland warfare tactics\n\n**Best Seasons**: Spring and autumn for logging; winter for hunting\n\n## Cadet Branches\n\nAll Bramblehall-region cadet branches bear woodland-themed names:\n- [[House Wilfbauer]]\n- [[House Wilfbole]] (bole = tree trunk)\n- [[House Wilfbark]]\n\n## The Voice of Bramblehall\n\nBramblehall Wilfreys are the keepers of old ways. Their character differs notably from the other seats:\n\n**Character:** Traditional, insular, rooted. Bramblehall Wilfreys are less concerned with the wider world and more concerned with doing things properly, as they have always been done.\n\n**Voice tends toward:**\n- Simpler, more direct language - fewer words, more weight\n- Suspicion of novelty and outsiders\n- Deep connection to the land and seasons\n- Patience measured in tree-growth, not politics\n\n**Distinct touches:**\n- References to wood, forest, the old ways\n- Open distrust of [[Fourhearth Castle|Fourhearth's]] cosmopolitan nature\n- Pride in self-sufficiency - \"We need nothing from beyond the treeline\"\n- Longer silences in conversation; comfort with quiet\n\n*\"The trees were here before us. They will be here after. We tend what we were given and pass it on. That is enough.\"*",
+      "sections": [
+        {
+          "order": 1,
+          "heading": "Woodland Culture",
+          "content": "Insular traditions and forest-based economy"
+        },
+        {
+          "order": 2,
+          "heading": "Strategic Learning",
+          "content": "Training ground for future lords in woodland leadership"
+        },
+        {
+          "order": 3,
+          "heading": "The Wood-Warden's Oath",
+          "content": "Ancient compact with the Wytherns and forest-folk of Wyrmwood"
+        },
+        {
+          "order": 10,
+          "heading": "The Voice of Bramblehall",
+          "content": "Traditional, rooted, patience measured in tree-growth"
+        }
+      ]
+    },
+    {
+      "_tempId": "codex_house_bramblehall_updated",
+      "type": "house",
+      "title": "House Wilfrey of Bramblehall",
+      "subtitle": "Noble House",
+      "category": "main",
+      "tags": ["house", "main", "wilfrey", "bramblehall"],
+      "content": "**House Wilfrey of Bramblehall** is one of the four great Wilfrey seats, ruling from [[Bramblehall]] at the southern edge of [[Wyrmwood Forest]].\n\n## Origins\n\nFounded in **1176** by **Bram Wilfrey**, second son of the Breakmount Wilfreys. Bram was granted Wyrmwood Forest and its surrounding lands by the Crown for extraordinary military service, and was made Drithen equal to Great Drithen. Rather than impose control over the forest-folk he found already managing the woodland, he formalized partnership through the **[[Wood-Warden's Oath]]**.\n\n## The Forest Compact\n\nThe relationship between Bramblehall and the forest-folk — particularly [[The Wytherns]] — is central to the house's identity and economy. The forest-folk manage [[Wyrmwood Forest]] and its resources, including the prized [[thirren]] hardwood. In return, Bramblehall provides military protection and political representation.\n\nThe Compact is renewed each Midwinter when the Wythern delegation presents a cutting of [[Mirellune]] at Bramblehall — a ceremony that has continued unbroken since the founding.\n\n## Key Resources\n\n- **[[Thirren]]**: Rare, slow-growing hardwood of extraordinary density and value. Managed by the forest-folk under the Wood-Warden's Oath\n- **Timber**: General forestry and sustainable woodland management\n- **Hunting**: Both subsistence and sport\n\n## Lords of Bramblehall\n\n| Lord | Approximate Period |\n|------|-------------------|\n| Bram Wilfrey (founder) | 1176– |\n| Constann Wilfrey | ~1750 |\n\n## Cadet Branches\n\n- [[House Wilfbauer]]\n- [[House Wilfbole]]\n- [[House Wilfbark]]",
+      "sections": [
+        {
+          "order": 1,
+          "heading": "Origins",
+          "content": "Founded 1176 by Bram Wilfrey, second son of Breakmount"
+        },
+        {
+          "order": 2,
+          "heading": "The Forest Compact",
+          "content": "Wood-Warden's Oath with the Wytherns and forest-folk"
+        },
+        {
+          "order": 3,
+          "heading": "Key Resources",
+          "content": "Thirren hardwood, timber, hunting"
+        }
+      ]
+    }
+  ]
+}

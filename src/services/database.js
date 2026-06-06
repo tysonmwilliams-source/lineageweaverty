@@ -517,6 +517,42 @@ db.version(16).stores({
   // contextLog: History of context generation events for auditing
   contextLog: '++id, contextId, event, trigger, timestamp, duration, stats'
 });
+// Version 17: Add per-person allegiance for bastard-elevation cadet branches
+// swornToHouseId on people allows individual members of bastard cadets (Dum/Dun prefix)
+// to be sworn to different parent seats (e.g., one Dumwilfrey to Bramblehall, another to Fourhearth)
+db.version(17).stores({
+  people: '++id, firstName, lastName, houseId, dateOfBirth, dateOfDeath, bastardStatus, codexEntryId, heraldryId, swornToHouseId',
+  houses: '++id, houseName, parentHouseId, houseType, codexEntryId, heraldryId',
+  relationships: '++id, person1Id, person2Id, relationshipType',
+  codexEntries: '++id, type, title, category, *tags, era, created, updated',
+  codexLinks: '++id, sourceId, targetId, type',
+  acknowledgedDuplicates: '++id, person1Id, person2Id, acknowledgedAt',
+  heraldry: '++id, name, category, *tags, created, updated',
+  heraldryLinks: '++id, heraldryId, entityType, entityId, linkType',
+  dignities: '++id, name, shortName, dignityClass, dignityRank, swornToId, currentHolderId, currentHouseId, codexEntryId, created, updated',
+  dignityTenures: '++id, dignityId, personId, dateStarted, dateEnded, acquisitionType, endType, created',
+  dignityLinks: '++id, dignityId, entityType, entityId, linkType, created',
+  bugs: '++id, title, status, priority, system, page, created, resolved',
+  householdRoles: '++id, houseId, roleType, currentHolderId, startDate, created, updated',
+  syncQueue: '++id, entityType, entityId, operation, timestamp, synced',
+  writings: '++id, title, type, status, *tags, createdAt, updatedAt',
+  chapters: '++id, writingId, order, createdAt, updatedAt',
+  writingLinks: '++id, writingId, chapterId, targetType, targetId, createdAt',
+  storyPlans: '++id, writingId, framework, *genre, createdAt, updatedAt',
+  storyArcs: '++id, storyPlanId, type, status, order, createdAt, updatedAt',
+  storyBeats: '++id, storyPlanId, storyArcId, beatType, status, order, createdAt, updatedAt',
+  scenePlans: '++id, storyPlanId, chapterId, povCharacterId, status, order, createdAt, updatedAt',
+  characterArcs: '++id, storyPlanId, characterId, arcType, status, createdAt, updatedAt',
+  plotThreads: '++id, storyPlanId, threadType, status, createdAt, updatedAt',
+  contextRegistry: '++id, contextId, contextType, houseId, status, lastGenerated, lastSourceChange, *tags',
+  contextFiles: '++id, contextId, filePath, fileType, content, size, itemCount, generatedAt',
+  contextLog: '++id, contextId, event, trigger, timestamp, duration, stats'
+}).upgrade(tx => {
+  return tx.table('people').toCollection().modify(person => {
+    person.swornToHouseId = person.swornToHouseId || null;
+  });
+});
+
 } // End of applySchema function
 
 /**
@@ -671,7 +707,7 @@ export async function addHouse(houseData, options = {}) {
         // Create a Codex entry for this house
         const codexEntryId = await createEntry({
           type: 'house',
-          title: `House ${houseData.houseName}`,
+          title: houseData.houseName.startsWith('House ') ? houseData.houseName : `House ${houseData.houseName}`,
           subtitle: houseData.houseType === 'cadet' ? 'Cadet Branch' : 'Noble House',
           content: houseData.notes || '',
           category: houseData.houseType || 'main',
@@ -747,6 +783,35 @@ export async function getCadetHouses(parentHouseId, datasetId) {
     console.error('Error getting cadet houses:', error);
     throw error;
   }
+}
+
+/**
+ * Get all people personally sworn to a specific house.
+ * These are members of bastard-elevation cadet branches who have individual allegiance.
+ */
+export async function getPeopleSwornToHouse(houseId, datasetId) {
+  try {
+    const database = getDatabase(datasetId);
+    return await database.people
+      .where('swornToHouseId')
+      .equals(houseId)
+      .toArray();
+  } catch (error) {
+    console.error('Error getting people sworn to house:', error);
+    throw error;
+  }
+}
+
+/**
+ * Determine if a house is a bastard-elevation cadet branch.
+ * Uses cadetTier/foundingType as primary, falls back to Dum/Dun name prefix for legacy data.
+ */
+export function isBastardCadet(house) {
+  if (!house) return false;
+  if (house.cadetTier === 2 || house.foundingType === 'bastard-elevation') return true;
+  if (house.cadetTier === 1) return false;
+  // Fallback: name prefix for legacy data without cadetTier
+  return /^(Dum|Dun)/i.test(house.houseName);
 }
 
 export async function updateHouse(id, updates, datasetId) {

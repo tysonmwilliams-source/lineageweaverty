@@ -1,548 +1,155 @@
 # Lineageweaver
 
-A web-based fantasy genealogy visualization tool for worldbuilders with an integrated wiki-style encyclopedia system and heraldic design studio.
+A browser-based fantasy **genealogy + worldbuilding suite** for novelists and worldbuilders — combining an interactive family tree, a wiki-style encyclopedia, a heraldic design studio, a feudal titles/succession system, and a novel-writing workspace, all backed by local-first storage with optional cloud sync.
 
 ## What is Lineageweaver?
 
-Lineageweaver helps fantasy writers and worldbuilders track complex family relationships, including:
-- Multiple marriages and illegitimate children
-- Magical bloodlines and non-human species
-- Political titles and succession
-- Inter-family alliances and marriages
-- **Rich worldbuilding through The Codex encyclopedia system**
-- **Seamless integration between family trees and character biographies**
-- **Professional heraldry design with The Armory** *(NEW in v0.9.0)*
+Lineageweaver helps fantasy writers track complex worlds and the stories set in them:
 
-## Current Version: 0.9.0 - The Heraldry Reboot
+- **Family trees** — multiple marriages, illegitimate children, fostering/adoption, cadet branches, magical bloodlines, and non-human species
+- **The Codex** — a wiki-style encyclopedia with `[[wiki-links]]` and automatic backlinks, cross-linked to the tree
+- **The Armory** — a professional SVG coat-of-arms designer linked to houses and people
+- **Dignities** — feudal titles, offices, tenure history, and succession (with dispute and regency tracking)
+- **The Writing Studio** — a TipTap-based editor with story planning, canon-checking, and prose analysis
+- **AI Assistant** — optional Google Gemini integration for worldbuilding help and reviewable data proposals
+- **Cloud sync & datasets** — local-first IndexedDB storage, optional Firebase sync, and multiple independent worlds per account
 
-### What's New in v0.9.0 (January 9, 2026)
+> 📐 Building on this project? Start with [`CLAUDE.md`](CLAUDE.md) for architecture, conventions, and the cloud-sync rules, then `docs/DEVELOPMENT_GUIDELINES.md` for the full playbook.
 
-**🛡️ THE HERALDRY REBOOT - Phases 0-3 Complete**
+## Current Status
 
-A complete ground-up rebuild of the heraldry system with professional SVG-based design tools.
+Lineageweaver is in **active development** (solo project). The last formally tagged milestone was **v0.9.0 — "The Heraldry Reboot"** (January 2026); several major systems have shipped since.
+
+**Major systems (current state):**
+
+| System | Status |
+|--------|--------|
+| Family Tree / Genealogy | ✅ Mature |
+| The Codex (wiki) | ✅ Mature |
+| The Armory (heraldry) | ✅ Mature — house + personal arms built |
+| Dignities (titles & succession) | ✅ Feature-complete |
+| Writing Studio + Planner | ✅ Feature-complete |
+| Canon Check / Prose Analysis | ✅ Rule-based complete (AI checks partial) |
+| AI Assistant (Gemini) | ⚠️ Integrated — requires API key |
+| Cloud Sync (Firebase) | ✅ Working — last-write-wins |
+| Multi-dataset (multiple worlds) | ✅ Working |
+| Bug Tracker | ✅ Built-in |
+
+**Tech at a glance:** React 19 · React Router 7 · Vite 7 · Dexie/IndexedDB (schema v17) · Firebase Auth + Firestore · D3 v7 · TipTap 3 · Tailwind 4. ~103k LOC.
 
 ---
 
-## The Armory - Heraldry System
+## The Armory — Heraldry System
 
-### Overview
+The Armory is Lineageweaver's integrated heraldry design system. Create authentic coats of arms using traditional heraldic principles, then link them to noble houses and individual people.
 
-The Armory is Lineageweaver's integrated heraldry design system. Create authentic coats of arms using traditional heraldic principles, then link them to your noble houses.
+**Access:** Navigate to `/heraldry` ("The Armory"), `/heraldry/create` (Design Studio), or `/heraldry/charges` (Charges Library).
 
-**Access:** Navigate to `/heraldry` or click "The Armory" in the navigation bar.
+### Roadmap
 
----
-
-### Phase 0: Planning & Architecture ✅
-
-**7-Phase Roadmap Established:**
 | Phase | Name | Status |
 |-------|------|--------|
-| 0 | Planning | ✅ Complete |
-| 1 | Foundation | ✅ Complete |
-| 2 | Design Studio | ✅ Complete |
+| 0 | Planning & Architecture | ✅ Complete |
+| 1 | Foundation (DB schema, service layer) | ✅ Complete |
+| 2 | Design Studio (divisions, tinctures, ordinaries) | ✅ Complete |
 | 3 | Charges Library | ✅ Complete |
-| 4 | House Integration | 🔜 Next |
-| 5 | Advanced Features | Planned |
-| 6 | Polish & Export | Planned |
+| 4 | House Integration & Personal Arms | ✅ Complete |
+| 5 | Codex Integration & Cloud Sync | 🔄 Mostly complete |
+| 6 | Polish, Export, Mobile UI | ⬜ Planned |
+
+### What you can design
+
+The Design Studio uses a **3-layer composition model** (field → ordinaries → charges) with a live preview and automatic blazon generation:
+
+- **22 field divisions** — simple, partitions (per pale/fess/bend/chevron/saltire, quarterly), stripes (paly/barry/bendy, 4–10 count), complex patterns (chequy, lozengy, fusily, gyronny), and tierced
+- **14 ordinaries** — chief, base, fess, pale, bend(s), chevron, pile, cross, saltire — each with independent tincture, thickness (narrow/normal/wide), count (1–3), and inversion
+- **17 tinctures** — traditional metals & colours (Or, Argent, Gules, Azure, Sable, Vert, Purpure), stains (Tenné, Sanguine, Murrey), plus extended/fantasy hues
+- **10 line styles** — straight, wavy, engrailed, invected, embattled, indented, dancetty, raguly, dovetailed, nebuly
+- **287 charges across 17 categories** — beasts, birds, sea creatures, mythical, insects, serpents, weapons, flora, architecture, objects, body parts, military, celestial, geometric, crosses, knots, symbols. Charges support per-charge tincture, multiple size steps (Small → Titanic), count (1–3), and arrangement (in pale/fess/bend, 2&1, 1&2). Browse them all at `/heraldry/charges`.
+
+Charge artwork is sourced from [Traceable Heraldic Art](https://www.heraldicart.org/) (CC0 / public domain), stored as external SVGs in `public/heraldic-charges/` and colorized at render time.
+
+> **Shield shapes:** five historical outlines (Heater, English, French, Spanish, Swiss) exist in `public/shields/`, but shape selection is currently disabled — designs render on the default (French) shield.
+
+### Blazon generation & heraldic rules
+
+Designs auto-generate formal blazons (e.g. *"Per pale Gules and Or, a chevron wavy Argent"*) and show a non-blocking **Rule of Tincture** warning for metal-on-metal or colour-on-colour field divisions.
+
+### Rendering & storage pipeline
+
+1. **Compose SVG** (200×200) — field + ordinaries + charges
+2. **Apply shield mask** via `clipPath` for crisp rendering at any size
+3. **Rasterize to PNG** at three sizes (thumbnail, display, high-res) for fast lists/exports
+4. **Store** the SVG, PNGs, and the editable `composition` object (versioned, with backward-compat migration from the legacy flat format)
+
+### House & personal arms
+
+- **House arms** — link any design to a house (`HouseHeraldrySection`); the primary link updates the house record for quick display
+- **Personal arms** — derive a person's arms from their house with **cadency marks** computed from birth order (`PersonalArmsSection`, `personalArmsRenderer.js`)
+- **External generation** — optional integration with the [Armoria](https://armoria.herokuapp.com/) API for procedural base designs (`utils/armoriaIntegration.js`)
+
+**Key files:** `pages/HeraldryCreator.jsx`, `pages/HeraldryLanding.jsx`, `pages/ChargesLibrary.jsx`, `services/heraldryService.js`, `data/unifiedChargesLibrary.js`, `data/heraldicData.js`, `utils/shieldSVGProcessor.js`.
 
 ---
 
-### Phase 1: Foundation ✅
-
-**Database Migration (v3):**
-- New `heraldry` table for coat of arms storage
-- New `heraldryLinks` table for entity relationships
-- Compound index for efficient queries
-- Migration from v2 → v3 automatic
-
-**Schema - Heraldry Table:**
-```javascript
-{
-  id: auto,                    // Primary key
-  name: string,                // "Arms of House Wilfrey"
-  description: string,         // Optional notes
-  blazon: string,              // Formal heraldic description
-  heraldrySVG: string,         // Full SVG with shield mask
-  heraldrySourceSVG: string,   // Raw division SVG (200×200)
-  heraldryDisplay: string,     // PNG base64 (200px)
-  heraldryThumbnail: string,   // PNG base64 (64px)
-  heraldryHighRes: string,     // PNG base64 (400px)
-  shieldType: string,          // heater|english|french|spanish|swiss
-  composition: object,         // All design parameters
-  category: string,            // noble|personal|ecclesiastical|civic|guild|fantasy
-  tags: array,                 // Custom tags
-  source: string,              // 'creator'|'upload'|'external'
-  linkedEntities: array,       // Entity references
-  createdAt: date,
-  updatedAt: date
-}
-```
-
-**Heraldry Service Layer (`heraldryService.js`):**
-- `createHeraldry(data)` - Create new coat of arms
-- `getHeraldry(id)` - Retrieve by ID
-- `getAllHeraldry()` - List all heraldry
-- `updateHeraldry(id, data)` - Update existing
-- `deleteHeraldry(id)` - Remove (with cascade)
-- `linkHeraldryToEntity(link)` - Connect to house/person
-- `unlinkHeraldryFromEntity(heraldryId, entityType, entityId)` - Remove link
-- `getHeraldryByEntity(entityType, entityId)` - Find linked heraldry
-- `searchHeraldry(query)` - Text search
-
-**Landing Page - The Armory (`/heraldry`):**
-- Gallery grid of all created heraldry
-- Thumbnail previews with names
-- "Create New Heraldry" prominent button
-- Empty state with getting started guide
-- Navigation integrated with main app
-
----
-
-### Phase 2: The Design Studio ✅
-
-**Full-Page Design Interface (`/heraldry/create`):**
-
-A professional heraldry design workspace with real-time preview and formal blazon generation.
-
-**Layout:**
-- **Left Panel (400px):** Live shield preview + blazon display
-- **Right Panel:** Collapsible design sections
-- **Sticky Header:** Back button + page title
-
-#### Division Patterns (24+)
-
-**Simple:**
-- Plain (solid field)
-
-**Partitions (support line styles):**
-- Per Pale (vertical half)
-- Per Fess (horizontal half)
-- Per Bend (diagonal dexter)
-- Per Bend Sinister (diagonal sinister)
-- Per Chevron (chevron division)
-- Quarterly (four quarters)
-- Per Saltire (X-shaped quarters)
-
-**Stripes (support count 4-10):**
-- Paly (vertical stripes)
-- Barry (horizontal stripes)
-- Bendy (diagonal stripes)
-- Bendy Sinister (reverse diagonal)
-
-**Complex Patterns:**
-- Chequy (checkerboard)
-- Lozengy (diamond pattern)
-- Fusily (elongated diamonds)
-- Gyronny (8-way radial)
-
-**Ordinaries (support count, thickness, line styles):**
-- Chief (top band)
-- Base (bottom band)
-- Fess (horizontal band)
-- Pale (vertical band)
-- Bend (diagonal band)
-- Bend Sinister (reverse diagonal band)
-- Chevron (V-shape)
-- Pile (triangle from top)
-- Cross
-- Saltire (X-shape)
-
-**Tierced:**
-- Tierced in Pale (three vertical)
-- Tierced in Fess (three horizontal)
-
-#### Tinctures (10 Traditional Colors)
-
-**Metals:**
-- Or (Gold) `#FFD700`
-- Argent (Silver/White) `#FFFFFF`
-
-**Colours:**
-- Gules (Red) `#DC143C`
-- Azure (Blue) `#0047AB`
-- Sable (Black) `#000000`
-- Vert (Green) `#228B22`
-- Purpure (Purple) `#9B30FF`
-
-**Stains:**
-- Tenné (Orange-Brown) `#CD853F`
-- Sanguine (Blood Red) `#8B0000`
-- Murrey (Mulberry) `#8B008B`
-
-#### Line Styles (10 Variations)
-
-All partition lines can use decorative styles:
-
-| Style | Description | Blazon Term |
-|-------|-------------|-------------|
-| Straight | Default straight line | (none) |
-| Wavy | Undulating waves | wavy |
-| Engrailed | Scalloped outward | engrailed |
-| Invected | Scalloped inward | invected |
-| Embattled | Battlements/crenellated | embattled |
-| Indented | Zigzag teeth | indented |
-| Dancetty | Large zigzag | dancetty |
-| Raguly | Broken branch stubs | raguly |
-| Dovetailed | Dovetail joints | dovetailed |
-| Nebuly | Cloud-like curves | nebuly |
-
-#### Division Options
-
-**Multiplicity (for stripes/ordinaries):**
-- Stripes: 4, 6, 8, or 10 count
-- Ordinaries: 1, 2, or 3 count
-- Automatic diminutive naming (fess → bars, pale → pallets, etc.)
-
-**Thickness (for ordinaries):**
-- Narrow (60% width)
-- Normal (100% width)
-- Wide (140% width)
-
-**Inversion (for chevron/pile):**
-- Toggle to flip orientation
-- Chevron inverted, Pile reversed
-
-#### Shield Shapes (5 Historical Types)
-
-| Shape | Name | Description |
-|-------|------|-------------|
-| 🛡️ | Heater | Classic medieval (c.1245) |
-| 🏰 | English | Late medieval (c.1403) |
-| ⚜️ | French | Embowed/arched style |
-| 🌙 | Spanish | Engrailed notched |
-| ⛰️ | Swiss | Engrailed peaked |
-
-**SVG Masks:**
-- Professional shield outlines from heraldicart.org
-- Creative Commons licensed
-- Crisp rendering at all sizes
-
-#### Blazon Generation
-
-Automatic formal heraldic descriptions:
-
-**Examples:**
-- "Azure" (plain blue field)
-- "Per pale Gules and Or" (red and gold vertical split)
-- "Azure, a chevron wavy Or" (blue field, gold wavy chevron)
-- "Barry of 6 Argent and Sable" (6 white/black horizontal stripes)
-- "Gules, three bendlets sinister Argent" (red field, 3 white diagonal bands)
-
-#### Rule of Tincture Warning
-
-Visual warning when placing:
-- Metal on metal (Or on Argent)
-- Colour on colour (Gules on Azure)
-
-Non-blocking but educational for heraldic authenticity.
-
----
-
-### Phase 3: Charges Library ✅
-
-**25 Heraldic Charges Across 7 Categories:**
-
-#### 🦁 Beasts (5)
-- Lion Rampant (standing, forelegs raised)
-- Lion Passant (walking)
-- Bear Rampant
-- Boar
-- Stag (Hart)
-
-#### 🦅 Birds (4)
-- Eagle Displayed (spread wings)
-- Falcon
-- Raven
-- Swan
-
-#### ✚ Crosses (4)
-- Cross (standard)
-- Cross Patée (flared ends)
-- Cross Moline (split ends)
-- Cross Flory (fleur-de-lis ends)
-
-#### ⭐ Celestial (4)
-- Mullet (5-pointed star)
-- Estoile (wavy-rayed star)
-- Sun in Splendor
-- Crescent
-
-#### ◆ Geometric (3)
-- Lozenge (diamond)
-- Roundel (circle)
-- Billet (rectangle)
-
-#### 👑 Objects (3)
-- Crown
-- Sword
-- Key
-
-#### 🌹 Flora (2)
-- Rose
-- Fleur-de-lis
-
-#### Charge Positioning System
-
-**Single Charge Positions:**
-- Fess Point (center) - default
-- Chief (top)
-- Base (bottom)
-- Dexter (left from viewer)
-- Sinister (right from viewer)
-- Honor Point (upper center)
-- Nombril Point (lower center)
-
-**Multiple Charge Arrangements:**
-
-For 2 charges:
-- In Pale (vertical line)
-- In Fess (horizontal line)
-- In Bend (diagonal)
-
-For 3 charges:
-- 2 & 1 (two above, one below) - most common
-- 1 & 2 (one above, two below)
-- In Pale (vertical line)
-- In Fess (horizontal line)
-- In Bend (diagonal)
-
-#### Charge Size Options
-
-| Size | Scale | Best For |
-|------|-------|----------|
-| Small | 0.45× | Multiple charges |
-| Medium | 0.65× | 1-2 charges |
-| Large | 0.85× | Single dominant charge |
-
-**Auto-Scaling:**
-- 2 charges: 70% of selected size
-- 3 charges: 55% of selected size
-
-#### Charge Blazon Generation
-
-Automatic formal descriptions:
-
-**Examples:**
-- "a lion rampant Or" (gold standing lion)
-- "three mullets Argent" (three silver stars)
-- "two eagles displayed Sable" (two black spread eagles)
-
----
-
-### Design Studio UI
-
-**Collapsible Sections:**
-1. **Identity** - Name, description
-2. **Division** - Pattern selection + options
-3. **Tinctures** - Color pickers for 2-3 fields
-4. **Charges** - Symbol selection + options *(NEW)*
-5. **Shield Shape** - Historical shape selection
-6. **Classification** - Category + tags
-7. **Link to House** - Associate with noble house
-
-**Charges Section Features:**
-- Enable/disable toggle
-- Category filter tabs (7 categories)
-- Charge selection grid
-- Tincture picker for charge color
-- Count selector (1-3)
-- Arrangement options (for 2+ charges)
-- Size controls (Small/Medium/Large)
-
-**Real-Time Preview:**
-- Instant SVG regeneration on any change
-- Shield mask applied automatically
-- Blazon updates in real-time
-
-**Save Process:**
-1. Generate final SVG with shield mask
-2. Create PNG versions (64px, 200px, 400px)
-3. Store composition data for editing
-4. Link to selected house (optional)
-5. Update house record with heraldry
-
----
-
-### Files Added/Modified in v0.9.0
-
-**New Files:**
-```
-src/
-├── data/
-│   └── chargesLibrary.js          # 25 charges, positions, arrangements, SVG generation
-├── pages/
-│   ├── HeraldryLanding.jsx        # Armory gallery page
-│   ├── HeraldryLanding.css        # Gallery styling
-│   ├── HeraldryCreator.jsx        # Full design studio (1800+ lines)
-│   └── HeraldryCreator.css        # Design studio styling
-├── services/
-│   └── heraldryService.js         # Full CRUD + linking operations
-└── utils/
-    ├── shieldMasks.js             # 5 professional shield SVG paths
-    └── shieldSVGProcessor.js      # SVG masking and composition
-```
-
-**Modified Files:**
-```
-src/
-├── services/
-│   └── database.js                # v3 migration, heraldry + heraldryLinks tables
-├── components/
-│   └── Navigation.jsx             # Added "The Armory" nav link
-└── App.jsx                        # Added /heraldry routes
-```
-
----
-
-### Technical Implementation
-
-**SVG Generation Pipeline:**
-
-1. **Division SVG (200×200 viewBox)**
-   - Generate base field with tinctures
-   - Apply line style variations
-   - Add ordinaries with options
-
-2. **Charge Overlay**
-   - Position charges on field
-   - Apply tincture and scaling
-   - Handle multiple charge arrangements
-
-3. **Shield Masking**
-   - Load shield shape SVG path
-   - Create clipPath definition
-   - Apply mask to combined design
-
-4. **PNG Conversion**
-   - Canvas-based rasterization
-   - Three size variants
-   - Base64 encoding for storage
-
-**Line Style Algorithm:**
-
-Each decorative line is generated mathematically:
-- Calculate line length and direction
-- Determine pattern count based on length
-- Generate control points for curves/angles
-- Build SVG path with appropriate commands
-
-```javascript
-// Example: Wavy line generation
-for (let i = 0; i < patternCount; i++) {
-  const dir = (i % 2 === 0) ? 1 : -1;
-  const cp1 = midpoint + perpendicular * amplitude * dir;
-  path += ` C ${cp1} ${cp2} ${endpoint}`;
-}
-```
-
-**Charge SVG Structure:**
-
-Each charge is defined with:
-- Unique ID and name
-- Category classification
-- SVG path data (100×100 viewBox)
-- Blazon term
-- Optional description
-
-```javascript
-lionRampant: {
-  id: 'lionRampant',
-  name: 'Lion Rampant',
-  category: 'beasts',
-  blazon: 'a lion rampant',
-  description: 'Lion standing on hind legs',
-  path: 'M 50 10 C 45 15...' // Full SVG path
-}
-```
-
----
-
-### What's Next: Phase 4 - House Integration
-
-**Planned Features:**
-- Heraldry display on house cards
-- Heraldry in family tree visualization
-- Batch assignment tools
-- Cadet branch variations
-- Heraldry history/lineage tracking
-
----
-
-## Previous Versions
-
-### v0.8.2 - Module 1E Complete (January 7, 2026)
-
-**📍 HORIZONTAL LAYOUT**
-
-View your family tree with ancestors on the left and descendants flowing to the right!
-
-**Features:**
-- **Toggle Button** - Click the layout icons in the bottom-left corner
-- **Keyboard Shortcut** - Press `H` to toggle between vertical/horizontal
-- **Persistent Preference** - Your choice is saved in localStorage
-- **Auto-Center** - Tree automatically centers on content when switching
-- **Both Themes** - Works perfectly in Royal Parchment and Light Manuscript
-
-**Keyboard Shortcuts:**
-| Key | Action |
-|-----|--------|
-| `H` | Toggle horizontal/vertical layout |
-| `+` / `=` | Zoom in |
-| `-` | Zoom out |
-| `0` | Reset view |
-
----
-
-### v0.8.1 - Module 1E Core Features (January 7, 2026)
-
-**📦 MODULE 1E COMPLETE**
-
-| Feature | Status |
-|---------|--------|
-| ✅ Export to JSON | Auto-backup every 15 mins + manual |
-| ✅ Import from JSON | Validation, preview, conflict resolution |
-| ✅ Species Field | Non-human characters supported |
-| ✅ Titles System | Noble titles with date ranges |
-| ✅ Magical Bloodlines | Inherited abilities tracking |
-| ✅ Horizontal Layout | Left-to-right tree view with toggle |
-| 🅿️ Timeline View | Parked indefinitely |
-
----
-
-### v0.8.0 - Tree-Codex Integration (January 7, 2026)
-
-**🔗 TREE-CODEX INTEGRATION - Phase 1 Complete**
-
-- ✅ Auto-creation of Codex entries when creating people
-- ✅ Cascade delete of Codex entries when deleting people
-- ✅ Navigation: Data Management → Codex ("📖 View Biography")
-- ✅ Navigation: Family Tree → Codex ("📖 View Biography")
-- ✅ Navigation: Codex → Family Tree ("🌳 View in Family Tree")
-- ✅ 📖 badges in PersonList showing who has biographies
-- ✅ Biography Coverage stats on Codex landing page
-- ✅ Migration tool for existing people
-
----
-
-### v0.7.0 - Shared State Architecture (January 6, 2026)
-
-**🔗 SHARED STATE ARCHITECTURE**
-
-- GenealogyContext provides single source of truth
-- Instant synchronization between all views
-- Enhanced QuickEditPanel with relationship management
-- Add spouse/parent/child/sibling directly from tree view
-
----
-
-### v0.6.1 - Generation Sorting Fixes (January 5, 2026)
-
-**🎯 CRITICAL GENEALOGY FIXES**
-
-- Parent DOB Sorting - Groups sort by parent's birth date
-- Bastard Line Origin Fix - Lines issue from correct parent(s)
-- Generation Spacing - Adjusted to 100px default
+## Feature areas
+
+### 🌳 Family Tree
+
+- Interactive D3.js genealogy tree with pan/zoom (deep-linkable via `/tree/:personId`)
+- Custom "family block" layout; horizontal and vertical orientations (press `H` to toggle)
+- Rich relationship model: marriages (with betrothal/marriage/divorce dates), illegitimate children, adoption, fostering, twins, namesakes, mentor bonds, and "lineage-gap" bridges for fragmentary data
+- Cadet houses, legitimacy/bastard status, bastard-naming conventions, and epithets
+- **Quick Edit Panel** — view details and add spouse/parent/child/sibling directly from the tree
+- Relationship calculator with extensive test coverage (`utils/RelationshipCalculator.js`)
+
+**Keyboard shortcuts:** `H` toggle layout · `+`/`=` zoom in · `-` zoom out · `0` reset view
+
+### 📚 The Codex (Encyclopedia)
+
+- Wiki-style entries across 8 types (personage, house, location, event, mysteria, concept, heraldry, custom)
+- Markdown with `[[wiki-link]]` syntax (alias support), automatic backlinks, full-text search, and tag/era/category filtering
+- Cross-linked with the tree (people/houses), heraldry, and dignities
+- Auto-creation of entries for new people, cascade delete, bidirectional navigation, and biography-coverage stats
+
+### 👑 Dignities (Titles & Succession)
+
+Models a fictional feudal legal framework (the "Charter of Driht, Ward, and Service"):
+
+- Titles classified by **class/rank/nature** (territorial, office, personal honour, courtesy)
+- **Tenure history** — who held a dignity, when, and how it ended
+- **Succession lines** — auto-calculated for primogeniture variants; manual for elective/appointed
+- **Disputes & claimants**, **interregnum/regency** tracking, and feudal hierarchy (sworn-to chains)
+- **Crisis dashboard** (`/dignities/crises`) and a data-quality **analysis** view (`/dignities/analysis`)
+
+### ✍️ The Writing Studio
+
+- TipTap rich-text editor with chapters, debounced auto-save, and `[[wiki-link]]` autocomplete to your world entities
+- **Intelligent Planner** — 5 story frameworks (Three-Act, Save the Cat, Hero's Journey, Seven-Point, Story Circle), beat sheets, plot threads, character arcs, story arcs, timelines, and scene cards
+- **Canon Check** — validates story references against your world data (dead characters, missing entities, timeline conflicts)
+- **Prose Analysis** — flags weak adverbs, filter words, passive voice, and tell-vs-show (fully client-side)
+
+### 🤖 AI Assistant
+
+- Optional Google **Gemini 2.5 Flash** integration (requires `VITE_GEMINI_API_KEY`)
+- World-aware chat, plus specialized helpers (mottos, backstories, blazons, story beats, character arcs)
+- Generates **reviewable proposals** (create/update/delete entities) that require explicit approval before execution, with rollback support
+- Features fail gracefully with a clear message when no API key is configured
+
+### ☁️ Cloud Sync & Datasets
+
+- **Local-first**: every change writes to IndexedDB first (instant, offline-safe), then syncs to Firestore in the background
+- A pending-changes queue guards against data loss (sync is blocked on startup if local changes are unsynced; the app warns on tab-close)
+- **Multiple datasets** — keep several independent worlds under one account, each fully isolated locally and in the cloud
+- Conflict resolution is currently **last-write-wins** (best for single-device use)
+
+### 🎨 Medieval Theme System
+
+Two CSS-variable-driven themes: **Royal Parchment** (dark, warm browns) and **Light Manuscript** (light, cream). The default is Royal Parchment.
+
+### 🐛 Bug Tracker
+
+A built-in tracker (`/bugs`) with a floating reporter button available on every page.
 
 ---
 
@@ -550,61 +157,64 @@ View your family tree with ancestors on the left and descendants flowing to the 
 
 ### Prerequisites
 
-- Node.js 16+ installed
-- Modern web browser (Chrome, Firefox, Safari, Edge)
+- Node.js 18+ (developed on Node 22)
+- A modern browser (Chrome/Edge 90+, Firefox 88+, Safari 14+)
 
 ### Installation
 
-1. Clone or download the project
-2. Navigate to the project directory:
 ```bash
 cd lineageweaver
-```
-
-3. Install dependencies:
-```bash
 npm install
+npm run dev          # http://localhost:5173
 ```
 
-4. Start the development server:
+### Environment setup (optional but recommended)
+
+Cloud sync and the AI assistant need API keys. Copy the example file and fill in your values:
+
 ```bash
-npm run dev
+cp .env.example .env.local
 ```
 
-5. Open your browser to `http://localhost:5173`
+- `VITE_FIREBASE_*` — Firebase project config (for auth + cloud sync). See `docs/FIREBASE_SETUP_GUIDE.md`.
+- `VITE_GEMINI_API_KEY` — Google Gemini key (for AI features).
 
-### First Time Setup
+All Firebase config values are safe to expose in the browser — security is enforced by `firestore.rules`, not by hiding keys. The app runs fully offline (local-only) without any of these.
 
-1. **Create Your First Heraldry** *(NEW)*
-   - Navigate to `/heraldry`
-   - Click "Create New Heraldry"
-   - Design your coat of arms
-   - Link it to a house!
+### Scripts
 
-2. **Import Sample Data** - The Codex comes with 23 canonical House Wilfrey entries
-   - Navigate to `/codex`
-   - Click "📥 Import House Wilfrey Data"
+```bash
+npm run dev            # Dev server
+npm run build          # Production build → dist/
+npm run preview        # Preview the production build
+npm run lint           # ESLint
+npm run test:run       # Run the test suite once
+npm run test:coverage  # Coverage report
+```
 
-3. **Run the Migration Tool** - Connect existing people to The Codex
-   - Navigate to `/manage` (Data Management)
-   - Go to Import/Export tab
-   - Click "Create X Codex Entries"
+### First steps in the app
 
-4. **Explore The Family Tree**
-   - Navigate to `/tree`
-   - Click any person card to open the relationship panel
-   - Try the "📖 View Biography" link!
+1. **Sign in** (the app is auth-gated when Firebase is configured)
+2. **Explore the Family Tree** (`/tree`) — click a person card to open the Quick Edit panel
+3. **Browse The Codex** (`/codex`) and try `[[wiki-links]]`
+4. **Design a coat of arms** (`/heraldry/create`) and link it to a house
+5. **Import sample/world data** via Data Management (`/manage` → Import/Export)
 
 ---
 
 ## Technology Stack
 
-- **React 18** - UI framework with modern hooks
-- **D3.js v7** - Data visualization and tree rendering
-- **Vite** - Build tool and dev server
-- **Dexie.js** - IndexedDB wrapper for local data storage
-- **React Router v6** - Navigation between pages
-- **marked** - Markdown parsing for Codex entries
+- **React 19** + **React Router 7** — lazy-loaded routes
+- **Vite 7** — build tool & dev server (with a custom `/__claude-context` endpoint for AI tooling)
+- **Dexie.js** — IndexedDB wrapper (schema v17)
+- **Firebase 12** — Auth + Firestore (cloud sync)
+- **D3.js v7** — family tree visualization
+- **TipTap 3** — rich-text writing editor
+- **Tailwind CSS 4** + PostCSS — styling
+- **Framer Motion** — animations
+- **marked** + **DOMPurify** — Markdown parsing & sanitization
+- **Google Gemini 2.5 Flash** — optional AI features
+- **Vitest** + jsdom + fake-indexeddb — testing
 
 ---
 
@@ -612,102 +222,30 @@ npm run dev
 
 ```
 lineageweaver/
+├── CLAUDE.md                       # Architecture & conventions (start here)
 ├── src/
-│   ├── components/              # Reusable UI components
-│   │   ├── Navigation.jsx       # Unified nav with Armory link
-│   │   ├── QuickEditPanel.jsx   # Relationship management sidebar
-│   │   ├── PersonCard.jsx       # Person details with Codex link
-│   │   ├── CodexMigrationTool.jsx
-│   │   └── ...
-│   ├── contexts/                # React Context providers
-│   │   └── GenealogyContext.jsx # Shared data state
-│   ├── data/                    # Data definitions
-│   │   ├── chargesLibrary.js    # Heraldic charges (NEW)
-│   │   ├── codex-seed-data.js   # Sample Codex entries
-│   │   └── sampleData.js        # Family tree data
-│   ├── pages/                   # Page components
-│   │   ├── Home.jsx
-│   │   ├── FamilyTree.jsx
-│   │   ├── ManageData.jsx
-│   │   ├── CodexLanding.jsx
-│   │   ├── HeraldryLanding.jsx  # Armory gallery (NEW)
-│   │   ├── HeraldryCreator.jsx  # Design Studio (NEW)
-│   │   └── ...
-│   ├── services/                # Database operations
-│   │   ├── database.js          # Dexie setup (v3 with heraldry)
-│   │   ├── codexService.js
-│   │   └── heraldryService.js   # Heraldry CRUD (NEW)
-│   ├── utils/                   # Helper functions
-│   │   ├── shieldMasks.js       # Shield SVG paths (NEW)
-│   │   ├── shieldSVGProcessor.js # SVG masking (NEW)
-│   │   ├── wikiLinkParser.js
-│   │   └── ...
-│   └── App.jsx                  # Root with /heraldry routes
+│   ├── App.jsx                     # Root: providers + routes
+│   ├── components/                 # Reusable UI (auth/, writing/, heraldry/, household/, shared/, ...)
+│   ├── contexts/                   # Auth, Genealogy, Dataset, Bug, LearningMode
+│   ├── config/                     # firebase.js, featureFlags.js
+│   ├── data/                       # Static data (unifiedChargesLibrary.js, heraldicData.js, seed data)
+│   ├── hooks/                      # useAutoSave, useDictation, useDignityAnalysis, ...
+│   ├── pages/                      # Route components (FamilyTree, Codex*, Heraldry*, Dignity*, Writing*, ...)
+│   ├── services/                   # Data layer
+│   │   ├── database.js             # Dexie schema + local CRUD + sync queue
+│   │   ├── firestoreService.js     # Cloud CRUD
+│   │   ├── dataSyncService.js      # Sync orchestration (the sync* functions)
+│   │   ├── migrationService.js     # Data migrations
+│   │   ├── codexService.js / heraldryService.js / dignityService.js / writingService.js / ...
+│   │   └── ai*Service.js           # Gemini integration + proposals
+│   └── utils/                      # Pure helpers (RelationshipCalculator, wikiLinkParser, shieldSVGProcessor, ...)
+├── public/
+│   ├── heraldic-charges/           # Charge SVG assets
+│   └── shields/                    # Shield outline SVGs
+├── docs/                           # Guidelines, plans, audits, worldbuilding drafts
+├── firestore.rules                 # Cloud security rules
 └── package.json
 ```
-
----
-
-## Features Overview
-
-### 🛡️ The Armory (Heraldry System) *(NEW)*
-
-**Design Studio:**
-- 24+ division patterns
-- 10 traditional tinctures
-- 10 decorative line styles
-- 5 historical shield shapes
-- 25 heraldic charges in 7 categories
-- Multiple charge arrangements
-- Real-time preview
-- Automatic blazon generation
-
-**Gallery:**
-- Browse all created heraldry
-- Thumbnail grid view
-- Edit existing designs
-- Link to houses
-
----
-
-### 🌳 Family Tree Visualization
-
-**Core Features:**
-- Interactive D3.js-powered genealogy tree
-- Three independent line systems (legitimate/bastard/adopted)
-- Horizontal and vertical layout options
-- Auto-center on content
-- Color-coded relationships and house affiliations
-
-**Quick Edit Panel:**
-- View person details
-- 📖 View Biography link
-- Add family members directly
-- Navigate relationships
-
----
-
-### 📚 The Codex Encyclopedia
-
-**Core Features:**
-- Wiki-style encyclopedia for worldbuilding
-- Six entry types with tag/era organization
-- Markdown with `[[wiki-link]]` syntax
-- Automatic backlinks
-- Full-text search
-
-**Tree Integration:**
-- Auto-creation of entries for new people
-- Cascade delete
-- Bidirectional navigation
-
----
-
-### 🎨 Medieval Theme System
-
-**Two Themes:**
-- **Royal Parchment** (Dark) - Warm browns
-- **Light Manuscript** (Light) - Cream backgrounds
 
 ---
 
@@ -715,56 +253,59 @@ lineageweaver/
 
 ### ✅ Completed
 
-| Module | Version | Status |
-|--------|---------|--------|
-| Core Application | v0.1-0.3 | ✅ Complete |
-| Theme System | v0.4 | ✅ Complete |
-| The Codex Phase 1-2 | v0.5-0.6 | ✅ Complete |
-| Genealogy Fixes | v0.6.1 | ✅ Complete |
-| Shared State | v0.7.0 | ✅ Complete |
-| Tree-Codex Integration | v0.8.0 | ✅ Complete |
-| Module 1E (Import/Export) | v0.8.1-0.8.2 | ✅ Complete |
-| **Heraldry Phases 0-3** | **v0.9.0** | **✅ Complete** |
+| Module | Version |
+|--------|---------|
+| Core application | v0.1–0.3 |
+| Theme system | v0.4 |
+| The Codex (Phases 1–2) | v0.5–0.6 |
+| Genealogy fixes | v0.6.1 |
+| Shared state architecture | v0.7.0 |
+| Tree–Codex integration | v0.8.0 |
+| Module 1E (Import/Export, layout) | v0.8.1–0.8.2 |
+| Heraldry Reboot (Phases 0–3) | v0.9.0 |
+| Heraldry Phase 4 (house + personal arms) | since v0.9.0 |
+| Dignities (titles & succession) | since v0.9.0 |
+| Writing Studio + Planner | since v0.9.0 |
+| Cloud sync + multi-dataset | since v0.9.0 |
 
-### 🔜 In Progress
+### 🔜 In Progress / Planned
 
 | Feature | Status |
 |---------|--------|
-| Heraldry Phase 4: House Integration | Next |
-| Heraldry Phase 5: Advanced Features | Planned |
-| Heraldry Phase 6: Polish & Export | Planned |
-| Codex Phase 3: Knowledge Graph | Planned |
+| Heraldry Phase 5: deeper Codex integration | 🔄 Mostly done |
+| Heraldry Phase 6: export formats, mobile UI, shield-shape selection | ⬜ Planned |
+| AI-powered canon checks | 🔄 Partial |
+| Tree–Codex unified profiles (see `featureFlags.js`) | ⬜ Planned |
+| Broader automated test coverage | ⬜ Ongoing |
+| Conflict-aware sync (beyond last-write-wins) | ⬜ Planned |
+
+---
+
+## Previous Versions
+
+### v0.9.0 — The Heraldry Reboot (January 9, 2026)
+Ground-up rebuild of the heraldry system with a professional SVG design studio: field divisions, tinctures, ordinaries, line styles, a charges library, shield masking, blazon generation, and PNG export.
+
+### v0.8.2 — Horizontal Layout (January 7, 2026)
+Left-to-right family tree view with a toggle button, the `H` keyboard shortcut, persisted preference, and auto-centering — working in both themes.
+
+### v0.8.1 — Module 1E Core (January 7, 2026)
+Export/import to JSON (with auto-backup, validation, and conflict resolution), species field, titles system, and magical-bloodline tracking.
+
+### v0.8.0 — Tree–Codex Integration (January 7, 2026)
+Auto-creation of Codex entries for new people, cascade delete, bidirectional navigation, biography badges in lists, and coverage stats.
+
+### v0.7.0 — Shared State Architecture (January 6, 2026)
+`GenealogyContext` as a single source of truth, instant synchronization across views, and an enhanced Quick Edit panel for relationship management.
+
+### v0.6.1 — Generation Sorting Fixes (January 5, 2026)
+Parent-DOB sorting, corrected bastard-line origins, and adjusted generation spacing.
 
 ---
 
 ## Browser Compatibility
 
-**Tested On:**
-- Chrome/Edge 90+
-- Firefox 88+
-- Safari 14+
-
-**Requires:**
-- D3.js v7 support
-- ES6+ JavaScript
-- SVG rendering
-- CSS Grid and Flexbox
-- IndexedDB support
-
----
-
-## Performance
-
-**Heraldry System:**
-- SVG generation: ~50ms
-- Shield masking: ~100ms
-- PNG conversion: ~200ms
-- Preview update: Real-time
-
-**General:**
-- Theme switching: < 100ms
-- Context updates: < 16ms
-- Tree redraw: ~200ms for 50+ people
+Tested on Chrome/Edge 90+, Firefox 88+, Safari 14+. Requires ES6+, SVG, CSS Grid/Flexbox, and IndexedDB.
 
 ---
 
@@ -776,20 +317,6 @@ MIT
 
 ## Author
 
-Ty Williams  
-December 2024 - January 2026
+Ty Williams — December 2024 onward.
 
----
-
-**Current Version:** 0.9.0 (Heraldry Phases 0-3 Complete)  
-**Last Updated:** January 9, 2026
-
----
-
-## Quick Links
-
-- **The Armory:** `/heraldry` *(NEW)*
-- **Design Studio:** `/heraldry/create` *(NEW)*
-- **Family Tree:** `/tree`
-- **The Codex:** `/codex`
-- **Data Management:** `/manage`
+**Status:** Active development · post-v0.9.0

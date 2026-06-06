@@ -36,7 +36,10 @@ import {
   validateCodexEntries,
   processCodexEntries
 } from './codexImportProcessor.js';
-import { forceUploadToCloud } from '../services/dataSyncService.js';
+import { forceUploadToCloud, syncAddCodexLink } from '../services/dataSyncService.js';
+import { createLink, getEntryByPersonId, getEntryByHouseId } from '../services/codexService.js';
+import { db } from '../services/database.js';
+import { buildLinkIndex, linkExistsInIndex } from '../services/migrationService.js';
 
 const CODEX_CATEGORY_KEYS = ['houses', 'locations', 'events', 'personages', 'mysteria', 'concepts'];
 const FAMILY_KEYS = ['houses', 'people', 'relationships'];
@@ -203,7 +206,8 @@ export async function unifiedImport(payload, options = {}) {
       relationshipsCreated: 0,
       codexEntriesCreated: 0,
       codexEntriesSkipped: 0,
-      codexEntriesEnhanced: 0
+      codexEntriesEnhanced: 0,
+      crossLinksCreated: 0
     },
     created: { houses: [], people: [], relationships: [], codexEntries: [] },
     idMappings: { houses: new Map(), people: new Map(), codex: new Map() },
@@ -365,6 +369,24 @@ export async function unifiedImport(payload, options = {}) {
     }
   }
 
+  // Phase 4.5: Create Person↔House cross-links for imported data
+  if (result.created.people.length > 0 || result.created.houses.length > 0) {
+    if (onProgress) onProgress('crosslinks', 0, 'Creating cross-links...', 92);
+
+    try {
+      const crossLinkResult = await createPostImportCrossLinks(result.created, {
+        userId,
+        datasetId
+      });
+      result.summary.crossLinksCreated = crossLinkResult.created;
+      if (crossLinkResult.errors.length > 0) {
+        result.warnings.push(...crossLinkResult.errors.map(e => `Cross-link: ${e}`));
+      }
+    } catch (err) {
+      result.warnings.push(`Cross-link creation warning: ${err.message}`);
+    }
+  }
+
   // Phase 5: Cloud sync (single batch at end)
   if (userId && datasetId) {
     if (onProgress) onProgress('sync', 0, 'Syncing to cloud...', 95);
@@ -381,6 +403,71 @@ export async function unifiedImport(payload, options = {}) {
   result.success = result.errors.length === 0;
 
   if (onProgress) onProgress('done', 0, 'Import complete', 100);
+
+  return result;
+}
+
+/**
+ * Create Person↔House cross-links for newly imported entities.
+ *
+ * Loads existing codex links once, builds a Set index, then for each
+ * created person with a houseId, looks up both codex entries and creates
+ * a bidirectional "member-of" link if both exist and the link is new.
+ *
+ * @param {Object} createdEntities - { people: Array, houses: Array }
+ * @param {Object} options - { userId, datasetId }
+ * @returns {Promise<{ created: number, errors: string[] }>}
+ */
+async function createPostImportCrossLinks(createdEntities, options = {}) {
+  const { userId = null, datasetId = null } = options;
+  const result = { created: 0, errors: [] };
+
+  try {
+    const allLinks = await db.codexLinks.toArray();
+    const linkIndex = buildLinkIndex(allLinks);
+
+    const people = createdEntities.people || [];
+
+    for (const person of people) {
+      try {
+        if (!person.houseId) continue;
+
+        const personEntry = await getEntryByPersonId(person.id, datasetId);
+        if (!personEntry) continue;
+
+        const houseEntry = await getEntryByHouseId(person.houseId, datasetId);
+        if (!houseEntry) continue;
+
+        if (linkExistsInIndex(linkIndex, personEntry.id, houseEntry.id, 'member-of')) continue;
+
+        const linkData = {
+          sourceId: personEntry.id,
+          targetId: houseEntry.id,
+          type: 'member-of',
+          label: 'House Member',
+          bidirectional: true
+        };
+
+        const linkId = await createLink(linkData, datasetId);
+
+        // Update the index for subsequent iterations
+        const a = Number(personEntry.id);
+        const b = Number(houseEntry.id);
+        linkIndex.add(`member-of:${Math.min(a, b)}:${Math.max(a, b)}`);
+
+        // Sync to cloud if context available
+        if (userId && linkId) {
+          syncAddCodexLink(userId, datasetId, linkId, linkData);
+        }
+
+        result.created++;
+      } catch (err) {
+        result.errors.push(`${person.firstName || ''} ${person.lastName || ''}: ${err.message}`);
+      }
+    }
+  } catch (err) {
+    result.errors.push(`Failed to build link index: ${err.message}`);
+  }
 
   return result;
 }
@@ -404,6 +491,7 @@ export function generateUnifiedReport(result) {
   lines.push(`  Codex entries created: ${result.summary.codexEntriesCreated}`);
   lines.push(`  Codex entries skipped: ${result.summary.codexEntriesSkipped}`);
   lines.push(`  Codex entries enhanced: ${result.summary.codexEntriesEnhanced}`);
+  lines.push(`  Cross-links created:   ${result.summary.crossLinksCreated}`);
 
   if (result.warnings.length > 0) {
     lines.push('');

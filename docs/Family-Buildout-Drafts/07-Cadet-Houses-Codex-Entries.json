@@ -1,0 +1,226 @@
+{
+  "description": "Codex entries and enhancements for cadet houses, their seats, and bastard naming conventions. Enhances existing stub entries for Wilfsbane, Wilfour, Wilfsands by appending full content. Creates new entries for House Wilfmarsh and all four seat locations. Adds a codex entry for the Dun/Dum bastard naming system.",
+  "instructions": "Import via unified import. The codexEntries array creates NEW entries. The codexEnhancements array UPDATES existing entries by title match (appendSection, addTags, addToSections). NOTE: The import system does not support replaceContent or removeTags. Stub entries for Wilfsbane/Wilfour/Wilfsands will have full content APPENDED below the existing placeholder text. The 'wilfriend' tag on Wilfern must be removed manually. Wilfbauer/Wilfbole/Wilfbark codex entries were handled in 05-Bramblehall-Codex-Entries.json.",
+
+  "codexEntries": [
+    {
+      "type": "house",
+      "title": "House Wilfmarsh",
+      "subtitle": "Cadet Branch of Riverhead",
+      "category": "Cadet Houses",
+      "tags": ["wilfmarsh", "cadet-house", "riverhead", "marshland", "fenholm", "eel-catching", "drainage"],
+      "content": "**House Wilfmarsh** is a cadet branch of [[House Wilfrey of Riverhead]], seated at [[Fenholm]] in the marshy lowlands where the river broadens into wetlands.\n\n## Origin\n\nFounded by a younger son of the Riverhead line who was granted the fens — land no one else wanted. Where [[House Wilfriver]] took the profitable river trade, the Wilfmarsh branch received the bogs. They made the best of it.\n\n## Character\n\nThe Wilfmarsh family manages drainage, flood control, and the eel-catching that feeds much of Riverhead's lower population. They are practical, unglamorous, and reliable. Their reputation is the inverse of the Wilfrivers: where Wilfriver has moderate standing and ill repute (smuggling suspicions, sharp dealing), Wilfmarsh has low standing but good repute. They are trusted precisely because they have nothing worth stealing.\n\n## Economy\n\n- **Eel-catching**: The fens produce vast quantities of eels — smoked, salted, and traded upriver\n- **Drainage**: Wilfmarsh engineers maintain the dikes and channels that keep the lowlands habitable\n- **Flood management**: When the river swells, it is the Wilfmarsh who open and close the sluices\n- **Peat**: Cut from the bogs for fuel, traded locally\n\n## Relations\n\nThe Wilfmarsh are loyal to Riverhead but have little contact with the other Wilfrey seats. Their world is the fen — its rhythms, its floods, its eels. They attend Wilfrey councils when summoned but contribute little to political maneuvering. Their value is in their work, not their words.\n\n## Current Head\n\n[[Godwin Wilfmarsh]] (b. 1950) is master of Fenholm. His heir is [[Harwin Wilfmarsh]].\n\n## See Also\n- [[House Wilfrey of Riverhead]]: The parent seat\n- [[House Wilfriver]]: The other Riverhead cadet — contrasting reputation\n- [[Fenholm]]: The Wilfmarsh seat",
+      "sections": [
+        {"heading": "Origin", "content": "Founded from a younger Riverhead son granted the fens", "order": 1},
+        {"heading": "Character", "content": "Low standing but good repute — the inverse of Wilfriver", "order": 2},
+        {"heading": "Economy", "content": "Eels, drainage, flood management, peat", "order": 3}
+      ]
+    },
+
+    {
+      "type": "location",
+      "title": "Banehold",
+      "subtitle": "Seat of House Wilfsbane",
+      "category": "Castles & Seats",
+      "tags": ["banehold", "wilfsbane", "breakmount", "mountain-passes", "silver-mines", "night-mountain"],
+      "content": "**Banehold** is the seat of [[House Wilfsbane]], a cadet branch of [[House Wilfrey of Breakmount]]. It guards the high passes above the silver mines of [[Night Mountain]].\n\n## Location\n\nPerched on a ridge above the treeline, Banehold commands the mountain passes that connect the Breakmount silver mines to the lowland trade routes. The position is harsh — cold winds, thin soil, and long winters — but strategically vital. No ore leaves [[Night Mountain]] without passing under Wilfsbane eyes.\n\n## Architecture\n\nBanehold is more fortress than hall. Built from the same dark stone as the mountain itself, it hunches against the wind like a clenched fist. There is no great hall for feasting — the Wilfsbane eat in a vaulted guardroom. Comfort was never the point.\n\n## Economy\n\nThe Wilfsbane do not mine the silver themselves — that is Breakmount's domain. They guard the passes and levy tolls on the ore convoys, taking a fixed share as their right. In lean years, this makes them richer than their masters; in boom years, merely comfortable.\n\n## See Also\n- [[House Wilfsbane]]: The house seated here\n- [[House Wilfrey of Breakmount]]: The parent seat\n- [[Night Mountain]]: The silver mines below",
+      "sections": [
+        {"heading": "Location", "content": "Ridge above the treeline, commanding the mountain passes", "order": 1},
+        {"heading": "Architecture", "content": "Dark stone fortress, more guardroom than great hall", "order": 2}
+      ]
+    },
+
+    {
+      "type": "location",
+      "title": "Fourgate",
+      "subtitle": "Seat of House Wilfour",
+      "category": "Castles & Seats",
+      "tags": ["fourgate", "wilfour", "fourhearth", "harbour", "coastal", "trade"],
+      "content": "**Fourgate** is the seat of [[House Wilfour]], a cadet branch of [[House Wilfrey of Fourhearth]]. It controls the harbour entrance at [[Fourhearth Castle]].\n\n## Location\n\nFourgate sits at the mouth of Fourhearth's harbour, built on the promontory that forms the eastern breakwater. Every vessel entering or leaving the harbour passes under its walls. The position is profoundly commercial — less about defence than about taxation.\n\n## Architecture\n\nA handsome stone tower with attached warehouses and a customs hall. Unlike the grim fortresses of the mountain cadets, Fourgate is designed to impress merchants and intimidate smugglers in equal measure. The Wilfour arms fly above the harbour chain.\n\n## Economy\n\nThe Wilfour collect harbour dues on behalf of Fourhearth, retaining a share. They also maintain pilot boats that guide vessels through the harbour entrance — a service that is technically optional but practically mandatory, as captains who refuse the pilot tend to find the channel markers moved.\n\nThis makes House Wilfour the wealthiest of all the cadet branches across every Wilfrey seat.\n\n## See Also\n- [[House Wilfour]]: The house seated here\n- [[House Wilfrey of Fourhearth]]: The parent seat\n- [[House Wilfsands]]: The other Fourhearth cadet",
+      "sections": [
+        {"heading": "Location", "content": "Harbour mouth promontory — every vessel passes under its walls", "order": 1},
+        {"heading": "Economy", "content": "Harbour dues and pilot boats — wealthiest cadet branch", "order": 2}
+      ]
+    },
+
+    {
+      "type": "location",
+      "title": "Sandholme",
+      "subtitle": "Seat of House Wilfsands",
+      "category": "Castles & Seats",
+      "tags": ["sandholme", "wilfsands", "fourhearth", "coastal", "tidal-flats", "salt-panning"],
+      "content": "**Sandholme** is the seat of [[House Wilfsands]], a cadet branch of [[House Wilfrey of Fourhearth]]. It sits on the tidal flats south of the harbour.\n\n## Location\n\nBuilt on a raised platform above the high-tide line, Sandholme overlooks a vast expanse of sandbanks, mudflats, and shallow channels. At low tide the flats stretch for miles; at high tide the sea comes almost to the walls. The Wilfsands know every current and quicksand, every safe crossing and every death-trap.\n\n## Architecture\n\nSandholme is built low and wide — a single-storey compound of salt-bleached stone with deep foundations driven into the sand. It floods once or twice a generation during exceptional tides, and the Wilfsands accept this with the fatalism of people who live at the mercy of the sea.\n\n## Economy\n\n- **Salt-panning**: Shallow pools along the flats evaporate seawater for salt — a steady trade\n- **Shellfish**: Oysters, mussels, and cockles from the tidal beds\n- **Salvage rights**: Wrecked vessels on the sandbanks belong to House Wilfsands by ancient custom\n\nLess wealthy than the Wilfours but more self-sufficient. The Wilfsands could survive a siege indefinitely — the sea feeds them.\n\n## See Also\n- [[House Wilfsands]]: The house seated here\n- [[House Wilfrey of Fourhearth]]: The parent seat\n- [[House Wilfour]]: The other Fourhearth cadet — wealthier but more dependent on trade",
+      "sections": [
+        {"heading": "Location", "content": "Tidal flats south of Fourhearth harbour", "order": 1},
+        {"heading": "Economy", "content": "Salt-panning, shellfish, and salvage rights", "order": 2}
+      ]
+    },
+
+    {
+      "type": "location",
+      "title": "Fenholm",
+      "subtitle": "Seat of House Wilfmarsh",
+      "category": "Castles & Seats",
+      "tags": ["fenholm", "wilfmarsh", "riverhead", "marshland", "fens", "eel-catching"],
+      "content": "**Fenholm** is the seat of [[House Wilfmarsh]], a cadet branch of [[House Wilfrey of Riverhead]]. It sits in the marshy lowlands where the river broadens into wetlands.\n\n## Location\n\nFenholm occupies a low island — barely above the waterline — in the middle of the fen. Access is by causeway or punt. In wet seasons the causeway floods and the only way in or out is by boat. This isolation is both the house's weakness and its defence: no army has ever besieged Fenholm, because no army could find it.\n\n## Architecture\n\nBuilt of timber and wattle on oak pilings driven into the marsh. Fenholm is not a castle in any conventional sense — more a collection of connected buildings rising out of the reeds. The main hall is thatched, the kitchens smoke-blackened, and the whole place smells of peat and eels. Visitors from the stone castles of Breakmount or Fourhearth find it primitive. The Wilfmarsh find it home.\n\n## Economy\n\nThe fens provide:\n- **Eels**: The primary export — smoked, salted, and traded upriver\n- **Wildfowl**: Duck, heron, and other marsh birds\n- **Peat**: Cut and dried for fuel\n- **Rush and reed**: For thatching and basket-weaving\n\nNone of these make the Wilfmarsh wealthy. All of them make the Wilfmarsh self-sufficient.\n\n## See Also\n- [[House Wilfmarsh]]: The house seated here\n- [[House Wilfrey of Riverhead]]: The parent seat\n- [[House Wilfriver]]: The other Riverhead cadet",
+      "sections": [
+        {"heading": "Location", "content": "Low island in the fens — accessible by causeway or punt", "order": 1},
+        {"heading": "Architecture", "content": "Timber and wattle on oak pilings — not a castle, a fen settlement", "order": 2},
+        {"heading": "Economy", "content": "Eels, wildfowl, peat, and rushes", "order": 3}
+      ]
+    },
+
+    {
+      "type": "concept",
+      "title": "Bastard Naming Conventions",
+      "subtitle": "The Dun- and Dum- Prefix System",
+      "category": "Customs & Traditions",
+      "tags": ["bastards", "naming", "dun-prefix", "dum-prefix", "legitimacy", "custom", "wilfrey"],
+      "content": "**Bastard Naming Conventions** are the system by which illegitimate children are identified in the wider world. The two prefixes — **Dun** and **Dum** — indicate which parent's noble name the bastard carries.\n\n## Dun- Prefix (Father's Name)\n\nThe far more common form. A bastard acknowledged by a noble father takes the prefix \"Dun-\" before the father's house name. For example:\n- **Dunwilfrey**: bastard of a Wilfrey lord\n- **Dunwilfson**: bastard of a Wilfson man\n- **Dunwilfern**: bastard of a Wilfern knight\n- **Dunwilfriver**: bastard of a Wilfriver man\n- **Dunwilson**: bastard of a Wilson lord\n\nDun-named bastards are typically acknowledged, often raised near the family (though rarely within it), and sometimes serve the house as men-at-arms, servants, or labourers. They carry enough of the name to open some doors and close others.\n\n## Dum- Prefix (Mother's Name)\n\nFar rarer — roughly one bastard in eight bears the mother's name rather than the father's. A child takes the Dum- prefix when:\n1. The father is unknown, common, or refuses acknowledgement\n2. The mother's noble name carries more weight than the father's\n3. The mother (or her family) insists on it\n\nFor example:\n- **Dumwilfrey**: bastard of a Wilfrey woman — the Wilfrey name is valuable enough that some mothers choose it deliberately\n- **Dumwilfriver**: bastard of a Wilfriver woman\n\nDum-named bastards are placed in the Commoner class more often than Dun-named ones, as their fathers typically have no house to claim them.\n\n## The Wilfrey Exception\n\nIn most families, the Dum- prefix is exceedingly rare. But in the Wilfrey context, the mother's name carries unusual weight. A Dumwilfrey is still a Wilfrey — even a bastard Wilfrey is a name worth having. This makes Dum-named bastards slightly more common among Wilfrey women than in other houses, though still well below the Dun- rate.\n\n## Social Standing\n\nBastards occupy a liminal space: not noble, not common, but caught between. A Dunwilfrey in the harbour towns of [[Fourhearth Castle]] might be respected for the name; in the halls of [[Breakmount Castle]], the same name marks them as an embarrassment. Context is everything.\n\n## See Also\n- [[House Wilfrey of Breakmount]]: Has the most recorded Dunwilfrey bastards\n- [[House Wilfrey of Bramblehall]]: Woodland culture kept bastards quieter until recently\n- [[House Wilfrey of Fourhearth]]: Home to both Dunwilfrey and Dumwilfrey bastards",
+      "sections": [
+        {"heading": "Dun- Prefix", "content": "Father's name — the common form (~7 in 8)", "order": 1},
+        {"heading": "Dum- Prefix", "content": "Mother's name — rare (~1 in 8), slightly more common for Wilfrey", "order": 2},
+        {"heading": "The Wilfrey Exception", "content": "The Wilfrey name is valuable enough to choose deliberately", "order": 3},
+        {"heading": "Social Standing", "content": "Liminal — context determines whether the name opens or closes doors", "order": 4}
+      ]
+    }
+  ],
+
+  "codexEnhancements": [
+    {
+      "targetTitle": "House Wilfsbane",
+      "appendSection": {
+        "heading": "Origin",
+        "content": "Seated at [[Banehold]] in the high passes above the silver mines of [[Night Mountain]].\n\nFounded by a younger son of the Breakmount line who was granted wardenship of the mountain passes — the routes by which silver ore travels from [[Night Mountain]] to the lowland markets. The position was thankless at first: cold, exposed, and dangerous. But the toll rights made it profitable.\n\nThe Wilfsbane are mountain people — hard, spare, and laconic. They guard the passes with a grim efficiency that mirrors the landscape. Of the three Breakmount cadets ([[House Wilfson]], [[House Wilfern]], and Wilfsbane), they are the most recently founded and the least politically ambitious. They have no interest in Breakmount's intrigues; they have passes to guard.\n\nThe Wilfsbane levy tolls on the ore convoys that descend from Night Mountain, taking a fixed share. They do not mine themselves — that is Breakmount's domain. In lean years, the toll share makes them richer than their station suggests; in boom years, merely comfortable.\n\nIselde Wilfsbane (née [[House Wilfern|Wilfern]]) married into the house, creating a bond between two Breakmount cadets. The Wilfsbane maintain correct relations with [[House Wilfson]] but the two branches are not close — the kinslaying stain that follows Wilfson does not trouble the Wilfsbane, but neither do they go out of their way to befriend them.\n\n**Current Head:** [[Merric Wilfsbane]] (b. 1958) is master of Banehold. His heir is [[Edwyn Wilfsbane]].\n\n**See Also:** [[House Wilfrey of Breakmount]] · [[Banehold]] · [[House Wilfson]] · [[House Wilfern]]"
+      },
+      "addTags": ["banehold", "mountain-passes", "silver-mines", "night-mountain", "toll-rights"],
+      "addToSections": {
+        "heading": "Origin & Character",
+        "content": "Mountain pass guardians, toll rights on Night Mountain ore convoys",
+        "order": 2
+      }
+    },
+    {
+      "targetTitle": "House Wilfour",
+      "appendSection": {
+        "heading": "Origin",
+        "content": "Seated at [[Fourgate]] on the harbour entrance at [[Fourhearth Castle]].\n\nFounded by a younger son of the Fourhearth line who was granted the harbour-mouth promontory and its toll rights. It was a shrewd grant — the father knew the harbour trade would grow, and wanted a trusted kinsman controlling the gate.\n\nThe Wilfour are merchants in all but name. They maintain the harbour chain, collect dues, and operate the pilot boats that guide vessels through the channel. Their wealth exceeds most cadet branches across all four Wilfrey seats, making them unusual: a cadet house richer than some minor houses.\n\n**Economy:**\n- **Harbour dues**: Collected on behalf of Fourhearth, with a retained share\n- **Pilot boats**: Guide vessels through the harbour entrance — technically optional, practically mandatory\n- **Warehousing**: Fourgate's attached warehouses store goods in transit\n\nThe Wilfour and [[House Wilfsands]] are the two Fourhearth cadets. Where the Wilfsands work the tidal flats in stoic self-sufficiency, the Wilfour thrive on commerce and connection.\n\n**Current Head:** [[Gareth Wilfour]] (b. 1955) is master of Fourgate. His heir is [[Colwin Wilfour]], already involved in the harbour trade.\n\n**See Also:** [[House Wilfrey of Fourhearth]] · [[Fourgate]] · [[House Wilfsands]] · [[Fourhearth Castle]]"
+      },
+      "addTags": ["fourgate", "harbour", "trade", "toll-rights", "pilot-boats", "wealthy"],
+      "addToSections": {
+        "heading": "Origin & Character",
+        "content": "Harbour dues and pilot boats — wealthiest cadet branch",
+        "order": 2
+      }
+    },
+    {
+      "targetTitle": "House Wilfsands",
+      "appendSection": {
+        "heading": "Origin",
+        "content": "Seated at [[Sandholme]] on the tidal flats south of the harbour.\n\nFounded by a younger son of the Fourhearth line who was granted the tidal flats — less desirable than the harbour mouth that went to [[House Wilfour]], but with ancient salvage rights that proved their worth over centuries.\n\nThe Wilfsands are patient, practical, and shaped by the tides. They know every sandbank, every quicksand, every safe crossing. Their lives follow the rhythm of the sea — work at low tide, rest at high tide, and accept with fatalism the occasional flood that reaches even Sandholme's raised platform.\n\n**Economy:**\n- **Salt-panning**: Shallow pools along the flats evaporate seawater for salt\n- **Shellfish**: Oysters, mussels, and cockles from the tidal beds\n- **Salvage rights**: Wrecked vessels on the sandbanks belong to House Wilfsands by ancient custom\n\nLess wealthy than the Wilfours but entirely self-sufficient. The Wilfsands could survive a siege indefinitely — the sea feeds them.\n\n**Current Head:** [[Rowan Wilfsands]] (b. 1952) is master of Sandholme. His heir is [[Barric Wilfsands]].\n\n**See Also:** [[House Wilfrey of Fourhearth]] · [[Sandholme]] · [[House Wilfour]]"
+      },
+      "addTags": ["sandholme", "tidal-flats", "salt-panning", "shellfish", "salvage-rights", "self-sufficient"],
+      "addToSections": {
+        "heading": "Origin & Character",
+        "content": "Salt-panning, shellfish, and salvage rights — self-sufficient",
+        "order": 2
+      }
+    },
+    {
+      "_comment": "MANUAL: Remove stale 'wilfriend' tag — removeTags not supported by import system",
+      "targetTitle": "House Wilfern",
+      "addTags": ["wilfern-corrected"]
+    },
+    {
+      "targetTitle": "House Wilfrey of Riverhead",
+      "appendSection": {
+        "heading": "Cadet Branches",
+        "content": "Riverhead has two cadet branches:\n\n- **[[House Wilfriver]]**: Controls the river trade — moderate standing but ill repute (smuggling suspicions, sharp dealing). Seated at an unnamed river holding.\n- **[[House Wilfmarsh]]**: Controls the marshy lowlands — low standing but good repute (reliable, unglamorous, hardworking). Seated at [[Fenholm]].\n\nThe contrast between the two cadets is instructive: the Wilfrivers took the profitable river trade and squandered their reputation; the Wilfmarsh took the bogs and earned respect through honest labour."
+      },
+      "addTags": ["wilfriver", "wilfmarsh", "cadet-branches"],
+      "addToSections": {
+        "heading": "Cadet Branches",
+        "content": "Wilfriver (river trade, ill repute) and Wilfmarsh (fens, good repute)",
+        "order": 4
+      }
+    },
+    {
+      "targetTitle": "House Wilfrey of Fourhearth",
+      "appendSection": {
+        "heading": "Cadet Branches",
+        "content": "Fourhearth has two cadet branches:\n\n- **[[House Wilfour]]**: Controls the harbour entrance at [[Fourgate]] — the wealthiest cadet branch across all four Wilfrey seats. Collects harbour dues and operates pilot boats.\n- **[[House Wilfsands]]**: Holds the tidal flats at [[Sandholme]] — salt-panning, shellfish, and salvage rights. Less wealthy but entirely self-sufficient.\n\nThe two branches complement each other: Wilfour provides market access, Wilfsands provides raw materials."
+      },
+      "addTags": ["wilfour", "wilfsands", "cadet-branches"],
+      "addToSections": {
+        "heading": "Cadet Branches",
+        "content": "Wilfour (harbour, wealthy) and Wilfsands (tidal flats, self-sufficient)",
+        "order": 4
+      }
+    },
+    {
+      "targetTitle": "House Wilfrey of Breakmount",
+      "appendSection": {
+        "heading": "Cadet Branches",
+        "content": "Breakmount has three cadet branches — the most of any Wilfrey seat:\n\n- **[[House Wilfson]]**: The largest and most prominent cadet branch, though stained by the kinslaying of [[Baudin Wilfson]] and the exile that produced [[House Wilson]]. Seated at a holding near Breakmount.\n- **[[House Wilfern]]**: Based in the western foothills. A solid, dependable branch without Wilfson's notoriety.\n- **[[House Wilfsbane]]**: Guards the mountain passes above the silver mines of [[Night Mountain]] from [[Banehold]]. The most recently founded, the least political, and the most isolated.\n\nBreakmount's three cadets reflect the variety of its territory: lowland (Wilfson), foothill (Wilfern), and mountain (Wilfsbane)."
+      },
+      "addTags": ["wilfson", "wilfern", "wilfsbane", "cadet-branches"],
+      "addToSections": {
+        "heading": "Cadet Branches",
+        "content": "Three cadets: Wilfson (lowland), Wilfern (foothill), Wilfsbane (mountain)",
+        "order": 5
+      }
+    }
+  ],
+
+  "_post_import_manual_todo": {
+    "description": "Manual updates required after both 06 and 07 imports. The import system does not support replaceContent or removeTags, so these need manual attention in the app.",
+
+    "1_fix_house_types": {
+      "what": "Change house type from 'main' to 'cadet' on 4 newly created houses",
+      "houses": [
+        "House Wilfsbane (ID 90) — should be cadet, not main",
+        "House Wilfour (ID 91) — should be cadet, not main",
+        "House Wilfsands (ID 92) — should be cadet, not main",
+        "House Wilfmarsh (ID 93) — should be cadet, not main"
+      ],
+      "why": "The import system created these as type 'main' despite the JSON specifying 'cadet'. Same issue that happened with Wilfbauer/Wilfbole/Wilfbark previously."
+    },
+
+    "2_remove_wilfriend_tag": {
+      "what": "Remove stale 'wilfriend' tag from House Wilfern codex entry",
+      "where": "Codex > House Wilfern (ID 5) > tags",
+      "why": "Leftover from when House Wilfriend was renamed to House Wilfern. The import added a 'wilfern-corrected' tag as a marker but cannot remove the old one."
+    },
+
+    "3_clean_stub_text_from_06_07_entries": {
+      "what": "Remove the line '*Further details to be documented.*' from 3 codex entries",
+      "entries": [
+        "House Wilfsbane (ID 6) — content now has full Origin section appended below the stub line",
+        "House Wilfour (ID 11) — content now has full Origin section appended below the stub line",
+        "House Wilfsands (ID 12) — content now has full Origin section appended below the stub line"
+      ],
+      "why": "The import system only supports appendSection, not replaceContent. The stub placeholder text remains at the top of each entry."
+    },
+
+    "4_clean_stub_text_from_05_entries": {
+      "what": "Remove the line '*Further details to be documented.*' from 3 codex entries (from earlier 05 import)",
+      "entries": [
+        "House Wilfbauer (ID 7) — still has stub text, replaceContent from 05 was silently ignored",
+        "House Wilfbole (ID 8) — same",
+        "House Wilfbark (ID 9) — same"
+      ],
+      "why": "The 05-Bramblehall-Codex-Entries.json used replaceContent which is not supported. These entries never got their full content. You may want to manually paste in the content from the replaceContent fields in the 05 file, or re-import 05 after the app supports replaceContent."
+    },
+
+    "5_run_create_all_links": {
+      "what": "Run 'Create All Links' from the Data Integration tool (ManageData > Maintenance)",
+      "why": "The 33 new people and their house assignments need Person↔House cross-links created in the codex. The post-import auto-linker handles some, but the migration tool catches gaps."
+    }
+  },
+
+  "houses": [],
+  "people": [],
+  "relationships": [],
+  "heraldry": [],
+  "dignities": []
+}

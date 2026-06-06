@@ -68,6 +68,8 @@
   {
     "id": 18,
     "name": "House Wilfrey of Bramblehall",
+    "type": "great",
+    "parentHouseId": null,
     "motto": "",
     "notes": ""
   },
@@ -311,5 +313,77 @@
     "parentHouseId": null,
     "motto": "Older Than Memory",
     "notes": ""
+  },
+  {
+    "id": 87,
+    "name": "House Wilfbauer",
+    "type": "cadet",
+    "parentHouseId": 18,
+    "motto": "",
+    "notes": ""
+  },
+  {
+    "id": 88,
+    "name": "House Wilfbole",
+    "type": "cadet",
+    "parentHouseId": 18,
+    "motto": "",
+    "notes": ""
+  },
+  {
+    "id": 89,
+    "name": "House Wilfbark",
+    "type": "cadet",
+    "parentHouseId": 18,
+    "motto": "",
+    "notes": ""
+  },
+  {
+    "id": 90,
+    "name": "House Wilfsbane",
+    "type": "cadet",
+    "parentHouseId": 5,
+    "motto": "",
+    "notes": ""
+  },
+  {
+    "id": 91,
+    "name": "House Wilfour",
+    "type": "cadet",
+    "parentHouseId": 22,
+    "motto": "",
+    "notes": ""
+  },
+  {
+    "id": 92,
+    "name": "House Wilfsands",
+    "type": "cadet",
+    "parentHouseId": 22,
+    "motto": "",
+    "notes": ""
+  },
+  {
+    "id": 93,
+    "name": "House Wilfmarsh",
+    "type": "cadet",
+    "parentHouseId": 62,
+    "motto": "",
+    "notes": ""
+  },
+  {
+    "id": 96,
+    "name": "House Shadash",
+    "type": "minor",
+    "parentHouseId": null,
+    "motto": "Not all that fades is lost ",
+    "notes": ""
+  },
+  {
+    "id": 97,
+    "name": "House Shadmoor",
+    "type": "cadet",
+    "parentHouseId": 96,
+    "motto": "",
+    "notes": "Cadet branch of House Shadash, founded by Fenrath Shadash"
   }
 ]

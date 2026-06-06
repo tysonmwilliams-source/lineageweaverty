@@ -80,6 +80,69 @@
   font-weight: 500;
 }
 
+/* ==================== Dictation ==================== */
+
+.toolbar-group--dictation {
+  position: relative;
+}
+
+.toolbar-btn--dictation {
+  position: relative;
+}
+
+.toolbar-btn__recording-dot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  background: var(--color-error);
+  border-radius: 50%;
+  animation: dictation-pulse 1.5s ease-in-out infinite;
+}
+
+.toolbar-btn--recording {
+  background: var(--color-error-bg, rgba(239, 68, 68, 0.1));
+  color: var(--color-error);
+}
+
+.toolbar-btn--recording:hover:not(:disabled) {
+  background: var(--color-error-bg, rgba(239, 68, 68, 0.15));
+  color: var(--color-error);
+}
+
+.toolbar-dictation-preview {
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  font-style: italic;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 var(--space-2);
+  line-height: 32px;
+  opacity: 0.7;
+}
+
+.toolbar-dictation-error {
+  color: var(--color-error);
+  display: flex;
+  align-items: center;
+  cursor: help;
+}
+
+@keyframes dictation-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.8);
+  }
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .editor-toolbar {
@@ -98,6 +161,10 @@
   }
 
   .toolbar-btn--wiki .toolbar-btn__label {
+    display: none;
+  }
+
+  .toolbar-dictation-preview {
     display: none;
   }
 }

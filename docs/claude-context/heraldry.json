@@ -154,6 +154,14 @@
     "description": null
   },
   {
+    "id": 27,
+    "name": "Arms of House Wilfrey of Riverhead",
+    "category": "noble",
+    "tags": [],
+    "blazon": "Azure, a chief wavy Vert, a salmon haurient Or",
+    "description": null
+  },
+  {
     "id": 28,
     "name": "Arms of House Wilfriver",
     "category": "noble",
@@ -239,6 +247,22 @@
     "category": "noble",
     "tags": [],
     "blazon": "Per bend sinister Crimson and Copper, two orbs Argent",
+    "description": null
+  },
+  {
+    "id": 39,
+    "name": "Arms of House Shadash",
+    "category": "noble",
+    "tags": [],
+    "blazon": "Steel, a banner Argent",
+    "description": null
+  },
+  {
+    "id": 40,
+    "name": "Arms of House Shadmoor",
+    "category": "noble",
+    "tags": [],
+    "blazon": "Per bend sinister Steel and Sable, a banner Argent",
     "description": null
   }
 ]

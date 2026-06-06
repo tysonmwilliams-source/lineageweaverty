@@ -23,7 +23,8 @@ import {
   runAllMigrations,
   migrateHousesToCodex,
   migrateDignitiesToCodex,
-  runCrossLinkingMigrations
+  runCrossLinkingMigrations,
+  fixHouseHousePrefixes
 } from '../services/migrationService';
 import './DataMigrationTool.css';
 
@@ -81,7 +82,7 @@ function DataMigrationTool({ syncContext, defaultCollapsed = true, onMigrationCo
 
   // Run all migrations
   const handleRunAll = useCallback(async () => {
-    if (!window.confirm('Run all data migrations?\n\nThis will:\n• Create Codex entries for houses without them\n• Create Codex entries for dignities without them\n• Create cross-links between related entities')) {
+    if (!window.confirm('Create all links?\n\nThis will:\n• Create Codex entries for houses without them\n• Create Codex entries for dignities without them\n• Create cross-links between related entities')) {
       return;
     }
 
@@ -154,7 +155,7 @@ function DataMigrationTool({ syncContext, defaultCollapsed = true, onMigrationCo
 
   // Run cross-linking only
   const handleRunCrossLinks = useCallback(async () => {
-    if (!window.confirm('Create cross-links between related Codex entries?\n\n• Person ↔ House links\n• Person ↔ Dignity links\n• House ↔ Dignity links')) {
+    if (!window.confirm('Create cross-links between related Codex entries?\n\nThis will link:\n• Person ↔ House\n• Person ↔ Dignity\n• House ↔ Dignity')) {
       return;
     }
 
@@ -171,6 +172,29 @@ function DataMigrationTool({ syncContext, defaultCollapsed = true, onMigrationCo
       setRunningMigration(null);
     }
   }, [syncContext, loadStatus, onMigrationComplete]);
+
+  // Fix "House House" prefix duplicates
+  const handleFixHouseHouse = useCallback(async () => {
+    if (!window.confirm('Fix all codex entries with duplicate "House House" prefix?\n\nThis will rename entries like "House House Wilfsbane" → "House Wilfsbane".')) {
+      return;
+    }
+
+    setRunningMigration('housefix');
+    try {
+      const result = await fixHouseHousePrefixes();
+      await loadStatus();
+      onMigrationComplete?.();
+      if (result.fixed === 0) {
+        alert('No "House House" entries found — nothing to fix!');
+      } else {
+        alert(`Fixed ${result.fixed} entries:\n\n${result.entries.join('\n')}`);
+      }
+    } catch (error) {
+      alert('Fix failed: ' + error.message);
+    } finally {
+      setRunningMigration(null);
+    }
+  }, [loadStatus, onMigrationComplete]);
 
   // Check if any migration is needed
   const needsMigration = status?.needsMigration || false;
@@ -191,7 +215,7 @@ function DataMigrationTool({ syncContext, defaultCollapsed = true, onMigrationCo
         />
         <h3>Data Integration</h3>
         {!isCollapsed && needsMigration && totalIssues > 0 && (
-          <span className="data-migration__badge">{totalIssues} pending</span>
+          <span className="data-migration__badge">{totalIssues} unlinked</span>
         )}
       </div>
       <Icon
@@ -217,7 +241,7 @@ function DataMigrationTool({ syncContext, defaultCollapsed = true, onMigrationCo
       <div className="data-migration__status-badge-container">
         {needsFix ? (
           <span className="data-migration__status-badge data-migration__status-badge--warning">
-            Needs migration
+            Not yet created
           </span>
         ) : total > 0 ? (
           <span className="data-migration__status-badge data-migration__status-badge--success">
@@ -258,7 +282,7 @@ function DataMigrationTool({ syncContext, defaultCollapsed = true, onMigrationCo
         </div>
         {needsFix ? (
           <span className="data-migration__crosslink-badge data-migration__crosslink-badge--warning">
-            Needs linking
+            Unlinked
           </span>
         ) : potential > 0 ? (
           <span className="data-migration__crosslink-badge data-migration__crosslink-badge--success">
@@ -283,8 +307,8 @@ function DataMigrationTool({ syncContext, defaultCollapsed = true, onMigrationCo
             transition={{ duration: 0.2 }}
           >
             <p className="data-migration__description">
-              Ensure all <strong>houses</strong> and <strong>dignities</strong> have corresponding Codex entries,
-              and create <strong>cross-links</strong> between related entities for full system integration.
+              Create cross-links between <strong>people</strong>, <strong>houses</strong>, and <strong>dignities</strong> for
+              Codex navigation and discovery.
             </p>
 
             {loading ? (
@@ -312,36 +336,38 @@ function DataMigrationTool({ syncContext, defaultCollapsed = true, onMigrationCo
               </div>
             ) : (
               <>
-                {/* Primary Migrations Section */}
-                <div className="data-migration__section">
-                  <h4 className="data-migration__section-title">
-                    <Icon name="book-open" size={16} />
-                    Codex Entry Migrations
-                  </h4>
+                {/* Codex Entry Creation Section — hidden when all entries exist */}
+                {(status.houses?.needsMigration > 0 || status.dignities?.needsMigration > 0) && (
+                  <div className="data-migration__section">
+                    <h4 className="data-migration__section-title">
+                      <Icon name="book-open" size={16} />
+                      Codex Entry Creation
+                    </h4>
 
-                  <div className="data-migration__status-list">
-                    <StatusRow
-                      icon="castle"
-                      label="Houses"
-                      current={status.houses?.withCodex || 0}
-                      total={status.houses?.total || 0}
-                      needsFix={status.houses?.needsMigration > 0}
-                      onRun={handleMigrateHouses}
-                      isRunning={runningMigration === 'houses'}
-                      runLabel="Migrate houses to Codex"
-                    />
-                    <StatusRow
-                      icon="crown"
-                      label="Dignities"
-                      current={status.dignities?.withCodex || 0}
-                      total={status.dignities?.total || 0}
-                      needsFix={status.dignities?.needsMigration > 0}
-                      onRun={handleMigrateDignities}
-                      isRunning={runningMigration === 'dignities'}
-                      runLabel="Migrate dignities to Codex"
-                    />
+                    <div className="data-migration__status-list">
+                      <StatusRow
+                        icon="castle"
+                        label="Houses"
+                        current={status.houses?.withCodex || 0}
+                        total={status.houses?.total || 0}
+                        needsFix={status.houses?.needsMigration > 0}
+                        onRun={handleMigrateHouses}
+                        isRunning={runningMigration === 'houses'}
+                        runLabel="Create house Codex entries"
+                      />
+                      <StatusRow
+                        icon="crown"
+                        label="Dignities"
+                        current={status.dignities?.withCodex || 0}
+                        total={status.dignities?.total || 0}
+                        needsFix={status.dignities?.needsMigration > 0}
+                        onRun={handleMigrateDignities}
+                        isRunning={runningMigration === 'dignities'}
+                        runLabel="Create dignity Codex entries"
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Cross-Links Section */}
                 <div className="data-migration__section">
@@ -358,7 +384,7 @@ function DataMigrationTool({ syncContext, defaultCollapsed = true, onMigrationCo
                         title="Run cross-linking"
                       >
                         <Icon name={runningMigration === 'crosslinks' ? 'loader' : 'play'} size={14} className={runningMigration === 'crosslinks' ? 'data-migration__spinner' : ''} />
-                        <span>Link All</span>
+                        <span>Create Links</span>
                       </button>
                     )}
                   </div>
@@ -393,12 +419,21 @@ function DataMigrationTool({ syncContext, defaultCollapsed = true, onMigrationCo
                     onClick={handleRunAll}
                     disabled={runningMigration !== null}
                   >
-                    {runningMigration === 'all' ? 'Running All Migrations...' : 'Run All Migrations'}
+                    {runningMigration === 'all' ? 'Creating All Links...' : 'Create All Links'}
                   </ActionButton>
                   <p className="data-migration__actions-note">
                     Creates Codex entries and cross-links in one operation.
                     {syncContext?.userId && ' Changes will sync to cloud.'}
                   </p>
+
+                  <ActionButton
+                    icon={runningMigration === 'housefix' ? 'loader' : 'edit-3'}
+                    variant="secondary"
+                    onClick={handleFixHouseHouse}
+                    disabled={runningMigration !== null}
+                  >
+                    {runningMigration === 'housefix' ? 'Fixing...' : 'Fix "House House" Prefixes'}
+                  </ActionButton>
                 </div>
 
                 {/* Results Display */}

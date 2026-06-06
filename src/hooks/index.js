@@ -5,4 +5,4 @@
  */
 export { default as useFormState, validationRules, validate } from './useFormState';
 export { default as useDignityAnalysis } from './useDignityAnalysis';
-export { default as useDevLayout } from './useDevLayout';
+export { default as useDictation } from './useDictation';

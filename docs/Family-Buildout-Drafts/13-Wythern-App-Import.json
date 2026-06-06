@@ -1,0 +1,703 @@
+{
+  "description": "Wythern lore import: 22 codex entries, 5 people, 1 relationship. The Wytherns of Wyrmwood Forest \u2014 ancient forest-folk, the Wood-Warden's Oath, thirren, sacred gardens, and ceremonies.",
+  "instructions": "Import via unified import in the app. Creates 22 new codex entries, 5 new people records, and 1 relationship.",
+  "codexEntries": [
+    {
+      "type": "location",
+      "title": "Wyrmwood Forest",
+      "subtitle": "The Great Forest of the Southern Wilfrey Lands",
+      "category": "Regions & Territories",
+      "tags": [
+        "wyrmwood",
+        "forest",
+        "bramblehall",
+        "thirren",
+        "forest-folk",
+        "wythern",
+        "wood-wardens-oath"
+      ],
+      "content": "**Wyrmwood Forest** (colloquially 'the Wyrmwood') is the great forest lying along the southern border of [[House Wilfrey]]'s lands, encompassing the territories granted to [[Bram Wilfrey]] in 1176. [[Bramblehall]] stands at its edge.\n\n## Geography\n\nThe Wyrmwood is vast and ancient, forming a natural boundary along the southern reaches of Wilfrey territory. Its interior is dense, layered, and largely impenetrable to those without knowledge of its ways. The forest contains several notable sites: [[Haligdene]], [[Greenweft]], [[Thornweald]], and [[Mosshollow]] \u2014 sacred gardens tended by the forest-folk on behalf of [[House Wilfrey of Bramblehall]].\n\n## The Forest-Folk\n\nWyrmwood has been inhabited since before the Wilfreys' arrival. When [[Bram Wilfrey]] received his grant from the [[Crown of Estargenn]] in 1176, he found the forest already managed by communities of forest-dwellers who understood its rhythms and resources. Rather than displace them, he formalized the [[The Wood-Warden's Oath|Wood-Warden's Oath]] \u2014 a compact that binds the forest-folk to Bramblehall's service while preserving their autonomy and way of life.\n\nThe forest-folk maintain a pattern of **seasonal circulation** \u2014 semi-nomadic movement through the forest following the rhythms of growth and harvest, managing natural regeneration through controlled movement rather than permanent settlement.\n\n## Thirren\n\nThe Wyrmwood's most strategically valuable resource is [[Thirren]] (known in trade as Greyfast, to soldiers as Shieldwood) \u2014 a timber that grows only here under proper cultivation. The forest-folk's irreplaceable expertise in managing thirren groves forms the economic foundation of the entire relationship between forest and hall.\n\n## The Wytherns\n\nAmong the forest-folk, the [[The Wytherns|Wythern]] family holds a position of unspoken prominence \u2014 the oldest family, tenders of [[Haligdene]], keepers of the deepest traditions. They are not nobles in any formal sense, but carry the quiet authority of people who have been doing the same thing, in the same place, longer than anyone can remember.\n\n## Chain of Allegiance\n\nForest-folk \u2192 [[House Wilfrey of Bramblehall|Bramblehall]] \u2192 [[House Wilfrey of Breakmount|Breakmount]] \u2192 [[Crown of Estargenn|Crown]]\n\n**See Also:** [[Bramblehall]] \u00b7 [[The Wood-Warden's Oath]] \u00b7 [[Thirren]] \u00b7 [[The Wytherns]] \u00b7 [[Bram Wilfrey]]",
+      "sections": [
+        {
+          "order": 1,
+          "heading": "Geography",
+          "content": "Southern border of Wilfrey lands; contains sacred gardens"
+        },
+        {
+          "order": 2,
+          "heading": "The Forest-Folk",
+          "content": "Pre-Wilfrey inhabitants bound by Wood-Warden's Oath"
+        },
+        {
+          "order": 3,
+          "heading": "Thirren",
+          "content": "Strategic timber resource unique to Wyrmwood"
+        }
+      ],
+      "_tempId": "codex_wyrmwood_forest"
+    },
+    {
+      "type": "personage",
+      "title": "Bram Wilfrey",
+      "subtitle": "First Lord of Bramblehall",
+      "category": "Historical Figures",
+      "tags": [
+        "bram-wilfrey",
+        "bramblehall",
+        "founder",
+        "breakmount",
+        "drithen",
+        "wood-wardens-oath",
+        "wyrmwood"
+      ],
+      "content": "**Bram Wilfrey** (born 1155) was the second son of the [[House Wilfrey of Breakmount|Breakmount Wilfreys]] and the founder of [[Bramblehall]] in 1176.\n\n## The Grant\n\nDuring a significant conflict, Bram performed feats of extraordinary bravery that shifted a crucial battle and turned the tide of the entire conflict in the [[Crown of Estargenn|Crown]]'s favour. For this service beyond service, the Crown granted him all the forest lands of [[Wyrmwood Forest]] and many other territories besides.\n\nHe was made [[Drithen]] \u2014 equal to many Great Drithen whose families had long-established histories and storied pasts \u2014 answerable only to his own Drihten at [[House Wilfrey of Breakmount|Breakmount]] and to the Crown itself.\n\nNo one ever held the grant against him. No one had ever earned it so magnificently.\n\n## The Wood-Warden's Oath\n\nWhen Bram came to Wyrmwood Forest, he found it already inhabited and already managed \u2014 not by lords, but by folk who knew the forest's ways. The forest-dwellers were practiced stewards who had maintained the wood for generations uncounted, managing food reserves, cultivating special flora, and \u2014 most crucially \u2014 knowing the secrets of [[Thirren]], the valuable timber the forest produced.\n\nBram, having earned his position through merit, recognised merit in others. Rather than displace the forest-folk or impose traditional vassalage, he formalized the [[The Wood-Warden's Oath|Wood-Warden's Oath]] \u2014 an arrangement that acknowledged the forest-folk's expertise and autonomy while binding them to Bramblehall's protection and purpose.\n\nIt was a partnership born of mutual recognition, not conquest.\n\n**See Also:** [[Bramblehall]] \u00b7 [[Wyrmwood Forest]] \u00b7 [[The Wood-Warden's Oath]] \u00b7 [[Thirren]] \u00b7 [[House Wilfrey of Breakmount]]",
+      "sections": [
+        {
+          "order": 1,
+          "heading": "The Grant",
+          "content": "Crown grant of Wyrmwood for extraordinary military service, 1176"
+        },
+        {
+          "order": 2,
+          "heading": "The Wood-Warden's Oath",
+          "content": "Chose partnership over conquest with existing forest-folk"
+        }
+      ],
+      "_tempId": "codex_bram_wilfrey"
+    },
+    {
+      "type": "concept",
+      "title": "Thirren",
+      "subtitle": "The Strategic Timber of Wyrmwood Forest",
+      "category": "Resources & Trade",
+      "tags": [
+        "thirren",
+        "greyfast",
+        "shieldwood",
+        "lignum-tenax",
+        "wyrmwood",
+        "bramblehall",
+        "forest-folk",
+        "timber",
+        "trade"
+      ],
+      "content": "**Thirren** is a strategic timber that grows only in [[Wyrmwood Forest]] under proper cultivation. It is known by several names across [[Estargenn]]:\n\n- **Greyfast** \u2014 the trade name\n- **Shieldwood** \u2014 the soldiers' term\n- **Lignum Tenax** \u2014 the scholarly designation\n\n## Properties\n\n- Lighter than oak with equal strength\n- Resists shattering in combat better than traditional shield woods\n- Strong, workable, and weather-resistant for construction\n- Produces valuable sap used in medicines, adhesives, and preservatives\n- Grows only in Wyrmwood under proper cultivation\n\n## Worked Thirren\n\nBeyond its military and construction uses, thirren's fine grain and exceptional longevity make it prized for decorative and personal items. Greyfast beaded necklaces, carved ear stretchers, and settings for fine jewels are sought after for their beauty and remarkable durability \u2014 thirren-work outlasts the wearer by generations, becoming heirloom pieces passed down through families. The warm grey tone of worked thirren deepens with age rather than degrading, making old pieces more beautiful than new.\n\n## Forest-Folk Expertise\n\nThe forest-folk of Wyrmwood possess irreplaceable knowledge of thirren cultivation:\n- Which groves to harvest and which to leave fallow\n- Seasonal rhythms of growth\n- Techniques for encouraging straight grain and dense wood\n- Secrets of sap extraction and processing\n- Regeneration management for sustainable harvest\n\nThis expertise cannot be replicated by outsiders. Any lord could claim a forest; few could make it produce what the forest-folk can coax from Wyrmwood.\n\n## Economic Importance\n\nThirren forms the economic foundation of the entire [[The Wood-Warden's Oath|Wood-Warden's Oath]]. [[House Wilfrey of Bramblehall|Bramblehall]] profits enormously from thirren trade, but the resource exists only because of forest-folk stewardship. This mutual dependence \u2014 Bramblehall cannot replicate the knowledge, forest-folk cannot market without Bramblehall's protection \u2014 is the pragmatic heart of the Compact.\n\n**See Also:** [[Wyrmwood Forest]] \u00b7 [[The Wood-Warden's Oath]] \u00b7 [[House Wilfrey of Bramblehall]] \u00b7 [[The Wytherns]]",
+      "sections": [
+        {
+          "order": 1,
+          "heading": "Properties",
+          "content": "Lighter than oak, shattering-resistant, valuable sap"
+        },
+        {
+          "order": 2,
+          "heading": "Worked Thirren",
+          "content": "Prized for jewellery, personal adornment, and heirloom craft"
+        },
+        {
+          "order": 3,
+          "heading": "Economic Importance",
+          "content": "Foundation of the Bramblehall-forest-folk relationship"
+        }
+      ],
+      "_tempId": "codex_thirren"
+    },
+    {
+      "type": "other",
+      "title": "The Wytherns",
+      "subtitle": "Ancient Forest-Folk of Wyrmwood",
+      "category": "Families & Organizations",
+      "tags": [
+        "wythern",
+        "wyrmwood",
+        "forest-folk",
+        "bramblehall",
+        "haligdene",
+        "wood-wardens-oath",
+        "greenfinger"
+      ],
+      "content": "**The Wytherns** are the oldest known family among the forest-folk of [[Wyrmwood Forest]]. They claim descent from the legendary [[Harfalene Greenfinger]], a figure who predates the Wilfreys' arrival. They have never been nobles, never attempted nobility, and never held a seat in any formal hierarchy.\n\nYet among the forest-folk, the Wytherns carry an authority that needs no title. It is not the authority of lords \u2014 not rank within the structures of [[Driht]] and fealty that govern [[Estargenn]]'s noble houses. It is something older and quieter: a mystical leadership capacity, recognised by their forest-folk peers but never discussed, only felt. When a Wythern speaks at the [[Seasonal Gatherings|seasonal gatherings]], others listen \u2014 not because they must, but because something in the listening feels right. They are de facto leaders, though this is never stated, only implied, and never enforced.\n\nThis soft authority arises from the consistency of their way of life \u2014 the same gardens tended, the same stories told, the same slow rhythms observed for centuries while the world beyond the treeline changes and forgets. The Wytherns are the forest-folk who stayed truest to the oldest ways. That faithfulness is their credential.\n\n## Way of Life\n\nThe Wytherns follow the ancient pattern of **seasonal circulation** through Wyrmwood's depths \u2014 semi-nomadic movement following the rhythms of growth and harvest. Their great work is the stewarding of the forest's sacred gardens on behalf of [[House Wilfrey of Bramblehall|Bramblehall]]:\n\n- [[Haligdene]] \u2014 the moon-garden, most sacred of all Wyrmwood sites\n- [[Greenweft]] \u2014 medicinal herbs and gathering grounds\n- [[Thornweald]] \u2014 ancient orchards of half-wild fruit\n- [[Mosshollow]] \u2014 fungal gardens and preservation beds\n\nThey also manage [[Thirren]] groves, holding traditional knowledge of which stands to harvest and which to protect.\n\n## The Oath\n\nThe Wytherns are sworn to Bramblehall through the [[The Wood-Warden's Oath|Wood-Warden's Oath]], as are all forest-folk. But they also keep the older [[The Stewardship Oath|Stewardship Oath]] \u2014 a personal commitment to tend [[Haligdene]] that predates any noble arrangement.\n\n## Relations with Other Forest-Folk\n\nThe Wytherns' unspoken prominence is a source of both unity and tension. Other families \u2014 notably [[Corven Ashwood]] and his kin \u2014 resent the quiet assumption that Wytherns lead the [[The Midwinter Tribute|Midwinter delegation]] and present the [[The Sacred Flowers of Haligdene|Mirellune]] to the Lord of Bramblehall. These families cultivate [[Thirren]] just as expertly and serve the Compact just as faithfully, yet lack the Wytherns' aura of ancient belonging.\n\nThe tension is real but rarely erupts. It is the politics of respect, not power.\n\n## Connection to House Wilfrey\n\nThe Wytherns hold no Wilfrey blood and claim no kinship. From Bramblehall's perspective, they are commoners \u2014 but commoners the Wilfreys treat differently, sensing an unnameable weight in Wythern voices. This is not privilege of birth but gravity of presence. The Wilfreys regard the Wytherns with a mixture of respect and incomprehension: folk who chose the forest over everything else the world could offer, and who seem richer for it.\n\n## Current Wytherns\n\n- [[Eldric Wythern]] \u2014 Eldest Steward of Haligdene\n- [[Maris Wythern]] \u2014 Keeper of Greenweft\n- [[Theren Wythern]] \u2014 Young steward, Eldric's grandson\n\n**See Also:** [[Wyrmwood Forest]] \u00b7 [[The Wood-Warden's Oath]] \u00b7 [[Haligdene]] \u00b7 [[Harfalene Greenfinger]] \u00b7 [[Corven Ashwood]] \u00b7 [[The Midwinter Tribute]]",
+      "sections": [
+        {
+          "order": 1,
+          "heading": "Soft Authority",
+          "content": "Mystical leadership \u2014 not rank, not title, just the weight of deep roots"
+        },
+        {
+          "order": 2,
+          "heading": "Way of Life",
+          "content": "Seasonal circulation, garden stewardship, thirren management"
+        },
+        {
+          "order": 3,
+          "heading": "Relations",
+          "content": "Unspoken prominence creates both unity and tension among forest-folk"
+        }
+      ],
+      "_tempId": "codex_the_wytherns"
+    },
+    {
+      "type": "concept",
+      "title": "The Wood-Warden's Oath",
+      "subtitle": "The Compact Between Forest and Hall",
+      "category": "Laws & Customs",
+      "tags": [
+        "wood-wardens-oath",
+        "wardens-compact",
+        "green-covenant",
+        "bramblehall",
+        "wyrmwood",
+        "forest-folk",
+        "bram-wilfrey",
+        "oath"
+      ],
+      "content": "**The Wood-Warden's Oath** (also called the **Warden's Compact** or the **Green Covenant**) is the arrangement binding the forest-folk of [[Wyrmwood Forest]] to [[House Wilfrey of Bramblehall]]. It was formalized by [[Bram Wilfrey]] in 1176 when he took lordship, though built upon older patterns of forest stewardship that preceded any noble claim.\n\n## What the Forest-Folk Owe\n\n- **Stewardship of the wood** \u2014 managing Wyrmwood's health and abundance through seasonal circulation\n- **Cultivation of [[Thirren]]** \u2014 growing, managing, and harvesting the strategic timber\n- **Management of forest resources** \u2014 tending food reserves, special flora, medicinal plants\n- **Right of passage** \u2014 safe conduct for Wilfrey parties; guidance when requested\n- **Wood-knowledge** \u2014 counsel on forest matters; warning of threats\n- **[[The Midwinter Tribute|Tribute of Plenty]]** \u2014 annual offering presented at Bramblehall on Midwinter's Day\n- **[[The Mustering-Right]]** \u2014 answering the call to arms in defence of the realm, invoked sparingly\n\n## What the Forest-Folk Do Not Owe\n\n- Regular military service or standing levies\n- Attendance at court or council\n- Taxes in coin or crops beyond the Midwinter Tribute\n- Submission to Bramblehall's justice in internal forest matters (they govern themselves)\n- Participation in political disputes between noble houses\n\n## What House Wilfrey Owes in Return\n\n- **Protection of forest-rights** \u2014 no timber cutting, hunting, or settlement without consultation\n- **Defence against outsiders** \u2014 Bramblehall's strength shields the forest-folk\n- **Non-interference** \u2014 forest-folk govern themselves; Bramblehall does not impose laws or judges\n- **Sacred recognition** \u2014 acknowledgment of the forest-folk's ancient relationship with the land\n- **Fair trade in [[Thirren]]** \u2014 forest-folk receive portion of trade proceeds\n\n## Renewal\n\nThe Compact is renewed ceremonially every generation when a new Lord or Lady of Bramblehall takes their seat.\n\n## Economic Foundation\n\nThe Compact is not merely tradition or kindness \u2014 it is economically rational. Bramblehall could theoretically impose traditional vassalage, but doing so would likely destroy the forest-folk's willingness and ability to manage thirren properly. The forest-folk could theoretically withhold their expertise, but doing so would invite retaliation and loss of protection. The relationship works because both parties genuinely need each other.\n\n## Chain of Allegiance\n\nForest-folk \u2192 [[House Wilfrey of Bramblehall|Bramblehall]] \u2192 [[House Wilfrey of Breakmount|Breakmount]] \u2192 [[Crown of Estargenn|Crown]]\n\nForest-folk have no direct oath to Breakmount, but ultimate obligations flow upward through proper channels.\n\n**See Also:** [[Bram Wilfrey]] \u00b7 [[Wyrmwood Forest]] \u00b7 [[Thirren]] \u00b7 [[The Midwinter Tribute]] \u00b7 [[The Mustering-Right]] \u00b7 [[The Wytherns]]",
+      "sections": [
+        {
+          "order": 1,
+          "heading": "Forest-Folk Obligations",
+          "content": "Stewardship, thirren, passage, tribute, mustering"
+        },
+        {
+          "order": 2,
+          "heading": "Bramblehall Obligations",
+          "content": "Protection, non-interference, fair trade, sacred recognition"
+        },
+        {
+          "order": 3,
+          "heading": "Economic Foundation",
+          "content": "Mutual dependence \u2014 neither side can easily break the arrangement"
+        }
+      ],
+      "_tempId": "codex_the_wood_warden_s_oath"
+    },
+    {
+      "type": "location",
+      "title": "Haligdene",
+      "subtitle": "The Holy Vale of Wyrmwood",
+      "category": "Sacred Sites",
+      "tags": [
+        "haligdene",
+        "holy-vale",
+        "wyrmwood",
+        "wythern",
+        "mirellune",
+        "sacred",
+        "stewardship-oath"
+      ],
+      "content": "**Haligdene** (Holy Vale) is a sacred valley deep within [[Wyrmwood Forest]] \u2014 the most hallowed site of [[The Wytherns|Wythern]] culture and possibly of pre-Wilfrey forest-folk tradition.\n\n## The Valley\n\nHaligdene is a place of extraordinary natural abundance. Whether by some quality of the soil, the water, or something less easily named, things grow here with a fecundity unmatched elsewhere in the Wyrmwood. The valley is said to be accessible only to those it 'chooses' \u2014 an assertion that may reflect spiritual truth, practical enforcement by the Wytherns, or simply the difficulty of navigating the deep forest without guidance.\n\n## The Mirellune Beds\n\nHaligdene is home to the [[The Sacred Flowers of Haligdene|Mirellune]] \u2014 Moon's Mercy, the Pale Flower \u2014 which blooms only beneath moonrise. The first recorded cultivation of Mirellune beds is attributed to [[Harfalene Wythern]] in the early 13th century, though the legendary [[Harfalene Greenfinger]] is said to have known the valley centuries before.\n\nAll five sacred flowers of the Wythern tradition grow here: Mirellune, Thistrelace, Aelwynne, Eiribel, and Halithrae.\n\n## Stewardship\n\nThose who would tend Haligdene must swear the [[The Stewardship Oath|Stewardship Oath]] \u2014 an ancient commitment spoken at the moment of first moonrise in the valley, in the presence of blooming Mirellune, witnessed by at least three elder stewards.\n\n## The Mirellune Taboo\n\n*Those who take more than one are said never to find the valley again.*\n\nEach year, a single stem is cut at moonrise by the eldest living Wythern who has kept the Stewardship Oath and presented at the [[The Midwinter Tribute|Midwinter Tribute]] to the Lord or Lady of [[House Wilfrey of Bramblehall|Bramblehall]]. This is the only Mirellune that ever leaves the valley.\n\n**See Also:** [[Wyrmwood Forest]] \u00b7 [[The Wytherns]] \u00b7 [[The Sacred Flowers of Haligdene]] \u00b7 [[The Stewardship Oath]] \u00b7 [[Harfalene Greenfinger]] \u00b7 [[Harfalene Wythern]]",
+      "sections": [
+        {
+          "order": 1,
+          "heading": "The Valley",
+          "content": "Extraordinary natural abundance; accessible only to those it 'chooses'"
+        },
+        {
+          "order": 2,
+          "heading": "The Mirellune Beds",
+          "content": "Moon-blooming flowers, first cultivated by Harfalene Wythern"
+        },
+        {
+          "order": 3,
+          "heading": "Stewardship",
+          "content": "Tended by sworn stewards under the Stewardship Oath"
+        }
+      ],
+      "_tempId": "codex_haligdene"
+    },
+    {
+      "type": "location",
+      "title": "Greenweft",
+      "subtitle": "Healing Grounds of Wyrmwood",
+      "category": "Sacred Sites",
+      "tags": [
+        "greenweft",
+        "wyrmwood",
+        "herbs",
+        "healing",
+        "gathering",
+        "forest-folk",
+        "maris-wythern"
+      ],
+      "content": "**Greenweft** is one of the famous gardens of [[Wyrmwood Forest]], tended by the forest-folk on behalf of [[House Wilfrey of Bramblehall|Bramblehall]]. It is known for its medicinal herbs and healing grounds, serving as an informal infirmary for the forest-folk.\n\n## Gathering Site\n\nGreenweft serves as the principal meeting place for the [[Seasonal Gatherings|quarterly seasonal gatherings]] where forest-folk assemble for knowledge-sharing, dispute resolution, and arrangement of marriages. Three days before [[The Midwinter Tribute|Midwinter]], Greenweft hosts the largest gathering of the year \u2014 when the delegation is chosen, tribute goods assembled, [[Thirren]] harvest assessed, and grievances discussed.\n\n## Current Keeper\n\n[[Maris Wythern]], skilled herbalist and healer, currently maintains Greenweft.\n\n**See Also:** [[Wyrmwood Forest]] \u00b7 [[Maris Wythern]] \u00b7 [[The Midwinter Tribute]] \u00b7 [[Seasonal Gatherings]]",
+      "sections": [
+        {
+          "order": 1,
+          "heading": "Healing Grounds",
+          "content": "Medicinal herbs and informal infirmary"
+        },
+        {
+          "order": 2,
+          "heading": "Gathering Site",
+          "content": "Principal meeting place for forest-folk assemblies"
+        }
+      ],
+      "_tempId": "codex_greenweft"
+    },
+    {
+      "type": "location",
+      "title": "Thornweald",
+      "subtitle": "Ancient Orchards of Wyrmwood",
+      "category": "Sacred Sites",
+      "tags": [
+        "thornweald",
+        "wyrmwood",
+        "orchards",
+        "fruit",
+        "forest-folk"
+      ],
+      "content": "**Thornweald** is one of the famous gardens of [[Wyrmwood Forest]], tended by the forest-folk on behalf of [[House Wilfrey of Bramblehall|Bramblehall]]. It contains ancient orchards of half-wild fruit \u2014 apples, pears, and plums that grow nowhere else.\n\nThe trees of Thornweald are neither fully cultivated nor fully wild, representing the balance between tending and wildness that defines forest-folk stewardship. Fruits from Thornweald are contributed to the [[The Midwinter Tribute|Midwinter Tribute]].\n\n**See Also:** [[Wyrmwood Forest]] \u00b7 [[The Midwinter Tribute]]",
+      "sections": [
+        {
+          "order": 1,
+          "heading": "The Orchards",
+          "content": "Half-wild fruit trees unique to Wyrmwood"
+        }
+      ],
+      "_tempId": "codex_thornweald"
+    },
+    {
+      "type": "location",
+      "title": "Mosshollow",
+      "subtitle": "Fungal Gardens of Wyrmwood",
+      "category": "Sacred Sites",
+      "tags": [
+        "mosshollow",
+        "wyrmwood",
+        "fungal",
+        "preservation",
+        "forest-folk"
+      ],
+      "content": "**Mosshollow** is one of the famous gardens of [[Wyrmwood Forest]], tended by the forest-folk on behalf of [[House Wilfrey of Bramblehall|Bramblehall]]. It is known for fungal cultivation and preservation beds \u2014 a source of dried goods for winter months and the [[The Midwinter Tribute|Midwinter Tribute]].\n\nMosshollow demonstrates the forest-folk's expertise in working with the full forest ecosystem \u2014 not merely flowers and fruit, but the hidden kingdom beneath the canopy.\n\n**See Also:** [[Wyrmwood Forest]] \u00b7 [[The Midwinter Tribute]]",
+      "sections": [
+        {
+          "order": 1,
+          "heading": "Fungal Gardens",
+          "content": "Cultivation, preservation, and dried goods for winter"
+        }
+      ],
+      "_tempId": "codex_mosshollow"
+    },
+    {
+      "type": "concept",
+      "title": "The Sacred Flowers of Haligdene",
+      "subtitle": "The Five Flowers of the Holy Vale",
+      "category": "Flora & Lore",
+      "tags": [
+        "mirellune",
+        "thistrelace",
+        "aelwynne",
+        "eiribel",
+        "halithrae",
+        "haligdene",
+        "wythern",
+        "flower-naming",
+        "sacred"
+      ],
+      "content": "Five sacred flowers grow in [[Haligdene]], each tended with ritualistic care by the [[The Wytherns|Wytherns]] and harvested only according to proper season and rite. Each flower is also used in the [[The Flower-Naming Tradition|Flower-Naming]] tradition.\n\n## Mirellune\n*Moon's Mercy / The Pale Flower*\n\nThe most sacred flower of Haligdene. Blooms only beneath moonrise. Central to Wythern identity and the [[The Midwinter Tribute|Midwinter Tribute]] \u2014 each year a single stem is cut by the eldest steward and presented to the Lord or Lady of [[House Wilfrey of Bramblehall|Bramblehall]]. The flower is said to bloom throughout the twelve days of Midwinter if the [[The Wood-Warden's Oath|Compact]] holds true, but to wither within hours if either party has broken faith. In living memory, the flower has never withered.\n\n*Those who take more than one are said never to find the valley again.*\n\nRarely given as a flower-name \u2014 only to children born beneath a full moon within sight of Haligdene.\n\n## Thistrelace\n*The Woven Flower / Wind's Gift*\n\nAppears as a weaving of thistle and lace without fully belonging to either. Petals said to move like cloth in a breeze. Children swear it hums when the valley is quiet. Given as a flower-name to girls thought fey-touched or born during windstorms.\n\n## Aelwynne\n*Dawn's Breath / The Halig Bloom*\n\nSaid to glow faintly at dawn and dusk. Some believe speaking its name aloud draws its petals closed. Given as a flower-name to children born at liminal hours \u2014 dawn or dusk.\n\n## Eiribel\n*The Silent Bell / Rain-Caller*\n\nIts name sounds like a bell when spoken. Believed to ring soundlessly when touched by rain. Gathered only after storms \u2014 otherwise cannot be found. Given as a flower-name to children born during storms or who first cry at the sound of rain.\n\n## Halithrae\n*Veilpetal / The Thin Bloom*\n\nName derived from 'Halig' (holy). Believed to mark places where the veil between worlds grows thin. One cannot seek it, only notice it. Given as a flower-name to children who seem to walk between worlds \u2014 often sickly or unusually perceptive.\n\n**See Also:** [[Haligdene]] \u00b7 [[The Wytherns]] \u00b7 [[The Flower-Naming Tradition]] \u00b7 [[The Midwinter Tribute]]",
+      "sections": [
+        {
+          "order": 1,
+          "heading": "Mirellune",
+          "content": "Moon's Mercy \u2014 blooms under moonrise, central to the Compact"
+        },
+        {
+          "order": 2,
+          "heading": "The Other Four",
+          "content": "Thistrelace, Aelwynne, Eiribel, Halithrae \u2014 each with lore and naming use"
+        }
+      ],
+      "_tempId": "codex_the_sacred_flowers_of_haligdene"
+    },
+    {
+      "type": "concept",
+      "title": "The Midwinter Tribute",
+      "subtitle": "Annual Ceremony of the Warden's Compact",
+      "category": "Customs & Traditions",
+      "tags": [
+        "midwinter-tribute",
+        "tribute-of-plenty",
+        "bramblehall",
+        "wyrmwood",
+        "forest-folk",
+        "wythern",
+        "mirellune",
+        "ceremony",
+        "wood-wardens-oath"
+      ],
+      "content": "**The Midwinter Tribute** (also called the **Tribute of Plenty**) is the annual ceremony on the longest night when representatives of the forest-folk of [[Wyrmwood Forest]] present tribute goods to the Lord or Lady of [[House Wilfrey of Bramblehall|Bramblehall]] \u2014 not as tax, but as demonstration of the forest's abundance and the forest-folk's faithful stewardship.\n\n## The Ceremony\n\n1. **The Gathering at Greenweft** \u2014 Forest-folk assemble at [[Greenweft]] three days before Midwinter to select representatives, assemble tribute goods, assess the year's [[Thirren]] harvest, and discuss any grievances\n2. **The Journey to Bramblehall** \u2014 A delegation travels to the hall, traditionally led by a Wythern elder (by custom, not by rule)\n3. **The Presentation** \u2014 Goods are laid before the Lord or Lady:\n   - Herbs from [[Greenweft]]\n   - Fruits from [[Thornweald]]\n   - Preserved foods from [[Mosshollow]]\n   - Sample timbers of [[Thirren]], demonstrating the year's harvest quality\n   - A single stem of [[The Sacred Flowers of Haligdene|Mirellune]] from [[Haligdene]]\n4. **The Renewal** \u2014 The Lord or Lady speaks the words of the [[The Wood-Warden's Oath|Warden's Compact]]; the forest representative responds with the ancient acceptance\n5. **The Feast** \u2014 Forest-folk are hosted at Bramblehall for the Midwinter feast, a rare mingling of hall and wood\n\n## The Mirellune Presentation\n\nThe single stem of Mirellune is always presented by a [[The Wytherns|Wythern]], and always to the Lord or Lady directly \u2014 never to a proxy. This is the moment when the Wytherns' quiet prominence is most visible, and it is a source of resentment among other forest-folk families who serve the Compact just as faithfully.\n\nThe Mirellune is said to bloom throughout the twelve days of Midwinter if the Compact holds true, but to wither within hours if either party has broken faith. In living memory, the flower has never withered.\n\n**See Also:** [[The Wood-Warden's Oath]] \u00b7 [[Bramblehall]] \u00b7 [[Wyrmwood Forest]] \u00b7 [[The Wytherns]] \u00b7 [[The Sacred Flowers of Haligdene]]",
+      "sections": [
+        {
+          "order": 1,
+          "heading": "The Ceremony",
+          "content": "Five stages: gathering, journey, presentation, renewal, feast"
+        },
+        {
+          "order": 2,
+          "heading": "The Mirellune",
+          "content": "Single stem, always a Wythern, always to the Lord directly"
+        }
+      ],
+      "_tempId": "codex_the_midwinter_tribute"
+    },
+    {
+      "type": "concept",
+      "title": "The Mustering-Right",
+      "subtitle": "Bramblehall's Power to Call the Forest to Arms",
+      "category": "Laws & Customs",
+      "tags": [
+        "mustering-right",
+        "bramblehall",
+        "wyrmwood",
+        "forest-folk",
+        "military",
+        "wood-wardens-oath"
+      ],
+      "content": "**The Mustering-Right** is [[House Wilfrey of Bramblehall|Bramblehall]]'s power to call the forest-folk of [[Wyrmwood Forest]] to arms under the [[The Wood-Warden's Oath|Wood-Warden's Oath]].\n\n## Historical Use\n\nThe mustering has been invoked only seven times since the Compact was first sworn, always in moments of existential threat to the realm. Forest-folk fight differently than armoured knights \u2014 they are scouts, guerrilla fighters, ambushers, masters of terrain. A forest-folk levy is small in number but devastating in their home territory.\n\n## Contemporary Tension\n\nThe most contentious element of the Wood-Warden's Oath. Younger forest-folk question whether this obligation still serves:\n\n- [[Theren Wythern]] asks whether forest-folk should die in wars unrelated to the forest, especially when mustering pulls them from crucial [[Thirren]] management during growing seasons\n- [[Corven Ashwood]] questions the obligation from a different angle \u2014 if the forest-folk fight, they should have more say in the Compact's terms\n- [[Eldric Wythern]] represents the traditional view: *The oath is the oath. Without Bramblehall's protection, what prevents timber merchants and settlers from destroying Wyrmwood?*\n\nThis tension remains unresolved, simmering beneath the otherwise harmonious relationship between hall and wood.\n\n**See Also:** [[The Wood-Warden's Oath]] \u00b7 [[Wyrmwood Forest]] \u00b7 [[House Wilfrey of Bramblehall]] \u00b7 [[Theren Wythern]] \u00b7 [[Eldric Wythern]]",
+      "sections": [
+        {
+          "order": 1,
+          "heading": "Historical Use",
+          "content": "Only 7 invocations \u2014 scouts, ambushers, terrain specialists"
+        },
+        {
+          "order": 2,
+          "heading": "Contemporary Tension",
+          "content": "Generational divide over continued relevance"
+        }
+      ],
+      "_tempId": "codex_the_mustering_right"
+    },
+    {
+      "type": "personage",
+      "title": "Harfalene Greenfinger",
+      "subtitle": "Legendary Founder of the Wythern Tradition",
+      "category": "Mythic Figures",
+      "tags": [
+        "harfalene",
+        "greenfinger",
+        "wythern",
+        "haligdene",
+        "legendary",
+        "wyrmwood",
+        "faire"
+      ],
+      "content": "**Harfalene Greenfinger** is the legendary founder figure of the [[The Wytherns|Wythern]] tradition \u2014 a figure said to have lived in [[Wyrmwood Forest]] before the Wilfreys ever came to these lands.\n\n## The Tale\n\nThe story, passed from hearth to hearth in the half-sung cadence of forest folk, speaks of a youth of uncommon grace who walked into [[Haligdene]] and was forever changed. Deep within that hallowed valley he met a woman of the woods \u2014 [[The Faire of Haligdene|a faire]] whose beauty put even the Pale Flower to shame. Devoted to the valley itself, he tended the flower beds, learning the ways of root and leaf, until Haligdene became a place of such abundance that folk said the valley had taken him as husband.\n\nHis hands, which had known no labour before, became so skilled that all called him **Greenfinger**. When he passed from this world, the valley folk remembered him as **Wythern** \u2014 one who belongs to the wood. And his children, and their children after, carried that name into the centuries.\n\n## Legend and History\n\nWhether Harfalene Greenfinger truly existed is impossible to determine. The story predates the Wilfreys' arrival (pre-1176), and no written record confirms or denies it. Centuries later, [[Harfalene Wythern]] \u2014 a historical figure \u2014 seemed to fulfill the legendary pattern, merging myth and history into a single narrative.\n\nThe Wytherns see no contradiction in this. The story is told, not written, and each telling is true in its own way.\n\n**See Also:** [[The Wytherns]] \u00b7 [[Haligdene]] \u00b7 [[The Faire of Haligdene]] \u00b7 [[Harfalene Wythern]] \u00b7 [[The Story-Tradition]]",
+      "sections": [
+        {
+          "order": 1,
+          "heading": "The Tale",
+          "content": "Pre-Wilfrey youth who found Haligdene and chose stewardship"
+        },
+        {
+          "order": 2,
+          "heading": "Legend and History",
+          "content": "Whether he existed is unclear \u2014 the Wytherns claim descent"
+        }
+      ],
+      "_tempId": "codex_harfalene_greenfinger"
+    },
+    {
+      "type": "personage",
+      "title": "Harfalene Wythern",
+      "subtitle": "Historical Founder of the Haligdene Stewardship",
+      "category": "Historical Figures",
+      "tags": [
+        "harfalene",
+        "wythern",
+        "haligdene",
+        "greenfinger",
+        "mirellune",
+        "wyrmwood"
+      ],
+      "content": "**Harfalene Wythern** (fl. early 13th century) is the historical figure most closely associated with the founding of the [[Haligdene]] stewardship tradition.\n\n## Life\n\nA forest-folk man with an uncommon gift for growing things, Harfalene ventured deep into [[Wyrmwood Forest]] seeking land where he might make a life of his own measure. What he found was the valley that would become known as Haligdene \u2014 a place of such natural fecundity that he recognised it at once as sacred ground.\n\nThere he settled. There he cultivated the first recorded [[The Sacred Flowers of Haligdene|Mirellune]] beds, coaxing that moon-blessed flower from wild scatter into ordered beauty. And there he took to wife a woman of the forest-folk \u2014 unlettered, unnamed in the [[Bramblehall]] records, but practical and strong.\n\n## Greenfinger\n\nIn tending Haligdene with such skill, people began to call him **Greenfinger** \u2014 echoing the ancient tale of [[Harfalene Greenfinger]], the legendary figure who may or may not have walked the same valley centuries before. Whether this was deliberate homage or coincidence, the echo completed a circle. The story and the history merged.\n\n## Legacy\n\nHarfalene Wythern established the patterns that the Wytherns follow to this day: the tending of the Mirellune beds, the slow stewardship of the valley, the understanding that Haligdene reveals itself to whom it will. His descendants multiplied into the loose network of Wythern families who form the spiritual core of [[Wyrmwood Forest]]'s forest-folk community.\n\n**See Also:** [[Haligdene]] \u00b7 [[Harfalene Greenfinger]] \u00b7 [[The Wytherns]] \u00b7 [[The Faire of Haligdene]] \u00b7 [[The Sacred Flowers of Haligdene]]",
+      "sections": [
+        {
+          "order": 1,
+          "heading": "Life",
+          "content": "Forest-folk man who found Haligdene and cultivated the first Mirellune beds"
+        },
+        {
+          "order": 2,
+          "heading": "Legacy",
+          "content": "Established patterns of stewardship still followed today"
+        }
+      ],
+      "_tempId": "codex_harfalene_wythern"
+    },
+    {
+      "type": "personage",
+      "title": "The Faire of Haligdene",
+      "subtitle": "Legendary Woman of the Valley",
+      "category": "Mythic Figures",
+      "tags": [
+        "faire",
+        "haligdene",
+        "harfalene",
+        "wythern",
+        "legendary",
+        "wyrmwood"
+      ],
+      "content": "**The Faire of Haligdene** is a figure who exists between legend and history.\n\nIn the ancient folklore of [[Wyrmwood Forest]] \u2014 the tale of [[Harfalene Greenfinger]] \u2014 she is a supernatural woman of the woods, a faire whose beauty put even the Pale Flower to shame. The original Harfalene met her in [[Haligdene]] and was forever changed.\n\nIn the historical record of the 13th century, [[Harfalene Wythern]]'s wife was an unnamed woodwoman \u2014 practical, strong, unlettered, herself descended from families who had lived in Wyrmwood since before the Wilfreys' arrival.\n\nThe two accounts may describe different women centuries apart. They may be the same story told differently. The forest-folk see no need to resolve the question.\n\n**See Also:** [[Harfalene Greenfinger]] \u00b7 [[Harfalene Wythern]] \u00b7 [[Haligdene]]",
+      "sections": [
+        {
+          "order": 1,
+          "heading": "The Ambiguity",
+          "content": "Supernatural faire or practical woodwoman \u2014 perhaps both"
+        }
+      ],
+      "_tempId": "codex_the_faire_of_haligdene"
+    },
+    {
+      "type": "personage",
+      "title": "Eldric Wythern",
+      "subtitle": "Eldest Steward of Haligdene",
+      "category": "Contemporary Figures",
+      "tags": [
+        "eldric",
+        "wythern",
+        "haligdene",
+        "steward",
+        "midwinter-tribute",
+        "thirren",
+        "wyrmwood"
+      ],
+      "content": "**Eldric Wythern** is the Eldest Steward of [[Haligdene]], having tended the sacred valley for thirty-two years. He is considered the living authority on the valley's lore and proper cultivation methods.\n\n## Role\n\nEldric has led the [[The Midwinter Tribute|Midwinter delegation]] to [[Bramblehall]] for the past fifteen years and personally cuts the [[The Sacred Flowers of Haligdene|Mirellune]] stem for presentation to the Lord of Bramblehall. He is deeply involved in [[Thirren]] management, holding traditional knowledge of which groves to harvest.\n\n## Character\n\nA strong defender of both the [[The Stewardship Oath|Stewardship Oath]] and the [[The Wood-Warden's Oath|Wood-Warden's Oath]], Eldric sees them as inseparable commitments. He believes the Compact protects the forest-folk from the encroaching world and must be honoured scrupulously.\n\nHis grandson [[Theren Wythern]]'s questioning of the old ways creates tension between them, though their mutual love of Haligdene prevents true rupture.\n\n**See Also:** [[Haligdene]] \u00b7 [[The Wytherns]] \u00b7 [[The Midwinter Tribute]] \u00b7 [[Theren Wythern]]",
+      "sections": [
+        {
+          "order": 1,
+          "heading": "Role",
+          "content": "32-year steward, leads Midwinter delegation, cuts the Mirellune"
+        },
+        {
+          "order": 2,
+          "heading": "Character",
+          "content": "Traditionalist \u2014 the oath is the oath"
+        }
+      ],
+      "_tempId": "codex_eldric_wythern"
+    },
+    {
+      "type": "personage",
+      "title": "Maris Wythern",
+      "subtitle": "Keeper of Greenweft",
+      "category": "Contemporary Figures",
+      "tags": [
+        "maris",
+        "wythern",
+        "greenweft",
+        "herbalist",
+        "healer",
+        "wyrmwood",
+        "thirren"
+      ],
+      "content": "**Maris Wythern** is the Keeper of [[Greenweft]], skilled herbalist and healer who maintains the medicinal gardens of [[Wyrmwood Forest]].\n\n## Role\n\nMaris serves as intermediary between [[The Wytherns|Wythern]] families, other forest-folk, and occasional travellers who seek forest remedies. More open to outsiders than most Wytherns.\n\n## Character\n\nMaris represents the [[The Midwinter Tribute|Midwinter Tribute]] delegation pragmatically, arguing for a stronger negotiating position with [[House Wilfrey of Bramblehall|Bramblehall]] \u2014 not breaking the [[The Wood-Warden's Oath|Compact]], but ensuring it evolves to meet contemporary needs. She believes [[Thirren]] management gives the forest-folk economic leverage that should be used wisely.\n\n**See Also:** [[Greenweft]] \u00b7 [[The Wytherns]] \u00b7 [[The Midwinter Tribute]]",
+      "sections": [
+        {
+          "order": 1,
+          "heading": "Role",
+          "content": "Keeper of Greenweft, herbalist, intermediary"
+        },
+        {
+          "order": 2,
+          "heading": "Character",
+          "content": "Pragmatist \u2014 evolve the Compact, use leverage wisely"
+        }
+      ],
+      "_tempId": "codex_maris_wythern"
+    },
+    {
+      "type": "personage",
+      "title": "Theren Wythern",
+      "subtitle": "Young Steward of Haligdene",
+      "category": "Contemporary Figures",
+      "tags": [
+        "theren",
+        "wythern",
+        "haligdene",
+        "steward",
+        "wyrmwood",
+        "mustering-right"
+      ],
+      "content": "**Theren Wythern** is a young steward who recently swore the [[The Stewardship Oath|Stewardship Oath]] at [[Haligdene]]. He is the grandson of [[Eldric Wythern]].\n\n## Character\n\nTheren represents the new generation of Wytherns who wonder whether the old isolation can be maintained in changing times. He has expressed interest in establishing more formal trade relationships with [[Bramblehall]] settlements \u2014 not as tax or tithe, but as partnership that benefits both forest and hall.\n\nHe questions whether the [[The Mustering-Right|Mustering-Right]] still serves forest-folk interests, especially when it pulls them away from crucial [[Thirren]] management during growing seasons.\n\n## The Generational Tension\n\nTheren's views create tension with his grandfather Eldric, though their mutual love of Haligdene prevents true rupture. Where Eldric sees the [[The Wood-Warden's Oath|Compact]] as sacred and inviolable, Theren sees it as a living arrangement that must adapt or become a cage.\n\n**See Also:** [[Haligdene]] \u00b7 [[Eldric Wythern]] \u00b7 [[The Wytherns]] \u00b7 [[The Mustering-Right]]",
+      "sections": [
+        {
+          "order": 1,
+          "heading": "Character",
+          "content": "Forward-looking, questions traditional isolation"
+        },
+        {
+          "order": 2,
+          "heading": "The Generational Tension",
+          "content": "Loves the oath's spirit, questions its letter"
+        }
+      ],
+      "_tempId": "codex_theren_wythern"
+    },
+    {
+      "type": "personage",
+      "title": "Corven Ashwood",
+      "subtitle": "Voice of the Non-Wythern Forest-Folk",
+      "category": "Contemporary Figures",
+      "tags": [
+        "corven",
+        "ashwood",
+        "forest-folk",
+        "wyrmwood",
+        "thirren",
+        "midwinter-tribute"
+      ],
+      "content": "**Corven Ashwood** is an influential voice among the non-Wythern forest families of [[Wyrmwood Forest]]. A skilled tracker, hunter, and expert [[Thirren]] cultivator with knowledge equal to any [[The Wytherns|Wythern]].\n\n## Position\n\nCorven maintains that the [[The Wood-Warden's Oath|Wood-Warden's Oath]] should be honoured, but argues that [[The Wytherns|Wythern]] soft-leadership of the [[The Midwinter Tribute|Midwinter delegation]] perpetuates an unfair hierarchy. He advocates for rotating the [[The Sacred Flowers of Haligdene|Mirellune]] presentation among all forest-folk families, rather than leaving it as a Wythern tradition.\n\n## The Deeper Tension\n\nCorven's challenge is that his grievance is difficult to articulate in concrete terms. The Wytherns hold no title, claim no formal authority, and would deny any special status if asked. Their prominence is a thing of aura and tradition, not rule \u2014 and that makes it harder to argue against than any title would be. He can cultivate thirren as well as any Wythern, but he cannot carry their weight of ancient belonging.\n\nHe has significant support among younger forest-folk who share his frustration.\n\n**See Also:** [[Wyrmwood Forest]] \u00b7 [[The Wytherns]] \u00b7 [[The Midwinter Tribute]] \u00b7 [[Thirren]]",
+      "sections": [
+        {
+          "order": 1,
+          "heading": "Position",
+          "content": "Equal skill, unequal standing \u2014 challenges Wythern soft-privilege"
+        },
+        {
+          "order": 2,
+          "heading": "The Deeper Tension",
+          "content": "Hard to argue against authority that claims no authority"
+        }
+      ],
+      "_tempId": "codex_corven_ashwood"
+    },
+    {
+      "type": "concept",
+      "title": "The Stewardship Oath",
+      "subtitle": "Ancient Oath of Haligdene's Tenders",
+      "category": "Customs & Traditions",
+      "tags": [
+        "stewardship-oath",
+        "haligdene",
+        "wythern",
+        "oath",
+        "sacred"
+      ],
+      "content": "**The Stewardship Oath** is the ancient commitment sworn by those who would tend [[Haligdene]]. It is separate from and older than the [[The Wood-Warden's Oath|Wood-Warden's Oath]] to [[House Wilfrey of Bramblehall|Bramblehall]].\n\n## The Oath\n\nIt must be spoken aloud during the first moonrise in the valley, in the presence of blooming [[The Sacred Flowers of Haligdene|Mirellune]], witnessed by at least three elder stewards:\n\n*\"By root and leaf, by moon and seed,*\n*I bind my days to beauty's need,*\n*To tend what grows, to guard what gleams,*\n*To walk the wood through waking dreams.\"*\n\n## The Curse\n\nBreaking the Stewardship Oath is said to bring the valley's curse \u2014 the oathbreaker will wander [[Wyrmwood Forest|Wyrmwood]] until their death and never find Haligdene again, no matter how well they once knew the way.\n\n## Relationship to the Compact\n\nThe [[The Wytherns|Wytherns]] keep both the Stewardship Oath and the Wood-Warden's Oath, seeing them as complementary rather than contradictory. Tending the sacred garden and managing the forest on behalf of a lord are aspects of the same commitment to stewardship.\n\n**See Also:** [[Haligdene]] \u00b7 [[The Wytherns]] \u00b7 [[The Wood-Warden's Oath]]",
+      "sections": [
+        {
+          "order": 1,
+          "heading": "The Oath",
+          "content": "Spoken at first moonrise, witnessed by three elders"
+        },
+        {
+          "order": 2,
+          "heading": "The Curse",
+          "content": "Oathbreakers never find Haligdene again"
+        }
+      ],
+      "_tempId": "codex_the_stewardship_oath"
+    },
+    {
+      "type": "concept",
+      "title": "The Flower-Naming Tradition",
+      "subtitle": "Wythern Children's Secret Names",
+      "category": "Customs & Traditions",
+      "tags": [
+        "flower-naming",
+        "wythern",
+        "haligdene",
+        "names",
+        "sacred",
+        "wyrmwood"
+      ],
+      "content": "**The Flower-Naming Tradition** is the [[The Wytherns|Wythern]] custom of giving children second names drawn from the flora of [[Wyrmwood Forest]]. These names are whispered at birth and spoken only by close kin, serving as a spiritual identity separate from the common name used in daily life.\n\n## The Flower-Names\n\n| Name | Translation | Given To |\n|------|------------|----------|\n| **Thistrelace** | The Woven Flower | Girls thought fey-touched or born during windstorms |\n| **Aelwynne** | Dawn's Breath | Children born at dawn or dusk |\n| **Eiribel** | The Silent Bell | Children born during storms or who first cry at rain |\n| **Halithrae** | Veilpetal | Sickly or unusually perceptive children |\n| **Mirellune** | Moon's Mercy | Rarely given; only for children born beneath a full moon within sight of [[Haligdene]] |\n\n## Significance\n\nThe flower-name connects a Wythern child to [[Haligdene]] and to the sacred heritage of the forest. It is not used publicly \u2014 to speak another's flower-name without invitation would be a deep transgression. The name belongs to the space between kin, spoken in firelight, whispered in greeting.\n\n**See Also:** [[The Sacred Flowers of Haligdene]] \u00b7 [[The Wytherns]] \u00b7 [[Haligdene]]",
+      "sections": [
+        {
+          "order": 1,
+          "heading": "The Flower-Names",
+          "content": "Five names drawn from Haligdene's sacred flowers"
+        },
+        {
+          "order": 2,
+          "heading": "Significance",
+          "content": "Secret spiritual identity \u2014 never spoken publicly"
+        }
+      ],
+      "_tempId": "codex_the_flower_naming_tradition"
+    },
+    {
+      "type": "concept",
+      "title": "The Story-Tradition",
+      "subtitle": "Oral Lore of the Wytherns",
+      "category": "Customs & Traditions",
+      "tags": [
+        "story-tradition",
+        "wythern",
+        "harfalene",
+        "oral-tradition",
+        "wyrmwood"
+      ],
+      "content": "**The Story-Tradition** is the [[The Wytherns|Wythern]] practice of transmitting the tale of [[Harfalene Greenfinger]] \u2014 and all their lore \u2014 through speech alone. The story is never written, only spoken, passed from elder to youngling in the half-light of evening fires.\n\n## Multiple Versions\n\nEach family maintains its own version of the tale, with particular emphasis on different elements:\n- Some stress that Harfalene Greenfinger lived before the Wilfreys came, when the forest was free\n- Others emphasise [[Harfalene Wythern]]'s discovery of [[Haligdene]] in the 13th century, seeing him as the true founder\n- Still others suggest they are the same person somehow, or that the later Harfalene fulfilled the ancient pattern\n- A few versions whisper that every generation produces a Greenfinger \u2014 someone whose hands bring life to what they touch\n\nThis multiplicity is not seen as contradiction but as richness \u2014 each version true in its own way.\n\n## Seasonal Gatherings\n\nFour times a year, at the turning of seasons, forest-folk gather at [[Greenweft]] for the sharing of knowledge, settling of disputes, and arrangement of marriages between family groups. The Eldest Stewards hold informal authority during these gatherings, though decisions are made by consensus rather than decree.\n\nThe **Midwinter Gathering** \u2014 three days before the [[The Midwinter Tribute|Midwinter Tribute]] \u2014 is the largest and most significant.\n\n**See Also:** [[Harfalene Greenfinger]] \u00b7 [[Harfalene Wythern]] \u00b7 [[The Wytherns]] \u00b7 [[Greenweft]]",
+      "sections": [
+        {
+          "order": 1,
+          "heading": "Oral Tradition",
+          "content": "Never written \u2014 alive because it is never fixed"
+        },
+        {
+          "order": 2,
+          "heading": "Seasonal Gatherings",
+          "content": "Quarterly assemblies at Greenweft, consensus governance"
+        }
+      ],
+      "_tempId": "codex_the_story_tradition"
+    }
+  ],
+  "people": [
+    {
+      "_tempId": "person_bram_wilfrey",
+      "firstName": "Bram",
+      "lastName": "Wilfrey",
+      "gender": "male",
+      "houseId": 18,
+      "dateOfBirth": "1155",
+      "legitimacyStatus": "legitimate",
+      "notes": "Second son of the Breakmount Wilfreys. Founded Bramblehall in 1176 after being granted Wyrmwood Forest and surrounding lands by the Crown for extraordinary military service. Made Drithen equal to Great Drithen. Formalized the Wood-Warden's Oath with the forest-folk he found already managing Wyrmwood, recognizing that partnership served better than conquest."
+    },
+    {
+      "_tempId": "person_eldric_wythern",
+      "firstName": "Eldric",
+      "lastName": "Wythern",
+      "gender": "male",
+      "houseId": 70,
+      "legitimacyStatus": "legitimate",
+      "notes": "Eldest Steward of Haligdene. Has tended the sacred valley for thirty-two years. Leads the Midwinter delegation to Bramblehall and personally cuts the Mirellune stem for presentation. Deeply involved in thirren management. Traditionalist who believes the Wood-Warden's Oath must be honoured scrupulously. Grandfather of Theren Wythern."
+    },
+    {
+      "_tempId": "person_maris_wythern",
+      "firstName": "Maris",
+      "lastName": "Wythern",
+      "gender": "female",
+      "houseId": 70,
+      "legitimacyStatus": "legitimate",
+      "notes": "Keeper of Greenweft. Skilled herbalist and healer who maintains the medicinal gardens of Wyrmwood. More open to outsiders than most Wytherns. Argues for a stronger negotiating position with Bramblehall \u2014 not breaking the Compact, but ensuring it evolves. Believes thirren management gives forest-folk leverage that should be used wisely."
+    },
+    {
+      "_tempId": "person_theren_wythern",
+      "firstName": "Theren",
+      "lastName": "Wythern",
+      "gender": "male",
+      "houseId": 70,
+      "legitimacyStatus": "legitimate",
+      "notes": "Young steward who recently swore the Stewardship Oath at Haligdene. Grandson of Eldric Wythern. Represents the new generation questioning traditional isolation. Interested in formal trade partnerships with Bramblehall. Questions whether the Mustering-Right still serves forest-folk interests. His views create tension with his grandfather."
+    },
+    {
+      "_tempId": "person_corven_ashwood",
+      "firstName": "Corven",
+      "lastName": "Ashwood",
+      "gender": "male",
+      "houseId": 70,
+      "legitimacyStatus": "legitimate",
+      "notes": "Influential voice among non-Wythern forest families of Wyrmwood. Skilled tracker, hunter, and expert thirren cultivator with knowledge equal to any Wythern. Argues that Wythern soft-leadership perpetuates unfair hierarchy. Advocates for rotating the Mirellune presentation among all forest-folk families. Significant support among younger forest-folk."
+    }
+  ],
+  "relationships": [
+    {
+      "person1Id": "person_eldric_wythern",
+      "person2Id": "person_theren_wythern",
+      "relationshipType": "parent",
+      "notes": "Grandfather-grandson. Eldric's child (Theren's parent) is unnamed."
+    }
+  ]
+}

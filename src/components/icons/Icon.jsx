@@ -149,6 +149,9 @@ import {
   ListOrdered,
   Quote,
   Type,
+  // Dictation
+  Mic,
+  MicOff,
   // Story Planner icons
   Target,
   TrendingUp,
@@ -412,6 +415,11 @@ const LUCIDE_ICONS = {
   // Block elements
   'quote': Quote,
   'blockquote': Quote,
+
+  // Dictation
+  'mic': Mic,
+  'microphone': Mic,
+  'mic-off': MicOff,
 
   // Story Planner icons
   'target': Target,

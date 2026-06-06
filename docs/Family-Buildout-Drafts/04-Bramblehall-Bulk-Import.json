@@ -1,0 +1,1113 @@
+{
+  "_template_info": {
+    "name": "Bramblehall Wilfrey Complete Lineage Import",
+    "version": "2.0",
+    "created": "2026-02-01",
+    "description": "9 generations of Bramblehall Wilfreys from Lord Constann (~1725) to Alec's children (~1985). Creates 3 woodland cadet house records (Wilfbauer, Wilfbole, Wilfbark), 43 new people, and ~80 relationships. References existing entities: House Wilfrey of Bramblehall (18), Giseline Wilfson (373), Bors Wilfrey (341), Alec Wilfrey (72), Borsham Wilfrey (342), Elias Athelmere (77)."
+  },
+
+  "_manual_updates_required": [
+    {
+      "action": "Establish House Vespen as sworn to Bramblehall",
+      "entity": "House Vespen (ID 9)",
+      "change": "Add sworn/vassal relationship to House Wilfrey of Bramblehall in codex or house notes",
+      "reason": "Adelise's marriage to Vesmund Vespen (~1774) deepened an existing feudal bond"
+    }
+  ],
+
+  "houses": [
+    {
+      "_tempId": "house_wilfbauer",
+      "houseName": "House Wilfbauer",
+      "type": "cadet"
+    },
+    {
+      "_tempId": "house_wilfbole",
+      "houseName": "House Wilfbole",
+      "type": "cadet"
+    },
+    {
+      "_tempId": "house_wilfbark",
+      "houseName": "House Wilfbark",
+      "type": "cadet"
+    }
+  ],
+
+  "people": [
+    {
+      "_comment": "=== GENERATION 0: LORD CONSTANN AND WIFE ===",
+      "_tempId": "person_constann",
+      "_generation": 0,
+      "firstName": "Constann",
+      "lastName": "Wilfrey",
+      "gender": "male",
+      "houseId": 18,
+      "dateOfBirth": "1725",
+      "dateOfDeath": "1790",
+      "legitimacyStatus": "legitimate",
+      "notes": "Lord of Bramblehall during The Scandal of 1776. Father of six daughters — legendarily inflated to 'ten' as the beauty of their retainers and companions became confused with the daughters themselves over generations of retelling. Also father of two sons, Aldric and Borsward, born as twins alongside two of his daughters. Brought the matter of Raylegh and Lennis before the Riverhead Council. Watched his daughter Giseline marry the kinslayer Colard Wilfson in 1778 as a gesture of reconciliation. Never spoke publicly of Raylegh's fate after the scandal."
+    },
+    {
+      "_tempId": "person_florine",
+      "_generation": 0,
+      "firstName": "Florine",
+      "lastName": "Wilfrey",
+      "gender": "female",
+      "houseId": 18,
+      "dateOfBirth": "1725",
+      "dateOfDeath": "1785",
+      "legitimacyStatus": "legitimate",
+      "notes": "Wife of Lord Constann of Bramblehall, born of House Wilfrey of Riverhead. Mother of eight children — six daughters and two sons. The 'ten daughters' legend absorbed the beauty of her daughters' retainers and companions, inflating the count over generations of storytelling. Her son Aldric was eldest of all her children but entirely overshadowed by his sisters' fame."
+    },
+
+    {
+      "_comment": "=== GENERATION 0: SONS (TWIN PAIRS) ===",
+      "_tempId": "person_aldric",
+      "_generation": 0,
+      "firstName": "Aldric",
+      "lastName": "Wilfrey",
+      "gender": "male",
+      "houseId": 18,
+      "dateOfBirth": "1743",
+      "dateOfDeath": "1815",
+      "legitimacyStatus": "legitimate",
+      "notes": "The eldest child of Constann, born alongside his twin sister Constance. So overshadowed by his six beautiful sisters that history barely remembers him. He inherited Bramblehall upon his father's death ~1790 and ruled quietly for 25 years. Where his sisters were legendary, Aldric was steady — exactly what Bramblehall needed after the scandal."
+    },
+    {
+      "_tempId": "person_borsward",
+      "_generation": 0,
+      "firstName": "Borsward",
+      "lastName": "Wilfrey",
+      "gender": "male",
+      "houseId": 18,
+      "dateOfBirth": "1749",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Second son of Constann, twin with Belisent. Even more forgotten than Aldric. Married locally and his descendants were absorbed into the woodland cadet branches."
+    },
+
+    {
+      "_comment": "=== GENERATION 0: THE SIX DAUGHTERS ===",
+      "_tempId": "person_constance",
+      "_generation": 0,
+      "firstName": "Constance",
+      "lastName": "Wilfrey",
+      "gender": "female",
+      "houseId": 5,
+      "dateOfBirth": "1743",
+      "dateOfDeath": "1815",
+      "legitimacyStatus": "legitimate",
+      "notes": "Eldest daughter of Lord Constann, twin with Aldric. Named for her father. Married Renfric Wilfrey of Breakmount ~1765 — the most advantageous match of all the daughters, binding Bramblehall to the paramount Wilfrey seat."
+    },
+    {
+      "_tempId": "person_floriselle",
+      "_generation": 0,
+      "firstName": "Floriselle",
+      "lastName": "Wilfrey",
+      "gender": "female",
+      "houseId": 22,
+      "dateOfBirth": "1747",
+      "dateOfDeath": "1820",
+      "legitimacyStatus": "legitimate",
+      "notes": "Second daughter of Lord Constann, named for her mother Florine. Married Dunric Wilfrey of Fourhearth ~1768, binding Bramblehall to the maritime seat."
+    },
+    {
+      "_tempId": "person_belisent",
+      "_generation": 0,
+      "firstName": "Belisent",
+      "lastName": "Hendry",
+      "maidenName": "Wilfrey",
+      "gender": "female",
+      "houseId": 10,
+      "dateOfBirth": "1749",
+      "dateOfDeath": "1825",
+      "legitimacyStatus": "legitimate",
+      "notes": "Third daughter of Lord Constann, twin with Borsward. Married Godfric Hendry ~1770, extending Bramblehall's reach to House Hendry."
+    },
+    {
+      "_tempId": "person_adelise",
+      "_generation": 0,
+      "firstName": "Adelise",
+      "lastName": "Vespen",
+      "maidenName": "Wilfrey",
+      "gender": "female",
+      "houseId": 9,
+      "dateOfBirth": "1753",
+      "dateOfDeath": "1830",
+      "legitimacyStatus": "legitimate",
+      "notes": "Fourth daughter of Lord Constann. Married Vesmund Vespen ~1774, deepening the feudal bond between Bramblehall and its sworn house, House Vespen."
+    },
+    {
+      "_tempId": "person_raylegh",
+      "_generation": 0,
+      "firstName": "Raylegh",
+      "lastName": "Wilfrey",
+      "gender": "female",
+      "houseId": 18,
+      "dateOfBirth": "1755",
+      "dateOfDeath": "1778",
+      "legitimacyStatus": "legitimate",
+      "notes": "Fifth daughter of Lord Constann. Her night with Lennis Wilfrey — disguised as a serving wench — triggered The Scandal of 1776 that led to the founding of House Wilson. After the scandal, her father honoured the original betrothal to the Old Knight. She bore him twin boys before dying in childbirth, as she had feared. The twins' fate is unknown — whether they lived or died, and what names they bore, has been lost to time. Whether Lennis knew her identity that night, whether she planned it, and what truly happened remain among the great unanswered questions of Wilfrey history."
+    },
+
+    {
+      "_comment": "=== GENERATION 0: DAUGHTERS' HUSBANDS ===",
+      "_tempId": "person_renfric",
+      "_generation": 0,
+      "firstName": "Renfric",
+      "lastName": "Wilfrey",
+      "gender": "male",
+      "houseId": 5,
+      "dateOfBirth": "1738",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Husband of Constance, daughter of Lord Constann. Son of House Wilfrey of Breakmount. Married ~1765. The most advantageous match among the six daughters' marriages, binding Bramblehall directly to the paramount seat."
+    },
+    {
+      "_tempId": "person_dunric",
+      "_generation": 0,
+      "firstName": "Dunric",
+      "lastName": "Wilfrey",
+      "gender": "male",
+      "houseId": 22,
+      "dateOfBirth": "1742",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Husband of Floriselle, daughter of Lord Constann. Son of House Wilfrey of Fourhearth. Married ~1768."
+    },
+    {
+      "_tempId": "person_godfric",
+      "_generation": 0,
+      "firstName": "Godfric",
+      "lastName": "Hendry",
+      "gender": "male",
+      "houseId": 10,
+      "dateOfBirth": "1745",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Husband of Belisent, daughter of Lord Constann. Eldest son of Lord Hendry. Married ~1770."
+    },
+    {
+      "_tempId": "person_vesmund",
+      "_generation": 0,
+      "firstName": "Vesmund",
+      "lastName": "Vespen",
+      "gender": "male",
+      "houseId": 9,
+      "dateOfBirth": "1748",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Husband of Adelise, daughter of Lord Constann. Heir to House Vespen, sworn to Bramblehall. Married ~1774."
+    },
+
+    {
+      "_comment": "=== GENERATION 0: THE OLD KNIGHT ===",
+      "_tempId": "person_old_knight",
+      "_generation": 0,
+      "firstName": "The Old Knight",
+      "lastName": "Unknown",
+      "gender": "male",
+      "houseId": 18,
+      "dateOfBirth": "1710",
+      "dateOfDeath": "1785",
+      "legitimacyStatus": "legitimate",
+      "notes": "The wealthy, elderly knight to whom Raylegh was betrothed. His true name has been deliberately obscured by history — the Bramblehall people chose to forget it, perhaps out of pity, perhaps out of shame. He married Raylegh after the scandal as originally agreed. She bore him twin boys before dying in childbirth. He lived another seven years. What became of the boys after his death is unknown."
+    },
+
+    {
+      "_comment": "=== GENERATION 1: ALDRIC'S WIFE ===",
+      "_tempId": "person_bereline",
+      "_generation": 1,
+      "firstName": "Bereline",
+      "lastName": "Wilfrey",
+      "gender": "female",
+      "houseId": 18,
+      "dateOfBirth": "1748",
+      "dateOfDeath": "1820",
+      "legitimacyStatus": "legitimate",
+      "notes": "Wife of Lord Aldric of Bramblehall, born of House Wilfrey of Riverhead. Like her mother-in-law Florine, Bereline came from Riverhead — a political match befitting the heir of Bramblehall. The woodland marriage tradition among the broader population was well-established by this time, but the lord's heir was expected to look further afield."
+    },
+
+    {
+      "_comment": "=== GENERATION 1: CHILDREN OF ALDRIC ===",
+      "_tempId": "person_constann_ii",
+      "_generation": 1,
+      "firstName": "Constann",
+      "lastName": "Wilfrey",
+      "gender": "male",
+      "houseId": 18,
+      "dateOfBirth": "1770",
+      "dateOfDeath": "1845",
+      "legitimacyStatus": "legitimate",
+      "notes": "Third Lord of Bramblehall (~1815-1845). Constann Wilfrey II, named for his grandfather. Married Elismere of Fourhearth — maintaining the expectation that the heir married outside the woodland."
+    },
+    {
+      "_tempId": "person_beraline_gen1",
+      "_generation": 1,
+      "firstName": "Beraline",
+      "lastName": "Wilfrey",
+      "gender": "female",
+      "houseId": 18,
+      "dateOfBirth": "1773",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Daughter of Lord Aldric of Bramblehall."
+    },
+    {
+      "_tempId": "person_alward_gen1",
+      "_generation": 1,
+      "firstName": "Alward",
+      "lastName": "Wilfrey",
+      "gender": "male",
+      "houseId": 18,
+      "dateOfBirth": "1776",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Youngest son of Lord Aldric of Bramblehall."
+    },
+
+    {
+      "_comment": "=== GENERATION 2: CONSTANN II'S WIFE ===",
+      "_tempId": "person_elismere",
+      "_generation": 2,
+      "firstName": "Elismere",
+      "lastName": "Wilfrey",
+      "gender": "female",
+      "houseId": 18,
+      "dateOfBirth": "1775",
+      "dateOfDeath": "1850",
+      "legitimacyStatus": "legitimate",
+      "notes": "Wife of Constann Wilfrey II, born of House Wilfrey of Fourhearth. A Fourhearth bride — maintaining the tradition that the heir, at least, married outside the woodland. Her connection to Fourhearth strengthened the maritime trade that even insular Bramblehall relied upon."
+    },
+
+    {
+      "_comment": "=== GENERATION 2: CHILDREN OF CONSTANN II ===",
+      "_tempId": "person_aldwin",
+      "_generation": 2,
+      "firstName": "Aldwin",
+      "lastName": "Wilfrey",
+      "gender": "male",
+      "houseId": 18,
+      "dateOfBirth": "1798",
+      "dateOfDeath": "1875",
+      "legitimacyStatus": "legitimate",
+      "notes": "Fourth Lord of Bramblehall (~1845-1875). The first lord's heir to marry woodland — his choice of Mirette Wilfbark raised eyebrows but cemented the woodland branches' loyalty for a generation."
+    },
+    {
+      "_tempId": "person_haveline",
+      "_generation": 2,
+      "firstName": "Haveline",
+      "lastName": "Wilfrey",
+      "gender": "female",
+      "houseId": 18,
+      "dateOfBirth": "1801",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Daughter of Constann Wilfrey II of Bramblehall."
+    },
+    {
+      "_tempId": "person_bolewin",
+      "_generation": 2,
+      "firstName": "Bolewin",
+      "lastName": "Wilfrey",
+      "gender": "male",
+      "houseId": 18,
+      "dateOfBirth": "1805",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Son of Constann Wilfrey II of Bramblehall."
+    },
+
+    {
+      "_comment": "=== GENERATION 3: ALDWIN'S WIFE ===",
+      "_tempId": "person_mirette",
+      "_generation": 3,
+      "firstName": "Mirette",
+      "lastName": "Wilfrey",
+      "maidenName": "Wilfbark",
+      "gender": "female",
+      "houseId": 18,
+      "dateOfBirth": "1805",
+      "dateOfDeath": "1880",
+      "legitimacyStatus": "legitimate",
+      "notes": "Wife of Lord Aldwin of Bramblehall, born of House Wilfbark. The first woodland bride to marry a lord's heir at Bramblehall. While the broader Bramblehall population had long married within the woodland branches, an heir doing so was unusual and caused comment. But Aldwin was a man of the forest more than the court, and Mirette's family knew the deep wood better than anyone alive."
+    },
+
+    {
+      "_comment": "=== GENERATION 3: CHILDREN OF ALDWIN ===",
+      "_tempId": "person_miric",
+      "_generation": 3,
+      "firstName": "Miric",
+      "lastName": "Wilfrey",
+      "gender": "male",
+      "houseId": 18,
+      "dateOfBirth": "1828",
+      "dateOfDeath": "1905",
+      "legitimacyStatus": "legitimate",
+      "notes": "Fifth Lord of Bramblehall (~1875-1905). After his father Aldwin's woodland marriage, Miric married back outside — a Breakmount bride. Some saw this as a correction; others noted that Miric simply fell in love with the wrong woman for tradition's sake."
+    },
+    {
+      "_tempId": "person_aldelina",
+      "_generation": 3,
+      "firstName": "Aldelina",
+      "lastName": "Wilfrey",
+      "gender": "female",
+      "houseId": 18,
+      "dateOfBirth": "1831",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Daughter of Lord Aldwin of Bramblehall."
+    },
+
+    {
+      "_comment": "=== GENERATION 4: MIRIC'S WIFE ===",
+      "_tempId": "person_grenline",
+      "_generation": 4,
+      "firstName": "Grenline",
+      "lastName": "Wilfrey",
+      "gender": "female",
+      "houseId": 18,
+      "dateOfBirth": "1835",
+      "dateOfDeath": "1910",
+      "legitimacyStatus": "legitimate",
+      "notes": "Wife of Lord Miric of Bramblehall, born of House Wilfrey of Breakmount. After Aldwin's woodland marriage, Miric married back outside — a Breakmount bride this time."
+    },
+
+    {
+      "_comment": "=== GENERATION 4: CHILDREN OF MIRIC ===",
+      "_tempId": "person_borswin",
+      "_generation": 4,
+      "firstName": "Borswin",
+      "lastName": "Wilfrey",
+      "gender": "male",
+      "houseId": 18,
+      "dateOfBirth": "1858",
+      "dateOfDeath": "1935",
+      "legitimacyStatus": "legitimate",
+      "notes": "Sixth Lord of Bramblehall (~1905-1935). Married Hildeline of Riverhead — another bride from outside the forest, like Constann's own wife Florine three generations earlier."
+    },
+    {
+      "_tempId": "person_greneth",
+      "_generation": 4,
+      "firstName": "Greneth",
+      "lastName": "Wilfrey",
+      "gender": "female",
+      "houseId": 18,
+      "dateOfBirth": "1861",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Daughter of Lord Miric of Bramblehall."
+    },
+
+    {
+      "_comment": "=== GENERATION 5: BORSWIN'S WIFE ===",
+      "_tempId": "person_hildeline",
+      "_generation": 5,
+      "firstName": "Hildeline",
+      "lastName": "Wilfrey",
+      "gender": "female",
+      "houseId": 18,
+      "dateOfBirth": "1865",
+      "dateOfDeath": "1945",
+      "legitimacyStatus": "legitimate",
+      "notes": "Wife of Lord Borswin of Bramblehall, born of House Wilfrey of Riverhead. Another bride from outside the forest — Riverhead, like Constann's own wife Florine three generations earlier. The Riverhead connection remained strong."
+    },
+
+    {
+      "_comment": "=== GENERATION 5: CHILDREN OF BORSWIN ===",
+      "_tempId": "person_aldric_ii",
+      "_generation": 5,
+      "firstName": "Aldric",
+      "lastName": "Wilfrey",
+      "gender": "male",
+      "houseId": 18,
+      "dateOfBirth": "1888",
+      "dateOfDeath": "1965",
+      "legitimacyStatus": "legitimate",
+      "notes": "Seventh Lord of Bramblehall (~1935-1965). Aldric Wilfrey II. Only the second lord's heir in Bramblehall's history to marry woodland — and the first in three generations. Like Aldwin before him, Aldric II was a man who felt more at home among the trees than in a great hall."
+    },
+    {
+      "_tempId": "person_hildewin",
+      "_generation": 5,
+      "firstName": "Hildewin",
+      "lastName": "Wilfrey",
+      "gender": "male",
+      "houseId": 18,
+      "dateOfBirth": "1892",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Son of Lord Borswin of Bramblehall."
+    },
+
+    {
+      "_comment": "=== GENERATION 6: ALDRIC II'S WIFE ===",
+      "_tempId": "person_branelisse",
+      "_generation": 6,
+      "firstName": "Branelisse",
+      "lastName": "Wilfrey",
+      "maidenName": "Wilfbark",
+      "gender": "female",
+      "houseId": 18,
+      "dateOfBirth": "1895",
+      "dateOfDeath": "1975",
+      "legitimacyStatus": "legitimate",
+      "notes": "Wife of Aldric Wilfrey II of Bramblehall, born of House Wilfbark. Only the second lord's heir in Bramblehall's history to marry woodland — and the first in three generations."
+    },
+
+    {
+      "_comment": "=== GENERATION 6: CHILDREN OF ALDRIC II (Bors #341 already exists) ===",
+      "_tempId": "person_branwin",
+      "_generation": 6,
+      "firstName": "Branwin",
+      "lastName": "Wilfrey",
+      "gender": "male",
+      "houseId": 18,
+      "dateOfBirth": "1928",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Son of Aldric Wilfrey II of Bramblehall."
+    },
+
+    {
+      "_comment": "=== GENERATION 7: BORS'S WIFE ===",
+      "_tempId": "person_woodline",
+      "_generation": 7,
+      "firstName": "Woodline",
+      "lastName": "Wilfrey",
+      "maidenName": "Wilfbauer",
+      "gender": "female",
+      "houseId": 18,
+      "dateOfBirth": "1928",
+      "dateOfDeath": "2000",
+      "legitimacyStatus": "legitimate",
+      "notes": "Wife of Bors Wilfrey of Bramblehall, born of House Wilfbauer. The third lord to marry woodland, making it the most such marriages in living memory."
+    },
+
+    {
+      "_comment": "=== GENERATION 7: CHILDREN OF BORS (Alec #72 and Borsham #342 already exist) ===",
+      "_tempId": "person_woodina",
+      "_generation": 7,
+      "firstName": "Woodina",
+      "lastName": "Athelmere",
+      "maidenName": "Wilfrey",
+      "gender": "female",
+      "houseId": 19,
+      "dateOfBirth": "1954",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Daughter of Bors Wilfrey. Her marriage to Aldwin Athelmere transformed the relationship between Bramblehall and House Athelmere from purely feudal to familial. Mother of Elias Athelmere, current Lord Athelmere."
+    },
+
+    {
+      "_comment": "=== GENERATION 7: WOODINA'S HUSBAND ===",
+      "_tempId": "person_aldwin_athelmere",
+      "_generation": 7,
+      "firstName": "Aldwin",
+      "lastName": "Athelmere",
+      "gender": "male",
+      "houseId": 19,
+      "dateOfBirth": "1950",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Husband of Woodina Wilfrey, daughter of Bors Wilfrey of Bramblehall. Father of Elias Athelmere, current Lord Athelmere. His marriage to Woodina deepened the bond between House Athelmere and Bramblehall from purely feudal to familial."
+    },
+
+    {
+      "_comment": "=== GENERATION 8: ALEC'S WIFE ===",
+      "_tempId": "person_beraline_alec",
+      "_generation": 8,
+      "firstName": "Beraline",
+      "lastName": "Wilfrey",
+      "maidenName": "Wilfbole",
+      "gender": "female",
+      "houseId": 18,
+      "dateOfBirth": "1952",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Wife of Lord Alec of Bramblehall, born of House Wilfbole. Her marriage was hasty — Bors's sudden death meant Alec needed to secure succession quickly. Alec is the first lord to follow a woodland marriage with another woodland marriage — two in a row being unprecedented."
+    },
+
+    {
+      "_comment": "=== GENERATION 8: CHILDREN OF ALEC ===",
+      "_tempId": "person_borsric",
+      "_generation": 8,
+      "firstName": "Borsric",
+      "lastName": "Wilfrey",
+      "gender": "male",
+      "houseId": 18,
+      "dateOfBirth": "1978",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Heir to Bramblehall. Named for his grandfather Bors. Current heir to Lord Alec."
+    },
+    {
+      "_tempId": "person_beralind",
+      "_generation": 8,
+      "firstName": "Beralind",
+      "lastName": "Wilfrey",
+      "gender": "female",
+      "houseId": 18,
+      "dateOfBirth": "1981",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Daughter of Lord Alec of Bramblehall."
+    },
+    {
+      "_tempId": "person_alward_alec",
+      "_generation": 8,
+      "firstName": "Alward",
+      "lastName": "Wilfrey",
+      "gender": "male",
+      "houseId": 18,
+      "dateOfBirth": "1985",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Son of Lord Alec of Bramblehall."
+    },
+
+    {
+      "_comment": "=== GENERATION 8: BORSHAM'S WIFE ===",
+      "_tempId": "person_griseline",
+      "_generation": 8,
+      "firstName": "Griseline",
+      "lastName": "Wilfrey",
+      "maidenName": "Wilfbark",
+      "gender": "female",
+      "houseId": 18,
+      "dateOfBirth": "1955",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Wife of Borsham Wilfrey, born of House Wilfbark. Continuing the woodland marriage tradition common among the broader Bramblehall population."
+    },
+
+    {
+      "_comment": "=== GENERATION 8: CHILDREN OF BORSHAM ===",
+      "_tempId": "person_borswold",
+      "_generation": 8,
+      "firstName": "Borswold",
+      "lastName": "Wilfrey",
+      "gender": "male",
+      "houseId": 18,
+      "dateOfBirth": "1980",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Son of Borsham Wilfrey of Bramblehall."
+    },
+    {
+      "_tempId": "person_grisella",
+      "_generation": 8,
+      "firstName": "Grisella",
+      "lastName": "Wilfrey",
+      "gender": "female",
+      "houseId": 18,
+      "dateOfBirth": "1983",
+      "dateOfDeath": null,
+      "legitimacyStatus": "legitimate",
+      "notes": "Daughter of Borsham Wilfrey of Bramblehall."
+    }
+  ],
+
+  "relationships": [
+    {
+      "_comment": "Gen 0: Constann + Florine",
+      "person1Id": "person_constann",
+      "person2Id": "person_florine",
+      "relationshipType": "spouse",
+      "marriageStatus": "widowed"
+    },
+    {
+      "_comment": "Gen 0: Raylegh + The Old Knight",
+      "person1Id": "person_old_knight",
+      "person2Id": "person_raylegh",
+      "relationshipType": "spouse",
+      "marriageStatus": "widowed"
+    },
+    {
+      "_comment": "Gen 0: Constance + Renfric (Breakmount)",
+      "person1Id": "person_renfric",
+      "person2Id": "person_constance",
+      "relationshipType": "spouse",
+      "marriageStatus": "widowed"
+    },
+    {
+      "_comment": "Gen 0: Floriselle + Dunric (Fourhearth)",
+      "person1Id": "person_dunric",
+      "person2Id": "person_floriselle",
+      "relationshipType": "spouse",
+      "marriageStatus": "widowed"
+    },
+    {
+      "_comment": "Gen 0: Belisent + Godfric (Hendry)",
+      "person1Id": "person_godfric",
+      "person2Id": "person_belisent",
+      "relationshipType": "spouse",
+      "marriageStatus": "widowed"
+    },
+    {
+      "_comment": "Gen 0: Adelise + Vesmund (Vespen)",
+      "person1Id": "person_vesmund",
+      "person2Id": "person_adelise",
+      "relationshipType": "spouse",
+      "marriageStatus": "widowed"
+    },
+    {
+      "_comment": "Gen 1: Aldric + Bereline",
+      "person1Id": "person_aldric",
+      "person2Id": "person_bereline",
+      "relationshipType": "spouse",
+      "marriageStatus": "widowed"
+    },
+    {
+      "_comment": "Gen 2: Constann II + Elismere",
+      "person1Id": "person_constann_ii",
+      "person2Id": "person_elismere",
+      "relationshipType": "spouse",
+      "marriageStatus": "widowed"
+    },
+    {
+      "_comment": "Gen 3: Aldwin + Mirette (first woodland heir marriage)",
+      "person1Id": "person_aldwin",
+      "person2Id": "person_mirette",
+      "relationshipType": "spouse",
+      "marriageStatus": "widowed"
+    },
+    {
+      "_comment": "Gen 4: Miric + Grenline (Breakmount)",
+      "person1Id": "person_miric",
+      "person2Id": "person_grenline",
+      "relationshipType": "spouse",
+      "marriageStatus": "widowed"
+    },
+    {
+      "_comment": "Gen 5: Borswin + Hildeline (Riverhead)",
+      "person1Id": "person_borswin",
+      "person2Id": "person_hildeline",
+      "relationshipType": "spouse",
+      "marriageStatus": "widowed"
+    },
+    {
+      "_comment": "Gen 6: Aldric II + Branelisse (Wilfbark)",
+      "person1Id": "person_aldric_ii",
+      "person2Id": "person_branelisse",
+      "relationshipType": "spouse",
+      "marriageStatus": "widowed"
+    },
+    {
+      "_comment": "Gen 7: Bors (existing #341) + Woodline",
+      "person1Id": 341,
+      "person2Id": "person_woodline",
+      "relationshipType": "spouse",
+      "marriageStatus": "widowed"
+    },
+    {
+      "_comment": "Gen 7: Woodina + Aldwin Athelmere",
+      "person1Id": "person_aldwin_athelmere",
+      "person2Id": "person_woodina",
+      "relationshipType": "spouse",
+      "marriageStatus": "married"
+    },
+    {
+      "_comment": "Gen 8: Alec (existing #72) + Beraline (Wilfbole)",
+      "person1Id": 72,
+      "person2Id": "person_beraline_alec",
+      "relationshipType": "spouse",
+      "marriageStatus": "married"
+    },
+    {
+      "_comment": "Gen 8: Borsham (existing #342) + Griseline (Wilfbark)",
+      "person1Id": 342,
+      "person2Id": "person_griseline",
+      "relationshipType": "spouse",
+      "marriageStatus": "married"
+    },
+
+    {
+      "person1Id": "person_constann",
+      "person2Id": "person_aldric",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_florine",
+      "person2Id": "person_aldric",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_constann",
+      "person2Id": "person_constance",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_florine",
+      "person2Id": "person_constance",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_constann",
+      "person2Id": "person_floriselle",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_florine",
+      "person2Id": "person_floriselle",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_constann",
+      "person2Id": "person_borsward",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_florine",
+      "person2Id": "person_borsward",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_constann",
+      "person2Id": "person_belisent",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_florine",
+      "person2Id": "person_belisent",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_constann",
+      "person2Id": "person_adelise",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_florine",
+      "person2Id": "person_adelise",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_constann",
+      "person2Id": "person_raylegh",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_florine",
+      "person2Id": "person_raylegh",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "_comment": "Constann → parent of Giseline (existing #373)",
+      "person1Id": "person_constann",
+      "person2Id": 373,
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "_comment": "Florine → parent of Giseline (existing #373)",
+      "person1Id": "person_florine",
+      "person2Id": 373,
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+
+    {
+      "person1Id": "person_aldric",
+      "person2Id": "person_constann_ii",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_bereline",
+      "person2Id": "person_constann_ii",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_aldric",
+      "person2Id": "person_beraline_gen1",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_bereline",
+      "person2Id": "person_beraline_gen1",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_aldric",
+      "person2Id": "person_alward_gen1",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_bereline",
+      "person2Id": "person_alward_gen1",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+
+    {
+      "person1Id": "person_constann_ii",
+      "person2Id": "person_aldwin",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_elismere",
+      "person2Id": "person_aldwin",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_constann_ii",
+      "person2Id": "person_haveline",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_elismere",
+      "person2Id": "person_haveline",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_constann_ii",
+      "person2Id": "person_bolewin",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_elismere",
+      "person2Id": "person_bolewin",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+
+    {
+      "person1Id": "person_aldwin",
+      "person2Id": "person_miric",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_mirette",
+      "person2Id": "person_miric",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_aldwin",
+      "person2Id": "person_aldelina",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_mirette",
+      "person2Id": "person_aldelina",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+
+    {
+      "person1Id": "person_miric",
+      "person2Id": "person_borswin",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_grenline",
+      "person2Id": "person_borswin",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_miric",
+      "person2Id": "person_greneth",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_grenline",
+      "person2Id": "person_greneth",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+
+    {
+      "person1Id": "person_borswin",
+      "person2Id": "person_aldric_ii",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_hildeline",
+      "person2Id": "person_aldric_ii",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_borswin",
+      "person2Id": "person_hildewin",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_hildeline",
+      "person2Id": "person_hildewin",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+
+    {
+      "person1Id": "person_aldric_ii",
+      "person2Id": 341,
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_branelisse",
+      "person2Id": 341,
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_aldric_ii",
+      "person2Id": "person_branwin",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_branelisse",
+      "person2Id": "person_branwin",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+
+    {
+      "person1Id": 341,
+      "person2Id": 72,
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_woodline",
+      "person2Id": 72,
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": 341,
+      "person2Id": 342,
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_woodline",
+      "person2Id": 342,
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": 341,
+      "person2Id": "person_woodina",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_woodline",
+      "person2Id": "person_woodina",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+
+    {
+      "person1Id": "person_woodina",
+      "person2Id": 77,
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_aldwin_athelmere",
+      "person2Id": 77,
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+
+    {
+      "person1Id": 72,
+      "person2Id": "person_borsric",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_beraline_alec",
+      "person2Id": "person_borsric",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": 72,
+      "person2Id": "person_beralind",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_beraline_alec",
+      "person2Id": "person_beralind",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": 72,
+      "person2Id": "person_alward_alec",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_beraline_alec",
+      "person2Id": "person_alward_alec",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+
+    {
+      "person1Id": 342,
+      "person2Id": "person_borswold",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_griseline",
+      "person2Id": "person_borswold",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": 342,
+      "person2Id": "person_grisella",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    },
+    {
+      "person1Id": "person_griseline",
+      "person2Id": "person_grisella",
+      "relationshipType": "parent",
+      "biologicalParent": true
+    }
+  ],
+
+  "codexEntries": [],
+  "heraldry": [],
+  "dignities": []
+}

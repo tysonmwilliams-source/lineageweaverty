@@ -164,7 +164,7 @@
   },
   {
     "id": 25,
-    "name": "Fostermarshall",
+    "name": "Foster-Marshall",
     "shortName": null,
     "dignityClass": "other",
     "dignityRank": "custom",
@@ -179,7 +179,7 @@
   },
   {
     "id": 26,
-    "name": "Fosterbookman",
+    "name": "Foster-Bookman",
     "shortName": null,
     "dignityClass": "other",
     "dignityRank": "custom",
@@ -194,7 +194,7 @@
   },
   {
     "id": 27,
-    "name": "Fostersteward",
+    "name": "Foster-Steward",
     "shortName": null,
     "dignityClass": "other",
     "dignityRank": "custom",
@@ -209,7 +209,7 @@
   },
   {
     "id": 28,
-    "name": "Fosterreeve",
+    "name": "Foster-Reeve",
     "shortName": null,
     "dignityClass": "other",
     "dignityRank": "custom",
@@ -224,7 +224,7 @@
   },
   {
     "id": 29,
-    "name": "Fosterwarden",
+    "name": "Foster-Warden",
     "shortName": null,
     "dignityClass": "other",
     "dignityRank": "custom",
@@ -239,7 +239,7 @@
   },
   {
     "id": 30,
-    "name": "Fostertallyman",
+    "name": "Foster-Tallyman",
     "shortName": null,
     "dignityClass": "other",
     "dignityRank": "custom",
@@ -247,14 +247,14 @@
     "currentHolderId": null,
     "currentHouse": null,
     "currentHouseId": null,
-    "swornTo": "Fosterreeve",
+    "swornTo": "Foster-Reeve",
     "swornToId": 28,
     "successionType": "male-primogeniture",
     "notes": "The Fostertallyman serves as the Fosterreeve's primary assistant in all matters of accounting - a position demanding meticulous attention to detail and absolute trustworthiness. Every transaction flowing through the fostering system passes through the Fostertallyman's ledgers.\nDaily duties include recording expenditures, reconciling accounts, tracking inventory consumption, and maintaining the endless paperwork that financial management requires. The Fostertallyman ensures receipts are collected, payments documented, and discrepancies investigated before they compound.\nBeyond mere record-keeping, an experienced Fostertallyman identifies patterns - noticing when equipment costs rise unusually, when certain suppliers offer poor value, or when consumption suggests waste or pilferage. These observations, reported to the Fosterreeve, enable proactive management.\nThe role serves as traditional training ground for those aspiring to reeve positions elsewhere. Many estates have welcomed Fostertallyman alumni into senior financial roles, their Wilfrey training considered mark of competence."
   },
   {
     "id": 31,
-    "name": "Fosterhirdward",
+    "name": "Foster-Hirdward",
     "shortName": null,
     "dignityClass": "other",
     "dignityRank": "custom",
@@ -262,14 +262,14 @@
     "currentHolderId": 70,
     "currentHouse": "House Wilfrey of Breakmount",
     "currentHouseId": 5,
-    "swornTo": "Fostersteward",
+    "swornTo": "Foster-Steward",
     "swornToId": 27,
     "successionType": "male-primogeniture",
     "notes": "The Fosterhirdward manages the complex web of personal servants accompanying fosterlings from their home households - a role requiring equal measures of authority and tact. These attendants owe primary loyalty to their young masters and home houses, yet must operate within the fostering system's rules.\nCoordination challenges abound. Personal servants may clash with fostering staff over proper procedures. Attendants from rival houses might carry family grudges into their daily interactions. Some fosterlings arrive with extensive retinues while others bring minimal staff, creating awkward disparities. The Fosterhirdward navigates all of this.\nPractical responsibilities include housing assignments for attendants, establishing clear boundaries of authority, mediating disputes, and ensuring personal servants support rather than undermine the fostering system's educational goals. An attendant who helps their young lord evade training or smuggles forbidden items answers to the Fosterhirdward.\nThe role also monitors attendant welfare - these servants, often young themselves, are far from home serving masters who are themselves still children. A thoughtful Fosterhirdward recognises their vulnerability."
   },
   {
     "id": 32,
-    "name": "Fosterhorseward",
+    "name": "Foster-Horseward",
     "shortName": null,
     "dignityClass": "other",
     "dignityRank": "custom",
@@ -277,14 +277,14 @@
     "currentHolderId": null,
     "currentHouse": null,
     "currentHouseId": null,
-    "swornTo": "Fostermarshall",
+    "swornTo": "Foster-Marshall",
     "swornToId": 25,
     "successionType": "male-primogeniture",
     "notes": "The Fosterhorseward bears responsibility for transforming noble children into confident riders - a fundamental skill expected of any wellborn adult. This encompasses basic horsemanship for newcomers, advanced riding for the competent, and mounted combat training for those approaching the end of their fostering.\nBeyond instruction, the Fosterhorseward manages the horses dedicated to fostering use. Training mounts require particular temperaments - patient enough for beginners yet responsive enough to teach proper technique. The Fosterhorseward selects, maintains, and eventually retires these animals, always ensuring appropriate mounts exist for fosterlings of varying ages and abilities.\nCoordination with Breakmount's main stables is essential but carefully boundaried. Fostering horses occupy dedicated stalls, and while farriers and veterinary care may be shared resources, the Fosterhorseward maintains independent authority over training schedules and horse assignments. Fosterlings who bring personal mounts from home present additional complexity - these animals must be evaluated, stabled appropriately, and integrated into training without disrupting established routines.\nThe Fosterhorseward also teaches horse care directly. Noble youth must understand grooming, feeding, tack maintenance, and the signs of illness or injury. A lord who cannot assess their own mount's condition is a lord poorly prepared for campaign or crisis."
   },
   {
     "id": 33,
-    "name": "Fosteredgemaster",
+    "name": "Foster-Edgemaster",
     "shortName": null,
     "dignityClass": "other",
     "dignityRank": "custom",
@@ -292,7 +292,7 @@
     "currentHolderId": null,
     "currentHouse": null,
     "currentHouseId": null,
-    "swornTo": "Fostermarshall",
+    "swornTo": "Foster-Marshall",
     "swornToId": 25,
     "successionType": "male-primogeniture",
     "notes": "Oversees: Blade instruction, armoury management, equipment supply and maintenance\nThe Fosteredgemaster holds dual responsibility for weapons instruction and the physical tools of martial training - a combination recognising that excellence in blade work requires excellence in blade care. One cannot teach the sword without understanding the sword.\nInstructional duties focus on edged weapons of all varieties. Longsword forms the foundation, but fosterlings receive exposure to shortswords, daggers, and polearms as appropriate to their age and aptitude. The Fosteredgemaster assesses each student's natural inclinations - some favour power, others speed, others precision - and shapes training accordingly while ensuring all meet baseline competency.\nArmoury management represents equally vital responsibility. The Fosteredgemaster maintains the fostering system's dedicated store of training weapons, practice armour, and protective equipment. This includes wooden wasters for beginners, blunted steel for intermediate students, and properly weighted sparring weapons for advanced training. Every item requires regular inspection - a cracked waster or loose rivet invites injury.\nSupply duties extend to coordinating with Breakmount's smiths and external suppliers. The Fosteredgemaster specifies requirements, evaluates quality, negotiates costs with the Fosterreeve's approval, and maintains inventory records. When fosterlings outgrow equipment or training demands expand, the Fosteredgemaster anticipates needs and requisitions accordingly.\nA well-run armoury reflects its master. The Fosteredgemaster who tolerates rust, disorder, or ill-maintained equipment fails not only in duty but in the example set for students. Weapon care is weapon respect, and weapon respect underpins martial discipline."
@@ -354,6 +354,36 @@
     "currentHouseId": 65,
     "swornTo": "Drithen of House Wilfrey of Riverhead",
     "swornToId": 21,
+    "successionType": "male-primogeniture",
+    "notes": null
+  },
+  {
+    "id": 38,
+    "name": "Drith of House Shadash",
+    "shortName": null,
+    "dignityClass": "driht",
+    "dignityRank": "drith",
+    "currentHolder": null,
+    "currentHolderId": null,
+    "currentHouse": "House Shadash",
+    "currentHouseId": 96,
+    "swornTo": "Drithen of House WIlfrey of Fourhearth",
+    "swornToId": 10,
+    "successionType": "male-primogeniture",
+    "notes": null
+  },
+  {
+    "id": 39,
+    "name": "Drith of The Sefs",
+    "shortName": null,
+    "dignityClass": "driht",
+    "dignityRank": "drith",
+    "currentHolder": null,
+    "currentHolderId": null,
+    "currentHouse": "House Shadash",
+    "currentHouseId": 96,
+    "swornTo": "Drith of House Shadash",
+    "swornToId": 38,
     "successionType": "male-primogeniture",
     "notes": null
   }
