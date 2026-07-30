@@ -102,10 +102,23 @@ first answering something — that is the honest state of it.
 
 ### Blocked on the owner (README Part Two)
 
-- **A1 — still urgent, still owner-only:** revoke Gemini key
-  `AIzaSyDhw4eI0…NjlU` in Google Cloud Console → Credentials. It is in commits
-  `267d0e4` and `e4545d4`, both on `origin/main`. `.env.local` was rotated, which
-  does **not** disable the old key. Then A2 (history rewrite or not).
+- **A1 — DONE (2026-07-30), and A2 with it.** The owner deleted the leaked key
+  (plus two others) in Google AI Studio and issued a replacement, now in
+  `.env.local`. A2 was answered as *revoke and leave history*: the string is
+  redacted from the audit report but remains in commits `267d0e4`, `e4545d4`,
+  `7be05a0` and `68afb6a` on `origin/main`, permanently and harmlessly.
+  **Do not propose a history rewrite** — that was decided against.
+
+  Two things from doing it that are worth keeping: the key was created in **AI
+  Studio**, not Cloud Console, so that is where such a key is managed; and the
+  **Firebase browser key has the identical `AIzaSy` format** and lives in the
+  same Cloud Console credentials list, so any future "delete the API key"
+  instruction has to name *which*. Deleting the Firebase one breaks auth and
+  Firestore.
+
+  Also: the replacement key has an **`AQ.` prefix and is 53 characters**, not
+  the old `AIzaSy`/39. If anything ever validates a Gemini key by prefix or
+  length, it will reject currently-issued keys.
 - **The whole B group is decided and implemented** — B1 manuscript, B2 Source
   Serif 4, B3 Tailwind removed, B4 keep all seven themes. See the DECIDED table at
   the top of README.

@@ -2,9 +2,15 @@
 
 > **Status:** Part One is complete and merged to `main` (Phases 0–5, plus a
 > Phase 6 follow-up pass for bugs found while implementing them). Part Two is
-> untouched and awaits the owner — see **Section G** for the items that stopped at
-> a decision during implementation, and [`HANDOFF.md`](HANDOFF.md) for current
-> baselines and every place this document turned out to be wrong.
+> **in progress** — see the **DECIDED** table below for what has been answered
+> and shipped, and [`HANDOFF.md`](HANDOFF.md) for current baselines and every
+> place this document turned out to be wrong.
+>
+> **A1 is done (2026-07-30).** The leaked Gemini key was deleted in Google AI
+> Studio along with two others, a replacement was issued and stored in
+> `.env.local`. The key string is redacted from this report, but it remains in
+> git history by decision **A2** — so treat it as public and permanently dead,
+> never as a secret that was recovered.
 
 > **Correction (Phase 5):** three Part One items were described inaccurately.
 > **#66** — `downloadHeraldry()` does not exist and never did; there was no
@@ -365,9 +371,13 @@ Grouped by the kind of decision. My recommendation is marked in each, but these 
 
 ## A. Urgent, action required from you
 
-**A1. Revoke the leaked Gemini key.** `AIzaSyDhw4eI0_nBXKU9C7s23vdukrUMx28NjlU` is in `267d0e4` and `e4545d4`, both on `origin/main`. You rotated locally; that doesn't disable it. Google Cloud Console → APIs & Services → Credentials → delete it. I won't touch credentials.
+**A1. ~~Revoke the leaked Gemini key.~~ — DONE (2026-07-30).** `AIzaSyDhw4eI0…[redacted]` was deleted in Google AI Studio (https://aistudio.google.com/apikey), along with two other keys, and a replacement was issued and stored in `.env.local`. Verified locally: the configured key is no longer the leaked one and the Firebase key is untouched.
 
-**A2. Then decide about the history itself.** (a) Revoke and leave history — the string stays in GitHub forever, fine if the key is genuinely dead. (b) `git filter-repo` + force-push — actually removes it, rewrites every SHA, breaks the `audit/comprehensive-fixes` branch and any clone. (c) Recreate the repo from fresh history. **Recommend (b)** if the repo is public and (a) if it's private — I need to know which.
+*Two corrections to this entry as originally written.* It said the key was in **two** commits; it is in **four** — `267d0e4` and `e4545d4` (source), plus `7be05a0` and `68afb6a`, because this audit report itself quoted the key in full. It also sent the owner to Google Cloud Console; for a key created through AI Studio, **AI Studio is the place**, and Cloud Console → APIs & Services → Credentials is only the authoritative second view. Worth knowing for next time: the Firebase browser key has the identical `AIzaSy` format and sits in the same Credentials list, so "delete the Google API key" is an ambiguous instruction and deleting the wrong one breaks auth and Firestore.
+
+*Also worth recording:* the replacement key has an **`AQ.` prefix, not `AIzaSy`** — Google's newer AI Studio key format, 53 characters. Anything validating a Gemini key by the `AIzaSy` prefix or a 39-character length will reject a currently-issued key.
+
+**A2. ~~Then decide about the history itself.~~ — DECIDED: revoke and leave history.** The key string stays in GitHub permanently, which is acceptable now that A1 has actually killed it. The report is redacted so a secret scanner has nothing live to find in the working tree, but **history is unchanged by choice** — anyone reading old commits will still see the string, and it is dead.
 
 ## B. Aesthetic direction — the actual answer to "I don't like how it looks"
 
@@ -634,23 +644,27 @@ test it against a copy of the real world data, and only then touch a renderer.
 
 ## What I'd suggest
 
-*Updated after Phases 0–6. Part One is done and merged to `main`; everything
-below is Part Two.*
+*Rewritten after the C3/C4/G7/F4 batch. Part One is done and merged; A1, A2, all
+of B, C1, C4, F2, F3, F6, G4–G7 are answered. What follows is what is actually
+left, not what was left in July.*
 
-**Today, and only you can do it: revoke the Gemini key (A1).** Rotating
-`.env.local` did not disable the old one, and it is in two commits on
-`origin/main`. Then decide A2 (rewrite that history or accept it).
+**Nothing is now blocked on an urgent owner action.** A1 is done — the leaked key
+is dead — and A2 settled history as-is. That was the only genuinely time-sensitive
+item in this report, and it is closed.
 
-**Then answer B1, B2, B3.** Unchanged as the top priority, and now more so:
-Phases 3–6 repaired the foundation specifically so these can be judged on their
-merits rather than through broken contrast and invisible borders. Three items
-(G1, G2, G3) are parked directly on B1 and take under a day once it's answered.
+**The next real decision is D1: what the succession algorithm should model.** It
+is the largest correctness item outstanding and it is the whole point of the
+Dignities subsystem. The current implementation matches no real system — a
+correct depth-first primogeniture walk is overwritten by a generational sort, so
+a holder's grandson via his eldest son ranks behind his second son, and
+representation through a predeceased heir is broken outright. It carries a cost
+only the owner can accept: **fixing it reorders succession lines that may already
+have prose written around them.** That cost is why it has sat unanswered, and it
+does not get cheaper by waiting.
 
-**One cheap high-leverage answer: F3.** Downgrading `no-unused-vars` to `warn`
-turns lint into a real blocking CI gate the same afternoon. Every high-signal rule
-is already clean (`no-undef` 0, `no-dupe-keys` 0, `rules-of-hooks` 0) — the only
-thing standing between this repo and an enforced quality gate is 411 unused
-variables and a severity setting.
+**Three items are unblocked and cheap now that B1 is answered.** G1 (the
+remaining emoji), G2 (the duplicated `RankPips`) and G3 (the unimported shared
+CSS) were each parked on the aesthetic direction. Together they are under a day.
 
 **Then E1–E9, at your pace.** These are your world, not the code's, and nothing
 should touch them without you. The integrity check now *reports* the structural
