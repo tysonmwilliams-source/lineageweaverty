@@ -34,20 +34,23 @@ gated on a green light for timing. See "What is left" below.
 | `f51c6cc` | 5 | Wiring up what was already built |
 | `0d829ed` | — | Handoff + audit corrections |
 | `15bc158` | 6 | Invisible icons, dataset scoping, emoji sweep |
+| `e14bfa7` | — | **Decisions F3 + B2**: lint is a blocking gate; Source Serif 4 |
+| `f51d5c7` | — | **Decision B3**: Tailwind removed |
+| `44ee951` | — | **Decision B1**: manuscript direction |
 
 **Current baselines** (verify these still hold before and after your work):
 
 ```bash
 npm run build      # passes, ~10s
-npx vitest run     # 425 tests pass, 9 files, exits 0
-npx eslint .       # 474 errors, 36 warnings
+npx vitest run     # 424 tests pass, 9 files, exits 0
+npx eslint .       # 0 errors, 348 warnings — exits 0, and CI blocks on it
 ```
 
-The lint error count is the yardstick: it should go **down**, never up. Same for
-tests. Lint does **not** pass and is not a gate — 411 of the 474 errors are
-`no-unused-vars`, which is set to `error` (decision F3). CI runs lint with
-`continue-on-error` for exactly that reason, so a non-zero lint exit is expected;
-compare the count, don't chase zero.
+Lint is now a **blocking gate** (decision F3). `no-undef`, `no-dupe-keys` and
+`rules-of-hooks` are hard errors and all sit at zero — a new violation fails the
+build. `no-unused-vars` (249) and the React Compiler rules (33) are warnings; the
+warning count is the yardstick and should go down, never up. See Part Two G7 on
+the React Compiler set — those are not the same kind of debt as an unused import.
 
 ---
 
@@ -62,11 +65,10 @@ first answering something — that is the honest state of it.
   `AIzaSyDhw4eI0…NjlU` in Google Cloud Console → Credentials. It is in commits
   `267d0e4` and `e4545d4`, both on `origin/main`. `.env.local` was rotated, which
   does **not** disable the old key. Then A2 (history rewrite or not).
-- **B1 / B2 / B3 / B4** — aesthetic direction, base font size, Tailwind
-  keep-or-remove, seven-themes-or-two. **Still the top priority after A1.** Phases
-  3–6 repaired the foundation specifically so these can be judged on their merits
-  rather than through broken contrast and invisible borders. G1–G3 below are
-  parked directly on B1 and take under a day once it's answered.
+- **B4** — seven themes or two. B1, B2 and B3 are **decided and implemented**;
+  see the DECIDED table at the top of README. B4 is the only one of the B group
+  still open, and the automated contrast gate that made it cheap to keep seven
+  already exists.
 - **C1–C6** — mobile scope, Gemini key architecture, quartering/impalement,
   planner routing, household roles, multiple spouses.
 - **D1–D4** — succession semantics. D4 (the broken Crown) is now *reported* by

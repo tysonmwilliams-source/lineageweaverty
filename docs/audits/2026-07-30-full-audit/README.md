@@ -300,6 +300,43 @@ Two structural refactors are also unambiguously right, but they're big enough th
 
 ---
 
+# DECIDED — answered by the owner, implemented
+
+| # | Decision | Chosen | Commit |
+|---|---|---|---|
+| **B1** | Aesthetic direction | **Full manuscript** — everywhere, not split | `44ee951` |
+| **B2** | Base font size | **Swap the body face**, sizes unchanged → Source Serif 4 | `e14bfa7` |
+| **B3** | Tailwind | **Remove it** | `f51d5c7` |
+| **F3/G6** | Lint severity | **Downgrade `no-unused-vars` to warn**, make lint a blocking gate | `e14bfa7` |
+
+Notes worth carrying forward:
+
+- **B1 was chosen as "full manuscript", against the recommendation of a split.**
+  The ornament layer (`src/styles/manuscript.css`) is therefore built to be
+  *opt-in per surface* rather than applied globally. That is how the stated risk
+  is contained: the tree, Manage Data and the dignity tables are dense data
+  surfaces where ornament fights scanning, so each opts in on its own merits. The
+  token-level changes (radius, warm shadows) do apply globally, because those
+  improve every surface.
+- **B1 + B2 turned out to reinforce each other.** A taller-x-height body face
+  directly mitigates the density risk of committing the whole app to manuscript
+  styling — the legibility gain buys back what the ornament costs.
+- **B3 removed three hardcoded `theme` objects as a side effect**, which fixed a
+  bug nobody had catalogued: those objects branched only on `isDarkTheme`, so
+  EpithetsSection, PersonalArmsSection and DataHealthDashboard rendered
+  royal-parchment's browns in the five themes that are neither plainly dark nor
+  plainly light.
+- **F3 exposed a second class of lint debt.** `eslint-plugin-react-hooks` v7
+  ships five React Compiler rules as errors and there are 33 violations. They
+  were downgraded to warnings to get the gate green, but they are *not* the same
+  kind of debt as an unused import — `static-components` (4, all in
+  `CodexBrowse.jsx`) is a real bug class, and `set-state-in-effect` (14) is the
+  cascading-render pattern. See G7.
+
+**Still to decide: B4, C1–C6, D1–D4, E1–E9, F1–F2, F4–F8, G1–G5, G7.**
+
+---
+
 # PART TWO — What needs your input
 
 Grouped by the kind of decision. My recommendation is marked in each, but these are genuinely yours.
@@ -314,20 +351,20 @@ Grouped by the kind of decision. My recommendation is marked in each, but these 
 
 These four are the ones I can't decide for you, and they're the ones that matter most for your stated complaint.
 
-**B1. What is this app trying to look like?**
+**B1. ~~What is this app trying to look like?~~ — DECIDED: full manuscript (`44ee951`).**
 Right now it reads as *desaturated brown admin panel*, not *illuminated manuscript*. Every surface is a 6px rounded rectangle; shadows are pure black on warm brown (reads dirty grey, not candlelit); the accent gold appears 456 times as text colour and never as structure; the only genuinely thematic assets in the entire app are one fleur-de-lis and two corner flourishes on the Home hero.
 - **(a) Lean into the manuscript** — warm-tinted shadows, a visible rule system in the accent hue, drop caps on Codex entries and chapter openers, ornamental section breaks, near-zero radius so surfaces read as trimmed vellum rather than iOS cards.
 - **(b) Lean into the tool** — crisp high-contrast information design, serif for headings and prose only, clean sans for all chrome and data. Faster, more legible, less distinctive.
 - **(c) Split it** — chrome is (b), content surfaces (Codex reading view, Writing Studio, Home, heraldry) are (a).
 **Recommend (c).** The data surfaces are where legibility is failing and the content surfaces are where the atmosphere earns its keep. But this is your product's voice.
 
-**B2. Base font size.** `--text-base: 14px`, `--text-xs: 11px`, and 73% of all type usage is at 11–13px in a low-x-height serif.
+**B2. ~~Base font size.~~ — DECIDED: swap the body face to Source Serif 4, sizes unchanged (`e14bfa7`).** `--text-base: 14px`, `--text-xs: 11px`, and 73% of all type usage is at 11–13px in a low-x-height serif.
 - **(a)** Bump the scale one step (base 16 / sm 14 / xs 12). Most legible, needs re-tuning of dense tables and tree labels.
 - **(b)** Keep the sizes, switch the body face to something with a taller x-height at small sizes (Source Serif 4, Literata). Every layout intact. **Cheapest real win.**
 - **(c)** Split the scale — 14px for data surfaces, 16–17px reading scale for Codex and Writing Studio.
 **Recommend (b) now, (c) later** if you go with B1(c).
 
-**B3. Tailwind: commit or remove.** The app is 94% hand-written BEM and 6% Tailwind (7 files). `tailwind.config.js` defines 4 custom colours that Tailwind 4 never reads. Worse, Tailwind's theme variables *name-collide* with yours — `className="text-sm"` in `FamilyTree.jsx` renders at your 13px with a line-height computed from Tailwind's 14px assumption. Meanwhile the most-repeated stray hex values in your custom CSS *are* Tailwind's default palette, pasted by hand.
+**B3. ~~Tailwind: commit or remove.~~ — DECIDED: removed (`f51d5c7`).** The app is 94% hand-written BEM and 6% Tailwind (7 files). `tailwind.config.js` defines 4 custom colours that Tailwind 4 never reads. Worse, Tailwind's theme variables *name-collide* with yours — `className="text-sm"` in `FamilyTree.jsx` renders at your 13px with a line-height computed from Tailwind's 14px assumption. Meanwhile the most-repeated stray hex values in your custom CSS *are* Tailwind's default palette, pasted by hand.
 - **(a) Remove it** — rewrite ~513 utility usages in 7 files, drop the dep. **Recommend this**; it's the low-risk default and ends the collision.
 - **(b) Go Tailwind-first** — one system, far less CSS, but a 6–12 month background project against 46,738 lines, and it fights the bespoke ornament.
 - **(c) Keep both formally** — namespace your tokens `--lw-*`, Tailwind for layout only. Honest but permanently two mental models.
@@ -404,7 +441,7 @@ I won't touch your creative content. These need a call:
 
 **F2. `old-build-archive/` and `archived-components/`.** Only 0.44 MB but they pollute lint (18 problems) and every repo-wide grep. Git history already has all of it — but "I might want to look at the old layout code" is a legitimate reason to keep them.
 
-**F3. `no-unused-vars` is 446 of the 521 lint errors.** Set to `error`, so lint can never pass and functions as noise rather than a gate. Downgrade to `warn` and error only on the high-signal rules (green gate today), or bulk-fix first?
+**F3. ~~`no-unused-vars` severity.~~ — DECIDED: downgraded to warn; lint is now a blocking CI gate (`e14bfa7`).** Set to `error`, so lint can never pass and functions as noise rather than a gate. Downgrade to `warn` and error only on the high-signal rules (green gate today), or bulk-fix first?
 
 **F4. TypeScript.** `@types/react` is installed against zero TS files. The two highest-value bugs in this audit (`setFragmentNavExpanded` undefined, a duplicate JSON key) are exactly what a type checker catches for free. **Recommend: `// @ts-check` + JSDoc on `src/services/` only** — real safety, zero build change, no migration.
 
@@ -424,7 +461,9 @@ Everything in Part One is now implemented. These are the items that surfaced
 *during* implementation and stopped at a decision rather than a technical
 blocker. Each one is small; none can be resolved without an answer.
 
-**G1. The remaining 44 emoji.** 55 more were converted to `<Icon>` in Phase 6, on
+**G1. The remaining 44 emoji.** *(B1 is now decided — full manuscript — so the
+`icon:` data-map group below can proceed whenever you want it; the other three
+groups still stand on their own reasons.)* 55 more were converted to `<Icon>` in Phase 6, on
 top of the 30 in Phase 4. What's left is left for a reason, and each group needs a
 different kind of answer:
 
@@ -474,14 +513,29 @@ whether the tab title stays plain "Lineageweaver".
 `origin`.** Superseded by this audit's work. Deleting a remote branch is not
 reversible from here, so it needs an explicit yes.
 
-**G6. Lint is still not a gate — this is F3, and it is now the single biggest
-obstacle to CI being useful.** 411 of the 474 remaining errors are
-`no-unused-vars`, set to `error`, so `npm run lint` can never pass and CI runs it
-with `continue-on-error`. Every genuinely high-signal rule is already clean:
-`no-undef` 0, `no-dupe-keys` 0, `rules-of-hooks` 0. Answering F3 — downgrade
-`no-unused-vars` to `warn` and error only on the high-signal rules — would make
-lint a real blocking gate the same afternoon, at the cost of tolerating the unused
--variable debt. **Recommend that**, and it's the highest-leverage of these six.
+**G6. ~~Lint as a gate.~~ — DONE (`e14bfa7`).** Answered as decision F3.
+Lint exits 0 and CI blocks on it. Every high-signal rule is a hard error
+(`no-undef`, `no-dupe-keys`, `rules-of-hooks`, all at zero); `no-unused-vars` and the
+React Compiler rules are warnings. See G7 for what this exposed.
+
+**G7. 33 React Compiler lint violations, exposed by answering F3.**
+`eslint-plugin-react-hooks` v7 ships five React Compiler rules as errors. They
+were downgraded to warnings so the lint gate could go green, and they are
+flagged in `eslint.config.js` as deserving a dedicated pass. Do not confuse them
+with the unused-variable debt:
+
+- `react-hooks/static-components` (4, all in `CodexBrowse.jsx`) — a component
+  created during render resets its state on every parent render. Real bug class.
+- `react-hooks/set-state-in-effect` (14) — the cascading-render pattern.
+- `react-hooks/preserve-manual-memoization` (10) — a `useMemo`/`useCallback` the
+  compiler had to skip, so the memoization is not doing what it looks like.
+- `react-hooks/refs` (3, `TipTapEditor.jsx`) — refs read during render.
+- `react-hooks/immutability` (2, `CodexEntryForm.jsx`).
+
+Fixing them is mechanical but touches render logic in files with no test
+coverage, which is why it is a decision about appetite rather than something to
+fold into a cleanup pass. **Recommend: take `static-components` now** (4 sites, real
+bug, contained to one file) and schedule the rest.
 
 ---
 
