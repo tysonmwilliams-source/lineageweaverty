@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <!--
+    Lineageweaver mark.
+
+    The fleur-de-lis path is taken verbatim from the FleurDeLis component in
+    src/components/home/HeroSection.jsx — the app's own artwork rather than
+    anything invented for the favicon. Replaces Vite's default /vite.svg.
+
+    A favicon is rendered outside the page, so it cannot read CSS custom
+    properties: the gold here is royal-parchment's --accent-primary (#c9a227)
+    hardcoded, and the ground is that theme's --bg-primary (#1a1410). The
+    prefers-color-scheme block below swaps to the light-manuscript pairing so the
+    mark stays legible in a light browser chrome.
+
+    Keep in step with HeroSection.jsx if the mark ever changes.
+  -->
+  <style>
+    .ground { fill: #1a1410; }
+    .mark { fill: #c9a227; }
+
+    @media (prefers-color-scheme: light) {
+      .ground { fill: #f9f6f0; }
+      .mark { fill: #8b6b3d; }
+    }
+  </style>
+
+  <rect class="ground" width="24" height="24" rx="2" />
+  <!--
+    The source path has ~2 units of slack at the top and bottom of its 24-unit
+    viewBox. Scaling to 1.08 about the centre lets the mark fill the tile, which
+    is what makes it legible at 16px — the only size that really matters.
+  -->
+  <g transform="translate(12 12) scale(1.08) translate(-12 -12)">
+    <path class="mark" d="M12 2C12 2 9.5 5 9.5 7.5C9.5 9.5 10.5 10.5 10.5 10.5C10.5 10.5 8 9.5 6 11C4 12.5 4.5 15 4.5 15C4.5 15 6 14 7.5 14.5C9 15 9 16.5 9 16.5L9 20L7 22L12 20L17 22L15 20L15 16.5C15 16.5 15 15 16.5 14.5C18 14 19.5 15 19.5 15C19.5 15 20 12.5 18 11C16 9.5 13.5 10.5 13.5 10.5C13.5 10.5 14.5 9.5 14.5 7.5C14.5 5 12 2 12 2Z" />
+  </g>
+</svg>

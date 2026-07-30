@@ -19,9 +19,7 @@ export default defineConfig({
     // Exclude patterns
     exclude: [
       'node_modules',
-      'dist',
-      'archived-components',
-      'old-build-archive'
+      'dist'
     ],
 
     // Coverage configuration

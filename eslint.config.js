@@ -5,12 +5,12 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  // Archived/unreferenced trees are not part of the app. Linting them added 18
-  // problems to the count with nothing actionable behind them.
+  // extras/ is 29 MB of unreferenced assets — not app code, not linted.
+  // (old-build-archive and archived-components were deleted outright in the
+  // audit cleanup; the tag archive/pre-audit-old-build points at the last commit
+  // that contained them.)
   globalIgnores([
     'dist',
-    'old-build-archive',
-    'archived-components',
     'extras',
   ]),
   {

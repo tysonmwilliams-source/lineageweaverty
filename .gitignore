@@ -30,3 +30,20 @@ dist-ssr
 *.sln
 *.sw?
 extras/TraceableHeraldicArt-Vol12.pdf
+
+# Machine-generated world snapshot (decision F6).
+#
+# Written by the dev-only POST /__claude-context endpoint in vite.config.js, so
+# it regenerates on demand from the running app. Two reasons it is not tracked:
+#
+#   1. Churn — codex-entries.json alone is ~0.5 MB and every export produced a
+#      fresh blob. It was the second-largest object in this repo's history.
+#   2. It is the entire world (403 codex entries, 320 people, 52 houses), and
+#      this repository is public.
+#
+# Consequence to be aware of: a fresh clone has no snapshot for a Claude session
+# until you run an export. That is the intended trade.
+#
+# Note this does NOT remove the previously-committed copies from git history —
+# they remain in past commits. See audit decision A2.
+docs/claude-context/
