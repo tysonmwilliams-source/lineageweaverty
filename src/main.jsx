@@ -19,6 +19,10 @@ import './styles/animations.css'
 // the dense data screens free of ornament.
 import './styles/manuscript.css'
 
+// Responsive foundation: the canonical breakpoint scale (documented) and the
+// touch-target floor (decision C1).
+import './styles/responsive.css'
+
 import App from './App.jsx'
 
 createRoot(document.getElementById('root')).render(

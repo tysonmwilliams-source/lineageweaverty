@@ -1,0 +1,100 @@
+/**
+ * responsive.css — the responsive foundation (decision C1: full responsive).
+ *
+ * Loaded globally from main.jsx.
+ *
+ * ── The canonical breakpoint scale ────────────────────────────────────────────
+ *
+ * The app had accumulated seven distinct breakpoints (768 ×54, 480 ×41, 640 ×25,
+ * 1024 ×8, 1200 ×8, 900 ×3, 1000 ×1). The 900 and 1000 outliers — four uses
+ * between them — were snapped to 1024. These five are canonical; use nothing
+ * else:
+ *
+ *     480px   phone           single column, drawers, no side panels
+ *     640px   phablet         two-up grids collapse to one
+ *     768px   large phone     the chapter/entity drawer threshold
+ *     1024px  tablet          two columns, panels may dock
+ *     1200px  desktop         full three-column layouts
+ *
+ * 640px is included because it has 25 existing uses and they are load-bearing
+ * grid-collapse points. Folding them into 480 or 768 would be a visual change
+ * across 25 stylesheets with no way to verify it short of opening every screen —
+ * not worth it to make a list shorter. Five documented breakpoints beats four
+ * documented and one undocumented.
+ *
+ * They are NOT custom properties, and that is a CSS limitation rather than an
+ * oversight: a media query cannot read a custom property — media queries are
+ * evaluated before custom properties resolve. So the numbers must be literals,
+ * and the only way to keep them consistent is to write them down. This is where
+ * they are written down.
+ *
+ * ── Touch targets ────────────────────────────────────────────────────────────
+ *
+ * Only 15 declarations in ~115 stylesheets met the 44px minimum (WCAG 2.5.5).
+ * Rather than chase every one, the floor is set here under `pointer: coarse`, so
+ * it applies on touch devices and leaves precise mouse targets alone. Keying on
+ * pointer type rather than viewport width is the important part — a small window
+ * on a desktop does not need 44px targets, and a large tablet does.
+ */
+
+@media (pointer: coarse) {
+  /* The floor, not the design. A component wanting bigger targets should still
+     say so; this stops anything being unusably small on a touchscreen. */
+  button,
+  [role='button'],
+  a[href],
+  input[type='checkbox'],
+  input[type='radio'],
+  select,
+  summary {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Inline links in prose are exempt — a 44px box around a word inside a
+     sentence breaks the line box and looks broken. WCAG 2.5.5 exempts inline
+     text links for exactly this reason. */
+  p a[href],
+  li a[href],
+  .lw-reading a[href],
+  .wiki-link {
+    min-height: 0;
+    min-width: 0;
+  }
+
+  /* Text inputs need the height but not the square. */
+  input[type='text'],
+  input[type='number'],
+  input[type='search'],
+  input[type='email'],
+  input[type='password'],
+  textarea {
+    min-height: 44px;
+    min-width: 0;
+  }
+
+  /* Give tightly-packed control clusters breathing room so neighbouring 44px
+     targets don't collide. */
+  .element-card-controls,
+  .chapter-sidebar__item-controls,
+  .health__issue-actions {
+    gap: var(--space-2, 0.5rem);
+  }
+}
+
+/* ── Never let a layout scroll sideways ──────────────────────────────────────
+   Horizontal overflow is the most common way a "responsive" page still feels
+   broken on a phone. Wide content — tables, the D3 canvas, code — should scroll
+   inside its own container, not push the document. */
+@media (max-width: 768px) {
+  html,
+  body {
+    overflow-x: hidden;
+  }
+
+  /* Opt-in for anything genuinely too wide to reflow. */
+  .lw-scroll-x {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}

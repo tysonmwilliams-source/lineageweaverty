@@ -212,7 +212,7 @@
 }
 
 /* Smaller screens: even narrower */
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .search-bar {
     width: 160px;
     min-width: 120px;

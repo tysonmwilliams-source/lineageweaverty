@@ -245,6 +245,14 @@ export default function WritingEditor() {
   // Planner modal state
   const [showPlannerModal, setShowPlannerModal] = useState(false);
 
+  // Mobile drawer state (decision C1).
+  //
+  // Below 768px the chapter list used to be `display: none` with nothing in its
+  // place, so on a phone the chapter list was simply unreachable — you could open
+  // a novel and have no way to move between its chapters. Same for the entity
+  // sidebar below 1200px. Both are now drawers with an explicit toggle.
+  const [mobileDrawer, setMobileDrawer] = useState(null); // 'chapters' | 'entities' | null
+
   // Is this a multi-chapter writing?
   const isMultiChapter = chapters.length > 1 ||
     writing?.type === 'novel' ||
@@ -855,6 +863,28 @@ Be encouraging but honest. Give specific examples from the text when possible. K
               <Icon name="map" size={18} strokeWidth={2} />
               Planner
             </button>
+            {/* Narrow-viewport drawer toggles. Hidden by CSS above the
+                breakpoint at which each panel is docked. */}
+            {isMultiChapter && (
+              <button
+                className={`btn btn--secondary writing-editor__drawer-toggle writing-editor__drawer-toggle--chapters ${mobileDrawer === 'chapters' ? 'btn--active' : ''}`}
+                title="Chapters"
+                aria-expanded={mobileDrawer === 'chapters'}
+                onClick={() => setMobileDrawer(mobileDrawer === 'chapters' ? null : 'chapters')}
+              >
+                <Icon name="list" size={18} strokeWidth={2} />
+                Chapters
+              </button>
+            )}
+            <button
+              className={`btn btn--secondary writing-editor__drawer-toggle writing-editor__drawer-toggle--entities ${mobileDrawer === 'entities' ? 'btn--active' : ''}`}
+              title="Reference panel"
+              aria-expanded={mobileDrawer === 'entities'}
+              onClick={() => setMobileDrawer(mobileDrawer === 'entities' ? null : 'entities')}
+            >
+              <Icon name="book-open" size={18} strokeWidth={2} />
+              Reference
+            </button>
             <button
               className={`btn btn--secondary ${showWizardPanel ? 'btn--active' : ''}`}
               title="Writing Wizard"
@@ -894,6 +924,18 @@ Be encouraging but honest. Give specific examples from the text when possible. K
         {/* Main Content */}
         <div className="writing-editor__main">
           {/* Chapter Sidebar */}
+          {mobileDrawer && (
+            <button
+              type="button"
+              className="writing-editor__scrim"
+              aria-label="Close panel"
+              onClick={() => setMobileDrawer(null)}
+            />
+          )}
+
+          <div
+            className={`writing-editor__chapters-wrap ${mobileDrawer === 'chapters' ? 'writing-editor__chapters-wrap--open' : ''}`}
+          >
           <ChapterSidebar
             chapters={chapters}
             activeChapterId={activeChapterId}
@@ -904,6 +946,7 @@ Be encouraging but honest. Give specific examples from the text when possible. K
             onMoveChapter={handleMoveChapter}
             isMultiChapter={isMultiChapter}
           />
+          </div>
 
           {/* Editor Area */}
           <div className="writing-editor__editor-area">
@@ -927,7 +970,9 @@ Be encouraging but honest. Give specific examples from the text when possible. K
           </div>
 
           {/* Right Sidebar - Entity, Canon Panel, Writing Wizard, Reference Browser, or Planner */}
-          <div className="writing-editor__entity-sidebar">
+          <div
+            className={`writing-editor__entity-sidebar ${mobileDrawer === 'entities' ? 'writing-editor__entity-sidebar--open' : ''}`}
+          >
             {showReferenceBrowser ? (
               <ReferenceBrowser
                 datasetId={activeDataset?.id}

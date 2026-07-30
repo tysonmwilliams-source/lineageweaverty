@@ -454,7 +454,7 @@
 }
 
 /* Adjust compact mode for medium screens */
-@media (max-width: 1000px) {
+@media (max-width: 1024px) {
   .nav__links--compact {
     max-width: 300px;
     margin: 0 var(--space-2);

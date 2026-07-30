@@ -765,7 +765,7 @@
    RESPONSIVE
    ============================================ */
 
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .character-arcs-view__content {
     flex-direction: column;
   }
