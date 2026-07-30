@@ -75,6 +75,10 @@ gated on a green light for timing. See "What is left" below.
 | `72068fe` | — | **C4**: the Story Planner is a route, not a modal |
 | `ba07416` | — | **A1/A2** closed; the dead key redacted from the report |
 | `87aa243` | — | **C3 step 1**: the recursive composition model and its migration |
+| `eb3f215` | — | **C3**: dev-only dry-run panel in the Armory |
+| `1605737` | — | Heraldry `composition` added to the claude-context export |
+| `64eaab0` | — | **C3**: dry-run result against the real 33 coats recorded |
+| `5fa1bda` | — | **C3 step 2**: version-tolerant composition readers |
 
 **Current baselines** (verify these still hold before and after your work):
 
@@ -125,8 +129,8 @@ first answering something — that is the honest state of it.
   Serif 4, B3 Tailwind removed, B4 keep all seven themes. See the DECIDED table at
   the top of README.
 - **C2, C5, C6** — Gemini key architecture, household roles, multiple spouses.
-  **C1 and C4 are decided and complete**; **C3 is decided and not started** (the
-  full recursive-composition rebuild). See the DECIDED table in README.
+  **C1 and C4 are decided and complete**; **C3 is decided and underway — steps 1
+  and 2 of 6 are done**. See the C3 progress table in README.
 - **D1–D4** — succession semantics. D4 (the broken Crown) is now *reported* by
   the integrity check instead of failing silently, but whether person 82 was
   deleted or the Crown should be vacant is still a worldbuilding answer.
@@ -145,16 +149,24 @@ first answering something — that is the honest state of it.
 All four of the queued batch (C3, C4, G7, F4) were answered. C4 and G7 are
 implemented and on `main`. **C3 and F4 were both answered at their largest
 option** — recursive heraldic composition, and a full TypeScript migration.
-**C3 is underway: step 1 of 6 is done** (`87aa243`) — see the C3 progress table
-in README. F4 is not started.
+**C3 is underway: steps 1 and 2 of 6 are done** (`87aa243`, `5fa1bda`) — see the
+C3 progress table in README. F4 is not started.
 
-**C3 step 1 is inert on purpose.** The model and migration exist and are tested;
-nothing imports them, and **no stored heraldry has been rewritten**. The
-migration is dry-run by default and must be invoked deliberately with
-`{ apply: true }`. Do not wire it into app startup — the owner should read a
-dry-run report against their real 33 coats first, because the migration
-*recovers ordinaries the legacy loader silently dropped*, which means some
-shields will visibly change and they should know which before it happens.
+**No stored heraldry has been rewritten.** The migration is dry-run by default
+and must be invoked deliberately with `{ apply: true }`. Do not wire it into app
+startup.
+
+The dry run has been read against the real Armory (`64eaab0`): all 33 coats
+migrate, 0 fail, **0 change visibly**, 0 carry unrecognised keys. So applying is
+expected to be a pure format change — the ordinary-recovery path that could have
+altered a drawn shield does not fire on this data. That is settled for *this*
+dataset only; the path stays in the migration because the bug is real.
+
+**Steps 1 and 2 are both inert by design**, and that is deliberate sequencing
+rather than caution: readers now accept any stored version, so a record cannot
+be told apart before and after migration. The data migration and the remaining
+code can therefore land in either order, and step 3 can be reverted without
+stranding data.
 
 Read "Sequencing C3 and F4" in README before picking either up. The short
 version, because it is the kind of thing that gets rediscovered expensively:
