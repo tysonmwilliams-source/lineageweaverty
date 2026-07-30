@@ -54,6 +54,35 @@ const LIST_ITEM_VARIANTS = {
   }
 };
 
+/**
+ * Collapsible subsection header, used by the grouped Heraldry and Concept views.
+ *
+ * Defined at module scope on purpose: a component whose identity comes from a
+ * hook is re-created whenever that hook's cache is discarded, which remounts the
+ * whole subsection and replays the chevron animation from scratch.
+ */
+export function SubsectionHeader({ label, icon, count, collapsed, onToggle }) {
+  return (
+    <motion.button
+      className="browse-subsection-header"
+      onClick={onToggle}
+      whileHover={{ backgroundColor: 'var(--bg-hover)' }}
+      whileTap={{ scale: 0.99 }}
+    >
+      <motion.div
+        className="browse-subsection-header__chevron"
+        animate={{ rotate: collapsed ? -90 : 0 }}
+        transition={{ duration: 0.2 }}
+      >
+        <Icon name="chevron-down" size={18} />
+      </motion.div>
+      <Icon name={icon} size={18} className="browse-subsection-header__icon" />
+      <span className="browse-subsection-header__label">{label}</span>
+      <span className="browse-subsection-header__count">({count})</span>
+    </motion.button>
+  );
+}
+
 // Type configuration
 const TYPE_CONFIG = {
   all: { icon: 'book-open', label: 'All Entries', singular: 'Entry' },
@@ -308,27 +337,6 @@ function CodexBrowse() {
 
   const totalPages = Math.ceil(filteredEntries.length / entriesPerPage);
   const hasFilters = searchTerm || selectedTags.length > 0 || selectedEra || selectedCategory;
-
-  // Subsection header component for heraldry & titles
-  const SubsectionHeader = useCallback(({ label, icon, count, collapsed, onToggle }) => (
-    <motion.button
-      className="browse-subsection-header"
-      onClick={onToggle}
-      whileHover={{ backgroundColor: 'var(--bg-hover)' }}
-      whileTap={{ scale: 0.99 }}
-    >
-      <motion.div
-        className="browse-subsection-header__chevron"
-        animate={{ rotate: collapsed ? -90 : 0 }}
-        transition={{ duration: 0.2 }}
-      >
-        <Icon name="chevron-down" size={18} />
-      </motion.div>
-      <Icon name={icon} size={18} className="browse-subsection-header__icon" />
-      <span className="browse-subsection-header__label">{label}</span>
-      <span className="browse-subsection-header__count">({count})</span>
-    </motion.button>
-  ), []);
 
   // Render entry item (reusable for both grouped and flat lists)
   const renderEntryItem = useCallback((entry, index) => (

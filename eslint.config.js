@@ -73,6 +73,16 @@ export default defineConfig([
       'use-isnan': 'error',
       'react-hooks/rules-of-hooks': 'error',
 
+      // Decision G7, first slice. The four violations were all one component,
+      // `SubsectionHeader` in CodexBrowse.jsx, built with `useCallback(fn, [])`
+      // and rendered as `<SubsectionHeader />`. Empty deps meant the identity
+      // happened to be stable, so this was not the live state-reset bug the
+      // audit described — but nothing enforced that. Adding a single dep, or
+      // React discarding the hook cache (which it reserves the right to do),
+      // remounts the whole subsection. Hoisting it to module scope took the
+      // count to zero, so it is promoted to an error to keep it there.
+      'react-hooks/static-components': 'error',
+
       // Cosmetic/stylistic findings that shouldn't block a build.
       'no-case-declarations': 'warn',
       'no-control-regex': 'warn',
@@ -85,14 +95,14 @@ export default defineConfig([
       // them, so leaving them as errors would keep the gate red and defeat the
       // point. Downgraded so the gate goes green today.
       //
-      // Do not mistake these for the unused-variable debt. `static-components`
-      // in particular is a real bug class — a component created during render
-      // resets its state on every parent render — and CodexBrowse.jsx has four.
-      // `set-state-in-effect` (14) is the cascading-render pattern. Worth a
-      // dedicated pass; tracked as a follow-up, not written off.
+      // Do not mistake these for the unused-variable debt. `set-state-in-effect`
+      // (14) is the cascading-render pattern; `preserve-manual-memoization` (10)
+      // means a useMemo/useCallback the compiler had to skip, so the memoization
+      // is not doing what it looks like. Both restructure render logic in files
+      // with no test coverage, which is why they are a scheduled pass rather
+      // than a cleanup. `static-components` is done and now errors, above.
       'react-hooks/set-state-in-effect': 'warn',
       'react-hooks/preserve-manual-memoization': 'warn',
-      'react-hooks/static-components': 'warn',
       'react-hooks/refs': 'warn',
       'react-hooks/immutability': 'warn',
     },
