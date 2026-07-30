@@ -10,11 +10,19 @@
  * it means marshalling does not have to be taught every time the leaf renderer
  * learns a new charge type, and it can be tested without the charge library.
  *
- * On squeezing rather than cutting: an impaled coat is drawn *compressed* into
- * its half, not sliced down the middle with half the charges lost. Each part is
- * therefore rendered full-size and then transformed into its share of the
- * shield, which is also what the shield mask already does when it fits a square
- * design to a shield outline.
+ * How a part is fitted to its share of the shield differs by arrangement, and
+ * that is a decision rather than a detail:
+ *
+ *   impaled    **dimidiated** — each coat is drawn full size and only its half
+ *              is shown. Nothing is distorted; half of each coat is cut away.
+ *              This is the medieval practice, chosen deliberately over
+ *              squeezing, which fills the half with a compressed whole coat but
+ *              turns a roundel into an ellipse on every marriage.
+ *
+ *   quartered  **scaled** — the whole coat is fitted into its quarter. Quarters
+ *              are square, so the scale is equal in both axes and charges keep
+ *              their proportions. There is nothing to trade off here, which is
+ *              why quartering is not dimidiated.
  */
 
 /** The coordinate space every leaf renders into. */
@@ -42,24 +50,49 @@ export const PART_RECTS = {
 };
 
 /**
+ * How each arrangement fits a coat to its share of the shield.
+ *
+ * Kept beside the rects rather than inferred from them, because "the parts are
+ * half-width so squeeze horizontally" is exactly the plausible inference that
+ * would silently undo the dimidiation decision.
+ */
+export const PART_FIT = {
+  impaled: 'dimidiate',
+  quartered: 'scale'
+};
+
+/**
  * Place one part's rendered content into its share of the shield.
  *
- * The clip is not redundant with the transform: charges are drawn from their
- * own centre and routinely overflow the 200×200 box slightly, so without it a
- * lion in the first quarter bleeds into the second.
+ * Dimidiated parts need no transform at all: the coat is drawn full size at the
+ * origin and the clip rect selects the half that belongs to this part — the
+ * dexter rect naturally takes the coat's dexter half, the sinister rect its
+ * sinister half.
+ *
+ * For scaled parts the clip is not redundant with the transform: charges are
+ * drawn from their own centre and routinely overflow the 200×200 box slightly,
+ * so without it a lion in the first quarter bleeds into the second.
  *
  * @param {string} content   SVG fragments on a 200×200 space.
  * @param {Object} rect      Destination rect within the 200×200 shield.
  * @param {string} clipId    Unique id for this part's clip path.
+ * @param {string} fit       'dimidiate' (clip only) or 'scale' (fit the whole coat).
  */
-export function placePart(content, rect, clipId) {
+export function placePart(content, rect, clipId, fit = 'scale') {
+  const clip =
+    `<clipPath id="${clipId}">` +
+      `<rect x="${rect.x}" y="${rect.y}" width="${rect.width}" height="${rect.height}"/>` +
+    `</clipPath>`;
+
+  if (fit === 'dimidiate') {
+    return `${clip}<g clip-path="url(#${clipId})">${content}</g>`;
+  }
+
   const scaleX = rect.width / COAT_SIZE;
   const scaleY = rect.height / COAT_SIZE;
 
   return (
-    `<clipPath id="${clipId}">` +
-      `<rect x="${rect.x}" y="${rect.y}" width="${rect.width}" height="${rect.height}"/>` +
-    `</clipPath>` +
+    clip +
     `<g clip-path="url(#${clipId})">` +
       `<g transform="translate(${rect.x} ${rect.y}) scale(${scaleX} ${scaleY})">${content}</g>` +
     `</g>`
@@ -88,8 +121,11 @@ export function marshalParts(arrangement, parts, idPrefix = 'lw-marshal') {
     );
   }
 
+  const fit = PART_FIT[arrangement];
+
   return parts
-    .map((content, i) => placePart(content ?? '', rects[i], `${idPrefix}-${arrangement}-${i}`))
+    .map((content, i) =>
+      placePart(content ?? '', rects[i], `${idPrefix}-${arrangement}-${i}`, fit))
     .join('');
 }
 

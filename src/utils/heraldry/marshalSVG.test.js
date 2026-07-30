@@ -12,6 +12,7 @@ import { describe, it, expect, vi } from 'vitest';
 import {
   COAT_SIZE,
   PART_RECTS,
+  PART_FIT,
   placePart,
   marshalParts,
   renderNode
@@ -56,30 +57,53 @@ describe('PART_RECTS', () => {
   });
 });
 
+describe('PART_FIT', () => {
+  it('dimidiates an impalement and scales a quartering', () => {
+    // The owner's decision, and the one most at risk of being silently undone:
+    // "the parts are half-width, so squeeze horizontally" is a very plausible
+    // inference for someone touching this later.
+    expect(PART_FIT.impaled).toBe('dimidiate');
+    expect(PART_FIT.quartered).toBe('scale');
+  });
+
+  it('declares a fit for every arrangement that has rects', () => {
+    for (const arrangement of Object.keys(PART_RECTS)) {
+      expect(PART_FIT[arrangement], `${arrangement} needs a fit`).toBeDefined();
+    }
+  });
+});
+
 describe('placePart', () => {
-  it('squeezes a full coat into its share rather than cutting it', () => {
-    // An impaled coat is compressed into its half. Clipping a full-size coat
-    // instead would throw away whichever charges fell outside — visually
-    // plausible and heraldically wrong.
-    const placed = placePart('<rect/>', PART_RECTS.impaled[0], 'c0');
-    expect(placed).toContain('transform="translate(0 0) scale(0.5 1)"');
+  it('dimidiates without any transform at all', () => {
+    // The coat is drawn full size at the origin and the clip rect selects the
+    // half that belongs to this part. Any transform here would distort it,
+    // which is precisely what dimidiation was chosen to avoid.
+    const placed = placePart('<rect/>', PART_RECTS.impaled[0], 'c0', 'dimidiate');
+    expect(placed).not.toContain('transform');
+    expect(placed).toContain('clip-path="url(#c0)"');
+  });
+
+  it('takes the sinister half for the sinister part, by clip position alone', () => {
+    const placed = placePart('<rect/>', PART_RECTS.impaled[1], 'c1', 'dimidiate');
+    expect(placed).toContain('<rect x="100" y="0" width="100" height="200"/>');
+    expect(placed).not.toContain('transform');
   });
 
   it('translates a quarter to its own corner', () => {
-    const placed = placePart('<rect/>', PART_RECTS.quartered[3], 'c3');
+    const placed = placePart('<rect/>', PART_RECTS.quartered[3], 'c3', 'scale');
     expect(placed).toContain('transform="translate(100 100) scale(0.5 0.5)"');
   });
 
-  it('clips as well as transforms', () => {
+  it('clips as well as transforms when scaling', () => {
     // Charges are drawn from their centre and overflow the box, so without a
     // clip a lion in the first quarter bleeds into the second.
-    const placed = placePart('<rect/>', PART_RECTS.quartered[0], 'c0');
+    const placed = placePart('<rect/>', PART_RECTS.quartered[0], 'c0', 'scale');
     expect(placed).toContain('<clipPath id="c0">');
     expect(placed).toContain('clip-path="url(#c0)"');
   });
 
   it('keeps the part content intact', () => {
-    expect(placePart('<rect data-coat="azure"/>', PART_RECTS.impaled[1], 'c1'))
+    expect(placePart('<rect data-coat="azure"/>', PART_RECTS.impaled[1], 'c1', 'dimidiate'))
       .toContain('<rect data-coat="azure"/>');
   });
 });
@@ -134,11 +158,13 @@ describe('renderNode', () => {
     expect(out).not.toContain('clipPath');
   });
 
-  it('renders an impaled marriage as two placed coats', async () => {
+  it('renders an impaled marriage as two dimidiated coats', async () => {
     const out = await renderNode(createMarshalledNode('impaled', [azure, gules]), renderLabel);
     expect(out).toContain('data-coat="azure"');
     expect(out).toContain('data-coat="gules"');
     expect(out.indexOf('azure')).toBeLessThan(out.indexOf('gules'));
+    // Neither half is scaled — that is the whole point of dimidiation.
+    expect(out).not.toContain('transform');
   });
 
   it('recurses into a grand quarter', async () => {
