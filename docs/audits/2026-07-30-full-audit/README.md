@@ -645,7 +645,7 @@ the only outstanding item that can damage heraldry already drawn.
 | 1 | The recursive model, the v1/v2 → v3 migration, and its tests | **done** — `87aa243` |
 | 2 | Read path: readers go through `primaryLeaf`/`allLeaves`/`readCadency` | **done** — `5fa1bda` |
 | 3 | Save path: `composeCoat` writes v3; cadency recorded; apply flow | **done** — `face632` |
-| 4 | Render marshalled nodes — the SVG pipeline learns to divide a shield | not started |
+| 4 | Render marshalled nodes — the SVG pipeline divides a shield | **done** — `991171a` |
 | 5 | UI to build a marshalled coat, and `linkType` `impaled`/`quartered` set by real code paths | not started |
 | 6 | Marriage arms: derive an impaled coat from a spouse relationship | not started |
 
@@ -714,6 +714,28 @@ The apply flow also exposed a sync gap worth remembering: `updateHeraldry` only
 syncs when passed a `userId`, and conflict resolution here is last-write-wins.
 Applying the migration without one would have rewritten every record locally
 while the cloud kept the old copies, letting the next download silently undo it.
+
+**What step 4 settled, and one thing it did not.** `generatePreview` is now
+composition-driven: its old body became the leaf renderer, and the preview is
+whatever `renderNode` makes of the composition. A single plain node renders
+byte-identically to before, so existing coats are untouched. Step 5 therefore
+only has to change *what composition the creator holds* — the pipeline is done.
+
+Marshalled coats were rendered and looked at in a browser, not only asserted on
+as strings, and all four cases are correct. That raised a question the tests
+could not:
+
+> **Open for step 5 — how should an impaled coat be fitted into its half?**
+> Squeezing a full 200×200 coat into a 100×200 half visibly distorts charges: a
+> roundel becomes an ellipse. Squeezing is what the current code does and it is
+> defensible — impaled arms *are* compressed, and `createSVGHeraldryWithMask`
+> already scales non-uniformly. The alternatives are scaling uniformly and
+> accepting empty space, or dimidiating (showing half of each coat), which is
+> the older practice and loses charges. **This was chosen by implication rather
+> than decided**, and it is the owner's aesthetic call.
+
+Quartering does not have this problem: quarters scale 0.5 in both axes, so
+charges stay in proportion.
 
 Two things step 1 established that the rest depends on:
 
