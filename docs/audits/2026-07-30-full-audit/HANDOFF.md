@@ -73,12 +73,14 @@ gated on a green light for timing. See "What is left" below.
 | `1dc3d83` | — | **C1**: the Armory and remaining grids — C1 complete |
 | `bb8fd32` | — | **G7**: `static-components` fixed and promoted to an error |
 | `72068fe` | — | **C4**: the Story Planner is a route, not a modal |
+| `ba07416` | — | **A1/A2** closed; the dead key redacted from the report |
+| `87aa243` | — | **C3 step 1**: the recursive composition model and its migration |
 
 **Current baselines** (verify these still hold before and after your work):
 
 ```bash
-npm run build      # passes, ~25s
-npx vitest run     # 465 tests pass, 13 files, exits 0
+npm run build      # passes, ~20s
+npx vitest run     # 518 tests pass, 15 files, exits 0
 npx eslint .       # 0 errors, 343 warnings — exits 0, and CI blocks on it
 ```
 
@@ -142,8 +144,17 @@ first answering something — that is the honest state of it.
 
 All four of the queued batch (C3, C4, G7, F4) were answered. C4 and G7 are
 implemented and on `main`. **C3 and F4 were both answered at their largest
-option** — recursive heraldic composition, and a full TypeScript migration —
-and neither is started.
+option** — recursive heraldic composition, and a full TypeScript migration.
+**C3 is underway: step 1 of 6 is done** (`87aa243`) — see the C3 progress table
+in README. F4 is not started.
+
+**C3 step 1 is inert on purpose.** The model and migration exist and are tested;
+nothing imports them, and **no stored heraldry has been rewritten**. The
+migration is dry-run by default and must be invoked deliberately with
+`{ apply: true }`. Do not wire it into app startup — the owner should read a
+dry-run report against their real 33 coats first, because the migration
+*recovers ordinaries the legacy loader silently dropped*, which means some
+shields will visibly change and they should know which before it happens.
 
 Read "Sequencing C3 and F4" in README before picking either up. The short
 version, because it is the kind of thing that gets rediscovered expensively:

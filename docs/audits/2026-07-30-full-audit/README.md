@@ -320,7 +320,7 @@ Two structural refactors are also unambiguously right, but they're big enough th
 | **F2, F6, G4, G5** | Housekeeping | Archives + stale branch deleted, favicon, claude-context untracked | `705583f` |
 | **G7** | React Compiler lint | **`static-components` now**, rest scheduled — rule promoted to error | `bb8fd32` |
 | **C4** | Planner | **Promote to a route** — `/writing/:id/plan/:planId/:view` | `72068fe` |
-| **C3** | Marshalling | **Recursive composition** — the full rebuild, not shield shapes alone | *not started* |
+| **C3** | Marshalling | **Recursive composition** — the full rebuild | *step 1 of 6* `87aa243` |
 | **F4** | TypeScript | **Full migration** to `.ts`/`.tsx` | *not started* |
 
 Notes worth carrying forward:
@@ -636,9 +636,35 @@ without the CI step the migration produces the appearance of safety and not the
 fact of it.
 
 **C3's first step is the migration and its tests, not the renderer.** This is
-the only outstanding item that can damage heraldry already drawn. The reversible
-order is: define the recursive shape, write the old-shape → new-shape migration,
-test it against a copy of the real world data, and only then touch a renderer.
+the only outstanding item that can damage heraldry already drawn.
+
+### C3 progress
+
+| Step | What | Status |
+|---|---|---|
+| 1 | The recursive model, the v1/v2 → v3 migration, and its tests | **done** — `87aa243` |
+| 2 | Read path: renderers consume `composition.root` via `collectLeaves` | not started |
+| 3 | Save path: `HeraldryCreator` writes v3 and stops migrating on load | not started |
+| 4 | Render marshalled nodes — the SVG pipeline learns to divide a shield | not started |
+| 5 | UI to build a marshalled coat, and `linkType` `impaled`/`quartered` set by real code paths | not started |
+| 6 | Marriage arms: derive an impaled coat from a spouse relationship | not started |
+
+Step 1 is inert by design — nothing imports it, so it cannot break anything.
+**The stored data is still v2 and nothing has been rewritten**; the migration is
+dry-run by default and must be invoked deliberately.
+
+Two things step 1 established that the rest depends on:
+
+- **The audit was wrong about what exists.** C3 described two quartering
+  functions that "naively composite finished PNGs". They do not exist —
+  `src/utils/heraldryUtils.js` and all 459 lines of it were deleted in Phase 4
+  of this same audit (`cbcbeec`). This is new construction, not a repair.
+- **The old v1→v2 conversion was lossy and never persisted.** It ran in
+  `HeraldryCreator`'s load effect, so an unopened legacy record stayed legacy
+  and an opened one silently changed format on save. It also dropped ordinaries
+  outright — the comment at `HeraldryCreator.jsx:1528` documents giving up on
+  detecting them. Recovered in step 1, and the migration report names every coat
+  that gets its band back.
 
 ---
 
