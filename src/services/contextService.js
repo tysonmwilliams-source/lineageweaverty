@@ -1185,6 +1185,17 @@ export async function exportContextToDisk(datasetId) {
     }
 
     // Export heraldry
+    //
+    // `composition` is included deliberately, and it is the only field here
+    // that is structural rather than descriptive. Without it this snapshot
+    // cannot answer anything about how a coat is actually built — which came up
+    // during decision C3, where the composition migration could not be checked
+    // against real arms because the exported record carried only its blazon.
+    //
+    // It is cheap: a composition is a small object of tinctures and charge ids.
+    // The heavy heraldry fields — heraldrySVG, heraldrySourceSVG and the three
+    // PNG data-URLs — stay excluded, because those are hundreds of KB each and
+    // are regenerable from the composition.
     const heraldryData = heraldry.map(h => ({
       id: h.id,
       name: h.name,
@@ -1192,7 +1203,9 @@ export async function exportContextToDisk(datasetId) {
       tags: h.tags,
       blazon: h.blazon,
       description: h.description,
-      notes: h.notes
+      notes: h.notes,
+      shieldType: h.shieldType,
+      composition: h.composition ?? null
     }));
 
     if (await writeContextToDisk('heraldry.json', heraldryData)) {
