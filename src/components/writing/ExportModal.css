@@ -222,3 +222,13 @@
   border-color: white;
   border-top-color: transparent;
 }
+
+/* ── Narrow viewports (decision C1) ──────────────────────────────────────────
+   Each format option is a radio with an icon and a label ("Markdown (.md)",
+   "Plain text (.txt)"). Two-up on a phone leaves ~160px per option, which wraps
+   the labels awkwardly and puts the radio and its text on separate lines. */
+@media (max-width: 480px) {
+  .export-modal__formats {
+    grid-template-columns: 1fr;
+  }
+}

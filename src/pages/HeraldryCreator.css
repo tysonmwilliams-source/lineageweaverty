@@ -1715,3 +1715,108 @@
 .personal-arms-panel__toggle input:disabled + span {
   opacity: 0.6;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   NARROW VIEWPORTS  (decision C1)
+   ═══════════════════════════════════════════════════════════════════════════
+
+   The existing 768px block adjusted padding and a couple of grids but never
+   touched `.creator-layout`, which is `grid-template-columns: 400px 1fr`. On a
+   375px phone that gives the design panel negative width — the Armory was not
+   merely cramped, it was unusable. That is fixed first; the category tabs are the
+   smaller half of the problem.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 1024px) {
+  .creator-layout {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  /* The preview stops being a full-height left rail and becomes a compact strip
+     at the top of the flow.
+     
+     Deliberately NOT sticky. Two reasons. The panel's desktop `top: 80px` is
+     measured against .creator-header — the Armory's own sticky header — not the
+     app nav, and that header changes height on narrow when .header-content goes
+     to a column, so any fixed offset is wrong at some width and overlaps the
+     first section heading. And a permanently-pinned ~200px strip costs a quarter
+     of an 812px phone screen for something you glance at rather than read. */
+  .preview-panel {
+    position: static;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--border-primary);
+  }
+
+  .preview-container {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: var(--space-4, 1rem);
+  }
+
+  .panel-title {
+    display: none;
+  }
+
+  .shield-preview {
+    width: 7rem;
+    flex-shrink: 0;
+    aspect-ratio: 3 / 4;
+    max-height: none;
+  }
+
+  /* Blazon, export buttons and warnings sit beside the shield rather than under
+     it, so the strip stays shallow. */
+  .blazon-display,
+  .rule-warning,
+  .layer-summary,
+  .preview-export,
+  .personal-arms-panel {
+    flex: 1;
+    min-width: 0;
+    margin-top: 0;
+  }
+
+}
+
+@media (max-width: 480px) {
+  /* 15 category tabs with icon and label wrap into six or seven rows at this
+     width, pushing the charge grid off the bottom of the screen. A single
+     scrolling row keeps them all reachable and costs one gesture.
+
+     Note the search box added alongside these spans every category, so the tabs
+     are no longer the only way to find a charge — which is what makes a scroll
+     strip an acceptable answer rather than a compromise. */
+  .charge-category-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    padding-bottom: 0.25rem;
+    /* Bleed to the panel edges so it reads as a scrollable strip. */
+    margin-inline: calc(var(--space-4, 1rem) * -1);
+    padding-inline: var(--space-4, 1rem);
+  }
+
+  .charge-category-tabs .line-style-option {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  /* Four division swatches per row is too tight below 480px. */
+  .division-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .unified-charge-grid {
+    grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+    max-height: 50vh;
+  }
+
+  /* Stack the export pair — "SVG" and "PNG" side by side is fine, but the
+     buttons need the full width to keep their 44px targets comfortable. */
+  .preview-export__buttons {
+    flex-wrap: wrap;
+  }
+}

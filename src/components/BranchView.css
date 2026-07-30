@@ -177,3 +177,23 @@
 .branch-panel--fragment-4 .branch-panel__header {
   border-top: 3px solid var(--accent-armory);
 }
+
+/* ── Narrow viewports (decision C1) ──────────────────────────────────────────
+   Each panel holds its own D3 canvas, so two side by side on a phone gives each
+   about 180px — less than the width of a single person card (150px) plus its
+   margins. Stack them instead, and cap the height so more than one is reachable
+   by scrolling rather than one filling the screen.
+
+   Below 480px the tree renders as TreeListView and BranchView isn't reached at
+   all; this covers the band between that and a docked desktop layout. */
+@media (max-width: 768px) {
+  .branch-view--panels-2,
+  .branch-view--panels-3,
+  .branch-view--panels-4 {
+    grid-template-columns: 1fr;
+  }
+
+  .branch-view__panel {
+    min-height: 60vh;
+  }
+}

@@ -330,3 +330,13 @@
   border-color: var(--accent-primary);
   background: var(--bg-tertiary);
 }
+
+/* ── Narrow viewports (decision C1) ──────────────────────────────────────────
+   The Source and Earned From selects sit two-up. At 375px that leaves each about
+   165px, which truncates their option text ("Popular acclaim", "Battlefield
+   deed") to the point of being unreadable. Stack them. */
+@media (max-width: 480px) {
+  .epithets__form-row {
+    grid-template-columns: 1fr;
+  }
+}
