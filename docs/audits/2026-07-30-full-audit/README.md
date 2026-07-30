@@ -653,6 +653,33 @@ Step 1 is inert by design — nothing imports it, so it cannot break anything.
 **The stored data is still v2 and nothing has been rewritten**; the migration is
 dry-run by default and must be invoked deliberately.
 
+**Dry run against the real Armory (2026-07-30), via the dev panel:**
+
+| | |
+|---|---|
+| arms total | 33 |
+| would migrate | 33 |
+| already current | 0 |
+| no composition | 0 |
+| failed | **0** |
+| would visibly change | **0** |
+| unrecognised keys | **0** |
+
+This is the result that de-risks step 3. Three things it establishes about the
+real data, none of which could be assumed from the code:
+
+- **No coat hits the legacy ordinary-as-division bug.** That was the one way
+  applying the migration could alter a drawn shield, and it does not occur here.
+  The recovery path stays in the migration because the bug is real and the data
+  could still contain it in another dataset — it simply does not fire on this one.
+- **Nothing is malformed**, so no record needs a human decision before applying.
+- **Every coat was built in the Armory** — zero uploaded or generated arms. The
+  "never fabricate a composition" branch is correct but unexercised here.
+
+Applying is therefore expected to be a pure format change with no visual
+consequence. It still waits for step 3, because a migrated record needs a
+renderer that understands version 3.
+
 Two things step 1 established that the rest depends on:
 
 - **The audit was wrong about what exists.** C3 described two quartering
