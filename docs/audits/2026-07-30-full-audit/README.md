@@ -646,7 +646,7 @@ the only outstanding item that can damage heraldry already drawn.
 | 2 | Read path: readers go through `primaryLeaf`/`allLeaves`/`readCadency` | **done** — `5fa1bda` |
 | 3 | Save path: `composeCoat` writes v3; cadency recorded; apply flow | **done** — `face632` |
 | 4 | Render marshalled nodes — the SVG pipeline divides a shield | **done** — `991171a` |
-| 5 | Full recursive tree editor; `linkType` set by real code paths | in progress — dimidiation done (`1db2936`) |
+| 5 | Full recursive tree editor; `linkType` set by real code paths | in progress — decisions + editor extracted (`1db2936`, `81db30f`) |
 | 6 | Marriage arms: derive an impaled coat from a spouse relationship | not started |
 
 Step 1 is inert by design — nothing imports it, so it cannot break anything.
@@ -745,10 +745,24 @@ visually.
 
 **DECIDED — step 5 is the full recursive tree editor**, chosen over a
 pick-a-saved-coat picker. Arbitrary depth built by hand, no reference
-resolution, no cycles. It is the most UI-heavy item in C3 and it lands in a
-2,400-line component, so the creator's editing panel wants extracting to operate
-on a selected node before the tree navigation goes in — that extraction is the
-first slice, not a detour.
+resolution, no cycles.
+
+Step 5 is being taken in four slices, because only the last one is visible:
+
+| Slice | What | Status |
+|---|---|---|
+| 5a | Dimidiation, per the decision above | **done** — `1db2936` |
+| 5b | Extract the editing UI so it edits a *node*, not the page | **done** — `81db30f` |
+| 5c | Creator state becomes a composition tree + a selected path | not started |
+| 5d | Tree navigation UI, and `linkType` set by real code paths | not started |
+
+**5b took `HeraldryCreator` from 2,441 lines to 1,579** — the first real
+reduction of a file the audit has flagged as a god component throughout. The
+editing UI also gained its first test coverage (20 tests), which mattered
+because the extraction changed how an edit is applied: from three setters on
+page state to returning a new node. A mutator that mutates its input instead of
+replacing it looks correct in React until something memoises, so every test
+asserts both the output and that the input was untouched.
 
 Two things step 1 established that the rest depends on:
 
