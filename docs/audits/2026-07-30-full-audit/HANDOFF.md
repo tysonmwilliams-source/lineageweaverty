@@ -37,13 +37,17 @@ gated on a green light for timing. See "What is left" below.
 | `e14bfa7` | — | **Decisions F3 + B2**: lint is a blocking gate; Source Serif 4 |
 | `f51d5c7` | — | **Decision B3**: Tailwind removed |
 | `44ee951` | — | **Decision B1**: manuscript direction |
+| `705583f` | — | **F2, F6, G4, G5** housekeeping; **B4** confirmed |
+| `4d1f784` | — | **C1**: responsive foundation, writing-editor drawers |
+| `630c09b` | — | **C1**: the tree as a navigable list on phones |
+| `1dc3d83` | — | **C1**: the Armory and remaining grids — C1 complete |
 
 **Current baselines** (verify these still hold before and after your work):
 
 ```bash
 npm run build      # passes, ~10s
-npx vitest run     # 424 tests pass, 9 files, exits 0
-npx eslint .       # 0 errors, 348 warnings — exits 0, and CI blocks on it
+npx vitest run     # 451 tests pass, 11 files, exits 0
+npx eslint .       # 0 errors, 349 warnings — exits 0, and CI blocks on it
 ```
 
 Lint is now a **blocking gate** (decision F3). `no-undef`, `no-dupe-keys` and
@@ -69,8 +73,9 @@ first answering something — that is the honest state of it.
   see the DECIDED table at the top of README. B4 is the only one of the B group
   still open, and the automated contrast gate that made it cheap to keep seven
   already exists.
-- **C1–C6** — mobile scope, Gemini key architecture, quartering/impalement,
-  planner routing, household roles, multiple spouses.
+- **C2–C6** — Gemini key architecture, quartering/impalement, planner routing,
+  household roles, multiple spouses. **C1 is decided and complete** — see the
+  DECIDED table in README.
 - **D1–D4** — succession semantics. D4 (the broken Crown) is now *reported* by
   the integrity check instead of failing silently, but whether person 82 was
   deleted or the Crown should be vacant is still a worldbuilding answer.

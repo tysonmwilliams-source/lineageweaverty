@@ -308,6 +308,10 @@ Two structural refactors are also unambiguously right, but they're big enough th
 | **B2** | Base font size | **Swap the body face**, sizes unchanged → Source Serif 4 | `e14bfa7` |
 | **B3** | Tailwind | **Remove it** | `f51d5c7` |
 | **F3/G6** | Lint severity | **Downgrade `no-unused-vars` to warn**, make lint a blocking gate | `e14bfa7` |
+| **B4** | Themes | **Keep all seven** (contrast gate makes it cheap) | `705583f` |
+| **C1** | Mobile | **Full responsive** — complete | `4d1f784`…`1dc3d83` |
+| **A2** | Key history | **Revoke, leave history** — no code change | — |
+| **F2, F6, G4, G5** | Housekeeping | Archives + stale branch deleted, favicon, claude-context untracked | `705583f` |
 
 Notes worth carrying forward:
 
@@ -333,7 +337,7 @@ Notes worth carrying forward:
   `CodexBrowse.jsx`) is a real bug class, and `set-state-in-effect` (14) is the
   cascading-render pattern. See G7.
 
-**Still to decide: B4, C1–C6, D1–D4, E1–E9, F1–F2, F4–F8, G1–G5, G7.**
+**Still to decide: C2–C6, D1–D4, E1–E9, F1, F4, F5, F7, F8, G1–G3, G7.**
 
 ---
 
@@ -377,7 +381,7 @@ Right now it reads as *desaturated brown admin panel*, not *illuminated manuscri
 
 ## C. Product scope
 
-**C1. Mobile: support it or drop it?** Currently half-built and silently broken: below 1200px the Writing Editor hides the entity sidebar, below 768px it hides the chapter list too — with no replacement affordance, so your chapter list becomes unreachable. 28 of 115 stylesheets have zero media queries. Only 15 declarations anywhere meet the 44px touch target. But there *is* a full hamburger menu and a `--nav-height-mobile` token.
+**C1. ~~Mobile: support it or drop it?~~ — DECIDED: full responsive, and DONE (`4d1f784`, `630c09b`, `1dc3d83`).** Currently half-built and silently broken: below 1200px the Writing Editor hides the entity sidebar, below 768px it hides the chapter list too — with no replacement affordance, so your chapter list becomes unreachable. 28 of 115 stylesheets have zero media queries. Only 15 declarations anywhere meet the 44px touch target. But there *is* a full hamburger menu and a `--nav-height-mobile` token.
 - (a) Declare desktop-only with an explicit gate below 900px.
 - **(b) Mobile-read, desktop-write** — Home, Codex, Dignities responsive; Tree, Heraldry, Editor, Manage gated. **Recommend this** — it matches how a novelist actually uses this.
 - (c) Full responsive — needs a list/breadcrumb fallback for the tree and bottom-sheet sidebars.
