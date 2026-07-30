@@ -99,10 +99,9 @@ first answering something — that is the honest state of it.
   `AIzaSyDhw4eI0…NjlU` in Google Cloud Console → Credentials. It is in commits
   `267d0e4` and `e4545d4`, both on `origin/main`. `.env.local` was rotated, which
   does **not** disable the old key. Then A2 (history rewrite or not).
-- **B4** — seven themes or two. B1, B2 and B3 are **decided and implemented**;
-  see the DECIDED table at the top of README. B4 is the only one of the B group
-  still open, and the automated contrast gate that made it cheap to keep seven
-  already exists.
+- **The whole B group is decided and implemented** — B1 manuscript, B2 Source
+  Serif 4, B3 Tailwind removed, B4 keep all seven themes. See the DECIDED table at
+  the top of README.
 - **C2–C6** — Gemini key architecture, quartering/impalement, planner routing,
   household roles, multiple spouses. **C1 is decided and complete** — see the
   DECIDED table in README.
@@ -110,12 +109,11 @@ first answering something — that is the honest state of it.
   the integrity check instead of failing silently, but whether person 82 was
   deleted or the Crown should be vacant is still a worldbuilding answer.
 - **E1–E9** — the owner's world data. **Never auto-change creative content.**
-- **G1–G6** (README Part Two, Section G) — the six items that stopped at a
-  decision during Phases 4–6: the remaining 44 emoji, the duplicated `RankPips`,
-  the unimported shared CSS, the Vite default favicon, the stale
-  `audit/comprehensive-fixes` branch, and F3 (lint as a gate). All small; none
-  resolvable without an answer. **G6/F3 is the highest-leverage one** — it is all
-  that stands between this repo and a blocking CI gate.
+- **G1–G3 and G7** (README Part Two, Section G) — what is still open of the items
+  that stopped at a decision during Phases 4–6: the remaining 44 emoji (G1), the
+  duplicated `RankPips` (G2), the unimported shared CSS (G3), and the 33 React
+  Compiler lint violations (G7). G4 favicon, G5 stale branch and G6 lint-as-a-gate
+  are **done**.
 - **F1–F8** — housekeeping calls: `extras/` (29 MB), the archive directories,
   `no-unused-vars` severity, TypeScript, feature flags, `claude-context` in git,
   docs restructure, bug-tracker path.
