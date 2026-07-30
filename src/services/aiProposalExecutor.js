@@ -54,7 +54,7 @@ import { collectFullDataContext } from './aiDataService';
  * @param {Object} options - Execution options
  * @returns {Object} Execution context
  */
-async function createExecutionContext(options = {}) {
+export async function createExecutionContext(options = {}) {
   const {
     datasetId = 'default',
     userId = null,
@@ -87,19 +87,46 @@ export async function executeProposal(proposal, context) {
 
   console.log(`🤖 Executing proposal: ${type} ${entityType}`, { entityId, data });
 
-  // Validate before execution
-  const validation = validateProposal(proposal, context.currentData);
-  if (!validation.valid) {
+  // Callers must pass a context built by createExecutionContext(). A bare
+  // object used to slip through: validateProposal then read `.lookupMaps` off
+  // an undefined currentData and threw *outside* the try below, so update and
+  // delete proposals never executed at all — while create proposals wrote to
+  // the database and only then threw on the missing rollbackStack, reporting
+  // failure for a change that had already landed. Approving again duplicated it.
+  if (!context || !context.currentData) {
     return {
       success: false,
       proposal,
-      error: `Validation failed: ${validation.errors.join(', ')}`,
-      warnings: validation.warnings
+      error: 'Execution context missing. Build one with createExecutionContext() before calling executeProposal().'
     };
   }
+  if (!Array.isArray(context.rollbackStack)) {
+    context.rollbackStack = [];
+  }
 
-  // Store rollback data
-  const rollbackData = await captureRollbackData(proposal, context);
+  let rollbackData;
+  try {
+    // Validation and rollback capture belong inside the try — a throw from
+    // either used to escape to the caller instead of being reported.
+    const validation = validateProposal(proposal, context.currentData);
+    if (!validation.valid) {
+      return {
+        success: false,
+        proposal,
+        error: `Validation failed: ${validation.errors.join(', ')}`,
+        warnings: validation.warnings
+      };
+    }
+
+    rollbackData = await captureRollbackData(proposal, context);
+  } catch (error) {
+    console.error('❌ Proposal validation failed:', error);
+    return {
+      success: false,
+      proposal,
+      error: `Validation error: ${error.message}`
+    };
+  }
 
   try {
     let result;

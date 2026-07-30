@@ -180,8 +180,10 @@ function HouseList({
     filterHasHeraldry.length > 0;
 
   // ==================== PAGINATION LOGIC ====================
-  // Reset page when filters/sort change
-  useMemo(() => {
+  // Reset page when filters/sort change.
+  // This was a useMemo, which runs during render — calling a setter there is a
+  // render-phase side effect that forces an extra render and warns in React 19.
+  useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, sortBy, filterType, filterHasHeraldry]);
 

@@ -12,6 +12,7 @@ import {
   BASTARD_PREFIX 
 } from '../utils/bastardNaming';
 import './PersonForm.css';
+import { isOutOfOrder } from '../utils/parseYear';
 
 /**
  * PersonForm Component
@@ -140,10 +141,10 @@ function PersonForm({ person = null, houses = [], onSave, onCancel }) {
       newErrors.dateOfDeath = 'Date must be YYYY, YYYY-MM, or YYYY-MM-DD';
     }
 
-    if (formData.dateOfBirth && formData.dateOfDeath) {
-      if (formData.dateOfDeath < formData.dateOfBirth) {
-        newErrors.dateOfDeath = 'Death date cannot be before birth date';
-      }
+    // Compare numerically. A string compare made "1010" < "999" true, so a
+    // person born in 999 who died in 1010 could not be saved.
+    if (isOutOfOrder(formData.dateOfBirth, formData.dateOfDeath)) {
+      newErrors.dateOfDeath = 'Death date cannot be before birth date';
     }
 
     setErrors(newErrors);

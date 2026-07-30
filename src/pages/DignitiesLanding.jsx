@@ -261,16 +261,36 @@ function DignitiesLanding() {
       !d.swornToId || !filteredIds.has(d.swornToId) || d.dignityClass === 'crown'
     );
 
+    // `visited` guards against cyclic fealty (Crown sworn to a Duchy that is
+    // sworn back to the Crown). Without it this recursed forever and took the
+    // page down with a stack overflow and no error boundary output —
+    // analyzeCircularFeudalChains exists precisely because that state occurs.
+    const visited = new Set();
+
     function buildNode(dignity) {
-      // Only include subordinates that are in the filtered list
-      const subordinates = hierarchyDignities.filter(d => d.swornToId === dignity.id);
+      visited.add(dignity.id);
+      const subordinates = hierarchyDignities.filter(
+        d => d.swornToId === dignity.id && !visited.has(d.id)
+      );
       return {
         dignity,
         subordinates: subordinates.map(sub => buildNode(sub))
       };
     }
 
-    return rootDignities.map(d => buildNode(d));
+    const tree = rootDignities.map(d => buildNode(d));
+
+    // A cycle with no crown in it makes every member both a non-root and a
+    // non-subordinate, so it would vanish from the page entirely. Surface
+    // those rather than silently dropping them.
+    const unplaced = hierarchyDignities.filter(d => !visited.has(d.id));
+    if (unplaced.length > 0) {
+      console.warn('Dignities unreachable from any root (cyclic fealty?):',
+        unplaced.map(d => `${d.id}:${d.name}`));
+      tree.push(...unplaced.map(d => ({ dignity: d, subordinates: [], unplaced: true })));
+    }
+
+    return tree;
   }, [filteredDignities, viewMode, showPersonalHonours]);
 
   // Handlers

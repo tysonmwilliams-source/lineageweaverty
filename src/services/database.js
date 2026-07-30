@@ -921,7 +921,14 @@ export async function addRelationship(relationshipData, datasetId) {
     const database = getDatabase(datasetId);
 
     // Validate parent-child relationships for circular references
-    if (relationshipData.relationshipType === 'parent-child') {
+    // Import dynamically to avoid circular dependency
+    const { detectCircularAncestry, LINEAGE_RELATIONSHIP_TYPES } =
+      await import('../utils/dataIntegrity.js');
+
+    // This guard used to test for 'parent-child', which the app never writes,
+    // so it never ran and nothing prevented a person becoming their own
+    // grandparent.
+    if (LINEAGE_RELATIONSHIP_TYPES.includes(relationshipData.relationshipType)) {
       const parentId = relationshipData.person1Id;
       const childId = relationshipData.person2Id;
 
@@ -933,10 +940,9 @@ export async function addRelationship(relationshipData, datasetId) {
       // Get all existing relationships to check for circular references
       const allRelationships = await database.relationships.toArray();
 
-      // Check if this would create a circular reference
-      // Import dynamically to avoid circular dependency
-      const { detectCircularAncestry } = await import('../utils/dataIntegrity.js');
-      const circularCheck = detectCircularAncestry(parentId, childId, allRelationships);
+      // Signature is (childId, proposedParentId, ...) — the arguments were
+      // also passed the wrong way round here.
+      const circularCheck = detectCircularAncestry(childId, parentId, allRelationships);
 
       if (circularCheck.isCircular) {
         const pathStr = circularCheck.path.join(' → ');

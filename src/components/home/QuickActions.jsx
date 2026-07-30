@@ -55,10 +55,13 @@ const BUTTON_VARIANTS = {
 export default function QuickActions({ features, onExport, onSearch }) {
   const navigate = useNavigate();
   const { quickActions, staggeredEntrance, cardAnimations } = features;
-  
-  // Don't render if feature is disabled
-  if (!quickActions) return null;
-  
+
+  // NOTE: the early return for `!quickActions` lives at the bottom of this
+  // component, after every hook. It used to sit here, which made all six hooks
+  // below conditional — React identifies hooks by call order, so toggling the
+  // flag would have shifted every subsequent hook's identity and corrupted
+  // this component's hook state.
+
   // Memoized navigation handlers
   const handleAddPerson = useCallback(() => {
     navigate('/manage', { state: { openTab: 'people', action: 'add' } });
@@ -92,7 +95,10 @@ export default function QuickActions({ features, onExport, onSearch }) {
     { id: 'create-arms', iconName: 'shield', label: 'Create Arms', onClick: handleCreateArms },
     { id: 'export', iconName: 'download', label: 'Export', onClick: handleExport },
   ], [handleAddPerson, handleAddHouse, handleNewCodex, handleCreateArms, handleExport]);
-  
+
+  // Feature gate — after all hooks, so hook order is stable either way.
+  if (!quickActions) return null;
+
   return (
     <section className="quick-actions">
       <h2 className="quick-actions-title">

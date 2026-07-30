@@ -94,10 +94,11 @@ function getActivityIconName(type) {
 export default function RecentActivity({ features, people, houses, codexEntries, hasData }) {
   const navigate = useNavigate();
   const { recentActivity, staggeredEntrance } = features;
-  
-  // Don't render if feature is disabled
-  if (!recentActivity) return null;
-  
+
+  // The `!recentActivity` early return is at the bottom, after every hook —
+  // placing it here made the four hooks below conditional, which corrupts
+  // React's hook state when the flag changes.
+
   // Navigation handlers wrapped in useCallback for performance
   const handleNavigateToPerson = useCallback((personId) => {
     navigate('/tree', { state: { selectedPersonId: personId } });
@@ -164,7 +165,10 @@ export default function RecentActivity({ features, people, houses, codexEntries,
       .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
       .slice(0, 5);
   }, [people, houses, codexEntries]);
-  
+
+  // Feature gate — after all hooks, so hook order is stable either way.
+  if (!recentActivity) return null;
+
   // Show onboarding if no data
   if (!hasData) {
     return (

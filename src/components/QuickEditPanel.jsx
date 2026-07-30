@@ -1554,9 +1554,17 @@ function QuickEditPanel({
                             className="quick-edit-modal__select"
                           >
                             <option value="">-- No other parent / Unknown --</option>
-                            {spouses.map(spouse => (
-                              <option key={spouse.id} value={spouse.id}>
-                                {spouse.firstName} {spouse.lastName}
+                            {/*
+                              `spouses` is [{ person, relationshipId }], not a
+                              list of people. Reading .id/.firstName off the
+                              wrapper produced blank, valueless options, so
+                              coParentId stayed null and the second parent link
+                              was never created — the child then rendered as a
+                              single-parent (bastard-style) line in the tree.
+                            */}
+                            {spouses.map(({ person: spousePerson }) => (
+                              <option key={spousePerson.id} value={spousePerson.id}>
+                                {spousePerson.firstName} {spousePerson.lastName}
                               </option>
                             ))}
                           </select>

@@ -104,14 +104,14 @@ export async function searchEntities(query, datasetId, options = {}) {
       const houses = await getAllHouses(datasetId);
       const matches = houses
         .filter(house => {
-          const name = (house.name || '').toLowerCase();
+          const name = (house.houseName || '').toLowerCase();
           const motto = (house.motto || '').toLowerCase();
           return name.includes(normalizedQuery) || motto.includes(normalizedQuery);
         })
         .map(house => ({
           id: house.id,
           type: ENTITY_TYPES.HOUSE,
-          name: house.name || 'Unnamed House',
+          name: house.houseName || 'Unnamed House',
           subtitle: house.motto || null,
           icon: ENTITY_TYPE_ICONS[ENTITY_TYPES.HOUSE],
           data: house
@@ -218,7 +218,7 @@ export async function getEntityById(type, id, datasetId) {
           return {
             id: house.id,
             type: ENTITY_TYPES.HOUSE,
-            name: house.name || 'Unnamed House',
+            name: house.houseName || 'Unnamed House',
             subtitle: house.motto || null,
             icon: ENTITY_TYPE_ICONS[ENTITY_TYPES.HOUSE],
             data: house
@@ -297,7 +297,7 @@ export async function getRecentEntities(datasetId, limit = 5) {
       .map(house => ({
         id: house.id,
         type: ENTITY_TYPES.HOUSE,
-        name: house.name || 'Unnamed House',
+        name: house.houseName || 'Unnamed House',
         subtitle: house.motto || null,
         icon: ENTITY_TYPE_ICONS[ENTITY_TYPES.HOUSE],
         data: house

@@ -136,8 +136,9 @@ const TipTapEditor = forwardRef(function TipTapEditor({
         heading: {
           levels: [1, 2, 3]
         },
-        // Configure history
-        history: {
+        // TipTap 3 renamed the history extension to undoRedo; the old key was
+        // silently ignored, so depth/newGroupDelay never applied.
+        undoRedo: {
           depth: 100,
           newGroupDelay: 500
         }
@@ -220,10 +221,14 @@ const TipTapEditor = forwardRef(function TipTapEditor({
 
       // Only set if different from what's in the editor
       if (contentStr !== currentStr) {
-        // Use emitUpdate: false to prevent triggering onUpdate callback
-        // This prevents an infinite loop where save -> setActiveChapter ->
-        // content prop change -> setContent -> onUpdate -> save
-        editor.commands.setContent(content || '', false);
+        // emitUpdate: false prevents an infinite loop where
+        // save -> setActiveChapter -> content prop change -> setContent -> onUpdate -> save.
+        //
+        // TipTap 3's signature is setContent(content, options). Passing a bare
+        // `false` as the second argument meant options.emitUpdate destructured
+        // to undefined and defaulted to TRUE — so every chapter switch fired
+        // onUpdate and saved content the editor had only just loaded.
+        editor.commands.setContent(content || '', { emitUpdate: false });
       }
 
       // Always update the ref to prevent repeated comparisons

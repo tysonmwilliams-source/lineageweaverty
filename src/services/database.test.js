@@ -384,14 +384,44 @@ describe('Database Service', () => {
       expect(relationships).toHaveLength(0);
     });
 
-    it('should prevent self-referential parent-child relationships', async () => {
+    it('should prevent self-referential parent relationships', async () => {
       await expect(
         addRelationship({
           person1Id: person1Id,
           person2Id: person1Id,
-          relationshipType: 'parent-child'
+          relationshipType: 'parent'
         }, TEST_DATASET_ID)
       ).rejects.toThrow('cannot be their own parent');
+    });
+
+    it('should prevent self-reference for adopted and foster parents too', async () => {
+      for (const relationshipType of ['adopted-parent', 'foster-parent']) {
+        await expect(
+          addRelationship({
+            person1Id: person1Id,
+            person2Id: person1Id,
+            relationshipType
+          }, TEST_DATASET_ID)
+        ).rejects.toThrow('cannot be their own parent');
+      }
+    });
+
+    it('should prevent circular ancestry (a person becoming their own grandparent)', async () => {
+      // A is parent of B
+      await addRelationship({
+        person1Id: person1Id,
+        person2Id: person2Id,
+        relationshipType: 'parent'
+      }, TEST_DATASET_ID);
+
+      // Now try to make B the parent of A
+      await expect(
+        addRelationship({
+          person1Id: person2Id,
+          person2Id: person1Id,
+          relationshipType: 'parent'
+        }, TEST_DATASET_ID)
+      ).rejects.toThrow(/circular ancestry/i);
     });
   });
 

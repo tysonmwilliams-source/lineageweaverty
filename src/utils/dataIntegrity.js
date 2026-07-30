@@ -13,6 +13,27 @@
  */
 
 /**
+ * Relationship types that establish a parent -> child lineage edge.
+ * `person1Id` is the parent, `person2Id` is the child.
+ *
+ * Every check in this file previously matched on 'parent-child' and 'marriage'
+ * — values the app has never written. It writes 'parent' / 'adopted-parent' /
+ * 'foster-parent' and 'spouse'. That mismatch made this entire module dead:
+ * circular-ancestry detection, orphan detection and the bidirectional check
+ * all silently matched nothing, while their tests passed because the fixtures
+ * used the same fictional vocabulary.
+ */
+export const LINEAGE_RELATIONSHIP_TYPES = ['parent', 'adopted-parent', 'foster-parent'];
+
+/** The type used for marriages/partnerships. */
+export const SPOUSE_RELATIONSHIP_TYPE = 'spouse';
+
+/** True when the relationship forms a parent -> child edge. */
+function isLineageEdge(relationship) {
+  return LINEAGE_RELATIONSHIP_TYPES.includes(relationship.relationshipType);
+}
+
+/**
  * Detects if adding a parent relationship would create a circular reference
  *
  * A circular reference occurs when:
@@ -49,12 +70,12 @@ export function detectCircularAncestry(childId, proposedParentId, relationships,
 
   // Find all ancestors of the proposed parent
   const parentRelationships = relationships.filter(
-    r => r.relationshipType === 'parent-child' && r.person2Id === proposedParentId
+    r => isLineageEdge(r) && r.person2Id === proposedParentId
   );
 
   // For each ancestor of the proposed parent, check if they lead back to child
   for (const rel of parentRelationships) {
-    const ancestorId = rel.person1Id; // person1Id is the parent in parent-child
+    const ancestorId = rel.person1Id; // person1Id is the parent
 
     // If this ancestor IS the child, we have a circular reference
     if (ancestorId === childId) {
@@ -92,7 +113,7 @@ export function validateParentChildRelationship(parentId, childId, relationships
 
   // Check for existing relationship
   const existingRelationship = relationships.find(
-    r => r.relationshipType === 'parent-child' &&
+    r => isLineageEdge(r) &&
          r.person1Id === parentId &&
          r.person2Id === childId
   );
@@ -197,7 +218,9 @@ export function validateBidirectionalRelationships(relationships) {
   const checkedPairs = new Set();
 
   // Marriage relationships should be bidirectional
-  const marriageRelationships = relationships.filter(r => r.relationshipType === 'marriage');
+  const marriageRelationships = relationships.filter(
+    r => r.relationshipType === SPOUSE_RELATIONSHIP_TYPE
+  );
 
   for (const marriage of marriageRelationships) {
     // Create a unique key for this pair (order-independent)
@@ -245,9 +268,7 @@ export function runIntegrityCheck(data) {
   // Check for circular references in parent-child relationships
   // We detect cycles by checking if any person appears in their own ancestry
   const circularIssues = [];
-  const parentChildRels = (data.relationships || []).filter(
-    r => r.relationshipType === 'parent-child'
-  );
+  const parentChildRels = (data.relationships || []).filter(isLineageEdge);
 
   // Build a map of child -> parents for efficient lookup
   const parentMap = new Map();

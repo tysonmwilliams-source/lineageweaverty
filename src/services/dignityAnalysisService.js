@@ -346,6 +346,33 @@ function analyzeNoTenureRecords(dignities, tenuresByDignity, maps) {
 
     const holder = maps.peopleById.get(dignity.currentHolderId);
 
+    // The holder record can be missing — deleting a person does not clear
+    // dignity.currentHolderId anywhere. Reading holder.id unguarded took the
+    // whole analysis page down; a dangling reference is itself a finding, so
+    // report it rather than crashing on it.
+    if (!holder) {
+      suggestions.push({
+        id: generateSuggestionId(),
+        type: 'dangling-holder',
+        severity: 'warning',
+        confidence: 1,
+        title: `${dignity.name} points at a person who no longer exists`,
+        description: `currentHolderId ${dignity.currentHolderId} does not match any person. Succession cannot be calculated while this is unresolved.`,
+        reasoning: 'Deleting a person does not clear the dignities they held.',
+        affectedEntities: [
+          { type: 'dignity', id: dignity.id, name: dignity.name }
+        ],
+        suggestedAction: {
+          type: 'mark-vacant',
+          label: 'Mark Vacant',
+          data: { dignityId: dignity.id },
+          preview: `Clear the holder of ${dignity.name} and mark it vacant`
+        },
+        alternativeActions: []
+      });
+      continue;
+    }
+
     const suggestion = {
       id: generateSuggestionId(),
       type: 'no-tenure-records',

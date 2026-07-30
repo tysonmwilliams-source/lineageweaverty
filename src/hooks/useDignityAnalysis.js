@@ -15,7 +15,7 @@
  * @module useDignityAnalysis
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useDataset } from '../contexts/DatasetContext';
 import { runFullAnalysis, analyzeEntity } from '../services/dignityAnalysisService';
@@ -33,10 +33,14 @@ import {
  * @param {Object} options - Hook options
  * @param {string} options.scope - 'all' | 'house' | 'person' | 'dignity'
  * @param {number} options.entityId - Entity ID if scope is not 'all'
+ * @param {boolean} [options.autoRun=false] - Run the analysis on mount
  * @returns {Object} Analysis state and actions
  */
 export function useDignityAnalysis(options = {}) {
-  const { scope = 'all', entityId = null } = options;
+  // `autoRun` was documented and passed by both DignityView and
+  // DignitiesLanding, but was never destructured and no effect existed to act
+  // on it — so their suggestion panels were permanently empty.
+  const { scope = 'all', entityId = null, autoRun = false } = options;
   const { user } = useAuth();
   const { activeDataset } = useDataset();
 
@@ -176,6 +180,20 @@ export function useDignityAnalysis(options = {}) {
       setLoading(false);
     }
   }, [scope, entityId, activeDataset]);
+
+  /**
+   * Run once on mount (and whenever the scope changes) when autoRun is set.
+   * runAnalysis throws on failure, so swallow it here — the hook already
+   * records the message in `error` for the UI to render.
+   */
+  useEffect(() => {
+    if (!autoRun) return;
+    let cancelled = false;
+    runAnalysis().catch(() => {
+      if (!cancelled) { /* error state is set inside runAnalysis */ }
+    });
+    return () => { cancelled = true; };
+  }, [autoRun, runAnalysis]);
 
   /**
    * Apply a suggestion (execute its action)

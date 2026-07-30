@@ -90,24 +90,30 @@ function PersonPreview({ person, onInsert }) {
           </div>
         )}
 
-        {person.birthYear && (
+        {/*
+          These read person.birthYear / person.deathYear / person.biography —
+          none of which exist on the record. The schema has dateOfBirth and
+          dateOfDeath, and there is no biography field (long-form prose lives
+          in the linked Codex entry). Every preview rendered a bare name.
+        */}
+        {person.dateOfBirth && (
           <div className="ref-preview__field">
             <label>Born</label>
-            <span>{person.birthYear}</span>
+            <span>{person.dateOfBirth}</span>
           </div>
         )}
 
-        {person.deathYear && (
+        {person.dateOfDeath && (
           <div className="ref-preview__field">
             <label>Died</label>
-            <span>{person.deathYear}</span>
+            <span>{person.dateOfDeath}</span>
           </div>
         )}
 
-        {person.biography && (
-          <div className="ref-preview__field ref-preview__field--full">
-            <label>Biography</label>
-            <p className="ref-preview__text">{person.biography}</p>
+        {person.maidenName && (
+          <div className="ref-preview__field">
+            <label>Née</label>
+            <span>{person.maidenName}</span>
           </div>
         )}
 
@@ -181,24 +187,29 @@ function HousePreview({ house, heraldry, onInsert }) {
           </div>
         )}
 
-        {house.seat && (
+        {/*
+          house.seat / house.region / house.history do not exist on the record.
+          (`seatName` is a dignity field, not a house field — CLAUDE.md is wrong
+          about that.) The real house fields are below.
+        */}
+        {house.foundedDate && (
           <div className="ref-preview__field">
-            <label>Seat</label>
-            <span>{house.seat}</span>
+            <label>Founded</label>
+            <span>{house.foundedDate}</span>
           </div>
         )}
 
-        {house.region && (
+        {house.sigil && (
           <div className="ref-preview__field">
-            <label>Region</label>
-            <span>{house.region}</span>
+            <label>Sigil</label>
+            <span>{house.sigil}</span>
           </div>
         )}
 
-        {house.history && (
+        {house.notes && (
           <div className="ref-preview__field ref-preview__field--full">
-            <label>History</label>
-            <p className="ref-preview__text">{house.history}</p>
+            <label>Notes</label>
+            <p className="ref-preview__text">{house.notes}</p>
           </div>
         )}
       </div>

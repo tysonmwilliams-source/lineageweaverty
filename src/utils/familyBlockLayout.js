@@ -92,20 +92,32 @@ export function getDescendantGenerations(personId, childrenMap, spouseMap, peopl
   // Include spouse in gen 0 tracking for children lookup
   const spouseId = spouseMap.get(personId);
 
+  // Guards against cyclic ancestry. A single bad parent edge — from a bulk
+  // import, the AI proposal executor, or a restored backup, all of which write
+  // relationships directly — used to make this loop run forever and freeze the
+  // tab with no error.
+  const seen = new Set([personId]);
+
   while (currentGen.length > 0) {
     const nextGen = new Set();
 
     currentGen.forEach(pid => {
       const children = childrenMap.get(pid) || [];
-      children.forEach(childId => nextGen.add(childId));
+      children.forEach(childId => {
+        if (!seen.has(childId)) nextGen.add(childId);
+      });
 
       // Also check spouse's children
       const pSpouse = spouseMap.get(pid);
       if (pSpouse) {
         const spouseChildren = childrenMap.get(pSpouse) || [];
-        spouseChildren.forEach(childId => nextGen.add(childId));
+        spouseChildren.forEach(childId => {
+          if (!seen.has(childId)) nextGen.add(childId);
+        });
       }
     });
+
+    nextGen.forEach(id => seen.add(id));
 
     if (nextGen.size > 0) {
       generations.push(Array.from(nextGen));

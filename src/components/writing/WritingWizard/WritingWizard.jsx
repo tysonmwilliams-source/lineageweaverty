@@ -10,7 +10,7 @@
  * - Craft Coach: AI-powered deeper analysis for show/tell, tension, pacing
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import Icon from '../../icons';
 import { analyzeProseComplete } from '../../../services/proseAnalysisService';
 import './WritingWizard.css';
@@ -160,10 +160,16 @@ export default function WritingWizard({
         health: 'insufficient'
       };
     }
-    const result = analyzeProseComplete(plainText);
-    setLastAnalysis(new Date());
-    return result;
+    return analyzeProseComplete(plainText);
   }, [plainText]);
+
+  // Stamping the analysis time inside the useMemo above was a setState during
+  // render — it forced an extra render on every analysis.
+  useEffect(() => {
+    if (analysis && analysis.health !== 'insufficient') {
+      setLastAnalysis(new Date());
+    }
+  }, [analysis]);
 
   // Filter definitions
   const filters = [

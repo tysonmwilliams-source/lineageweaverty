@@ -14,7 +14,7 @@
  * - onDelete: Function to call when user wants to delete a person
  */
 
-import { useState, useMemo, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Icon from './icons';
 import ActionButton from './shared/ActionButton';
@@ -29,6 +29,7 @@ import Pagination from './shared/Pagination';
 import ViewDensityToggle from './shared/ViewDensityToggle';
 import useListKeyboardShortcuts from '../hooks/useListKeyboardShortcuts';
 import './PersonList.css';
+import { compareYears } from '../utils/parseYear';
 
 // ==================== PAGINATION CONFIG ====================
 const ITEMS_PER_PAGE = 25;
@@ -194,9 +195,13 @@ function PersonList({ people, houses, onEdit, onDelete }) {
       );
     }
 
-    // Apply house filter
+    // Apply house filter.
+    // filterHouse arrives from a <select> so it is always a string, while
+    // person.houseId is a number — the strict compare never matched and the
+    // filter returned zero results for every house.
     if (filterHouse) {
-      filtered = filtered.filter(p => p.houseId === filterHouse);
+      const houseIdFilter = Number(filterHouse);
+      filtered = filtered.filter(p => p.houseId === houseIdFilter);
     }
 
     // Apply legitimacy filter
@@ -222,10 +227,12 @@ function PersonList({ people, houses, onEdit, onDelete }) {
           return (b.lastName || '').localeCompare(a.lastName || '');
         case 'firstName':
           return (a.firstName || '').localeCompare(b.firstName || '');
+        // localeCompare sorted these as strings, so everyone born in the 900s
+        // came after everyone born in the 1000s.
         case 'dateOfBirth':
-          return (a.dateOfBirth || '9999').localeCompare(b.dateOfBirth || '9999');
+          return compareYears(a.dateOfBirth, b.dateOfBirth);
         case 'dateOfBirthDesc':
-          return (b.dateOfBirth || '').localeCompare(a.dateOfBirth || '');
+          return compareYears(b.dateOfBirth, a.dateOfBirth);
         case 'house': {
           const houseA = getHouseName(a.houseId);
           const houseB = getHouseName(b.houseId);
@@ -282,8 +289,10 @@ function PersonList({ people, houses, onEdit, onDelete }) {
     filterLivingStatus.length > 0;
 
   // ==================== PAGINATION LOGIC ====================
-  // Reset page when filters/sort change
-  useMemo(() => {
+  // Reset page when filters/sort change.
+  // This was a useMemo, which runs during render — calling a setter there is a
+  // render-phase side effect that forces an extra render and warns in React 19.
+  useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, sortBy, filterHouse, filterLegitimacy, filterLivingStatus]);
 

@@ -126,7 +126,7 @@ global.testUtils = {
       id: Math.floor(Math.random() * 10000),
       person1Id: 1,
       person2Id: 2,
-      relationshipType: 'parent-child',
+      relationshipType: 'parent',
       ...overrides,
     };
   },

@@ -11,6 +11,7 @@ import { getAllDignities, getTenuresForPerson } from './dignityService';
 import { getLinksByWriting } from './writingLinkService';
 import { getEntityById, ENTITY_TYPES } from './entitySearchService';
 import { askGemini } from './aiAssistantService';
+import { parseYear } from '../utils/parseYear';
 
 // ==================== ISSUE TYPES ====================
 
@@ -148,19 +149,19 @@ async function checkUnlinkedMentions(plainText, existingLinks, datasetId) {
 
   // Check for house mentions
   for (const house of houses) {
-    if (!house.name || house.name.length < 3) continue;
+    if (!house.houseName || house.houseName.length < 3) continue;
 
-    const houseRegex = new RegExp(`\\b(House\\s+)?${escapeRegex(house.name)}\\b`, 'gi');
-    if (houseRegex.test(plainText) && !linkedNames.has(house.name.toLowerCase())) {
+    const houseRegex = new RegExp(`\\b(House\\s+)?${escapeRegex(house.houseName)}\\b`, 'gi');
+    if (houseRegex.test(plainText) && !linkedNames.has(house.houseName.toLowerCase())) {
       issues.push({
         id: `unlinked-house-${house.id}`,
         type: ISSUE_TYPES.INFO,
         category: 'unlinked_mention',
         title: 'Unlinked House',
-        description: `"House ${house.name}" is mentioned but not linked.`,
+        description: `"House ${house.houseName}" is mentioned but not linked.`,
         entityType: ENTITY_TYPES.HOUSE,
         entityId: house.id,
-        entityName: house.name,
+        entityName: house.houseName,
         suggestion: 'Consider creating a [[wiki-link]] for this house.'
       });
     }
@@ -180,22 +181,47 @@ async function checkCharacterLifespans(links, datasetId) {
   const people = await getAllPeople(datasetId);
   const peopleMap = new Map(people.map(p => [p.id, p]));
 
+  // "Historical" has to be relative to the world's own timeline, not the real
+  // calendar — a world dated 1680-2016 has nothing to do with the year the
+  // author happens to be writing in.
+  const latestYear = people.reduce((max, p) => {
+    const d = parseYear(p.dateOfDeath);
+    const b = parseYear(p.dateOfBirth);
+    return Math.max(max, d ?? 0, b ?? 0);
+  }, 0);
+
   for (const link of personLinks) {
     const person = peopleMap.get(link.targetId);
     if (!person) continue;
 
-    // Check if character is marked as deceased
-    if (person.deathYear && person.deathYear < new Date().getFullYear() - 100) {
-      // Character died over 100 years ago - might be relevant
+    const deathYear = parseYear(person.dateOfDeath);
+    const birthYear = parseYear(person.dateOfBirth);
+
+    // Internally impossible dates are a hard error regardless of era.
+    if (deathYear !== null && birthYear !== null && deathYear < birthYear) {
+      issues.push({
+        id: `impossible-lifespan-${person.id}`,
+        type: ISSUE_TYPES.ERROR,
+        category: ISSUE_CATEGORIES.TIMELINE_CONFLICT,
+        title: 'Impossible Lifespan',
+        description: `${formatPersonName(person)} is recorded as dying in ${deathYear}, before their birth in ${birthYear}.`,
+        entityType: ENTITY_TYPES.PERSON,
+        entityId: person.id
+      });
+      continue;
+    }
+
+    // Referenced character died long before the world's present day.
+    if (deathYear !== null && latestYear > 0 && deathYear < latestYear - 100) {
       issues.push({
         id: `deceased-${person.id}`,
         type: ISSUE_TYPES.INFO,
         category: ISSUE_CATEGORIES.TIMELINE_CONFLICT,
         title: 'Historical Character',
-        description: `${formatPersonName(person)} died in ${person.deathYear}. Ensure your story's timeline is consistent.`,
+        description: `${formatPersonName(person)} died in ${deathYear}, more than a century before the latest events in your world (${latestYear}). Ensure your story's timeline is consistent.`,
         entityType: ENTITY_TYPES.PERSON,
         entityId: person.id,
-        deathYear: person.deathYear
+        deathYear
       });
     }
   }
@@ -299,8 +325,8 @@ export function buildCanonCheckPrompt(context) {
       const name = formatPersonName(person);
       entitiesContext += `- ${name}`;
       if (person.epithet) entitiesContext += ` (${person.epithet})`;
-      if (person.birthYear) entitiesContext += `, born ${person.birthYear}`;
-      if (person.deathYear) entitiesContext += `, died ${person.deathYear}`;
+      if (person.dateOfBirth) entitiesContext += `, born ${person.dateOfBirth}`;
+      if (person.dateOfDeath) entitiesContext += `, died ${person.dateOfDeath}`;
       entitiesContext += '\n';
     }
   }
@@ -308,7 +334,7 @@ export function buildCanonCheckPrompt(context) {
   if (referencedEntities.houses.length > 0) {
     entitiesContext += '\n\nREFERENCED HOUSES:\n';
     for (const house of referencedEntities.houses) {
-      entitiesContext += `- House ${house.name}`;
+      entitiesContext += `- House ${house.houseName}`;
       if (house.motto) entitiesContext += ` (Motto: "${house.motto}")`;
       entitiesContext += '\n';
     }

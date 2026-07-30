@@ -21,13 +21,20 @@ import {
   requestAnalysis,
   getDataSummary
 } from '../services/aiAssistantService';
-import { executeProposal } from '../services/aiProposalExecutor';
+import { executeProposal, createExecutionContext } from '../services/aiProposalExecutor';
+import { useAuth } from '../contexts/AuthContext';
+import { useDataset } from '../contexts/DatasetContext';
 import { AIProposalList } from './AIProposalCard';
 import GenealogyContext from '../contexts/GenealogyContext';
 import './AIAssistant.css';
 
 export default function AIAssistant({ context = {}, onClose }) {
   const genealogyContext = useContext(GenealogyContext);
+  const { user } = useAuth();
+  const { activeDataset } = useDataset();
+  // AIAssistant is mounted globally from Navigation, so without this it read
+  // and wrote the default world regardless of which one was open.
+  const datasetId = activeDataset?.id || 'default';
 
   const [messages, setMessages] = useState([
     {
@@ -80,7 +87,7 @@ export default function AIAssistant({ context = {}, onClose }) {
 
   const loadDataSummary = async () => {
     try {
-      const summary = await getDataSummary();
+      const summary = await getDataSummary(datasetId);
       setDataSummary(summary);
     } catch (err) {
       console.warn('Could not load data summary:', err);
@@ -111,7 +118,8 @@ export default function AIAssistant({ context = {}, onClose }) {
         response = await askGeminiWithFullContext(currentInput, {
           includeAnalysis: analysisMode,
           enableProposals: true,
-          additionalContext: context
+          additionalContext: context,
+          datasetId
         });
 
         // Handle text response
@@ -220,10 +228,15 @@ export default function AIAssistant({ context = {}, onClose }) {
     setExecutingIds(prev => [...prev, proposalId]);
 
     try {
-      const result = await executeProposal(proposal, {
+      // Must be a real execution context — see executeProposal(). Also note the
+      // datasetId: this was hardcoded to 'default', so approving a proposal in
+      // any other world wrote to the wrong database.
+      const ctx = await createExecutionContext({
         genealogyContext,
-        datasetId: 'default'
+        datasetId,
+        userId: user?.uid
       });
+      const result = await executeProposal(proposal, ctx);
 
       // Update proposal status
       setProposals(prev => prev.map(p =>

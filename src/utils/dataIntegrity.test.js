@@ -31,7 +31,7 @@ describe('dataIntegrity', () => {
     it('should detect simple circular reference (A -> B -> A)', () => {
       // Person 2 is parent of Person 1
       const relationships = [
-        { id: 1, person1Id: 2, person2Id: 1, relationshipType: 'parent-child' }
+        { id: 1, person1Id: 2, person2Id: 1, relationshipType: 'parent' }
       ];
 
       // Now trying to make Person 1 a parent of Person 2 (circular!)
@@ -43,8 +43,8 @@ describe('dataIntegrity', () => {
     it('should detect multi-generation circular reference', () => {
       // Grandparent (1) -> Parent (2) -> Child (3)
       const relationships = [
-        { id: 1, person1Id: 1, person2Id: 2, relationshipType: 'parent-child' },
-        { id: 2, person1Id: 2, person2Id: 3, relationshipType: 'parent-child' }
+        { id: 1, person1Id: 1, person2Id: 2, relationshipType: 'parent' },
+        { id: 2, person1Id: 2, person2Id: 3, relationshipType: 'parent' }
       ];
 
       // Trying to make Child (3) a parent of Grandparent (1) = circular!
@@ -56,7 +56,7 @@ describe('dataIntegrity', () => {
 
     it('should allow valid non-circular relationships', () => {
       const relationships = [
-        { id: 1, person1Id: 1, person2Id: 2, relationshipType: 'parent-child' }
+        { id: 1, person1Id: 1, person2Id: 2, relationshipType: 'parent' }
       ];
 
       // Person 3 can be parent of Person 2 (no circular reference)
@@ -74,7 +74,7 @@ describe('dataIntegrity', () => {
     it('should ignore non-parent-child relationships', () => {
       // Marriage relationship should not affect ancestry check
       const relationships = [
-        { id: 1, person1Id: 1, person2Id: 2, relationshipType: 'marriage' }
+        { id: 1, person1Id: 1, person2Id: 2, relationshipType: 'spouse' }
       ];
 
       const result = detectCircularAncestry(1, 2, relationships);
@@ -85,11 +85,11 @@ describe('dataIntegrity', () => {
     it('should detect circular reference in complex family tree', () => {
       // Complex tree: 1 -> 2, 1 -> 3, 2 -> 4, 3 -> 5, 4 -> 6
       const relationships = [
-        { id: 1, person1Id: 1, person2Id: 2, relationshipType: 'parent-child' },
-        { id: 2, person1Id: 1, person2Id: 3, relationshipType: 'parent-child' },
-        { id: 3, person1Id: 2, person2Id: 4, relationshipType: 'parent-child' },
-        { id: 4, person1Id: 3, person2Id: 5, relationshipType: 'parent-child' },
-        { id: 5, person1Id: 4, person2Id: 6, relationshipType: 'parent-child' }
+        { id: 1, person1Id: 1, person2Id: 2, relationshipType: 'parent' },
+        { id: 2, person1Id: 1, person2Id: 3, relationshipType: 'parent' },
+        { id: 3, person1Id: 2, person2Id: 4, relationshipType: 'parent' },
+        { id: 4, person1Id: 3, person2Id: 5, relationshipType: 'parent' },
+        { id: 5, person1Id: 4, person2Id: 6, relationshipType: 'parent' }
       ];
 
       // Trying to make 6 parent of 1 (would create 6 -> 1 -> 2 -> 4 -> 6 loop)
@@ -101,8 +101,8 @@ describe('dataIntegrity', () => {
     it('should handle multiple parents correctly', () => {
       // Two parents (1, 2) -> Child (3)
       const relationships = [
-        { id: 1, person1Id: 1, person2Id: 3, relationshipType: 'parent-child' },
-        { id: 2, person1Id: 2, person2Id: 3, relationshipType: 'parent-child' }
+        { id: 1, person1Id: 1, person2Id: 3, relationshipType: 'parent' },
+        { id: 2, person1Id: 2, person2Id: 3, relationshipType: 'parent' }
       ];
 
       // Person 4 can be parent of Person 3 (no circular reference)
@@ -123,7 +123,7 @@ describe('dataIntegrity', () => {
 
     it('should reject duplicate relationships', () => {
       const relationships = [
-        { id: 1, person1Id: 1, person2Id: 2, relationshipType: 'parent-child' }
+        { id: 1, person1Id: 1, person2Id: 2, relationshipType: 'parent' }
       ];
 
       const result = validateParentChildRelationship(1, 2, relationships);
@@ -135,7 +135,7 @@ describe('dataIntegrity', () => {
     it('should reject circular ancestry', () => {
       // Person 2 is already parent of Person 1
       const relationships = [
-        { id: 1, person1Id: 2, person2Id: 1, relationshipType: 'parent-child' }
+        { id: 1, person1Id: 2, person2Id: 1, relationshipType: 'parent' }
       ];
 
       // Cannot make Person 1 parent of Person 2
@@ -147,7 +147,7 @@ describe('dataIntegrity', () => {
 
     it('should accept valid new relationship', () => {
       const relationships = [
-        { id: 1, person1Id: 1, person2Id: 2, relationshipType: 'parent-child' }
+        { id: 1, person1Id: 1, person2Id: 2, relationshipType: 'parent' }
       ];
 
       // Person 3 can be parent of Person 2
@@ -165,7 +165,7 @@ describe('dataIntegrity', () => {
 
     it('should not flag non-parent-child relationships as duplicates', () => {
       const relationships = [
-        { id: 1, person1Id: 1, person2Id: 2, relationshipType: 'marriage' }
+        { id: 1, person1Id: 1, person2Id: 2, relationshipType: 'spouse' }
       ];
 
       // Parent-child relationship can be added even though marriage exists
@@ -181,7 +181,7 @@ describe('dataIntegrity', () => {
         people: [{ id: 2, firstName: 'Test', lastName: 'Person' }],
         houses: [],
         relationships: [
-          { id: 1, person1Id: 999, person2Id: 2, relationshipType: 'parent-child' }
+          { id: 1, person1Id: 999, person2Id: 2, relationshipType: 'parent' }
         ]
       };
 
@@ -197,7 +197,7 @@ describe('dataIntegrity', () => {
         people: [{ id: 1, firstName: 'Test', lastName: 'Person' }],
         houses: [],
         relationships: [
-          { id: 1, person1Id: 1, person2Id: 888, relationshipType: 'parent-child' }
+          { id: 1, person1Id: 1, person2Id: 888, relationshipType: 'parent' }
         ]
       };
 
@@ -213,7 +213,7 @@ describe('dataIntegrity', () => {
         people: [],
         houses: [],
         relationships: [
-          { id: 1, person1Id: 999, person2Id: 888, relationshipType: 'parent-child' }
+          { id: 1, person1Id: 999, person2Id: 888, relationshipType: 'parent' }
         ]
       };
 
@@ -280,7 +280,7 @@ describe('dataIntegrity', () => {
         ],
         houses: [{ id: 1, houseName: 'Test House' }],
         relationships: [
-          { id: 1, person1Id: 1, person2Id: 2, relationshipType: 'parent-child' }
+          { id: 1, person1Id: 1, person2Id: 2, relationshipType: 'parent' }
         ],
         codexEntries: [
           { id: 1, name: 'Entry 1' },
@@ -323,7 +323,7 @@ describe('dataIntegrity', () => {
   describe('validateBidirectionalRelationships', () => {
     it('should return empty array when no marriages exist', () => {
       const relationships = [
-        { id: 1, person1Id: 1, person2Id: 2, relationshipType: 'parent-child' }
+        { id: 1, person1Id: 1, person2Id: 2, relationshipType: 'parent' }
       ];
 
       const inconsistencies = validateBidirectionalRelationships(relationships);
@@ -333,7 +333,7 @@ describe('dataIntegrity', () => {
 
     it('should return empty array for single marriage relationship', () => {
       const relationships = [
-        { id: 1, person1Id: 1, person2Id: 2, relationshipType: 'marriage', marriageDate: '1000' }
+        { id: 1, person1Id: 1, person2Id: 2, relationshipType: 'spouse', marriageDate: '1000' }
       ];
 
       const inconsistencies = validateBidirectionalRelationships(relationships);
@@ -343,8 +343,8 @@ describe('dataIntegrity', () => {
 
     it('should detect mismatched marriage dates in bidirectional marriages', () => {
       const relationships = [
-        { id: 1, person1Id: 1, person2Id: 2, relationshipType: 'marriage', marriageDate: '1000' },
-        { id: 2, person1Id: 2, person2Id: 1, relationshipType: 'marriage', marriageDate: '1001' }
+        { id: 1, person1Id: 1, person2Id: 2, relationshipType: 'spouse', marriageDate: '1000' },
+        { id: 2, person1Id: 2, person2Id: 1, relationshipType: 'spouse', marriageDate: '1001' }
       ];
 
       const inconsistencies = validateBidirectionalRelationships(relationships);
@@ -355,8 +355,8 @@ describe('dataIntegrity', () => {
 
     it('should not flag consistent bidirectional marriages', () => {
       const relationships = [
-        { id: 1, person1Id: 1, person2Id: 2, relationshipType: 'marriage', marriageDate: '1000' },
-        { id: 2, person1Id: 2, person2Id: 1, relationshipType: 'marriage', marriageDate: '1000' }
+        { id: 1, person1Id: 1, person2Id: 2, relationshipType: 'spouse', marriageDate: '1000' },
+        { id: 2, person1Id: 2, person2Id: 1, relationshipType: 'spouse', marriageDate: '1000' }
       ];
 
       const inconsistencies = validateBidirectionalRelationships(relationships);
@@ -380,7 +380,7 @@ describe('dataIntegrity', () => {
         ],
         houses: [{ id: 1, houseName: 'Test House' }],
         relationships: [
-          { id: 1, person1Id: 1, person2Id: 2, relationshipType: 'parent-child' }
+          { id: 1, person1Id: 1, person2Id: 2, relationshipType: 'parent' }
         ],
         codexEntries: [],
         codexLinks: []
@@ -399,7 +399,7 @@ describe('dataIntegrity', () => {
         people: [{ id: 1, firstName: 'Test', lastName: 'Person' }],
         houses: [],
         relationships: [
-          { id: 1, person1Id: 1, person2Id: 999, relationshipType: 'parent-child' }
+          { id: 1, person1Id: 1, person2Id: 999, relationshipType: 'parent' }
         ]
       };
 
@@ -431,8 +431,8 @@ describe('dataIntegrity', () => {
         ],
         houses: [],
         relationships: [
-          { id: 1, person1Id: 1, person2Id: 2, relationshipType: 'marriage', marriageDate: '1000' },
-          { id: 2, person1Id: 2, person2Id: 1, relationshipType: 'marriage', marriageDate: '1001' }
+          { id: 1, person1Id: 1, person2Id: 2, relationshipType: 'spouse', marriageDate: '1000' },
+          { id: 2, person1Id: 2, person2Id: 1, relationshipType: 'spouse', marriageDate: '1001' }
         ]
       };
 
@@ -473,7 +473,7 @@ describe('dataIntegrity', () => {
         ],
         houses: [],
         relationships: [
-          { id: 1, person1Id: 1, person2Id: 888, relationshipType: 'parent-child' }
+          { id: 1, person1Id: 1, person2Id: 888, relationshipType: 'parent' }
         ],
         codexEntries: [],
         codexLinks: [

@@ -239,8 +239,9 @@ function FamilyTree() {
       .duration(500)
       .call(zoomBehaviorRef.current.transform, d3.zoomIdentity.translate(translateX, translateY).scale(scale));
 
-    // Close the nav panel after navigation
-    setFragmentNavExpanded(false);
+    // FragmentNavigator owns its own expanded state and closes on mouse-leave,
+    // so there is nothing to close from here. The setter this used to call had
+    // been deleted, making every fragment navigation throw a ReferenceError.
   };
 
   // EFFECTS

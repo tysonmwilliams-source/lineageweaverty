@@ -22,6 +22,7 @@ import { validateRelationship, generateCascadeSuggestions } from '../utils/Smart
 import Icon from './icons/Icon';
 import ActionButton from './shared/ActionButton';
 import './RelationshipForm.css';
+import { isOutOfOrder } from '../utils/parseYear';
 
 const SECTION_VARIANTS = {
   hidden: { opacity: 0, y: 10 },
@@ -213,8 +214,8 @@ function RelationshipForm({
         newErrors.divorceDate = 'Date must be YYYY, YYYY-MM, or YYYY-MM-DD';
       }
 
-      if (formData.marriageDate && formData.divorceDate &&
-          formData.divorceDate < formData.marriageDate) {
+      // Numeric comparison — see parseYear; string compare breaks on 3-digit years.
+      if (isOutOfOrder(formData.marriageDate, formData.divorceDate)) {
         newErrors.divorceDate = 'Divorce date cannot be before marriage date';
       }
     }
