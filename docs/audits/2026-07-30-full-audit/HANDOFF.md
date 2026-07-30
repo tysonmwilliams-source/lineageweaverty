@@ -80,7 +80,7 @@ gated on a green light for timing. See "What is left" below.
 
 ```bash
 npm run build      # passes, ~20s
-npx vitest run     # 518 tests pass, 15 files, exits 0
+npx vitest run     # 542 tests pass, 17 files, exits 0
 npx eslint .       # 0 errors, 343 warnings — exits 0, and CI blocks on it
 ```
 

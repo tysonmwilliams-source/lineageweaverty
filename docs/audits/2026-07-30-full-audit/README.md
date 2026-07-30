@@ -643,7 +643,7 @@ the only outstanding item that can damage heraldry already drawn.
 | Step | What | Status |
 |---|---|---|
 | 1 | The recursive model, the v1/v2 → v3 migration, and its tests | **done** — `87aa243` |
-| 2 | Read path: renderers consume `composition.root` via `collectLeaves` | not started |
+| 2 | Read path: readers go through `primaryLeaf`/`allLeaves`/`readCadency` | **done** — `5fa1bda` |
 | 3 | Save path: `HeraldryCreator` writes v3 and stops migrating on load | not started |
 | 4 | Render marshalled nodes — the SVG pipeline learns to divide a shield | not started |
 | 5 | UI to build a marshalled coat, and `linkType` `impaled`/`quartered` set by real code paths | not started |
@@ -679,6 +679,20 @@ real data, none of which could be assumed from the code:
 Applying is therefore expected to be a pure format change with no visual
 consequence. It still waits for step 3, because a migrated record needs a
 renderer that understands version 3.
+
+**What step 2 found.** Two live readers recognised storage version 2 and
+nothing else, both failing by drawing a wrong shield rather than by erroring:
+the creator's edit-load path rebuilt legacy records from an inline copy of the
+lossy conversion, and the personal-arms derivation path (`comp?.field`, no
+else) opened a **blank shield** when deriving from a legacy record. That second
+one is why step 2 had to precede step 3 — a migrated record has no top-level
+`field`, so the same check would have failed for *every* record the moment
+anything wrote version 3, converting a legacy-only bug into a universal one.
+
+A third composition shape also turned up and was deleted:
+`createPersonalArmsSVG` returned `composition: { base, cadency }`, nested unlike
+either stored format, which nothing read. Left alone it would have been adopted
+by step 4.
 
 Two things step 1 established that the rest depends on:
 
