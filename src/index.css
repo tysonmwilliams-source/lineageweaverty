@@ -1,1 +1,12 @@
-@import "tailwindcss";
+/**
+ * index.css — global entry stylesheet.
+ *
+ * Was a single `@import "tailwindcss"`. Tailwind is removed (decision B3): the
+ * app was 94% hand-written BEM and 6% Tailwind, and the two collided on token
+ * names — `className="text-sm"` resolved to this app's 13px while inheriting a
+ * line-height computed from Tailwind's 14px assumption.
+ *
+ * Design tokens live in src/styles/themes/, shared keyframes in
+ * src/styles/animations.css, and component styles alongside their components.
+ * There is deliberately nothing global here.
+ */

@@ -1,0 +1,94 @@
+/**
+ * FragmentNavigator.css
+ *
+ * Was Tailwind utilities plus inline style objects (decision B3). The inline
+ * styles are folded in here too — they were only inline because there was no
+ * stylesheet to put them in, and every value they set was already a token.
+ *
+ * Manuscript direction (decision B1): near-zero radius so the pill reads as a
+ * trimmed label rather than an iOS chip, and a warm-tinted shadow instead of the
+ * default black one.
+ */
+
+.fragment-nav {
+  position: fixed;
+  top: 5rem;
+  left: 1.5rem;
+  z-index: 10;
+}
+
+/* Collapsed pill */
+.fragment-nav__pill {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+  padding: var(--space-2, 0.5rem) var(--space-3, 0.75rem);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm, 2px);
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.fragment-nav:hover .fragment-nav__pill {
+  border-color: var(--accent-primary);
+}
+
+.fragment-nav__pill-icon {
+  color: var(--accent-primary);
+}
+
+.fragment-nav__pill-label {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* Expanded list */
+.fragment-nav__list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 12rem;
+  margin-top: var(--space-1, 0.25rem);
+  overflow: hidden;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm, 2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.fragment-nav__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+  width: 100%;
+  padding: var(--space-2, 0.5rem) var(--space-3, 0.75rem);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  text-align: left;
+  color: var(--text-primary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+/* Replaces an onMouseEnter/onMouseLeave pair that set backgroundColor in JS —
+   which also meant keyboard focus got no highlight at all. */
+.fragment-nav__item:hover,
+.fragment-nav__item:focus-visible {
+  background: var(--bg-tertiary);
+}
+
+.fragment-nav__item-icon {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.fragment-nav__item-count {
+  margin-left: auto;
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+}

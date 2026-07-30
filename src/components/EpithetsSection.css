@@ -1,0 +1,332 @@
+/**
+ * EpithetsSection.css
+ *
+ * Was Tailwind utilities plus a hardcoded two-branch `theme` object of 20 hex
+ * values selected by an `isDarkTheme` prop (decisions B3 + B1).
+ *
+ * Every one of those hex values had an existing token equivalent, so the JS theme
+ * object is gone entirely. That matters beyond tidiness: the object only knew
+ * about "dark" and "light", so in the five themes that are neither — emerald
+ * court, sapphire dynasty, autumn chronicle, rose lineage, twilight realm — this
+ * component rendered royal-parchment's browns regardless of the active theme.
+ * Driving it from custom properties makes it correct in all seven.
+ *
+ * Manuscript direction (B1): near-zero radius, the primary epithet marked by an
+ * accent rule rather than a ring, and the expanded detail panel hung off a
+ * left-hand accent rule like a marginal gloss.
+ */
+
+.epithets {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1, 0.25rem);
+}
+
+.epithets__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2, 0.5rem);
+  margin-bottom: var(--space-2, 0.5rem);
+}
+
+.epithets__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.epithets__count {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+}
+
+/* ── Chip ────────────────────────────────────────────────────────────────── */
+
+.epithets__item {
+  margin-bottom: var(--space-2, 0.5rem);
+}
+
+.epithets__chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2, 0.5rem);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm, 2px);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.epithets__chip:hover {
+  border-color: var(--accent-primary);
+}
+
+/* The primary epithet was marked with Tailwind's `ring-2` plus a `ringColor`
+   style property — which is not a real CSS property, so it never applied and the
+   only actual cue was the border colour. A left accent rule reads as a marginal
+   mark rather than a focus ring. */
+.epithets__chip--primary {
+  border-color: var(--accent-primary);
+  border-left-width: 3px;
+}
+
+.epithets__chip-main {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+  flex: 1;
+  min-width: 0;
+}
+
+.epithets__chip-source {
+  font-size: var(--text-sm);
+  flex-shrink: 0;
+}
+
+.epithets__chip-text {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.epithets__badge {
+  padding: 0.125rem 0.375rem;
+  font-size: var(--text-xs);
+  color: var(--text-inverse);
+  background: var(--accent-primary);
+  border-radius: var(--radius-sm, 2px);
+  flex-shrink: 0;
+}
+
+.epithets__chip-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1, 0.25rem);
+  margin-left: var(--space-2, 0.5rem);
+  color: var(--text-tertiary);
+}
+
+/* ── Expanded detail ─────────────────────────────────────────────────────── */
+
+.epithets__detail {
+  margin: var(--space-1, 0.25rem) 0 0 var(--space-2, 0.5rem);
+  padding: var(--space-3, 0.75rem);
+  background: var(--bg-elevated, var(--bg-secondary));
+  border-left: 2px solid var(--accent-primary);
+  border-radius: 0 var(--radius-sm, 2px) var(--radius-sm, 2px) 0;
+}
+
+.epithets__detail-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 0.5rem);
+  font-size: var(--text-sm);
+}
+
+.epithets__detail-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+}
+
+.epithets__detail-label {
+  color: var(--text-secondary);
+}
+
+.epithets__detail-value {
+  color: var(--text-primary);
+}
+
+.epithets__detail-notes {
+  margin: var(--space-1, 0.25rem) 0 0;
+  color: var(--text-primary);
+}
+
+.epithets__actions {
+  display: flex;
+  gap: var(--space-2, 0.5rem);
+  padding-top: var(--space-2, 0.5rem);
+  border-top: 1px solid var(--border-subtle, var(--border-primary));
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+
+.epithets__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: var(--space-1, 0.25rem) var(--space-2, 0.5rem);
+  font-family: inherit;
+  font-size: var(--text-xs);
+  background: transparent;
+  border: 1px solid currentColor;
+  border-radius: var(--radius-sm, 2px);
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.epithets__btn:hover,
+.epithets__btn:focus-visible {
+  opacity: 0.8;
+}
+
+.epithets__btn--primary {
+  color: var(--accent-primary);
+}
+
+.epithets__btn--danger {
+  color: var(--color-error);
+}
+
+/* ── Add form ────────────────────────────────────────────────────────────── */
+
+.epithets__form {
+  margin-top: var(--space-2, 0.5rem);
+  padding: var(--space-3, 0.75rem);
+  background: var(--bg-elevated, var(--bg-secondary));
+  border: 1px solid var(--accent-primary);
+  border-radius: var(--radius-sm, 2px);
+}
+
+.epithets__form-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3, 0.75rem);
+}
+
+.epithets__form-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2, 0.5rem);
+}
+
+.epithets__label {
+  display: block;
+  margin-bottom: var(--space-1, 0.25rem);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.epithets__label--optional {
+  opacity: 0.7;
+}
+
+.epithets__input,
+.epithets__select,
+.epithets__textarea {
+  width: 100%;
+  padding: var(--space-2, 0.5rem);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm, 2px);
+}
+
+.epithets__input:focus-visible,
+.epithets__select:focus-visible,
+.epithets__textarea:focus-visible {
+  outline: 2px solid var(--border-focus, var(--accent-primary));
+  outline-offset: 1px;
+}
+
+.epithets__textarea {
+  resize: none;
+}
+
+.epithets__errors {
+  padding: var(--space-2, 0.5rem);
+  font-size: var(--text-sm);
+  color: var(--color-error);
+  background: var(--color-error-bg);
+  border-radius: var(--radius-sm, 2px);
+}
+
+.epithets__form-actions {
+  display: flex;
+  gap: var(--space-2, 0.5rem);
+  padding-top: var(--space-1, 0.25rem);
+}
+
+.epithets__form-btn {
+  flex: 1;
+  padding: var(--space-2, 0.5rem);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  border-radius: var(--radius-sm, 2px);
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.epithets__form-btn:hover:not(:disabled),
+.epithets__form-btn:focus-visible:not(:disabled) {
+  opacity: 0.85;
+}
+
+.epithets__form-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.epithets__form-btn--cancel {
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border-primary);
+}
+
+.epithets__form-btn--confirm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  color: var(--text-inverse);
+  background: var(--accent-primary);
+  border: 1px solid var(--accent-primary);
+}
+
+/* ── Empty state and add trigger ─────────────────────────────────────────── */
+
+.epithets__empty {
+  padding: var(--space-3, 0.75rem);
+  font-size: var(--text-sm);
+  text-align: center;
+  color: var(--text-tertiary);
+  background: var(--bg-tertiary);
+  border: 1px dashed var(--border-primary);
+  border-radius: var(--radius-sm, 2px);
+}
+
+.epithets__add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2, 0.5rem);
+  width: 100%;
+  margin-top: var(--space-2, 0.5rem);
+  padding: var(--space-2, 0.5rem) var(--space-3, 0.75rem);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  color: var(--accent-primary);
+  background: transparent;
+  border: 1px dashed var(--border-primary);
+  border-radius: var(--radius-sm, 2px);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.epithets__add:hover,
+.epithets__add:focus-visible {
+  border-color: var(--accent-primary);
+  background: var(--bg-tertiary);
+}

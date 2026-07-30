@@ -25,6 +25,7 @@ import { getAllEntries, getAllLinks } from '../services/codexService';
 import { getAllHeraldry } from '../services/heraldryService';
 import { logger } from '../utils/logger';
 import Icon from './icons';
+import './DataHealthDashboard.css';
 
 function DataHealthDashboard({ isDarkTheme = true, onNavigateToPerson, onNavigateToRelationship }) {
   const { 
@@ -49,32 +50,33 @@ function DataHealthDashboard({ isDarkTheme = true, onNavigateToPerson, onNavigat
   const [namedAfterConfirm, setNamedAfterConfirm] = useState(null); // { person1Id, person2Id, names }
   
   // Theme
-  const theme = isDarkTheme ? {
-    bg: '#2d2418',
-    bgLight: '#3a2f20',
-    bgLighter: '#4a3d2a',
-    text: '#e9dcc9',
-    textSecondary: '#b8a989',
-    border: '#4a3d2a',
-    accent: '#d4a574',
-    success: '#6b8e5e',
-    warning: '#c4a44e',
-    error: '#a65d5d',
-    info: '#6b8ea5',
-    namesake: '#7a6b9e' // Purple for namesake actions
-  } : {
-    bg: '#f5f0e8',
-    bgLight: '#ede7dc',
-    bgLighter: '#e5dfd0',
-    text: '#2d2418',
-    textSecondary: '#5a4d3a',
-    border: '#d4c4a4',
-    accent: '#8b6b3d',
-    success: '#5a7a4a',
-    warning: '#9a8040',
-    error: '#8a4a4a',
-    info: '#4a6a7a',
-    namesake: '#6a5a8a'
+  // Token references, not literals.
+  //
+  // This was two hardcoded branches of 12 hex values each, selected by an
+  // `isDarkTheme` prop. That prop only distinguishes "dark" from "light", so in
+  // the five themes that are neither — emerald court, sapphire dynasty, autumn
+  // chronicle, rose lineage, twilight realm — this dashboard rendered
+  // royal-parchment's browns no matter which theme was active.
+  //
+  // Kept as an object rather than inlined because ~60 inline `style` props read
+  // from it; pointing those at custom properties makes the whole component
+  // theme-correct without rewriting a 1,200-line file that has no tests. The
+  // remaining inline styles are a separate cleanup, tracked as follow-up.
+  const theme = {
+    bg: 'var(--bg-secondary)',
+    bgLight: 'var(--bg-tertiary)',
+    bgLighter: 'var(--bg-elevated, var(--bg-secondary))',
+    text: 'var(--text-primary)',
+    textSecondary: 'var(--text-secondary)',
+    border: 'var(--border-primary)',
+    accent: 'var(--accent-primary)',
+    success: 'var(--color-success)',
+    warning: 'var(--color-warning)',
+    error: 'var(--color-error)',
+    info: 'var(--color-info)',
+    // No token exists for the namesake action colour; --accent-secondary is the
+    // nearest deliberate choice and keeps it theme-responsive.
+    namesake: 'var(--accent-secondary, var(--accent-primary))'
   };
 
   /**
@@ -418,25 +420,25 @@ function DataHealthDashboard({ isDarkTheme = true, onNavigateToPerson, onNavigat
     
     return (
       <div 
-        className="mb-6 p-4 rounded-lg border"
+        className="health__panel"
         style={{ 
           backgroundColor: `${theme.error}10`, 
           borderColor: theme.error 
         }}
       >
-        <h3 className="font-semibold mb-3 flex items-center gap-2" style={{ color: theme.text }}>
+        <h3 className="health__panel-title" style={{ color: theme.text }}>
           <Icon name="wrench" /> Cleanup Tools
         </h3>
-        <p className="text-sm mb-3" style={{ color: theme.textSecondary }}>
+        <p className="health__note" style={{ color: theme.textSecondary }}>
           Quick actions to fix common data problems:
         </p>
         
-        <div className="flex flex-wrap gap-2">
+        <div className="health__actions">
           {orphanedCount > 0 && (
             <button
               onClick={handleDeleteAllOrphanedRelationships}
               disabled={isDeleting}
-              className="px-3 py-2 rounded-lg text-sm font-medium transition-all hover:opacity-80 flex items-center gap-2"
+              className="health__btn"
               style={{
                 backgroundColor: theme.error,
                 color: '#ffffff',
@@ -452,7 +454,7 @@ function DataHealthDashboard({ isDarkTheme = true, onNavigateToPerson, onNavigat
             <button
               onClick={handleDeleteUnknownPersons}
               disabled={isDeleting}
-              className="px-3 py-2 rounded-lg text-sm font-medium transition-all hover:opacity-80 flex items-center gap-2"
+              className="health__btn"
               style={{
                 backgroundColor: theme.error,
                 color: '#ffffff',
@@ -465,7 +467,7 @@ function DataHealthDashboard({ isDarkTheme = true, onNavigateToPerson, onNavigat
           )}
         </div>
         
-        <p className="text-xs mt-3" style={{ color: theme.textSecondary }}>
+        <p className="health__fineprint" style={{ color: theme.textSecondary }}>
           <Icon name="alert-triangle" size={14} /> These actions cannot be undone. Consider exporting your data first.
         </p>
       </div>
@@ -481,71 +483,71 @@ function DataHealthDashboard({ isDarkTheme = true, onNavigateToPerson, onNavigat
     const { summary } = report;
     
     return (
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+      <div className="health__stats">
         {/* Errors Card */}
         <div 
-          className="p-4 rounded-lg border text-center cursor-pointer transition-all hover:scale-105"
+          className="health__stat"
           style={{ 
             backgroundColor: summary.errorCount > 0 ? `${theme.error}20` : theme.bgLight,
             borderColor: summary.errorCount > 0 ? theme.error : theme.border
           }}
           onClick={() => setActiveCategory('errors')}
         >
-          <div className="text-3xl font-bold" style={{ color: theme.error }}>
+          <div className="health__stat-value" style={{ color: theme.error }}>
             {summary.errorCount}
           </div>
-          <div className="text-sm" style={{ color: theme.textSecondary }}>
+          <div className="health__text-sm" style={{ color: theme.textSecondary }}>
             Errors
           </div>
         </div>
         
         {/* Warnings Card */}
         <div 
-          className="p-4 rounded-lg border text-center cursor-pointer transition-all hover:scale-105"
+          className="health__stat"
           style={{ 
             backgroundColor: summary.warningCount > 0 ? `${theme.warning}20` : theme.bgLight,
             borderColor: summary.warningCount > 0 ? theme.warning : theme.border
           }}
           onClick={() => setActiveCategory('warnings')}
         >
-          <div className="text-3xl font-bold" style={{ color: theme.warning }}>
+          <div className="health__stat-value" style={{ color: theme.warning }}>
             {summary.warningCount}
           </div>
-          <div className="text-sm" style={{ color: theme.textSecondary }}>
+          <div className="health__text-sm" style={{ color: theme.textSecondary }}>
             Warnings
           </div>
         </div>
         
         {/* Missing Data Card */}
         <div 
-          className="p-4 rounded-lg border text-center cursor-pointer transition-all hover:scale-105"
+          className="health__stat"
           style={{ 
             backgroundColor: theme.bgLight,
             borderColor: theme.border
           }}
           onClick={() => setActiveCategory('missing')}
         >
-          <div className="text-3xl font-bold" style={{ color: theme.info }}>
+          <div className="health__stat-value" style={{ color: theme.info }}>
             {report.missingData.length}
           </div>
-          <div className="text-sm" style={{ color: theme.textSecondary }}>
+          <div className="health__text-sm" style={{ color: theme.textSecondary }}>
             Missing Data
           </div>
         </div>
         
         {/* Suggestions Card */}
         <div 
-          className="p-4 rounded-lg border text-center cursor-pointer transition-all hover:scale-105"
+          className="health__stat"
           style={{ 
             backgroundColor: theme.bgLight,
             borderColor: theme.border
           }}
           onClick={() => setActiveCategory('suggestions')}
         >
-          <div className="text-3xl font-bold" style={{ color: theme.accent }}>
+          <div className="health__stat-value" style={{ color: theme.accent }}>
             {report.suggestions.length}
           </div>
-          <div className="text-sm" style={{ color: theme.textSecondary }}>
+          <div className="health__text-sm" style={{ color: theme.textSecondary }}>
             Suggestions
           </div>
         </div>
@@ -569,12 +571,12 @@ function DataHealthDashboard({ isDarkTheme = true, onNavigateToPerson, onNavigat
     ];
     
     return (
-      <div className="flex flex-wrap gap-2 mb-4">
+      <div className="health__actions health__actions--spaced">
         {categories.map(cat => (
           <button
             key={cat.key}
             onClick={() => setActiveCategory(cat.key)}
-            className="px-3 py-1.5 rounded-lg text-sm font-medium transition-all"
+            className="health__btn--tab"
             style={{
               backgroundColor: activeCategory === cat.key ? theme.accent : theme.bgLight,
               color: activeCategory === cat.key ? (isDarkTheme ? '#1a1410' : '#ffffff') : theme.text,
@@ -598,25 +600,25 @@ function DataHealthDashboard({ isDarkTheme = true, onNavigateToPerson, onNavigat
     
     return (
       <div 
-        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+        className="health__overlay"
         onClick={() => setNamedAfterConfirm(null)}
       >
         <div 
-          className="p-6 rounded-lg max-w-md mx-4"
+          className="health__dialog"
           style={{ backgroundColor: theme.bg, border: `2px solid ${theme.namesake}` }}
           onClick={(e) => e.stopPropagation()}
         >
-          <h3 className="text-lg font-bold mb-4 flex items-center gap-2" style={{ color: theme.text }}>
+          <h3 className="health__dialog-title" style={{ color: theme.text }}>
             <Icon name="user" /> Who was named after whom?
           </h3>
-          <p className="text-sm mb-4" style={{ color: theme.textSecondary }}>
+          <p className="health__note--wide" style={{ color: theme.textSecondary }}>
             We couldn't determine the birth order. Please choose:
           </p>
           
-          <div className="space-y-2">
+          <div className="health__list">
             <button
               onClick={() => handleCreateNamedAfterWithDirection(person1Id, person2Id)}
-              className="w-full p-3 rounded-lg text-left transition-all hover:opacity-90"
+              className="health__row-btn"
               style={{ 
                 backgroundColor: theme.bgLight, 
                 border: `1px solid ${theme.namesake}`,
@@ -628,7 +630,7 @@ function DataHealthDashboard({ isDarkTheme = true, onNavigateToPerson, onNavigat
             
             <button
               onClick={() => handleCreateNamedAfterWithDirection(person2Id, person1Id)}
-              className="w-full p-3 rounded-lg text-left transition-all hover:opacity-90"
+              className="health__row-btn"
               style={{ 
                 backgroundColor: theme.bgLight, 
                 border: `1px solid ${theme.namesake}`,
@@ -641,7 +643,7 @@ function DataHealthDashboard({ isDarkTheme = true, onNavigateToPerson, onNavigat
           
           <button
             onClick={() => setNamedAfterConfirm(null)}
-            className="w-full mt-4 p-2 rounded text-sm"
+            className="health__dialog-btn"
             style={{ backgroundColor: theme.bgLighter, color: theme.textSecondary }}
           >
             Cancel
@@ -768,17 +770,17 @@ function DataHealthDashboard({ isDarkTheme = true, onNavigateToPerson, onNavigat
     if (issues.length === 0) {
       return (
         <div 
-          className="p-8 text-center rounded-lg border"
+          className="health__empty"
           style={{ backgroundColor: theme.bgLight, borderColor: theme.border }}
         >
-          <span className="text-4xl mb-2 block"><Icon name="sparkles" size={36} /></span>
+          <span className="health__empty-icon"><Icon name="sparkles" size={36} /></span>
           <p style={{ color: theme.text }}>No issues found in this category!</p>
         </div>
       );
     }
     
     return (
-      <div className="space-y-2">
+      <div className="health__list">
         {issues.map(issue => {
           const canDelete = isDeletableIssue(issue);
           const canNameAfter = isNamesakeCandidate(issue);
@@ -795,7 +797,7 @@ function DataHealthDashboard({ isDarkTheme = true, onNavigateToPerson, onNavigat
           return (
             <div
               key={issue.id}
-              className="p-3 rounded-lg border flex items-start gap-3 transition-all hover:scale-[1.01]"
+              className="health__issue"
               style={{ 
                 backgroundColor: isConfirmingDelete ? `${theme.error}20` : 
                                 isConfirmingNamedAfter ? `${theme.namesake}20` : 
@@ -808,30 +810,30 @@ function DataHealthDashboard({ isDarkTheme = true, onNavigateToPerson, onNavigat
               }}
             >
               {/* Icon */}
-              <span className="text-lg flex-shrink-0">
+              <span className="health__issue-icon">
                 {getSeverityIcon(issue.severity)}
               </span>
               
               {/* Content */}
-              <div className="flex-1 min-w-0">
+              <div className="health__issue-body">
                 {/* Title line */}
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="health__issue-head">
                   {issue.personName && (
                     <button
                       onClick={() => onNavigateToPerson?.(issue.personId)}
-                      className="font-medium hover:underline"
+                      className="health__issue-link"
                       style={{ color: theme.accent }}
                     >
                       {issue.personName}
                     </button>
                   )}
                   {issue.person1 && issue.person2 && (
-                    <span className="font-medium" style={{ color: theme.accent }}>
+                    <span className="health__issue-name" style={{ color: theme.accent }}>
                       {issue.person1} ↔ {issue.person2}
                     </span>
                   )}
                   <span 
-                    className="text-xs px-2 py-0.5 rounded"
+                    className="health__issue-tag"
                     style={{ 
                       backgroundColor: theme.bgLighter,
                       color: theme.textSecondary
@@ -842,32 +844,32 @@ function DataHealthDashboard({ isDarkTheme = true, onNavigateToPerson, onNavigat
                 </div>
                 
                 {/* Message */}
-                <p className="text-sm mt-1" style={{ color: theme.text }}>
+                <p className="health__note--top" style={{ color: theme.text }}>
                   {issue.message}
                 </p>
                 
                 {/* Duplicate details - show who they might be duplicates of */}
                 {canNameAfter && issue.details?.duplicates && (
-                  <div className="mt-2 text-xs" style={{ color: theme.textSecondary }}>
+                  <div className="health__issue-detail" style={{ color: theme.textSecondary }}>
                     Potential matches: {issue.details.duplicates.map(d => d.name).join(', ')}
                   </div>
                 )}
                 
                 {/* Confirmation messages */}
                 {isConfirmingDelete && (
-                  <p className="text-xs mt-2 font-semibold" style={{ color: theme.error }}>
+                  <p className="health__fineprint--tight" style={{ color: theme.error }}>
                     <Icon name="alert-triangle" size={14} /> Click delete again to confirm, or click elsewhere to cancel
                   </p>
                 )}
                 {isConfirmingNamedAfter && (
-                  <p className="text-xs mt-2 font-semibold" style={{ color: theme.namesake }}>
+                  <p className="health__fineprint--tight" style={{ color: theme.namesake }}>
                     <Icon name="user" size={14} /> Click "Named After" again to confirm: {namedAfterConfirm.person1Name} was named after {namedAfterConfirm.person2Name}
                   </p>
                 )}
               </div>
               
               {/* Action buttons */}
-              <div className="flex gap-1 flex-shrink-0 flex-wrap">
+              <div className="health__issue-actions">
                 {/* Named After button for duplicate warnings */}
                 {canNameAfter && issue.details?.duplicates?.map(dup => (
                   <button
@@ -875,7 +877,7 @@ function DataHealthDashboard({ isDarkTheme = true, onNavigateToPerson, onNavigat
                     onClick={() => {
                       handleCreateNamedAfter(issue.personId, dup.id, issue.personName, dup.name);
                     }}
-                    className="px-2 py-1 rounded text-xs font-medium transition-all hover:opacity-80"
+                    className="health__btn health__btn--sm"
                     style={{
                       backgroundColor: isConfirmingNamedAfter ? theme.namesake : theme.bgLighter,
                       color: isConfirmingNamedAfter ? '#ffffff' : theme.namesake,
@@ -896,7 +898,7 @@ function DataHealthDashboard({ isDarkTheme = true, onNavigateToPerson, onNavigat
                       if (issue.personId) onNavigateToPerson?.(issue.personId);
                       else if (issue.relationshipId) onNavigateToRelationship?.(issue.relationshipId);
                     }}
-                    className="px-2 py-1 rounded text-xs font-medium transition-all hover:opacity-80"
+                    className="health__btn health__btn--sm"
                     style={{
                       backgroundColor: theme.bgLighter,
                       color: theme.text,
@@ -921,7 +923,7 @@ function DataHealthDashboard({ isDarkTheme = true, onNavigateToPerson, onNavigat
                       }
                     }}
                     disabled={isDeleting}
-                    className="px-2 py-1 rounded text-xs font-medium transition-all hover:opacity-80"
+                    className="health__btn health__btn--sm"
                     style={{
                       backgroundColor: isConfirmingDelete ? theme.error : theme.bgLighter,
                       color: isConfirmingDelete ? '#ffffff' : theme.error,
@@ -971,22 +973,22 @@ function DataHealthDashboard({ isDarkTheme = true, onNavigateToPerson, onNavigat
     
     return (
       <div 
-        className="p-4 rounded-lg border mb-6 flex items-center justify-between"
+        className="health__panel--score"
         style={{ backgroundColor: theme.bgLight, borderColor: theme.border }}
       >
         <div>
-          <h3 className="font-semibold" style={{ color: theme.text }}>
+          <h3 className="health__strong" style={{ color: theme.text }}>
             Data Health Score
           </h3>
-          <p className="text-sm" style={{ color: theme.textSecondary }}>
+          <p className="health__text-sm" style={{ color: theme.textSecondary }}>
             Based on {totalRecords} records ({summary.totalPeople} people, {summary.totalRelationships} relationships)
           </p>
         </div>
-        <div className="text-right">
-          <div className="text-4xl font-bold" style={{ color: scoreColor }}>
+        <div className="health__score-side">
+          <div className="health__score-value" style={{ color: scoreColor }}>
             {score}
           </div>
-          <div className="text-sm" style={{ color: scoreColor }}>
+          <div className="health__text-sm" style={{ color: scoreColor }}>
             {scoreLabel}
           </div>
         </div>
@@ -1007,13 +1009,13 @@ function DataHealthDashboard({ isDarkTheme = true, onNavigateToPerson, onNavigat
     if (integrityError) {
       return (
         <div
-          className="p-4 rounded-lg mb-6"
+          className="health__panel--plain"
           style={{ backgroundColor: theme.bgLight, border: `1px solid ${theme.error}` }}
         >
-          <h3 className="font-semibold mb-1 flex items-center gap-2" style={{ color: theme.text }}>
+          <h3 className="health__panel-title health__panel-title--tight" style={{ color: theme.text }}>
             <Icon name="alert-triangle" /> Referential integrity
           </h3>
-          <p className="text-sm" style={{ color: theme.textSecondary }}>{integrityError}</p>
+          <p className="health__text-sm" style={{ color: theme.textSecondary }}>{integrityError}</p>
         </div>
       );
     }
@@ -1090,39 +1092,39 @@ function DataHealthDashboard({ isDarkTheme = true, onNavigateToPerson, onNavigat
 
     return (
       <div
-        className="p-4 rounded-lg mb-6"
+        className="health__panel--plain"
         style={{
           backgroundColor: theme.bgLight,
           border: `1px solid ${integrity.healthy ? theme.success : theme.error}`
         }}
       >
-        <h3 className="font-semibold mb-1 flex items-center gap-2" style={{ color: theme.text }}>
+        <h3 className="health__panel-title health__panel-title--tight" style={{ color: theme.text }}>
           <Icon name={integrity.healthy ? 'check-circle' : 'alert-triangle'} />
           Referential integrity
         </h3>
 
         {integrity.healthy ? (
-          <p className="text-sm" style={{ color: theme.textSecondary }}>
+          <p className="health__text-sm" style={{ color: theme.textSecondary }}>
             No dangling references. Every relationship, house, dignity, codex link
             and arms reference resolves to a record that exists.
           </p>
         ) : (
           <>
-            <p className="text-sm mb-3" style={{ color: theme.textSecondary }}>
+            <p className="health__note" style={{ color: theme.textSecondary }}>
               These are structural breaks, not judgement calls — each one points at
               a record that no longer exists.
             </p>
             {groups.map(group => (
-              <div key={group.key} className="mb-3">
-                <div className="text-sm font-semibold" style={{ color: theme.text }}>
+              <div key={group.key} className="health__note">
+                <div className="health__label-sm" style={{ color: theme.text }}>
                   {group.label} ({group.items.length})
                 </div>
                 {group.note && (
-                  <div className="text-xs mb-1" style={{ color: theme.textSecondary }}>
+                  <div className="health__label-xs" style={{ color: theme.textSecondary }}>
                     {group.note}
                   </div>
                 )}
-                <ul className="text-xs" style={{ color: theme.textSecondary }}>
+                <ul className="health__text-xs" style={{ color: theme.textSecondary }}>
                   {group.items.slice(0, 10).map((item, i) => (
                     <li key={i}>• {group.describe(item)}</li>
                   ))}
@@ -1142,7 +1144,7 @@ function DataHealthDashboard({ isDarkTheme = true, onNavigateToPerson, onNavigat
 
   return (
     <div
-      className="p-6 rounded-lg"
+      className="health"
       style={{ backgroundColor: theme.bg }}
       onClick={() => {
         setDeleteConfirm(null);
@@ -1150,12 +1152,12 @@ function DataHealthDashboard({ isDarkTheme = true, onNavigateToPerson, onNavigat
       }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="health__header">
         <div>
-          <h2 className="text-xl font-bold flex items-center gap-2" style={{ color: theme.text }}>
+          <h2 className="health__title" style={{ color: theme.text }}>
             <Icon name="heart-pulse" /> Data Health Dashboard
           </h2>
-          <p className="text-sm mt-1" style={{ color: theme.textSecondary }}>
+          <p className="health__note--top" style={{ color: theme.textSecondary }}>
             Scan your genealogy database for issues and inconsistencies
           </p>
         </div>
@@ -1166,7 +1168,7 @@ function DataHealthDashboard({ isDarkTheme = true, onNavigateToPerson, onNavigat
             handleRunScan();
           }}
           disabled={isScanning}
-          className="px-4 py-2 rounded-lg font-semibold transition-all flex items-center gap-2"
+          className="health__scan-btn"
           style={{
             backgroundColor: isScanning ? theme.bgLight : theme.accent,
             color: isDarkTheme ? '#1a1410' : '#ffffff',
@@ -1175,7 +1177,7 @@ function DataHealthDashboard({ isDarkTheme = true, onNavigateToPerson, onNavigat
         >
           {isScanning ? (
             <>
-              <span className="animate-spin">⏳</span>
+              <span className="health__spinner">⏳</span>
               Scanning...
             </>
           ) : (
@@ -1190,17 +1192,17 @@ function DataHealthDashboard({ isDarkTheme = true, onNavigateToPerson, onNavigat
       {/* No scan yet */}
       {!report && !isScanning && (
         <div 
-          className="p-12 text-center rounded-lg border-2 border-dashed"
+          className="health__empty health__empty--large"
           style={{ borderColor: theme.border }}
         >
-          <span className="text-5xl mb-4 block"><Icon name="search" size={48} /></span>
-          <h3 className="text-lg font-semibold mb-2" style={{ color: theme.text }}>
+          <span className="health__empty-icon health__empty-icon--large"><Icon name="search" size={48} /></span>
+          <h3 className="health__empty-title" style={{ color: theme.text }}>
             No scan results yet
           </h3>
-          <p className="text-sm mb-4" style={{ color: theme.textSecondary }}>
+          <p className="health__note--wide" style={{ color: theme.textSecondary }}>
             Click "Run Health Check" to scan your database for issues
           </p>
-          <p className="text-xs" style={{ color: theme.textSecondary }}>
+          <p className="health__text-xs" style={{ color: theme.textSecondary }}>
             Currently tracking: {people.length} people, {relationships.length} relationships, {houses.length} houses
           </p>
         </div>

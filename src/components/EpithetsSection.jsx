@@ -24,11 +24,15 @@ import {
   setPrimaryEpithet
 } from '../utils/epithetUtils';
 import Icon from './icons';
+import './EpithetsSection.css';
 
 function EpithetsSection({ 
   epithets = [], 
   onChange,
-  isDarkTheme = true,
+  // isDarkTheme is accepted for backwards compatibility but no longer used —
+  // colours come from CSS custom properties, which is why this component now
+  // renders correctly in all seven themes rather than just 'dark' and 'light'.
+  isDarkTheme: _isDarkTheme = true,
   compact = false,  // Compact mode for QuickEditPanel
   readOnly = false  // View-only mode
 }) {
@@ -44,30 +48,6 @@ function EpithetsSection({
   const [showDetails, setShowDetails] = useState(null); // ID of epithet showing details
   const [validationErrors, setValidationErrors] = useState([]);
 
-  // ==================== THEME ====================
-  const theme = isDarkTheme ? {
-    bg: '#2d2418',
-    bgLight: '#3a2f20',
-    bgLighter: '#4a3d2a',
-    text: '#e9dcc9',
-    textSecondary: '#b8a989',
-    border: '#4a3d2a',
-    accent: '#d4a574',
-    success: '#6b8e5e',
-    danger: '#a65d5d',
-    warning: '#c4a44e'
-  } : {
-    bg: '#ede7dc',
-    bgLight: '#e5dfd0',
-    bgLighter: '#d8d0c0',
-    text: '#2d2418',
-    textSecondary: '#4a3d2a',
-    border: '#d4c4a4',
-    accent: '#b8874a',
-    success: '#5a7a4a',
-    danger: '#8a4a4a',
-    warning: '#a08030'
-  };
 
   // ==================== HANDLERS ====================
 
@@ -139,93 +119,72 @@ function EpithetsSection({
     const isExpanded = showDetails === epithet.id;
 
     return (
-      <div key={epithet.id} className="mb-2">
+      <div key={epithet.id} className="epithets__item">
         {/* Chip */}
-        <div 
-          className={`flex items-center justify-between p-2 rounded border cursor-pointer transition-all ${
-            epithet.isPrimary ? 'ring-2' : ''
-          }`}
-          style={{ 
-            backgroundColor: theme.bgLight, 
-            borderColor: epithet.isPrimary ? theme.accent : theme.border,
-            color: theme.text,
-            ringColor: theme.accent
-          }}
+        <div
+          className={`epithets__chip ${epithet.isPrimary ? 'epithets__chip--primary' : ''}`}
           onClick={() => setShowDetails(isExpanded ? null : epithet.id)}
         >
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            <span className="text-sm" title={sourceInfo.label}>{sourceInfo.icon}</span>
-            <span className="font-medium truncate">{epithet.text}</span>
+          <div className="epithets__chip-main">
+            <span className="epithets__chip-source" title={sourceInfo.label}>{sourceInfo.icon}</span>
+            <span className="epithets__chip-text">{epithet.text}</span>
             {epithet.isPrimary && (
-              <span 
-                className="text-xs px-1.5 py-0.5 rounded"
-                style={{ backgroundColor: theme.accent, color: isDarkTheme ? '#1a1410' : '#ffffff' }}
-              >
+              <span className="epithets__badge">
                 Primary
               </span>
             )}
           </div>
           
           {!readOnly && (
-            <div className="flex items-center gap-1 ml-2">
-              <span className="text-xs opacity-60">{isExpanded ? <Icon name="chevron-up" size={14} /> : <Icon name="chevron-down" size={14} />}</span>
+            <div className="epithets__chip-toggle">
+              <span>{isExpanded ? <Icon name="chevron-up" size={14} /> : <Icon name="chevron-down" size={14} />}</span>
             </div>
           )}
         </div>
 
         {/* Expanded Details */}
         {isExpanded && (
-          <div 
-            className="mt-1 p-3 rounded border-l-2 ml-2"
-            style={{ 
-              backgroundColor: theme.bgLighter, 
-              borderColor: theme.accent
-            }}
-          >
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center gap-2">
-                <span style={{ color: theme.textSecondary }}>Source:</span>
-                <span style={{ color: theme.text }}>{sourceInfo.icon} {sourceInfo.label}</span>
+          <div className="epithets__detail">
+            <div className="epithets__detail-list">
+              <div className="epithets__detail-row">
+                <span className="epithets__detail-label">Source:</span>
+                <span className="epithets__detail-value">{sourceInfo.icon} {sourceInfo.label}</span>
               </div>
               
               {epithet.earnedFrom && (
-                <div className="flex items-center gap-2">
-                  <span style={{ color: theme.textSecondary }}>From:</span>
-                  <span style={{ color: theme.text }}>
+                <div className="epithets__detail-row">
+                  <span className="epithets__detail-label">From:</span>
+                  <span className="epithets__detail-value">
                     {EPITHET_EARNED_FROM[epithet.earnedFrom]?.icon} {EPITHET_EARNED_FROM[epithet.earnedFrom]?.label}
                   </span>
                 </div>
               )}
               
               {epithet.dateEarned && (
-                <div className="flex items-center gap-2">
-                  <span style={{ color: theme.textSecondary }}>Date:</span>
-                  <span style={{ color: theme.text }}>{epithet.dateEarned}</span>
+                <div className="epithets__detail-row">
+                  <span className="epithets__detail-label">Date:</span>
+                  <span className="epithets__detail-value">{epithet.dateEarned}</span>
                 </div>
               )}
               
               {epithet.notes && (
                 <div>
-                  <span style={{ color: theme.textSecondary }}>Notes:</span>
-                  <p className="mt-1" style={{ color: theme.text }}>{epithet.notes}</p>
+                  <span className="epithets__detail-label">Notes:</span>
+                  <p className="epithets__detail-notes">{epithet.notes}</p>
                 </div>
               )}
               
               {/* Actions */}
               {!readOnly && (
-                <div className="flex gap-2 pt-2 border-t" style={{ borderColor: theme.border }}>
+                <div className="epithets__actions">
                   {!epithet.isPrimary && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         handleSetPrimary(epithet.id);
                       }}
-                      className="text-xs px-2 py-1 rounded border transition hover:opacity-80"
-                      style={{ 
-                        color: theme.accent, 
-                        borderColor: theme.accent,
-                        backgroundColor: 'transparent'
-                      }}
+                      className="epithets__btn epithets__btn--primary"
+                      type="button"
                     >
                       <Icon name="star" size={14} /> Set Primary
                     </button>
@@ -235,12 +194,8 @@ function EpithetsSection({
                       e.stopPropagation();
                       handleRemoveEpithet(epithet.id);
                     }}
-                    className="text-xs px-2 py-1 rounded border transition hover:opacity-80"
-                    style={{ 
-                      color: theme.danger, 
-                      borderColor: theme.danger,
-                      backgroundColor: 'transparent'
-                    }}
+                    className="epithets__btn epithets__btn--danger"
+                    type="button"
                   >
                     <Icon name="trash-2" size={14} /> Remove
                   </button>
@@ -254,14 +209,11 @@ function EpithetsSection({
   };
 
   const renderAddForm = () => (
-    <div 
-      className="p-3 rounded border mt-2"
-      style={{ backgroundColor: theme.bgLighter, borderColor: theme.accent }}
-    >
-      <div className="space-y-3">
+    <div className="epithets__form">
+      <div className="epithets__form-fields">
         {/* Epithet Text */}
         <div>
-          <label className="block text-xs mb-1" style={{ color: theme.textSecondary }}>
+          <label className="epithets__label">
             Epithet *
           </label>
           <input
@@ -269,32 +221,22 @@ function EpithetsSection({
             value={newEpithet.text}
             onChange={(e) => setNewEpithet({ ...newEpithet, text: e.target.value })}
             placeholder='e.g., "the Bold", "Dragonslayer", "of Thornhaven"'
-            className="w-full p-2 rounded border text-sm"
-            style={{
-              backgroundColor: theme.bg,
-              color: theme.text,
-              borderColor: theme.border
-            }}
+            className="epithets__input"
             autoFocus
           />
         </div>
 
         {/* Source & Earned From (row) */}
         {!compact && (
-          <div className="grid grid-cols-2 gap-2">
+          <div className="epithets__form-row">
             <div>
-              <label className="block text-xs mb-1" style={{ color: theme.textSecondary }}>
+              <label className="epithets__label">
                 Source
               </label>
               <select
                 value={newEpithet.source}
                 onChange={(e) => setNewEpithet({ ...newEpithet, source: e.target.value })}
-                className="w-full p-2 rounded border text-sm"
-                style={{
-                  backgroundColor: theme.bg,
-                  color: theme.text,
-                  borderColor: theme.border
-                }}
+                className="epithets__select"
               >
                 {Object.values(EPITHET_SOURCES).map(source => (
                   <option key={source.id} value={source.id}>
@@ -304,18 +246,13 @@ function EpithetsSection({
               </select>
             </div>
             <div>
-              <label className="block text-xs mb-1" style={{ color: theme.textSecondary }}>
+              <label className="epithets__label">
                 Earned From
               </label>
               <select
                 value={newEpithet.earnedFrom}
                 onChange={(e) => setNewEpithet({ ...newEpithet, earnedFrom: e.target.value })}
-                className="w-full p-2 rounded border text-sm"
-                style={{
-                  backgroundColor: theme.bg,
-                  color: theme.text,
-                  borderColor: theme.border
-                }}
+                className="epithets__select"
               >
                 {Object.values(EPITHET_EARNED_FROM).map(type => (
                   <option key={type.id} value={type.id}>
@@ -330,20 +267,15 @@ function EpithetsSection({
         {/* Date Earned */}
         {!compact && (
           <div>
-            <label className="block text-xs mb-1" style={{ color: theme.textSecondary }}>
-              Date Earned <span className="opacity-50">(optional)</span>
+            <label className="epithets__label">
+              Date Earned <span className="epithets__label--optional">(optional)</span>
             </label>
             <input
               type="text"
               value={newEpithet.dateEarned}
               onChange={(e) => setNewEpithet({ ...newEpithet, dateEarned: e.target.value })}
               placeholder="e.g., 1267"
-              className="w-full p-2 rounded border text-sm"
-              style={{
-                backgroundColor: theme.bg,
-                color: theme.text,
-                borderColor: theme.border
-              }}
+              className="epithets__input"
             />
           </div>
         )}
@@ -351,30 +283,22 @@ function EpithetsSection({
         {/* Notes */}
         {!compact && (
           <div>
-            <label className="block text-xs mb-1" style={{ color: theme.textSecondary }}>
-              Notes <span className="opacity-50">(optional)</span>
+            <label className="epithets__label">
+              Notes <span className="epithets__label--optional">(optional)</span>
             </label>
             <textarea
               value={newEpithet.notes}
               onChange={(e) => setNewEpithet({ ...newEpithet, notes: e.target.value })}
               placeholder="How was this epithet earned?"
               rows={2}
-              className="w-full p-2 rounded border text-sm resize-none"
-              style={{
-                backgroundColor: theme.bg,
-                color: theme.text,
-                borderColor: theme.border
-              }}
+              className="epithets__textarea"
             />
           </div>
         )}
 
         {/* Validation Errors */}
         {validationErrors.length > 0 && (
-          <div 
-            className="p-2 rounded text-sm"
-            style={{ backgroundColor: `${theme.danger}20`, color: theme.danger }}
-          >
+          <div className="epithets__errors">
             {validationErrors.map((err, i) => (
               <div key={i}>• {err}</div>
             ))}
@@ -382,27 +306,19 @@ function EpithetsSection({
         )}
 
         {/* Action Buttons */}
-        <div className="flex gap-2 pt-1">
+        <div className="epithets__form-actions">
           <button
             onClick={handleCancelAdd}
-            className="flex-1 py-2 rounded border text-sm font-medium transition hover:opacity-80"
-            style={{
-              backgroundColor: 'transparent',
-              color: theme.text,
-              borderColor: theme.border
-            }}
+            className="epithets__form-btn epithets__form-btn--cancel"
+            type="button"
           >
             Cancel
           </button>
           <button
             onClick={handleAddEpithet}
             disabled={!newEpithet.text.trim()}
-            className="flex-1 py-2 rounded text-sm font-medium transition hover:opacity-90"
-            style={{
-              backgroundColor: newEpithet.text.trim() ? theme.accent : theme.bgLight,
-              color: isDarkTheme ? '#1a1410' : '#ffffff',
-              opacity: newEpithet.text.trim() ? 1 : 0.6
-            }}
+            className="epithets__form-btn epithets__form-btn--confirm"
+            type="button"
           >
             <Icon name="check" size={14} /> Add Epithet
           </button>
@@ -417,19 +333,11 @@ function EpithetsSection({
     <div>
       {/* Epithets List */}
       {epithets && epithets.length > 0 ? (
-        <div className="space-y-1">
+        <div className="epithets">
           {epithets.map(epithet => renderEpithetChip(epithet))}
         </div>
       ) : (
-        <div 
-          className="p-3 rounded border text-center text-sm"
-          style={{ 
-            backgroundColor: theme.bgLight, 
-            borderColor: theme.border, 
-            color: theme.textSecondary,
-            borderStyle: 'dashed'
-          }}
-        >
+        <div className="epithets__empty">
           No epithets recorded
         </div>
       )}
@@ -441,16 +349,10 @@ function EpithetsSection({
         ) : (
           <button
             onClick={() => setIsAdding(true)}
-            className="w-full py-2 px-3 rounded border transition-all flex items-center justify-center gap-2 mt-2"
-            style={{
-              backgroundColor: 'transparent',
-              color: theme.accent,
-              borderColor: theme.accent,
-              borderStyle: 'dashed',
-              cursor: 'pointer'
-            }}
+            className="epithets__add"
+            type="button"
           >
-            <span>+</span>
+            <Icon name="plus" size={14} />
             <span>Add Epithet</span>
           </button>
         )

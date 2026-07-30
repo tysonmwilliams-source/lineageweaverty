@@ -1,0 +1,403 @@
+/**
+ * DataHealthDashboard.css
+ *
+ * Was 265 Tailwind utility tokens across 51 distinct class strings (decision B3).
+ *
+ * Manuscript direction (decision B1): radius drops from Tailwind's `rounded-lg`
+ * (8px) to 2px so panels read as trimmed sheets, `hover:scale-105` on the stat
+ * tiles is replaced by an accent rule (scaling a data tile makes numbers wobble
+ * and fights scanning, which is the density risk of a manuscript direction on a
+ * data surface), and section dividers use --border-subtle.
+ *
+ * Colour still arrives via inline `style` props reading a token-valued `theme`
+ * object in the component — see the note there. This file owns layout, spacing,
+ * type and shape.
+ */
+
+.health {
+  padding: var(--space-6, 1.5rem);
+  border-radius: var(--radius-sm, 2px);
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+
+.health__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4, 1rem);
+  margin-bottom: var(--space-6, 1.5rem);
+}
+
+.health__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 700;
+}
+
+.health__subtitle {
+  margin: var(--space-1, 0.25rem) 0 0;
+  font-size: var(--text-sm);
+}
+
+.health__scan-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+  padding: var(--space-2, 0.5rem) var(--space-4, 1rem);
+  font-family: inherit;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius-sm, 2px);
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.health__scan-btn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+/* ── Panels ──────────────────────────────────────────────────────────────── */
+
+.health__panel {
+  margin-bottom: var(--space-6, 1.5rem);
+  padding: var(--space-4, 1rem);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm, 2px);
+}
+
+.health__panel--plain {
+  margin-bottom: var(--space-6, 1.5rem);
+  padding: var(--space-4, 1rem);
+  border-radius: var(--radius-sm, 2px);
+}
+
+.health__panel--score {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-6, 1.5rem);
+  padding: var(--space-4, 1rem);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm, 2px);
+}
+
+.health__panel-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+  margin: 0 0 var(--space-3, 0.75rem);
+  font-weight: 600;
+}
+
+.health__panel-title--tight {
+  margin-bottom: var(--space-1, 0.25rem);
+}
+
+.health__note {
+  margin: 0 0 var(--space-3, 0.75rem);
+  font-size: var(--text-sm);
+}
+
+.health__note--wide {
+  margin-bottom: var(--space-4, 1rem);
+}
+
+.health__note--top {
+  margin: var(--space-1, 0.25rem) 0 0;
+  font-size: var(--text-sm);
+}
+
+.health__fineprint {
+  margin: var(--space-3, 0.75rem) 0 0;
+  font-size: var(--text-xs);
+}
+
+.health__fineprint--tight {
+  margin-top: var(--space-2, 0.5rem);
+  font-weight: 600;
+}
+
+.health__text-sm { font-size: var(--text-sm); }
+.health__text-xs { font-size: var(--text-xs); }
+.health__strong { font-weight: 600; }
+.health__label-sm { font-size: var(--text-sm); font-weight: 600; }
+.health__label-xs { margin-bottom: var(--space-1, 0.25rem); font-size: var(--text-xs); }
+
+/* ── Button rows ─────────────────────────────────────────────────────────── */
+
+.health__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2, 0.5rem);
+}
+
+.health__actions--spaced {
+  margin-bottom: var(--space-4, 1rem);
+}
+
+.health__btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+  padding: var(--space-2, 0.5rem) var(--space-3, 0.75rem);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  border: none;
+  border-radius: var(--radius-sm, 2px);
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.health__btn:hover:not(:disabled) {
+  opacity: 0.8;
+}
+
+.health__btn--sm {
+  display: inline-flex;
+  padding: var(--space-1, 0.25rem) var(--space-2, 0.5rem);
+  font-size: var(--text-xs);
+}
+
+.health__btn--tab {
+  padding: 0.375rem var(--space-3, 0.75rem);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  border: none;
+  border-radius: var(--radius-sm, 2px);
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.health__btn--tab:hover {
+  opacity: 0.85;
+}
+
+/* ── Stat tiles ──────────────────────────────────────────────────────────── */
+
+.health__stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3, 0.75rem);
+  margin-bottom: var(--space-6, 1.5rem);
+}
+
+@media (min-width: 768px) {
+  .health__stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* `hover:scale-105` deliberately dropped: scaling a tile mid-scan makes the
+   numbers jump. An accent rule reads as selectable without moving anything. */
+.health__stat {
+  padding: var(--space-4, 1rem);
+  text-align: center;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm, 2px);
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.health__stat:hover,
+.health__stat:focus-visible {
+  border-color: var(--accent-primary);
+}
+
+.health__stat-value {
+  font-size: var(--text-3xl);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.health__score-value {
+  font-size: var(--text-4xl);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.health__score-side {
+  text-align: right;
+}
+
+/* ── Issue list ──────────────────────────────────────────────────────────── */
+
+.health__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 0.5rem);
+}
+
+.health__issue {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3, 0.75rem);
+  padding: var(--space-3, 0.75rem);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm, 2px);
+  transition: border-color 0.15s ease;
+}
+
+.health__issue:hover {
+  border-color: var(--accent-primary);
+}
+
+.health__issue-icon {
+  flex-shrink: 0;
+  font-size: var(--text-lg);
+}
+
+.health__issue-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.health__issue-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2, 0.5rem);
+}
+
+.health__issue-name {
+  font-weight: 500;
+}
+
+.health__issue-link {
+  font-weight: 500;
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  padding: 0;
+}
+
+.health__issue-link:hover,
+.health__issue-link:focus-visible {
+  text-decoration: underline;
+}
+
+.health__issue-tag {
+  padding: 0.0625rem var(--space-2, 0.5rem);
+  font-size: var(--text-xs);
+  border-radius: var(--radius-sm, 2px);
+}
+
+.health__issue-detail {
+  margin-top: var(--space-2, 0.5rem);
+  font-size: var(--text-xs);
+}
+
+.health__issue-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1, 0.25rem);
+  flex-shrink: 0;
+}
+
+.health__row-btn {
+  display: block;
+  width: 100%;
+  padding: var(--space-3, 0.75rem);
+  font-family: inherit;
+  text-align: left;
+  border: none;
+  border-radius: var(--radius-sm, 2px);
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.health__row-btn:hover,
+.health__row-btn:focus-visible {
+  opacity: 0.9;
+}
+
+/* ── Empty states ────────────────────────────────────────────────────────── */
+
+.health__empty {
+  padding: var(--space-8, 2rem);
+  text-align: center;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm, 2px);
+}
+
+.health__empty--large {
+  padding: var(--space-12, 3rem);
+  border: 2px dashed var(--border-primary);
+}
+
+.health__empty-icon {
+  display: block;
+  margin-bottom: var(--space-2, 0.5rem);
+}
+
+.health__empty-icon--large {
+  margin-bottom: var(--space-4, 1rem);
+}
+
+.health__empty-title {
+  margin: 0 0 var(--space-2, 0.5rem);
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+/* ── Confirm dialog ──────────────────────────────────────────────────────── */
+
+.health__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(0 0 0 / 50%);
+}
+
+.health__dialog {
+  max-width: 28rem;
+  margin: 0 var(--space-4, 1rem);
+  padding: var(--space-6, 1.5rem);
+  border-radius: var(--radius-sm, 2px);
+  box-shadow: var(--shadow-xl);
+}
+
+.health__dialog-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+  margin: 0 0 var(--space-4, 1rem);
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
+
+.health__dialog-btn {
+  width: 100%;
+  margin-top: var(--space-4, 1rem);
+  padding: var(--space-2, 0.5rem);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  border: none;
+  border-radius: var(--radius-sm, 2px);
+  cursor: pointer;
+}
+
+.health__spinner {
+  display: inline-flex;
+  animation: spin 1s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .health__spinner {
+    animation: none;
+  }
+}

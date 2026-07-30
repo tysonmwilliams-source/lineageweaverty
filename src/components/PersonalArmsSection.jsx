@@ -36,6 +36,7 @@ import {
 } from '../utils/personalArmsRenderer';
 import { logger } from '../utils/logger';
 import Icon from './icons';
+import './PersonalArmsSection.css';
 
 /**
  * PersonalArmsSection Component
@@ -53,7 +54,9 @@ function PersonalArmsSection({
   house,
   allPeople = [],
   allRelationships = [],
-  isDarkTheme = true,
+  // isDarkTheme kept for API compatibility; colour now comes from CSS custom
+  // properties, so this renders correctly in all seven themes.
+  isDarkTheme: _isDarkTheme = true,
   onArmsCreated
 }) {
   const navigate = useNavigate();
@@ -66,30 +69,6 @@ function PersonalArmsSection({
   const [previewSVG, setPreviewSVG] = useState(null);
   const [showCreateFlow, setShowCreateFlow] = useState(false);
   
-  // ==================== THEME ====================
-  const theme = isDarkTheme ? {
-    bg: '#2d2418',
-    bgLight: '#3a2f20',
-    bgLighter: '#4a3d2a',
-    text: '#e9dcc9',
-    textSecondary: '#b8a989',
-    border: '#4a3d2a',
-    accent: '#d4a574',
-    success: '#6b8e5e',
-    warning: '#c4a44e',
-    danger: '#a65d5d'
-  } : {
-    bg: '#ede7dc',
-    bgLight: '#e5dfd0',
-    bgLighter: '#d8d0c0',
-    text: '#2d2418',
-    textSecondary: '#4a3d2a',
-    border: '#d4c4a4',
-    accent: '#b8874a',
-    success: '#5a7a4a',
-    warning: '#a08030',
-    danger: '#8a4a4a'
-  };
 
   // ==================== COMPUTED VALUES ====================
   
@@ -188,16 +167,10 @@ function PersonalArmsSection({
   if (loading) {
     return (
       <section>
-        <h3 
-          className="font-semibold mb-2 text-xs uppercase tracking-wider flex items-center gap-2" 
-          style={{ color: theme.textSecondary }}
-        >
+        <h3 className="personal-arms__title">
           <Icon name="shield" /> Personal Arms
         </h3>
-        <div 
-          className="p-3 rounded border text-center text-sm"
-          style={{ backgroundColor: theme.bgLight, borderColor: theme.border, color: theme.textSecondary }}
-        >
+        <div className="personal-arms__loading">
           Loading...
         </div>
       </section>
@@ -206,82 +179,60 @@ function PersonalArmsSection({
 
   return (
     <section>
-      <h3 
-        className="font-semibold mb-2 text-xs uppercase tracking-wider flex items-center gap-2" 
-        style={{ color: theme.textSecondary }}
-      >
+      <h3 className="personal-arms__title">
         <Icon name="shield" /> Personal Arms
       </h3>
       
       {/* Case 1: Person has personal arms */}
       {personalArms ? (
-        <div className="space-y-2">
+        <div className="personal-arms__stack">
           {/* Arms Display */}
-          <div 
-            className="p-3 rounded border cursor-pointer hover:opacity-90 transition-all"
-            style={{ backgroundColor: theme.bgLight, borderColor: theme.border }}
-            onClick={handleViewArms}
-          >
-            <div className="flex items-center gap-3">
+          <div className="personal-arms__card" onClick={handleViewArms}>
+            <div className="personal-arms__card-row">
               {/* Shield Preview */}
-              <div 
-                className="w-16 h-20 flex-shrink-0 flex items-center justify-center rounded overflow-hidden"
-                style={{ backgroundColor: theme.bgLighter }}
-              >
+              <div className="personal-arms__shield">
                 {personalArms.heraldrySVG ? (
                   <div
-                    className="w-full h-full"
-                    style={{ maxWidth: '100%', maxHeight: '100%' }}
+                    className="personal-arms__shield-svg"
                     dangerouslySetInnerHTML={{ __html: sanitizeSVG(personalArms.heraldrySVG) }}
                   />
                 ) : personalArms.heraldryDisplay ? (
                   <img 
                     src={personalArms.heraldryDisplay} 
                     alt="Personal Arms"
-                    className="max-w-full max-h-full object-contain"
+                    className="personal-arms__shield-img"
                   />
                 ) : (
-                  <span className="text-2xl"><Icon name="shield" size={24} /></span>
+                  <Icon name="shield" size={24} />
                 )}
               </div>
               
               {/* Info */}
-              <div className="flex-1 min-w-0">
-                <div className="font-medium text-sm truncate" style={{ color: theme.text }}>
+              <div className="personal-arms__info">
+                <div className="personal-arms__name">
                   {personalArms.name || 'Personal Arms'}
                 </div>
                 {personalArms.blazon && (
-                  <div 
-                    className="text-xs mt-1 line-clamp-2 italic"
-                    style={{ color: theme.textSecondary }}
-                  >
+                  <div className="personal-arms__blazon">
                     {personalArms.blazon}
                   </div>
                 )}
                 {birthOrderResult?.isEligible && (
-                  <div 
-                    className="text-xs mt-1 flex items-center gap-1"
-                    style={{ color: theme.accent }}
-                  >
-                    <span>▼</span>
+                  <div className="personal-arms__cadency-note"><Icon name="chevron-down" size={12} />
                     <span>{getBirthOrderLabel(birthOrderResult.position)}</span>
                   </div>
                 )}
               </div>
               
-              <span className="text-xs opacity-60">→</span>
+              <span className="personal-arms__chevron" aria-hidden="true">→</span>
             </div>
           </div>
           
           {/* Edit Button */}
           <button
             onClick={handleViewArms}
-            className="w-full py-2 px-3 rounded border text-sm font-medium transition-all hover:opacity-80 flex items-center justify-center gap-2"
-            style={{
-              backgroundColor: 'transparent',
-              color: theme.accent,
-              borderColor: theme.accent
-            }}
+            className="personal-arms__btn personal-arms__btn--edit"
+            type="button"
           >
             <Icon name="pencil" />
             <span>Edit Personal Arms</span>
@@ -289,31 +240,25 @@ function PersonalArmsSection({
         </div>
       ) : (
         /* Case 2: No personal arms yet */
-        <div className="space-y-3">
+        <div className="personal-arms__stack personal-arms__stack--wide">
           
           {/* Eligibility Status */}
           {eligible && birthOrderResult ? (
             <>
               {/* Eligible - Show cadency info */}
-              <div 
-                className="p-3 rounded border"
-                style={{ 
-                  backgroundColor: `${theme.success}15`,
-                  borderColor: theme.success
-                }}
-              >
-                <div className="flex items-start gap-2">
-                  <span className="text-lg"><Icon name="check" /></span>
-                  <div className="flex-1">
-                    <div className="text-sm font-medium" style={{ color: theme.success }}>
+              <div className="personal-arms__panel personal-arms__panel--eligible">
+                <div className="personal-arms__panel-row">
+                  <Icon name="check" className="personal-arms__panel-icon" />
+                  <div className="personal-arms__panel-body">
+                    <div className="personal-arms__panel-title">
                       Eligible for Personal Arms
                     </div>
-                    <div className="text-xs mt-1" style={{ color: theme.text }}>
+                    <div className="personal-arms__panel-note">
                       {cadencySummary?.description || `${getBirthOrderLabel(birthOrderResult.position)} among ${birthOrderResult.totalLegitimateSons} legitimate sons`}
                     </div>
-                    <div className="text-xs mt-1 flex items-center gap-1" style={{ color: theme.textSecondary }}>
+                    <div className="personal-arms__panel-meta">
                       <span>Cadency:</span>
-                      <span style={{ color: theme.accent }}>
+                      <span className="personal-arms__panel-meta-value">
                         {birthOrderResult.position} triangle{birthOrderResult.position !== 1 ? 's' : ''} in chief
                       </span>
                     </div>
@@ -323,23 +268,16 @@ function PersonalArmsSection({
               
               {/* Preview (if house has heraldry) */}
               {previewSVG && (
-                <div 
-                  className="p-3 rounded border"
-                  style={{ backgroundColor: theme.bgLight, borderColor: theme.border }}
-                >
-                  <div className="text-xs mb-2 text-center" style={{ color: theme.textSecondary }}>
+                <div className="personal-arms__panel"><div className="personal-arms__preview-label">
                     Preview with Cadency
                   </div>
-                  <div
-                    className="w-24 h-28 mx-auto rounded overflow-hidden"
-                    style={{ backgroundColor: theme.bgLighter }}
-                  >
+                  <div className="personal-arms__shield personal-arms__shield--preview">
                     <div
-                      className="w-full h-full"
+                      className="personal-arms__shield-svg"
                       dangerouslySetInnerHTML={{ __html: sanitizeSVG(previewSVG) }}
                     />
                   </div>
-                  <div className="text-xs mt-2 text-center italic" style={{ color: theme.textSecondary }}>
+                  <div className="personal-arms__preview-caption">
                     House arms with {birthOrderResult.position} cadency mark{birthOrderResult.position !== 1 ? 's' : ''}
                   </div>
                 </div>
@@ -349,32 +287,20 @@ function PersonalArmsSection({
               {houseHeraldry ? (
                 <button
                   onClick={handleCreateArms}
-                  className="w-full py-2 px-3 rounded border text-sm font-medium transition-all hover:opacity-80 flex items-center justify-center gap-2"
-                  style={{
-                    backgroundColor: theme.accent,
-                    color: isDarkTheme ? '#1a1410' : '#ffffff',
-                    borderColor: theme.accent
-                  }}
+                  className="personal-arms__btn personal-arms__btn--create"
+                  type="button"
                 >
                   <Icon name="shield" />
                   <span>Create Personal Arms</span>
                 </button>
               ) : (
-                <div 
-                  className="p-3 rounded border text-center text-sm"
-                  style={{ 
-                    backgroundColor: theme.bgLight, 
-                    borderColor: theme.border, 
-                    color: theme.textSecondary,
-                    borderStyle: 'dashed'
-                  }}
-                >
+                <div className="personal-arms__panel personal-arms__panel--muted">
                   <div>House has no heraldry to derive from</div>
                   {house && (
                     <button
                       onClick={() => navigate(`/heraldry/create?houseId=${house.id}`)}
-                      className="mt-2 text-xs underline"
-                      style={{ color: theme.accent }}
+                      className="personal-arms__link"
+                      type="button"
                     >
                       Create house heraldry first
                     </button>
@@ -384,20 +310,14 @@ function PersonalArmsSection({
             </>
           ) : (
             /* Not eligible for cadency */
-            <div 
-              className="p-3 rounded border"
-              style={{ 
-                backgroundColor: theme.bgLight, 
-                borderColor: theme.border 
-              }}
-            >
-              <div className="flex items-start gap-2">
-                <span className="text-lg opacity-50"><Icon name="shield" /></span>
-                <div className="flex-1">
-                  <div className="text-sm" style={{ color: theme.textSecondary }}>
+            <div className="personal-arms__panel">
+              <div className="personal-arms__panel-row">
+                <Icon name="shield" className="personal-arms__panel-icon personal-arms__panel-icon--muted" />
+                <div className="personal-arms__panel-body">
+                  <div className="personal-arms__panel-title personal-arms__panel-title--muted">
                     No Personal Arms
                   </div>
-                  <div className="text-xs mt-1" style={{ color: theme.textSecondary }}>
+                  <div className="personal-arms__panel-note personal-arms__panel-note--secondary">
                     {!eligible ? (
                       person?.gender === 'female' 
                         ? 'Cadency marks traditionally apply to male heirs'
@@ -417,12 +337,8 @@ function PersonalArmsSection({
           {house?.heraldryId && (
             <button
               onClick={handleViewHouseArms}
-              className="w-full py-2 px-3 rounded border text-sm transition-all hover:opacity-80 flex items-center justify-center gap-2"
-              style={{
-                backgroundColor: 'transparent',
-                color: theme.textSecondary,
-                borderColor: theme.border
-              }}
+              className="personal-arms__btn personal-arms__btn--house"
+              type="button"
             >
               <Icon name="castle" />
               <span>View House Arms</span>

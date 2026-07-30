@@ -31,6 +31,7 @@ import {
   detectGenerations
 } from '../utils/treeHelpers';
 import { logger } from '../utils/logger';
+import './FamilyTree.css';
 
 function FamilyTree() {
   // ==================== URL PARAMETERS ====================
@@ -1755,11 +1756,11 @@ function FamilyTree() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--bg-primary)' }}>
-        <div className="text-center">
-          <div className="text-4xl mb-4">⏳</div>
-          <h2 className="text-2xl font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Loading Family Tree...</h2>
-          <p style={{ color: 'var(--text-secondary)' }}>Fetching your genealogy data</p>
+      <div className="family-tree__loading">
+        <div className="family-tree__loading-inner">
+          <div className="family-tree__loading-icon"><Icon name="hourglass" size={36} /></div>
+          <h2 className="family-tree__loading-title">Loading Family Tree…</h2>
+          <p className="family-tree__loading-note">Fetching your genealogy data</p>
         </div>
       </div>
     );
@@ -1768,7 +1769,7 @@ function FamilyTree() {
   // Show landing view when no house is selected and no URL navigation is pending
   if (!selectedHouseId && !urlPersonId) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
+      <div className="family-tree__landing">
         <Navigation
           people={people}
           onSearchResults={handleSearchResults}
@@ -1785,7 +1786,7 @@ function FamilyTree() {
   }
 
   return (
-    <div className="h-screen overflow-hidden" style={{ backgroundColor: 'var(--bg-primary)' }}>
+    <div className="family-tree__viewport">
       <Navigation
         people={people}
         onSearchResults={handleSearchResults}
@@ -1870,7 +1871,7 @@ function FamilyTree() {
           );
         })()
       ) : (
-        <div className="relative w-full h-screen overflow-hidden" style={{ backgroundColor: 'var(--bg-primary)' }}>
+        <div className="family-tree__canvas">
           <svg
             ref={svgRef}
             className="tree-svg"

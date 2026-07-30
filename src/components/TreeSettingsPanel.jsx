@@ -8,6 +8,7 @@
 
 import HousePicker from './HousePicker';
 import PersonPicker from './PersonPicker';
+import './TreeSettingsPanel.css';
 
 function TreeSettingsPanel({
   // Panel state
@@ -39,24 +40,14 @@ function TreeSettingsPanel({
   parentHouse = null
 }) {
   return (
-    <div className="fixed top-20 right-6 z-10">
+    <div className="tree-settings">
       <div
-        className="rounded-lg shadow-lg transition-all duration-300 ease-in-out"
-        style={{
-          backgroundColor: 'var(--bg-secondary)',
-          borderWidth: '1px',
-          borderColor: 'var(--border-primary)',
-          borderRadius: 'var(--radius-lg)',
-          boxShadow: 'var(--shadow-lg)',
-          width: '18rem',
-          maxHeight: isExpanded ? '600px' : '0',
-          opacity: isExpanded ? '1' : '0',
-          padding: isExpanded ? '1rem' : '0 1rem',
-          overflow: isExpanded ? 'visible' : 'hidden'
-        }}
+        className={`tree-settings__panel ${
+          isExpanded ? 'tree-settings__panel--expanded' : 'tree-settings__panel--collapsed'
+        }`}
       >
         {/* House Selection */}
-        <label className="block mb-2 font-medium" style={{ color: 'var(--text-primary)' }}>
+        <label className="tree-settings__label">
           View House:
         </label>
         <HousePicker
@@ -68,8 +59,8 @@ function TreeSettingsPanel({
         />
 
         {/* Centre On Person */}
-        <div className="mt-4 pt-4" style={{ borderTopWidth: '1px', borderColor: 'var(--border-primary)' }}>
-          <label className="block mb-2 text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+        <div className="tree-settings__section">
+          <label className="tree-settings__label tree-settings__label--sm">
             Centre On:
           </label>
           <PersonPicker
@@ -80,32 +71,32 @@ function TreeSettingsPanel({
         </div>
 
         {/* Show Relationships Toggle */}
-        <div className="mt-4 pt-4" style={{ borderTopWidth: '1px', borderColor: 'var(--border-primary)' }}>
-          <label className="flex items-center cursor-pointer transition-opacity hover:opacity-80" style={{ color: 'var(--text-primary)' }}>
+        <div className="tree-settings__section">
+          <label className="tree-settings__toggle">
             <input
               type="checkbox"
               checked={showRelationships}
               onChange={(e) => onShowRelationshipsChange(e.target.checked)}
-              className="mr-2 w-4 h-4"
+              className="tree-settings__toggle-input"
             />
-            <span className="text-sm">Show Relationships</span>
+            <span className="tree-settings__toggle-text">Show Relationships</span>
           </label>
         </div>
 
         {/* Branch View Toggle (only shown when multiple fragments exist) */}
         {hasMultipleFragments && (
-          <div className="mt-4 pt-4" style={{ borderTopWidth: '1px', borderColor: 'var(--border-primary)' }}>
-            <label className="flex items-center cursor-pointer transition-opacity hover:opacity-80" style={{ color: 'var(--text-primary)' }}>
+          <div className="tree-settings__section">
+            <label className="tree-settings__toggle">
               <input
                 type="checkbox"
                 checked={showBranchView}
                 onChange={(e) => onShowBranchViewChange(e.target.checked)}
-                className="mr-2 w-4 h-4"
+                className="tree-settings__toggle-input"
               />
-              <span className="text-sm">View Other Branches</span>
+              <span className="tree-settings__toggle-text">View Other Branches</span>
             </label>
             {showBranchView && (
-              <p className="mt-2 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+              <p className="tree-settings__note">
                 Split-screen branch view coming soon
               </p>
             )}
@@ -114,24 +105,17 @@ function TreeSettingsPanel({
 
         {/* Cadet Branch Navigation */}
         {(bastardCadets.length > 0 || nobleCadets.length > 0 || parentHouse) && (
-          <div className="mt-4 pt-4" style={{ borderTopWidth: '1px', borderColor: 'var(--border-primary)' }}>
+          <div className="tree-settings__section">
             {/* Parent house link (when viewing a cadet branch) */}
             {parentHouse && (
-              <div className="mb-3">
-                <span className="text-xs font-medium block mb-1" style={{ color: 'var(--text-tertiary)' }}>
+              <div className="tree-settings__group">
+                <span className="tree-settings__group-label">
                   Parent House:
                 </span>
                 <button
+                  type="button"
                   onClick={() => onHouseChange(parentHouse.id)}
-                  className="text-sm px-3 py-1.5 rounded-md transition-colors w-full text-left"
-                  style={{
-                    backgroundColor: 'var(--bg-tertiary)',
-                    color: 'var(--text-primary)',
-                    borderWidth: '1px',
-                    borderColor: 'var(--border-primary)'
-                  }}
-                  onMouseEnter={e => e.target.style.backgroundColor = 'var(--bg-hover)'}
-                  onMouseLeave={e => e.target.style.backgroundColor = 'var(--bg-tertiary)'}
+                  className="tree-settings__parent-btn"
                 >
                   {parentHouse.houseName}
                 </button>
@@ -140,20 +124,13 @@ function TreeSettingsPanel({
 
             {/* Noble cadets (already merged in tree — info only) */}
             {nobleCadets.length > 0 && (
-              <div className="mb-3">
-                <span className="text-xs font-medium block mb-1" style={{ color: 'var(--text-tertiary)' }}>
+              <div className="tree-settings__group">
+                <span className="tree-settings__group-label">
                   Noble Branches (in tree):
                 </span>
-                <div className="flex flex-wrap gap-1">
+                <div className="tree-settings__chips">
                   {nobleCadets.map(h => (
-                    <span
-                      key={h.id}
-                      className="text-xs px-2 py-1 rounded"
-                      style={{
-                        backgroundColor: 'var(--bg-tertiary)',
-                        color: 'var(--text-secondary)'
-                      }}
-                    >
+                    <span key={h.id} className="tree-settings__chip">
                       {h.houseName}
                     </span>
                   ))}
@@ -163,24 +140,17 @@ function TreeSettingsPanel({
 
             {/* Bastard cadets (separate trees — clickable navigation) */}
             {bastardCadets.length > 0 && (
-              <div>
-                <span className="text-xs font-medium block mb-1" style={{ color: 'var(--text-tertiary)' }}>
+              <div className="tree-settings__group">
+                <span className="tree-settings__group-label">
                   Bastard Branches:
                 </span>
-                <div className="flex flex-wrap gap-1">
+                <div className="tree-settings__chips">
                   {bastardCadets.map(h => (
                     <button
                       key={h.id}
+                      type="button"
                       onClick={() => onHouseChange(h.id)}
-                      className="text-xs px-2 py-1 rounded transition-colors cursor-pointer"
-                      style={{
-                        backgroundColor: 'var(--bg-tertiary)',
-                        color: 'var(--text-primary)',
-                        borderWidth: '1px',
-                        borderColor: 'var(--border-primary)'
-                      }}
-                      onMouseEnter={e => e.target.style.backgroundColor = 'var(--bg-hover)'}
-                      onMouseLeave={e => e.target.style.backgroundColor = 'var(--bg-tertiary)'}
+                      className="tree-settings__chip-btn"
                     >
                       {h.houseName}
                     </button>

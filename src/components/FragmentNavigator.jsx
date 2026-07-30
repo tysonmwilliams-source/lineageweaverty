@@ -7,6 +7,7 @@
 
 import { useState } from 'react';
 import Icon from './icons';
+import './FragmentNavigator.css';
 
 function FragmentNavigator({ fragments, onNavigateToFragment }) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -17,54 +18,33 @@ function FragmentNavigator({ fragments, onNavigateToFragment }) {
 
   return (
     <div
-      className="fixed top-20 left-6 z-10"
+      className="fragment-nav"
       onMouseEnter={() => setIsExpanded(true)}
       onMouseLeave={() => setIsExpanded(false)}
     >
       {/* Collapsed pill */}
-      <div
-        className="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all duration-200"
-        style={{
-          backgroundColor: 'var(--bg-secondary)',
-          borderWidth: '1px',
-          borderColor: 'var(--border-primary)',
-          boxShadow: 'var(--shadow-md)'
-        }}
-      >
-        <Icon name="git-branch" size={16} style={{ color: 'var(--accent-primary)' }} />
-        <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+      <div className="fragment-nav__pill">
+        <Icon name="git-branch" size={16} className="fragment-nav__pill-icon" />
+        <span className="fragment-nav__pill-label">
           {fragments.length} Branches
         </span>
       </div>
 
       {/* Expanded dropdown */}
       {isExpanded && (
-        <div
-          className="absolute top-full left-0 mt-1 min-w-48 rounded-lg overflow-hidden"
-          style={{
-            backgroundColor: 'var(--bg-secondary)',
-            borderWidth: '1px',
-            borderColor: 'var(--border-primary)',
-            boxShadow: 'var(--shadow-lg)'
-          }}
-        >
+        <div className="fragment-nav__list">
           {fragments.map((fragment, index) => (
             <button
               key={index}
-              className="w-full px-3 py-2 text-left transition-colors hover:bg-opacity-80 flex items-center gap-2"
-              style={{
-                backgroundColor: 'transparent',
-                color: 'var(--text-primary)'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              type="button"
+              className="fragment-nav__item"
               onClick={() => onNavigateToFragment(index)}
             >
-              <Icon name="user" size={14} style={{ color: 'var(--text-secondary)' }} />
-              <span className="text-sm">
+              <Icon name="user" size={14} className="fragment-nav__item-icon" />
+              <span>
                 {fragment.rootPerson.firstName} {fragment.rootPerson.lastName}
               </span>
-              <span className="text-xs ml-auto" style={{ color: 'var(--text-tertiary)' }}>
+              <span className="fragment-nav__item-count">
                 {fragment.memberCount}
               </span>
             </button>
