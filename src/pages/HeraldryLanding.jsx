@@ -16,7 +16,7 @@
  * Uses Lucide icons, Framer Motion animations, and CSS custom properties
  */
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -40,6 +40,22 @@ import { logger } from '../utils/logger';
 import { formatRelativeDate as formatDate } from '../utils/formatDate';
 
 // Animation variants
+/**
+ * Decision C3, step 1: the dry-run report for the composition migration.
+ *
+ * Loaded lazily *and* behind `import.meta.env.DEV` on purpose. A plain
+ * top-level import would tree-shake the component's JS out of the production
+ * bundle but still ship its stylesheet, because a `import './x.css'` is a side
+ * effect Rollup keeps regardless of the dead branch — verified: the CSS was in
+ * dist/assets before this was changed. Behind a dynamic import the whole chunk,
+ * styles included, is unreachable in production and is never emitted.
+ *
+ * Removed entirely once step 3 lands and applying moves into a real flow.
+ */
+const CompositionMigrationPanel = import.meta.env.DEV
+  ? lazy(() => import('../components/heraldry/CompositionMigrationPanel'))
+  : null;
+
 const CONTAINER_VARIANTS = {
   hidden: {},
   visible: {
@@ -358,6 +374,12 @@ function HeraldryLanding() {
                   </motion.div>
                 </div>
               </motion.section>
+            )}
+
+            {CompositionMigrationPanel && (
+              <Suspense fallback={null}>
+                <CompositionMigrationPanel />
+              </Suspense>
             )}
 
             {/* Search & Filters */}
