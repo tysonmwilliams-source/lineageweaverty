@@ -646,7 +646,7 @@ the only outstanding item that can damage heraldry already drawn.
 | 2 | Read path: readers go through `primaryLeaf`/`allLeaves`/`readCadency` | **done** — `5fa1bda` |
 | 3 | Save path: `composeCoat` writes v3; cadency recorded; apply flow | **done** — `face632` |
 | 4 | Render marshalled nodes — the SVG pipeline divides a shield | **done** — `991171a` |
-| 5 | Full recursive tree editor; `linkType` set by real code paths | in progress — decisions + editor extracted (`1db2936`, `81db30f`) |
+| 5 | Full recursive tree editor; `linkType` set by real code paths | in progress — 5a–5c done, 5d remaining |
 | 6 | Marriage arms: derive an impaled coat from a spouse relationship | not started |
 
 Step 1 is inert by design — nothing imports it, so it cannot break anything.
@@ -753,8 +753,16 @@ Step 5 is being taken in four slices, because only the last one is visible:
 |---|---|---|
 | 5a | Dimidiation, per the decision above | **done** — `1db2936` |
 | 5b | Extract the editing UI so it edits a *node*, not the page | **done** — `81db30f` |
-| 5c | Creator state becomes a composition tree + a selected path | not started |
+| 5c | Creator state becomes a composition tree + a selected path | **done** — `26047a5` |
 | 5d | Tree navigation UI, and `linkType` set by real code paths | not started |
+
+**5c bought more than state plumbing.** A marshalled shield now survives a save
+and load — the old save path rebuilt one coat from three state variables, so a
+divided shield could not have round-tripped even if something had built one.
+Loading restores the whole tree rather than its first leaf, deriving personal
+arms carries the parent's marshalling with it, and blazon learned marshalling
+("A impaling B", "Quarterly, 1st … 2nd …"), since describing a divided shield
+with only its first coat's blazon is the wrong blazon rather than a short one.
 
 **5b took `HeraldryCreator` from 2,441 lines to 1,579** — the first real
 reduction of a file the audit has flagged as a god component throughout. The
