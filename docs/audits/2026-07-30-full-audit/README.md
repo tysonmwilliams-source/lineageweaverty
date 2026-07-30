@@ -1,0 +1,399 @@
+# Lineageweaver — Full Audit
+
+**Date:** 2026-07-30
+**Scope:** every file in the repository — 103,087 LOC JS/JSX, 46,738 lines CSS, 342 source files, 72 docs, 21 MB of assets
+**Method:** eight parallel deep-read passes (one per subsystem plus data layer, design system, repo hygiene, and cross-system integrity), plus scripted integrity checks against the real world snapshot in `docs/claude-context/`
+**Baseline:** last substantive commit `6f5e36b` (2026-02-06); `be17827` (2026-06) was docs/tooling only
+
+Detailed findings live in [`sections/`](sections/). This file is the synthesis and the work plan.
+
+---
+
+## The short version
+
+The app is more capable than it looks and less safe than it feels.
+
+Six real subsystems, a genuinely populated world (320 people, 52 houses, 403 codex entries, 477 relationships, 26 dignities, 33 coats of arms), and a lot of genuinely good code — the dignity analysis service, the backlinks panel, the timeline view, the AI proposal validator, the login page. None of that is in question.
+
+What's wrong falls into three buckets, and each has a single root cause rather than a long list of unrelated defects.
+
+### 1. It doesn't look right because the design system was built and never turned on
+
+`src/styles/shared/` and `src/styles/shared-forms.css` contain **1,468 lines of button, card, section, animation and form CSS** that **nothing imports**. `docs/DEVELOPMENT_GUIDELINES.md:73` documents `shared-forms.css` as the canonical place for form styling — a file that has never been loaded by the running app.
+
+Because it was never wired up, every surface reinvented itself. The measurements:
+
+| | |
+|---|---|
+| CSS lines across 115 files | **46,738** (0.86 lines of CSS per line of JSX) |
+| Distinct class selectors defined | 3,559, against 596 referenced in JSX |
+| Files defining their own button styles | **56** |
+| Distinct button classes | 194 |
+| Distinct card classes | 367, across 28 files |
+| Modal implementations | 126 classes / 14 files — the shared `Modal` has **2** consumers |
+| Distinct page container widths | 7 (900/1000/1200/1400/1600 + nav at 1400) |
+| Distinct breakpoints | 7 |
+| Hardcoded hex/rgba in CSS | 202 + 528 |
+| Hardcoded hex in JSX | 227 across 23 files |
+| Separate `@keyframes spin` definitions | **22** |
+
+Two further things make it read as flat and grey regardless of the CSS sprawl:
+
+- **`--border-primary` fails 3:1 contrast in all seven themes** (1.44 to 1.74) and is used **470 times**. Card edges, table rules, input borders and section dividers are literally below perceptual threshold. The structural grid of the UI is invisible.
+- **The type scale is bottom-heavy.** `--text-base` is 14px, `--text-xs` is 11px, and usage is `xs` (345) + `sm` (486) = **831 uses** versus 307 for everything base-and-up. Crimson Text is a low-x-height old-style serif; at 11px it is hard to read and at 13px it is the app's most common size.
+
+Small grey text on brown with no visible structure. That combination, not the individual page layouts, is what "I'm not happy with how it looks" is describing.
+
+Two more contributors worth naming: **239 emoji used as UI chrome** alongside a 207-icon Lucide system that already exists (`components/icons/Icon.jsx`), and a **full-screen white flash on every cold load** because `main.jsx` bundles only `theme-base.css` — which defines zero colours — while the real theme is injected as a `<link>` after first paint.
+
+### 2. The background fragility is one root cause repeated sixty times
+
+`dataSyncService.js` (2,450 lines) and `firestoreService.js` (2,238 lines) are **~2,800 lines of mechanical repetition**: 87 per-entity cloud functions and 60 sync wrappers that differ only by a collection-name string, plus the same 190-line restore block copy-pasted verbatim into two functions, plus four separate hardcoded collection lists **with three different contents**.
+
+Every sync bug in this audit is a copy-paste divergence in that structure:
+
+- Household roles call `sync*(userId, id, role)` against a 4-arg signature → documents written to `users/{uid}/datasets/<numericRoleId>/householdRoles/[object Object]`, and queue rows with `entityId: "[object Object]"` that can never be replayed or cleared.
+- Heraldry does the same in four places → `getDatabase(42)` creates a **phantom IndexedDB named `LineageweaverDB_42`**, one per record.
+- Codex imports do the same → one phantom database per imported entry.
+- `dignityTenure`, `dignityLink` and `heraldryLink` are queued but have **no replay handler**, and are marked synced anyway — offline changes silently discarded.
+- `acknowledgedDuplicates` and `bugs` are cleared by `deleteAllData` but appear in neither upload nor download — destroyed on every cloud restore.
+- `arcMilestones` has a full cloud stack, a Firestore rule, and three sync wrappers, but **the Dexie table was never created**.
+
+Only **10 of 25 entity types** have complete, correctly-wired local↔cloud CRUD. Eight have none at all.
+
+The fix is not thirty patches. It's a manifest — one declarative table of entities, four generic operations — which collapses 4,700 lines to roughly 980 and makes five whole bug classes structurally impossible. Full design in [`sections/02-data-sync.md`](sections/02-data-sync.md).
+
+### 3. There are four independent ways to silently lose data
+
+Ranked by likelihood:
+
+1. **The Story Planner never syncs and gets wiped.** `planningService.js` has zero `dataSyncService` imports; the 21 planner sync functions have zero callers. Because planner writes never enter `syncQueue`, `getPendingChangeCount()` is *structurally blind* to them — so the data-loss guard in `initializeSync` sees zero pending changes and proceeds to `deleteAllData()` (which explicitly clears all six planner tables, `database.js:1257-1263`) then restores from a Firestore subtree that was never written. Beat sheets, plot threads, character arcs, scene plans: gone on a sync-triggering login, no warning, no undo.
+2. **"Complete backup" exports 4 of 26 tables.** `MigrationHooks.js:331-343` writes only people/houses/relationships/codexEntries. Not exported: all 33 heraldry, all 26 dignities and their tenures, all codexLinks, the entire Writing Studio, all planning tables, householdRoles. The house formatter also emits legacy `cadetBranchOf` while omitting `parentHouseId`, so **all 11 cadet branches flatten on restore**. The UI calls it "a complete backup" (`ImportExportManager.jsx:481`).
+3. **Restoring a backup can be wiped by the next sync** — import bulk-adds straight to Dexie without touching `syncQueue`, so the same guard fails to trip.
+4. **Deletes that come back.** Deleting a house reverts in the cloud (member `houseId`s and the codex entry are cleared locally only). Deleting a codex entry never syncs — including from the cleanup tool, whose entire purpose is removing duplicates, making its deletions the ones *guaranteed* to return. Deleting heraldry hits the default dataset and leaves `houses.heraldryId` dangling while the UI promises otherwise.
+
+Plus one that's already spent: **a live Gemini API key sits in git history on `origin/main`** (`267d0e4`, `src/services/aiAssistantService.js:21` — an assignment, not a fallback). Source is clean now and `.env.local` has a different key, but rotating locally does not disable the old one.
+
+---
+
+## The pattern behind all of it
+
+The most striking thing in 1,573 lines of findings isn't any single bug. It's how much finished, working code is **built but not connected**:
+
+| Built | Connected? |
+|---|---|
+| 1,468 lines of shared design-system CSS | Never imported |
+| `ListSearchBar` with a 300ms debounce | 1 caller; four other search boxes are undebounced |
+| `searchCharges()` — keyword-indexed, 287 charges | Unused; the creator has 17 tabs and no search |
+| `validateWikiLinks()` / `getSuggestedEntries()` | Zero callers — the two missing wiki features |
+| `runIntegrityCheck()` / `findOrphanedRecords()` | Zero callers — would have caught the broken Crown |
+| `divisions.js` — a data-driven division renderer | Zero importers; a 400-line `switch` does it instead |
+| The AI proposal validator, differ and rollback stack | Unreachable — executor called with the wrong context shape |
+| `useDignityAnalysis({ autoRun: true })` | `autoRun` is never destructured; there is no `useEffect` |
+| `reorderChapters` / `moveChapter` | Zero callers; chapters can't be reordered |
+| `personalArmsRenderer.js` — a full cadency engine | Zero callers; "Create Personal Arms" passes params the creator doesn't read |
+| Heraldry `parentHeraldryId` / `derivationType` schema | No UI — "create cadet arms from this" is modelled and unbuilt |
+| 8 of 14 shared components | Missing from the barrel, so they're deep-imported and see 1–4 uses each |
+| 37 of 40 feature flags | Gate nothing at all |
+
+This is the signature of chat-driven development: each feature was built well and completely, then the next conversation started somewhere else. **A large fraction of the available improvement is wiring, not writing.** That's good news — it's the cheapest kind of work there is.
+
+The corollary is that the codebase is not in bad shape structurally. The god components are real (`HeraldryCreator.jsx` 2,257; `DignityView.jsx` 2,149; `FamilyTree.jsx` 1,941; `QuickEditPanel.jsx` 1,728) but they're mostly *long*, not tangled — the extraction boundaries are clean and obvious.
+
+---
+
+## Health check
+
+| Signal | Result |
+|---|---|
+| `npm run build` | Passes, 13.3s — but a **1,153 kB entry chunk** (Firebase-dominated), no `manualChunks`, no `build` block in `vite.config.js` at all |
+| `npm run lint` | **521 errors, 39 warnings** across 148 files. `dataSyncService.js` alone has 164. Includes 6 `no-undef`, 11 rules-of-hooks violations, 1 duplicate JSON key |
+| `npm run test:run` | 148/148 pass — **but exits 1** on unhandled rejections. Unusable as a CI gate |
+| Test coverage | 5 test files / 103k LOC. **Five of six subsystems have zero tests** |
+| `console.*` | **1,175** (CLAUDE.md says ~450 — that's `console.log` only). 22 DEV guards |
+| Dead code | **~7,338 lines** across 15 orphan modules, verified by full import-graph resolution |
+| `.git` | **313 MB** for 56 MB of content — 5,653 loose objects, never packed. `git gc` reclaims most of it |
+| `extras/` | 29 MB / 4,459 files, entirely unreferenced. `extras/heraldic-svgs` is a 100% subset of already-shipped assets |
+| Charge assets | 21 MB / 355 SVGs, 68 of them orphaned; all copied verbatim into `dist/` |
+| npm audit | 44 vulns. Two matter: `react-router-dom` (RCE, fix available) and `dompurify` ≤3.4.11 (XSS — the app's only sanitizer, 21 call sites) |
+
+And the world data itself, scripted against the real snapshot:
+
+**The genealogy core is exceptionally clean.** Zero dangling `houseId`s, zero broken relationship references, zero ancestry cycles, zero people with >2 biological parents, zero impossible dates across all 382 parent-child pairs, zero cadet-branch cycles. That's unusual and worth saying plainly.
+
+The damage is elsewhere:
+- **The Crown (dignity 7) is structurally broken** — `currentHolderId: 82` points at a nonexistent person, `successionType` is unset, and its house has zero members. All 24 other dignities chain up to it, and `calculateSuccessionLine` returns an empty array with only a `console.warn`.
+- **219 of 1,787 wiki-links are broken** (12.3%), across 109 targets in 86 entries.
+- **189 of 403 codex entries are empty auto-created stubs** — nearly half the Codex.
+- **15 duplicate codex titles**, which resolve non-deterministically because wiki-links key on lowercased title and the last one inserted wins.
+- **Codex taxonomy has drifted to 12 `type` values and 42 `category` values** (72 null) — so the browse filters silently miss entries.
+
+---
+
+# PART ONE — What I can fix autonomously
+
+Everything here has a determinate right answer. No taste calls, no worldbuilding decisions, no destructive operations on your content.
+
+I've sequenced it so each phase is independently shippable and testable, and so the safety work lands before the cosmetic work.
+
+### Phase 0 — Stop the data loss (highest priority)
+
+| # | Fix | Where |
+|---|---|---|
+| 1 | Wire the 21 planner sync functions into `planningService.js`; thread `user?.uid` through all 8 planner views | `planningService.js`, `components/writing/Planner/**` |
+| 2 | Fix `useAutoSave`'s unmount effect (`[data]` → `[]` + ref) — restores the 1500ms debounce, ends per-keystroke Firestore writes | `hooks/useAutoSave.js:107` |
+| 3 | Capture `chapterId` with the autosave payload so a chapter switch can't overwrite the wrong chapter | `WritingEditor.jsx:155-200` |
+| 4 | Make the backup export enumerate all 26 tables from the schema and stop field-whitelisting | `MigrationHooks.js:331-343` |
+| 5 | Route backup import through the sync wrappers (or enqueue `syncQueue` rows) and wrap it in a transaction | `ImportExportManager.jsx:404-420` |
+| 6 | Fix the 3 household-role, 4 heraldry and 2 codex-import `sync*` arity bugs — these create phantom databases | 9 call sites |
+| 7 | Add the 3 missing `syncMap` handlers; make unknown entity types throw instead of silently marking synced | `dataSyncService.js:298-400` |
+| 8 | Stop `deleteAllData` clearing `bugs` and `acknowledgedDuplicates` (they have no cloud counterpart) | `database.js:1235,1247` |
+| 9 | Sync the house-delete cascade and the codex-delete paths; null `houses.heraldryId`/`people.heraldryId` in `deleteHeraldry` | 5 files |
+| 10 | Reload genealogy data on dataset switch (`key` the provider) — currently edits in world B write into world A | `App.jsx:370` |
+| 11 | Pass `datasetId` to the 6 places that silently fall back to the default database | Codex, dignities, heraldry, wiki-links |
+
+**Effort: ~2–3 days.** This is the phase that stops you losing work.
+
+### Phase 1 — Crashes and dead features
+
+| # | Fix | Where |
+|---|---|---|
+| 12 | `setFragmentNavExpanded` is undefined — every fragment navigation throws | `FamilyTree.jsx:243` |
+| 13 | Add cycle guards to `familyBlockLayout` and `DignitiesLanding.buildNode` (currently: browser freeze / stack overflow) | 2 files |
+| 14 | Fix the `'parent-child'` vs `'parent'` vocabulary bug — this makes *all* circular-ancestry and integrity checking dead | `dataIntegrity.js`, `database.js:917` |
+| 15 | Guard the null holder in `runFullAnalysis` — deleting a titled person currently breaks the whole analysis page | `dignityAnalysisService.js:347` |
+| 16 | Implement the ignored `autoRun` option — turns on two permanently-empty suggestion panels | `useDignityAnalysis.js:38` |
+| 17 | Fix the co-parent dropdown (renders blank options, silently creates single-parent children) | `QuickEditPanel.jsx:1557` |
+| 18 | Fix the People-list house filter (compares number to string — always returns 0 results) | `PersonList.jsx:199` |
+| 19 | Fix the 17 wrong field names (`house.name`, `person.birthYear`, `house.seat`…) that kill the wiki-link house search, the lifespan canon check, and most Reference Browser previews | `entitySearchService`, `canonCheckService`, `ReferenceBrowser` |
+| 20 | Wire the AI proposal executor's context correctly — switches on validation, diffs and rollback, all already built | `AIAssistant.jsx:223` |
+| 21 | Fix the TipTap v2→v3 `setContent` signature and `history`→`undoRedo` | `TipTapEditor.jsx:226,139` |
+| 22 | Fix 3-digit-year string comparison in every date validator (born 999 / died 1010 currently fails to save) | 3 files |
+| 23 | Fix `setState`-in-`useMemo` in 3 list components; hoist 11 conditional hooks | 5 files |
+
+**Effort: ~2 days.**
+
+### Phase 2 — Make the app feel solid
+
+| # | Fix | Where |
+|---|---|---|
+| 24 | Add `personId/houseId/dignityId/heraldryId` indexes to `codexEntries` (Dexie v18) and convert the four `getEntryBy*Id` scans — **measured 8,292ms → 4ms** | `database.js:527`, `codexService.js` |
+| 25 | Debounce the four undebounced search inputs by reusing the existing `ListSearchBar` | 4 files |
+| 26 | Memoize `sanitizeSVG` (currently re-parses 33 SVGs per keystroke in the Armory) | 8 call sites |
+| 27 | Memoize `buildRelationshipMaps` and split the 21-dependency `drawTree` effect | `FamilyTree.jsx` |
+| 28 | Replace `Array.includes` with `Set` in the layout hot paths | `familyBlockLayout.js`, `FamilyTree.jsx` |
+| 29 | Share the `visited` set in `findAncestors`/`findDescendants` (currently O(n²) per redraw) | `treeHelpers.js` |
+| 30 | Debounce prose analysis and precompile its regexes — currently ~22,000 regex compilations per keystroke | `WritingWizard`, `proseAnalysisService` |
+| 31 | Add `AbortController`, timeout, backoff, and `finishReason`/`blockReason` handling to the Gemini transport; dedupe the two request builders | `aiAssistantService.js` |
+| 32 | Add cleanup flags to the un-cancelled async loads (panels currently show mismatched data when clicked through quickly) | `QuickEditPanel`, `EntitySidebar`, `HeraldryCreator` |
+| 33 | Add `manualChunks` for firebase/d3/tiptap — splits the 1,153 kB entry chunk | `vite.config.js` |
+
+**Effort: ~2–3 days.**
+
+### Phase 3 — Design system foundations (no aesthetic decisions yet)
+
+| # | Fix | Where |
+|---|---|---|
+| 34 | Bootstrap the theme in `index.html` — kills the white flash on every load | `index.html`, `main.jsx` |
+| 35 | Import the 1,468 lines of shared CSS that already exist; rename the ~15 colliding class names first | `index.css` |
+| 36 | Add the 28 referenced-but-undefined CSS custom properties to all 7 themes | `styles/themes/**` |
+| 37 | Raise `--border-primary` to ≥3:1 in all 7 themes; add `--border-subtle` for decorative rules | `styles/themes/**` |
+| 38 | Fix the 29 token pairs failing AA contrast (accent, focus ring, warning, disabled text) | `styles/themes/**` |
+| 39 | Point `--font-body` at a font that is actually loaded | `theme-base.css:36` |
+| 40 | Delete the 47 duplicate token declarations that conflict between `theme-base` and the themes | `styles/**` |
+| 41 | Fix `toggleTheme` so it doesn't discard your chosen theme | `ThemeContext.jsx:180` |
+| 42 | Add `<MotionConfig reducedMotion="user">` — one line, fixes all 458 unguarded animations | `App.jsx` |
+| 43 | Memoize the 4 unmemoized context provider values | `contexts/**` |
+| 44 | Make the 6 Home system cards real `<Link>`s (currently keyboard-inaccessible); add `onKeyDown` to `Card` | `SystemCard.jsx`, `Card.jsx` |
+| 45 | Replace `outline: none` with `:focus:not(:focus-visible)` + a `:focus-visible` companion across 46 files | codemod |
+| 46 | Export all 14 shared components from the barrel | `shared/index.js` |
+| 47 | Add a Vitest contrast test that fails CI on any theme pair below threshold | new |
+| 48 | Add the missing catch-all route; standardise container widths on 3 tokens | `App.jsx`, themes |
+
+**Effort: ~3 days.** Nothing here changes the design direction — it fixes what's broken and gives you a foundation to make that decision on.
+
+### Phase 4 — Cleanup and hygiene
+
+| # | Fix |
+|---|---|
+| 49 | Delete ~7,338 lines of verified dead code (15 orphan modules) |
+| 50 | Delete or archive the `arcMilestones` phantom entity (~150 lines across 6 files) |
+| 51 | Strip or DEV-guard 1,175 `console.*` calls |
+| 52 | Replace 239 emoji with the existing `Icon` component |
+| 53 | Fix the exit-code-1 test failure; add a GitHub Actions CI gate |
+| 54 | Patch `react-router-dom` and `dompurify` specifically |
+| 55 | `git gc --aggressive` (313 MB → ~30 MB); add `.DS_Store` to `.gitignore`; delete `src/features/` |
+| 56 | Fix the ESLint config (ignore `old-build-archive`, add Node globals for config/test files) |
+| 57 | Remove `@tiptap/extension-mention`; move build-time deps to devDependencies; add the phantom `@tiptap/suggestion` dep |
+| 58 | Consolidate 22 `@keyframes spin`, 3 `formatDate`s, 3 `CLASS_ICONS`, 2 `harmonizeColor`s (with divergent maths), 2 `RankPips` |
+| 59 | Delete the dead `withTheme` HOC; move `ThemeContext` into `contexts/` |
+| 60 | Run SVGO over the 21 MB charge library — **but preserve `fill="#FFFFFF"` exactly**, since `convertColors` would break every recolor |
+| 61 | Fix the 3 CLAUDE.md errors: 7 themes not 2; 1,175 console calls not 450; the contextRegistry tables *are* written; the README is accurate and the warning about it is the stale part |
+
+**Effort: ~2 days.**
+
+### Phase 5 — Wire up what's already built
+
+The highest value-per-hour work in the whole audit.
+
+| # | Fix |
+|---|---|
+| 62 | Wire `searchCharges()` into the Heraldry Creator — 287 charges currently have no search |
+| 63 | Wire `validateWikiLinks()` and `getSuggestedEntries()` — gives you `[[` autocomplete and a broken-links report |
+| 64 | Wire `runIntegrityCheck()` into the Data Health Dashboard — it would have caught the broken Crown |
+| 65 | Read `personId`/`deriveFrom`/`birthPosition` in the Heraldry Creator — switches on the entire personal-arms cadency engine |
+| 66 | Add a download button to the Armory (`downloadHeraldry()` exists, dead) — a design tool that can't export isn't finished |
+| 67 | Wire `reorderChapters`/`moveChapter`; surface per-chapter `status`/`povCharacter`; allow inline rename |
+| 68 | Surface `targetWordCount` (already persisted, never rendered) as a progress ring + session counter |
+| 69 | Prune stale `codexLinks` on save so removed links stop producing phantom backlinks |
+| 70 | Propagate person/house/dignity renames to the linked codex entry's denormalized title |
+
+**Effort: ~3 days.**
+
+---
+
+**Part One total: roughly 14–16 working days.** I'd take it phase by phase, with a checkpoint after each — Phase 0 first regardless of anything else.
+
+Two structural refactors are also unambiguously right, but they're big enough that I'd want a green light on timing rather than folding them in:
+
+- **The sync manifest** (~4,700 lines → ~980, eliminates five bug classes structurally). Design and migration path in [`sections/02-data-sync.md`](sections/02-data-sync.md). ~1 week, 7 independently revertable steps.
+- **The planner view abstraction** (`usePlanningEntity` + `PlannerMasterDetail` + `PlannerFormModal`): 3,873 lines of view code → ~1,400 and 7,858 CSS → ~3,000, and it's the natural place to enforce the sync rule once. ~4 days.
+
+---
+
+# PART TWO — What needs your input
+
+Grouped by the kind of decision. My recommendation is marked in each, but these are genuinely yours.
+
+## A. Urgent, action required from you
+
+**A1. Revoke the leaked Gemini key.** `AIzaSyDhw4eI0_nBXKU9C7s23vdukrUMx28NjlU` is in `267d0e4` and `e4545d4`, both on `origin/main`. You rotated locally; that doesn't disable it. Google Cloud Console → APIs & Services → Credentials → delete it. I won't touch credentials.
+
+**A2. Then decide about the history itself.** (a) Revoke and leave history — the string stays in GitHub forever, fine if the key is genuinely dead. (b) `git filter-repo` + force-push — actually removes it, rewrites every SHA, breaks the `audit/comprehensive-fixes` branch and any clone. (c) Recreate the repo from fresh history. **Recommend (b)** if the repo is public and (a) if it's private — I need to know which.
+
+## B. Aesthetic direction — the actual answer to "I don't like how it looks"
+
+These four are the ones I can't decide for you, and they're the ones that matter most for your stated complaint.
+
+**B1. What is this app trying to look like?**
+Right now it reads as *desaturated brown admin panel*, not *illuminated manuscript*. Every surface is a 6px rounded rectangle; shadows are pure black on warm brown (reads dirty grey, not candlelit); the accent gold appears 456 times as text colour and never as structure; the only genuinely thematic assets in the entire app are one fleur-de-lis and two corner flourishes on the Home hero.
+- **(a) Lean into the manuscript** — warm-tinted shadows, a visible rule system in the accent hue, drop caps on Codex entries and chapter openers, ornamental section breaks, near-zero radius so surfaces read as trimmed vellum rather than iOS cards.
+- **(b) Lean into the tool** — crisp high-contrast information design, serif for headings and prose only, clean sans for all chrome and data. Faster, more legible, less distinctive.
+- **(c) Split it** — chrome is (b), content surfaces (Codex reading view, Writing Studio, Home, heraldry) are (a).
+**Recommend (c).** The data surfaces are where legibility is failing and the content surfaces are where the atmosphere earns its keep. But this is your product's voice.
+
+**B2. Base font size.** `--text-base: 14px`, `--text-xs: 11px`, and 73% of all type usage is at 11–13px in a low-x-height serif.
+- **(a)** Bump the scale one step (base 16 / sm 14 / xs 12). Most legible, needs re-tuning of dense tables and tree labels.
+- **(b)** Keep the sizes, switch the body face to something with a taller x-height at small sizes (Source Serif 4, Literata). Every layout intact. **Cheapest real win.**
+- **(c)** Split the scale — 14px for data surfaces, 16–17px reading scale for Codex and Writing Studio.
+**Recommend (b) now, (c) later** if you go with B1(c).
+
+**B3. Tailwind: commit or remove.** The app is 94% hand-written BEM and 6% Tailwind (7 files). `tailwind.config.js` defines 4 custom colours that Tailwind 4 never reads. Worse, Tailwind's theme variables *name-collide* with yours — `className="text-sm"` in `FamilyTree.jsx` renders at your 13px with a line-height computed from Tailwind's 14px assumption. Meanwhile the most-repeated stray hex values in your custom CSS *are* Tailwind's default palette, pasted by hand.
+- **(a) Remove it** — rewrite ~513 utility usages in 7 files, drop the dep. **Recommend this**; it's the low-risk default and ends the collision.
+- **(b) Go Tailwind-first** — one system, far less CSS, but a 6–12 month background project against 46,738 lines, and it fights the bespoke ornament.
+- **(c) Keep both formally** — namespace your tokens `--lw-*`, Tailwind for layout only. Honest but permanently two mental models.
+
+**B4. Seven themes, or two done well?** There are seven, not the two CLAUDE.md claims — 1,050 token declarations to keep in contrast parity, five of which currently ship an accent or focus ring below 3:1.
+- **(a)** Two themes, both fixed to AA, delete five (1,470 lines).
+- **(b)** Keep seven, add the automated contrast gate (Phase 3 #47 builds it anyway).
+- **(c)** Two surface modes × N accent overlays (~10 tokens each) — keeps the variety, kills 90% of the maintenance.
+**Recommend (c)** if you actually use them, (a) if you don't. Only you know.
+
+## C. Product scope
+
+**C1. Mobile: support it or drop it?** Currently half-built and silently broken: below 1200px the Writing Editor hides the entity sidebar, below 768px it hides the chapter list too — with no replacement affordance, so your chapter list becomes unreachable. 28 of 115 stylesheets have zero media queries. Only 15 declarations anywhere meet the 44px touch target. But there *is* a full hamburger menu and a `--nav-height-mobile` token.
+- (a) Declare desktop-only with an explicit gate below 900px.
+- **(b) Mobile-read, desktop-write** — Home, Codex, Dignities responsive; Tree, Heraldry, Editor, Manage gated. **Recommend this** — it matches how a novelist actually uses this.
+- (c) Full responsive — needs a list/breadcrumb fallback for the tree and bottom-sheet sidebars.
+
+**C2. Gemini key architecture.** Any `VITE_` key ships to the browser. Firebase config is safe that way because rules enforce access; a Gemini key *is* the access.
+- (a) Accept it — correct if this stays local-only. Better version: drop the env var, add a Settings field storing the user's own key in IndexedDB.
+- (b) Proxy through a Cloud Function with App Check — ~60 lines, gives you rate limiting and per-user quotas, but breaks the "no backend of our own" premise.
+- (c) Firebase AI Logic — purpose-built, no key in the client, no new vendor; costs a transport rewrite and a Blaze plan.
+**Recommend (a)-with-Settings-field** unless you plan to deploy publicly, in which case (c).
+
+**C3. Quartering and impalement.** Verified: less built than "stubs" suggests. Shield shapes are ~30 minutes from working (files exist, UI is commented out). Quartering/impalement are *not built* — the two functions naively composite finished PNGs, live in a file with zero importers, and the `linkType` enum reserves `'quartered'`/`'impaled'` with no code path that sets them. Real quartering needs the composition model to become **recursive**.
+- (a) Ship shield shapes now, delete the quartering functions.
+- (b) Delete both and the enum values.
+- (c) Commit to recursive composition — multi-week, **but marriage arms *are* impalement, which makes this arguably the biggest feature gap for a genealogy app specifically**.
+
+**C4. Story Planner: modal or route?** Nothing in the planner is bookmarkable, linkable, or survives a refresh, and switching between views is dashboard-and-back. (a) keep the modal, add a tab bar; (b) promote to `/writing/:id/plan/:view`; (c) fold into the editor's right rail. This determines whether the planner refactor is a component extraction or a routing change.
+
+**C5. Household roles: fix or fold into Dignities?** Roles are dataset-unscoped, unsynced, and buried inside `HouseForm` — they read as an unfinished experiment, and `dignityService` already models offices via `dignityNature: 'office'`.
+
+**C6. Multiple spouses.** The renderer assumes one spouse per person; the data model stores several. Today a widowed-and-remarried king shows one queen and his other children render as bastard lines. Also, the relationship *calculator* excludes divorced spouses and the *renderer* doesn't — one of them is wrong. Full support is an L-effort change through the layout engine; a "primary spouse + m.×3 badge" convention is M.
+
+## D. Succession semantics — worldbuilding rules, not bugs
+
+**D1. What should the succession algorithm actually model?** The current one matches no real system: a correct depth-first primogeniture walk is then **overwritten by a generational sort**, so a holder's grandson-via-eldest-son ranks *behind* his second son, and representation through a predeceased heir is broken entirely. Separately, women are globally demoted below all men, so a holder's daughter ranks behind his brother's grandson.
+- (a) Implement the textbook rules properly in a pure, tested `successionRules.js` — 1–2 days, **but it will reorder lines you may have written prose around**.
+- (b) Minimal correctness patch — ~2 hours, fixes the worst wrongness.
+- (c) Relabel it "suggested" and add manual override.
+**Recommend (a)** — this subsystem's entire purpose is succession — but the reordering risk is yours to accept.
+
+**D2. Is a "dynasty" a house or a bloodline?** Agnatic seniority matches on `houseId`, so it **silently excludes every cadet branch** — the exact people who inherit under that system.
+
+**D3. How do adopted and fostered children rank?** Currently `adopted` inherits identically to a natural legitimate child, and adopted/foster parent links are invisible to succession entirely. Both defaults are silent.
+
+**D4. The Crown (dignity 7) is broken.** Holder points at a nonexistent person 82; no succession type; its house has zero members. All 24 other dignities chain up to it. Was person 82 someone you deleted, or should the Crown be vacant? (Regardless of the answer, I'll make the code fail loudly instead of returning an empty list silently.)
+
+## E. Your world data — 219 broken links and friends
+
+I won't touch your creative content. These need a call:
+
+**E1. 219 broken wiki-links (12.3%), three distinct kinds.** **8 are mechanical** (3 newline-in-title, 5 plural/singular — `[[Recordant]]` → "Recordants" alone is 9 occurrences) and I can fix those on your say-so. **4 are unedited template placeholders** (`[[Person 1]]`, `[[Location Name]]`) and are clearly accidental. **23 name real people or houses with no codex entry.** The remaining **72 point at nothing at all** (`[[Verisol]]` ×16, `[[Wood-Warden's Oath]]` ×10, `[[Mirellune]]` ×9) — these read as a deliberate forward-reference backlog, and stubbing or deleting them would destroy that. My suggestion: fix the 8 and the 4, leave the 72, and build you a "links to write" report.
+
+**E2. 189 of 403 codex entries are empty stubs.** Auto-created for every person and house. They inflate every full-table read and the search index. Delete and regenerate on demand, keep as writing prompts, or stop auto-creating?
+
+**E3. 15 duplicate codex titles.** `House Wilfson` (ids 4, 2506), `Riverhead` (15, 2667), `Aldric Wilfrey` (2689, 2711) and 12 more. Wiki-links key on lowercased title and the last insert wins, so `[[Riverhead]]` resolves non-deterministically. Merging means choosing which body text survives.
+
+**E4. Codex taxonomy has drifted.** 12 `type` values (`location` 28 vs `locations` 11; `personage` 213 vs `people` 2) and 42 `category` values with 72 null (`Cadet Houses` 11 vs `cadet` 7; three spellings of "Castles &…"). The browse filters silently miss entries. Which vocabulary is canonical, and what should the 72 nulls become?
+
+**E5. Two house titles the repair tool won't catch.** `fixHouseHousePrefixes` fixes 8 of the 10 doubled-prefix entries. It won't fix `"House The Crown "` (2507) or `"House Commoner"` (2844), because those houses are literally named `"The Crown "` and `"Commoner"`. What should those two be called?
+
+**E6. Six people with 2–3 digit years.** The Shadash line — Fenric 30–105, Salenne 33–105, Fenricson 55–135, and three more — against a world otherwise dated 1680–2016. Their 80–90 year lifespans are internally consistent, which reads deliberate (an ancient era?), but they sort to the far left of every timeline. Intentional or typos?
+
+**E7. Nine people named Baudin Wilson.** Spanning 1778→2007 in House Wilson — obviously a dynastic naming tradition, not duplicates (zero name+date collisions anywhere in your data). But the duplicate detector flags all 36 pairs and runs Levenshtein over them on every health check. Bulk-acknowledge them, or add regnal numbers (which changes displayed names throughout the tree)?
+
+**E8. Two heraldry oddities.** "Arms of House Wilfrey of **Blackmount**" references a house that doesn't exist — Breakmount? And ids 26/27 are both "Arms of House Wilfrey of Riverhead"; which is canonical?
+
+**E9. 13 people in zero relationships, 5 houses with zero members.** The 9-person Dunwilfrey/Dumwilfrey block plus four others are invisible in the tree. Almost certainly work-in-progress — confirm and I'll leave them alone.
+
+## F. Housekeeping decisions
+
+**F1. `extras/` — 29 MB, 4,459 files, entirely unreferenced.** `extras/heraldic-svgs` (19 MB) is a **100% subset** of already-shipped assets — safe to delete. `extras/icons` is 17 MB / 4,087 SVGs and `public/icons` is an empty directory, so they were never wired up: staging area or abandoned? `extras/Backups` is 2.5 MB of dated world exports.
+
+**F2. `old-build-archive/` and `archived-components/`.** Only 0.44 MB but they pollute lint (18 problems) and every repo-wide grep. Git history already has all of it — but "I might want to look at the old layout code" is a legitimate reason to keep them.
+
+**F3. `no-unused-vars` is 446 of the 521 lint errors.** Set to `error`, so lint can never pass and functions as noise rather than a gate. Downgrade to `warn` and error only on the high-signal rules (green gate today), or bulk-fix first?
+
+**F4. TypeScript.** `@types/react` is installed against zero TS files. The two highest-value bugs in this audit (`setFragmentNavExpanded` undefined, a duplicate JSON key) are exactly what a type checker catches for free. **Recommend: `// @ts-check` + JSDoc on `src/services/` only** — real safety, zero build change, no migration.
+
+**F5. Feature flags.** 40 flags, 8 helpers, 368 lines — and exactly **3 flags are read**, all already `true`, one of the two consuming files being dead code. CLAUDE.md calls the rest "intentionally off", which reads as *implemented but disabled*; they are in fact **unimplemented**. Delete the file, or keep it as an explicit roadmap document? (If it *is* your roadmap, say so and I'll relabel it rather than delete it.)
+
+**F6. `docs/claude-context/` — 700 KB of regenerable JSON, tracked in git**, six weeks stale, and every export churns a new ~0.5 MB blob. Gitignore it (regenerates on demand, but a fresh clone has no snapshot), or keep it?
+
+**F7. Docs restructure.** 72 files / 1.92 MB, nothing touched since January, three directories with spaces in their names, four overlapping audit reports from the same week, two versions of the same heraldry proposal, three competing project overviews, and 580 KB of *worldbuilding content* mixed into engineering docs. Proposed structure — `guides/` (must be true or deleted), a single `roadmap.md` replacing all 16 files in `plans/`, `decisions/` (append-only), `archive/` (write-only, never pruned), and `world/` moved out of `docs/` entirely — is in [`sections/04-hygiene-build-tests.md`](sections/04-hygiene-build-tests.md).
+
+**F8. Bug tracker path.** `bugService.js` claims cloud sync in its header comment and contains none; the real sync lives in `BugContext.jsx` bypassing `dataSyncService`, writing to `users/{uid}/bugs/{id}` while `firestoreService.js` lists `bugs` as a *per-dataset* collection. "Bugs are per-account, not per-world" may well be intentional — confirm and I'll fix the comment instead of the code.
+
+---
+
+## What I'd suggest
+
+If you want a single recommendation: **let me run Phase 0 now**, unprompted, because it stops active data loss and involves no judgement calls. Revoke the API key yourself today.
+
+Then answer **B1, B2 and B3** — those three unlock all the visual work, and Phase 3 gives you a repaired foundation to judge them on. Everything else can be decided as we reach it.
+
+## Section index
+
+| Section | Covers |
+|---|---|
+| [01-genealogy.md](sections/01-genealogy.md) | Family Tree, ManageData, GenealogyContext, relationship/layout utils, household roles |
+| [02-data-sync.md](sections/02-data-sync.md) | Dexie schema, sync layer, Firestore rules, migrations, **the manifest refactor design** |
+| [03-heraldry.md](sections/03-heraldry.md) | The Armory, SVG pipeline, charge library, asset inventory |
+| [04-hygiene-build-tests.md](sections/04-hygiene-build-tests.md) | Build, lint, tests, deps, security, dead code, **docs restructure** |
+| [05-design-system.md](sections/05-design-system.md) | Tokens, type, spacing, primitives, a11y, contrast tables, **the target design system** |
+| [06-codex-dignities.md](sections/06-codex-dignities.md) | The Codex, wiki-links, Dignities, succession logic |
+| [07-writing-ai.md](sections/07-writing-ai.md) | Writing Studio, editor, planner, Gemini integration, proposals |
+| [08-cross-system.md](sections/08-cross-system.md) | **Real world-data anomalies**, referential integrity matrix, performance at scale |
