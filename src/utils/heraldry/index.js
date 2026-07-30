@@ -41,6 +41,14 @@ export {
 } from './nodePath';
 
 export {
+  divideNode,
+  undivideNode,
+  undivideLoses,
+  canDivide,
+  isUndivided
+} from './marshalOps';
+
+export {
   COAT_SIZE,
   PART_RECTS,
   placePart,

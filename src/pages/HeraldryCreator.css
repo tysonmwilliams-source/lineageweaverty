@@ -1820,3 +1820,14 @@
     flex-wrap: wrap;
   }
 }
+
+/* Shown in place of the coat editor when the selected part is divided and so
+   has no field or charges of its own (decision C3, step 5d). */
+.design-section__hint {
+  padding: var(--space-4);
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-style: italic;
+  color: var(--text-secondary);
+}

@@ -44,6 +44,7 @@ import ExternalChargeRenderer, {
   generateExternalChargeSVGAsync
 } from '../components/heraldry/ExternalChargeRenderer';
 import CoatEditor from '../components/heraldry/CoatEditor';
+import ShieldTreePanel from '../components/heraldry/ShieldTreePanel';
 import { useAuth } from '../contexts/AuthContext';
 import { useDataset } from '../contexts/DatasetContext';
 import {
@@ -1470,16 +1471,36 @@ function HeraldryCreator() {
             {/* ═══════════════════════════════════════════════════════════════
                 FIELD (Base Layer)
                 ═══════════════════════════════════════════════════════════════ */}
-            {/* Decision C3, step 5. The editor edits whichever node the
-                selection points at, and hands back a replacement — so the same
-                panel serves the whole shield today and any quarter of it once
-                step 5d can divide one. */}
-            <CoatEditor
-              node={selectedNode}
-              onChange={replaceSelectedNode}
+            {/* Decision C3, step 5d. Divides the shield and chooses which part
+                the editor below is pointed at. */}
+            <ShieldTreePanel
+              root={root}
+              selectedPath={safePath}
+              onSelectPath={setSelectedPath}
+              onChangeNode={replaceSelectedNode}
               activeSection={activeSection}
               onSectionChange={setActiveSection}
             />
+
+            {/* The editor edits whichever node the selection points at, and
+                hands back a replacement — so the same panel serves the whole
+                shield and any quarter of it.
+
+                Hidden when the selection is a marshalled node: a division has
+                no field or charges of its own, and showing the panel with
+                defaults would invite edits that go nowhere. Pick a part first. */}
+            {isPlainNode(selectedNode) ? (
+              <CoatEditor
+                node={selectedNode}
+                onChange={replaceSelectedNode}
+                activeSection={activeSection}
+                onSectionChange={setActiveSection}
+              />
+            ) : (
+              <p className="design-section__hint">
+                This part is divided. Choose one of its parts above to draw it.
+              </p>
+            )}
             
             {/* 
               🪝 FUTURE EXPANSION: Shield Shape Selection

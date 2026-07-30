@@ -279,6 +279,24 @@ export async function deleteHeraldry(id, userId = null, datasetId = null) {
  * @param {string} linkData.entityType - 'house' | 'person' | 'location' | 'event'
  * @param {number} linkData.entityId - The entity's ID
  * @param {string} linkData.linkType - 'primary' | 'quartered' | 'impaled' | 'banner' | 'seal'
+ *
+ *   `linkType` describes the *role this link plays for the entity*, not how the
+ *   coat is composed. That distinction matters and is easy to get backwards:
+ *   the 2026-07-30 audit listed `quartered`/`impaled` as enum values "no code
+ *   path sets", which reads as an invitation to set them once marshalling
+ *   exists. Doing that would be a bug.
+ *
+ *   `primary` is load-bearing. Eleven call sites use it as the lookup key for
+ *   "the arms of this house/person" — including the back-links that assign
+ *   `heraldryId` onto the house or person record (see below), `getPersonalArms`,
+ *   and the Armory's house-coverage count. A house whose arms are quartered
+ *   still links as `primary`; labelling that link `quartered` would make its own
+ *   arms invisible to every one of those lookups.
+ *
+ *   `quartered` and `impaled` are for *additional* links — a second entity whose
+ *   arms appear within someone else's shield, e.g. a wife's arms also linked to
+ *   the marriage's record. Nothing creates those yet, and that is correct rather
+ *   than missing.
  * @param {string} [linkData.since] - Optional date when link started
  * @param {string} [linkData.until] - Optional date when link ended
  * @param {string} [userId] - Optional user ID for cloud sync
