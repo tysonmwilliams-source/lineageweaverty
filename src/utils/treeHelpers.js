@@ -191,8 +191,17 @@ export function getHouseScopedPeopleIds(
     }
   });
 
+  // One visited set shared across every walk below.
+  //
+  // These defaulted to `new Set()` per call, so each of the N seed calls
+  // re-walked ground the previous ones had already covered — O(n²) on every
+  // redraw. Sharing the set makes the whole scoping pass linear, and is
+  // correct here because all we ever do is accumulate into scopedIds.
+  const ancestorsVisited = new Set();
+  const descendantsVisited = new Set();
+
   // Recursively find ancestors
-  const findAncestors = (personId, visited = new Set()) => {
+  const findAncestors = (personId, visited = ancestorsVisited) => {
     if (visited.has(personId)) return;
     visited.add(personId);
 
@@ -215,7 +224,7 @@ export function getHouseScopedPeopleIds(
   directMembers.forEach(p => findAncestors(p.id));
 
   // Recursively find descendants
-  const findDescendants = (personId, visited = new Set()) => {
+  const findDescendants = (personId, visited = descendantsVisited) => {
     if (visited.has(personId)) return;
     visited.add(personId);
 

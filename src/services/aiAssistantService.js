@@ -28,6 +28,137 @@ const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/
  * @param {object} options - API options (temperature, max tokens, etc.)
  * @returns {Promise<string>} - AI response text
  */
+// ============================================================================
+// SHARED TRANSPORT
+// ============================================================================
+
+const DEFAULT_SAFETY_SETTINGS = [
+  { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+  { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+  { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+  { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' }
+];
+
+const REQUEST_TIMEOUT_MS = 60_000;
+const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
+
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+/**
+ * Single entry point for every Gemini call.
+ *
+ * Replaces two byte-identical inline fetch blocks that had no timeout, no
+ * abort, no retry, and inspected neither `finishReason` nor `blockReason` —
+ * so a truncated response was reported as "Invalid response format" and a
+ * safety block as the generic "No response generated".
+ *
+ * @param {Object} params
+ * @param {string} params.prompt - Fully-built prompt text
+ * @param {Object} [params.generationConfig]
+ * @param {AbortSignal} [params.signal] - Caller cancellation
+ * @param {number} [params.retries=2] - Retries on 429/5xx
+ * @returns {Promise<{text: string, usage: Object|null, finishReason: string|undefined}>}
+ */
+async function callGemini({ prompt, generationConfig = {}, signal, retries = 2 }) {
+  if (!GEMINI_API_KEY) {
+    throw new Error('Gemini API key not configured. Please add VITE_GEMINI_API_KEY to your .env file.');
+  }
+
+  const body = JSON.stringify({
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: {
+      temperature: 0.7,
+      maxOutputTokens: 2048,
+      topP: 0.95,
+      topK: 40,
+      ...generationConfig
+    },
+    safetySettings: DEFAULT_SAFETY_SETTINGS
+  });
+
+  let lastError;
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    // Time out a hung request rather than leaving the caller's loading flag
+    // stuck true forever. Combined with any caller-supplied signal.
+    const timeout = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
+    const combined = signal ? AbortSignal.any([signal, timeout]) : timeout;
+
+    try {
+      const response = await fetch(GEMINI_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // Header auth rather than ?key= in the URL, which lands in proxy
+          // and devtools logs.
+          'x-goog-api-key': GEMINI_API_KEY
+        },
+        body,
+        signal: combined
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const message = errorData.error?.message || response.statusText;
+
+        if (RETRYABLE_STATUS.has(response.status) && attempt < retries) {
+          const backoff = 500 * Math.pow(2, attempt);
+          console.warn(`Gemini ${response.status}, retrying in ${backoff}ms…`);
+          await sleep(backoff);
+          continue;
+        }
+        throw new Error(`Gemini API error (${response.status}): ${message}`);
+      }
+
+      const data = await response.json();
+
+      // A safety block returns no candidates at all.
+      const blockReason = data.promptFeedback?.blockReason;
+      if (blockReason) {
+        throw new Error(
+          `Gemini blocked this request (${blockReason}). Fiction involving battle or ` +
+          `intrigue can trip the default safety filters — try a shorter excerpt.`
+        );
+      }
+
+      const candidate = data.candidates?.[0];
+      const text = candidate?.content?.parts?.[0]?.text;
+      const finishReason = candidate?.finishReason;
+
+      if (!text) {
+        if (finishReason === 'SAFETY') {
+          throw new Error('Gemini stopped generating for safety reasons. Try rephrasing or using a shorter excerpt.');
+        }
+        throw new Error(`No response generated from Gemini API${finishReason ? ` (${finishReason})` : ''}.`);
+      }
+
+      if (finishReason === 'MAX_TOKENS') {
+        console.warn('⚠️ Gemini response hit the token limit and was truncated.');
+      }
+
+      return { text, usage: data.usageMetadata || null, finishReason };
+    } catch (error) {
+      lastError = error;
+
+      // Caller cancelled — don't retry, don't wrap.
+      if (signal?.aborted) throw error;
+
+      if (error.name === 'TimeoutError' || error.name === 'AbortError') {
+        lastError = new Error(`Gemini request timed out after ${REQUEST_TIMEOUT_MS / 1000}s.`);
+      }
+
+      const isNetwork = error instanceof TypeError;
+      if (isNetwork && attempt < retries) {
+        await sleep(500 * Math.pow(2, attempt));
+        continue;
+      }
+      throw lastError;
+    }
+  }
+
+  throw lastError;
+}
+
 export async function askGemini(prompt, context = {}, options = {}) {
   if (!GEMINI_API_KEY) {
     throw new Error('Gemini API key not configured. Please add VITE_GEMINI_API_KEY to your .env file.');
@@ -40,61 +171,20 @@ export async function askGemini(prompt, context = {}, options = {}) {
     topK = 40,
   } = options;
 
+  const { signal, raw = false } = options;
+
   try {
-    // Build the full prompt with context
-    const fullPrompt = buildPromptWithContext(prompt, context);
+    // `raw` skips the medieval-counsellor persona wrapper. Structured callers
+    // that need parseable JSON back must use it — asking for machine-readable
+    // JSON while instructing the model to speak like a herald is a conflict
+    // the JSON-extraction regexes downstream then have to survive.
+    const fullPrompt = raw ? prompt : buildPromptWithContext(prompt, context);
 
-    const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: fullPrompt
-          }]
-        }],
-        generationConfig: {
-          temperature,
-          maxOutputTokens,
-          topP,
-          topK,
-        },
-        safetySettings: [
-          {
-            category: "HARM_CATEGORY_HARASSMENT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          },
-          {
-            category: "HARM_CATEGORY_HATE_SPEECH",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          },
-          {
-            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          },
-          {
-            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          }
-        ]
-      })
+    const { text } = await callGemini({
+      prompt: fullPrompt,
+      generationConfig: { temperature, maxOutputTokens, topP, topK },
+      signal
     });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(`Gemini API error: ${errorData.error?.message || response.statusText}`);
-    }
-
-    const data = await response.json();
-
-    // Extract text from response
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!text) {
-      throw new Error('No response generated from Gemini API');
-    }
 
     return text;
   } catch (error) {
@@ -340,43 +430,20 @@ export async function askGeminiWithFullContext(prompt, options = {}) {
 
     console.log('🤖 AI Assistant: Sending request to Gemini...');
 
-    // Make the API request
-    const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: fullPrompt
-          }]
-        }],
-        generationConfig: {
-          temperature,
-          maxOutputTokens,
-          topP: 0.95,
-          topK: 40
-        },
-        safetySettings: [
-          { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
-          { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
-          { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
-          { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" }
-        ]
-      })
+    const { text, usage } = await callGemini({
+      prompt: fullPrompt,
+      generationConfig: { temperature, maxOutputTokens, topP: 0.95, topK: 40 },
+      signal: options.signal
     });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(`Gemini API error: ${errorData.error?.message || response.statusText}`);
-    }
-
-    const data = await response.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!text) {
-      throw new Error('No response generated from Gemini API');
+    // usageMetadata was previously discarded. With a ~40k-token payload per
+    // turn this is the only visibility into what the feature costs.
+    if (usage) {
+      console.log('🤖 Gemini tokens:', {
+        prompt: usage.promptTokenCount,
+        response: usage.candidatesTokenCount,
+        total: usage.totalTokenCount
+      });
     }
 
     // Parse proposals from response if enabled

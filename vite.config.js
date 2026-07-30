@@ -72,4 +72,29 @@ function claudeContextPlugin() {
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), claudeContextPlugin()],
+
+  build: {
+    rollupOptions: {
+      output: {
+        // Without this everything landed in one 1,154 kB entry chunk, dominated
+        // by Firebase. Splitting the big third-party clusters out means they
+        // cache independently of app code, so a change to a page no longer
+        // invalidates the whole vendor payload.
+        manualChunks: {
+          firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore'],
+          d3: ['d3'],
+          // @tiptap/pm is deliberately absent: it exposes no root export, only
+          // subpaths, so naming it here fails to resolve. Its subpaths get
+          // pulled in alongside these anyway.
+          tiptap: [
+            '@tiptap/react',
+            '@tiptap/starter-kit',
+            '@tiptap/extension-placeholder',
+            '@tiptap/extension-character-count'
+          ],
+          vendor: ['react', 'react-dom', 'react-router-dom', 'framer-motion']
+        }
+      }
+    }
+  }
 })

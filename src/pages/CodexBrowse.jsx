@@ -11,6 +11,7 @@ import LoadingState from '../components/shared/LoadingState';
 import EmptyState from '../components/shared/EmptyState';
 import ActionButton from '../components/shared/ActionButton';
 import DignityEducationPanel from '../components/DignityEducationPanel';
+import useDebouncedValue from '../hooks/useDebouncedValue';
 import './CodexBrowse.css';
 
 /**
@@ -77,6 +78,9 @@ function CodexBrowse() {
 
   // Filters - initialize search from URL query parameter
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
+  // The filter memo below scans every record; without this it re-ran on
+  // every keystroke. The input stays instant, the filtering waits 300ms.
+  const debouncedSearchTerm = useDebouncedValue(searchTerm, 300);
   const [sortBy, setSortBy] = useState('updated');
   const [selectedTags, setSelectedTags] = useState([]);
   const [selectedEra, setSelectedEra] = useState('');
@@ -184,8 +188,8 @@ function CodexBrowse() {
     let filtered = [...allEntries];
 
     // Apply search filter
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase();
+    if (debouncedSearchTerm) {
+      const searchLower = debouncedSearchTerm.toLowerCase();
       filtered = filtered.filter(entry =>
         entry.title.toLowerCase().includes(searchLower) ||
         entry.subtitle?.toLowerCase().includes(searchLower) ||
@@ -226,7 +230,7 @@ function CodexBrowse() {
 
     setFilteredEntries(filtered);
     setCurrentPage(1);
-  }, [allEntries, searchTerm, sortBy, selectedTags, selectedEra, selectedCategory]);
+  }, [allEntries, debouncedSearchTerm, sortBy, selectedTags, selectedEra, selectedCategory]);
 
   useEffect(() => {
     applyFiltersAndSort();

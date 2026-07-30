@@ -14,7 +14,7 @@
  * Medieval manuscript theme with Framer Motion animations.
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGenealogy } from '../contexts/GenealogyContext';
@@ -121,6 +121,10 @@ function QuickEditPanel({
   const [writingBacklinks, setWritingBacklinks] = useState([]);
   const [loadingBacklinks, setLoadingBacklinks] = useState(false);
 
+  // Monotonic token identifying the current person's load. Any async loader
+  // whose token is stale drops its result rather than writing it into state.
+  const loadTokenRef = useRef(0);
+
   // Collapsible section state
   // Biography is always collapsed, others auto-expand if they have data
   const [collapsedSections, setCollapsedSections] = useState({
@@ -148,11 +152,17 @@ function QuickEditPanel({
     setExistingPersonSearch('');
 
     if (person?.id) {
-      loadCodexEntry(person.id);
-      loadPersonDignities(person.id);
-      loadPersonalArmsStatus(person.id);
-      loadWritingBacklinks(person.id);
+      // Bump the token so any in-flight load for a previously selected person
+      // discards its result instead of writing it into this person's panel.
+      // Clicking quickly through the tree used to leave you looking at one
+      // person's header above another's dignities and backlinks.
+      const token = ++loadTokenRef.current;
+      loadCodexEntry(person.id, token);
+      loadPersonDignities(person.id, token);
+      loadPersonalArmsStatus(person.id, token);
+      loadWritingBacklinks(person.id, token);
     } else {
+      loadTokenRef.current++;
       setCodexEntry(null);
       setPersonDignities([]);
       setPersonHasArms(false);
@@ -172,21 +182,22 @@ function QuickEditPanel({
     }));
   }, [personHasArms, personDignities, person?.epithets, writingBacklinks]);
 
-  const loadCodexEntry = async (personId) => {
+  const loadCodexEntry = async (personId, token) => {
     const datasetId = activeDataset?.id;
     try {
       setLoadingCodex(true);
       const entry = await getEntryByPersonId(personId, datasetId);
+      if (token !== loadTokenRef.current) return;
       setCodexEntry(entry);
     } catch (error) {
       console.warn('Could not load Codex entry:', error);
-      setCodexEntry(null);
+      if (token === loadTokenRef.current) setCodexEntry(null);
     } finally {
-      setLoadingCodex(false);
+      if (token === loadTokenRef.current) setLoadingCodex(false);
     }
   };
 
-  const loadPersonDignities = async (personId) => {
+  const loadPersonDignities = async (personId, token) => {
     const datasetId = activeDataset?.id;
     try {
       setLoadingDignities(true);
@@ -197,19 +208,21 @@ function QuickEditPanel({
         }
         return (a.name || '').localeCompare(b.name || '');
       });
+      if (token !== loadTokenRef.current) return;
       setPersonDignities(dignities);
     } catch (error) {
       console.warn('Could not load dignities:', error);
-      setPersonDignities([]);
+      if (token === loadTokenRef.current) setPersonDignities([]);
     } finally {
-      setLoadingDignities(false);
+      if (token === loadTokenRef.current) setLoadingDignities(false);
     }
   };
 
-  const loadPersonalArmsStatus = async (personId) => {
+  const loadPersonalArmsStatus = async (personId, token) => {
     const datasetId = activeDataset?.id;
     try {
       const hasArms = await hasPersonalArms(personId, datasetId);
+      if (token !== loadTokenRef.current) return;
       setPersonHasArms(hasArms);
     } catch (error) {
       console.warn('Could not check personal arms:', error);
@@ -217,40 +230,46 @@ function QuickEditPanel({
     }
   };
 
-  const loadWritingBacklinks = async (personId) => {
+  const loadWritingBacklinks = async (personId, token) => {
     const datasetId = activeDataset?.id;
     try {
       setLoadingBacklinks(true);
       const links = await getLinksByTarget(LINK_TARGET_TYPES.PERSON, personId, datasetId);
 
-      // Fetch writing details for each unique writingId
-      const writingIds = [...new Set(links.map(l => l.writingId))];
-      const backlinksWithDetails = [];
+      // Group links by writing first, then fetch each writing once — in
+      // parallel. This was a serial await per writing inside a for loop.
+      const linksByWriting = new Map();
+      for (const link of links) {
+        if (!linksByWriting.has(link.writingId)) linksByWriting.set(link.writingId, []);
+        linksByWriting.get(link.writingId).push(link);
+      }
 
-      for (const writingId of writingIds) {
-        try {
-          const writing = await getWriting(writingId, datasetId);
-          if (writing) {
-            const linksForWriting = links.filter(l => l.writingId === writingId);
-            backlinksWithDetails.push({
+      const settled = await Promise.all(
+        Array.from(linksByWriting.entries()).map(async ([writingId, linksForWriting]) => {
+          try {
+            const writing = await getWriting(writingId, datasetId);
+            if (!writing) return null;
+            return {
               writingId,
               writingTitle: writing.title || 'Untitled',
               writingType: writing.type,
               linkCount: linksForWriting.length,
               displayTexts: [...new Set(linksForWriting.map(l => l.displayText).filter(Boolean))]
-            });
+            };
+          } catch (e) {
+            console.warn('Could not load writing for backlink:', e);
+            return null;
           }
-        } catch (e) {
-          console.warn('Could not load writing for backlink:', e);
-        }
-      }
+        })
+      );
 
-      setWritingBacklinks(backlinksWithDetails);
+      if (token !== loadTokenRef.current) return;
+      setWritingBacklinks(settled.filter(Boolean));
     } catch (error) {
       console.warn('Could not load writing backlinks:', error);
-      setWritingBacklinks([]);
+      if (token === loadTokenRef.current) setWritingBacklinks([]);
     } finally {
-      setLoadingBacklinks(false);
+      if (token === loadTokenRef.current) setLoadingBacklinks(false);
     }
   };
 

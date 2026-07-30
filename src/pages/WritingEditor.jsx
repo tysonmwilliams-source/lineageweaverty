@@ -43,6 +43,7 @@ import { PlanningSidebar, StoryPlannerModal } from '../components/writing/Planne
 import ExportModal from '../components/writing/ExportModal';
 import { runRuleBasedChecks, runAICanonCheck } from '../services/canonCheckService';
 import { askGemini } from '../services/aiAssistantService';
+import useDebouncedValue from '../hooks/useDebouncedValue';
 import './WritingEditor.css';
 
 /**
@@ -191,6 +192,17 @@ export default function WritingEditor() {
       ch.id === targetChapterId ? { ...ch, wordCount: data.wordCount } : ch
     ));
   }, [id, user, activeDataset]);
+
+  // Text fed to the Writing Wizard's prose analysis.
+  //
+  // This was `editor?.getText()` read inline in the JSX, so it was recomputed
+  // on every render — and WritingEditor re-renders on every keystroke via
+  // setPendingSaveData. The full analysis (7 sentence splits plus thousands of
+  // regex passes) therefore ran synchronously on each character typed.
+  const debouncedPlainText = useDebouncedValue(
+    pendingSaveData?.text ?? activeChapter?.contentPlainText ?? '',
+    400
+  );
 
   // Auto-save hook
   const { isSaving, lastSaved, saveNow, hasUnsavedChanges } = useAutoSave({
@@ -737,7 +749,7 @@ Be encouraging but honest. Give specific examples from the text when possible. K
               />
             ) : showWizardPanel ? (
               <WritingWizard
-                plainText={editor?.getText() || ''}
+                plainText={debouncedPlainText}
                 isOpen={showWizardPanel}
                 onClose={() => setShowWizardPanel(false)}
                 onRunAIAnalysis={handleRunAIAnalysis}

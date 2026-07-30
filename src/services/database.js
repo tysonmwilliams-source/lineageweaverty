@@ -553,6 +553,23 @@ db.version(17).stores({
   });
 });
 
+// ============================================================================
+// VERSION 18: Index the codexEntries back-references
+// ============================================================================
+// codexEntries carries personId / houseId / dignityId / heraldryId but none
+// were indexed, so getEntryByPersonId and friends fell back to .filter() —
+// a full deserialisation of every entry per lookup. In the cross-linking
+// migration that runs 513 of those lookups over 403 entries, this measured
+// 8,292ms; with the index it is ~4ms.
+//
+// Only the changed store is listed. Dexie inherits every unchanged table from
+// the previous version, so there is no need to restate all 26 (which is how
+// the dateOfDeath index went missing in v3/v4). No upgrade function is needed:
+// adding an index makes Dexie re-index existing rows automatically.
+db.version(18).stores({
+  codexEntries: '++id, type, title, category, *tags, era, created, updated, personId, houseId, dignityId, heraldryId'
+});
+
 } // End of applySchema function
 
 /**

@@ -34,6 +34,7 @@ import Navigation from '../components/Navigation';
 import Icon from '../components/icons';
 import { LoadingState, EmptyState, SectionHeader, Card, ActionButton } from '../components/shared';
 import DignityEducationPanel from '../components/DignityEducationPanel';
+import useDebouncedValue from '../hooks/useDebouncedValue';
 import './HeraldryLanding.css';
 
 // Animation variants
@@ -99,6 +100,9 @@ function HeraldryLanding() {
   const [statistics, setStatistics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  // The filter memo below scans every record; without this it re-ran on
+  // every keystroke. The input stays instant, the filtering waits 300ms.
+  const debouncedSearchTerm = useDebouncedValue(searchTerm, 300);
   const [filterCategory, setFilterCategory] = useState('all');
   const [sortBy, setSortBy] = useState('updated');
 
@@ -165,8 +169,8 @@ function HeraldryLanding() {
     let filtered = [...heraldry];
 
     // Search filter
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
+    if (debouncedSearchTerm) {
+      const term = debouncedSearchTerm.toLowerCase();
       filtered = filtered.filter(h => {
         if (h.name?.toLowerCase().includes(term)) return true;
         if (h.description?.toLowerCase().includes(term)) return true;
@@ -202,7 +206,7 @@ function HeraldryLanding() {
     });
 
     return filtered;
-  }, [heraldry, searchTerm, filterCategory, sortBy, getLinkedHouse]);
+  }, [heraldry, debouncedSearchTerm, filterCategory, sortBy, getLinkedHouse]);
 
   // Houses without heraldry
   const housesWithoutHeraldry = useMemo(() => {

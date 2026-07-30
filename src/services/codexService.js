@@ -164,13 +164,13 @@ export async function getEntry(id, datasetId) {
  */
 export async function getEntryByPersonId(personId, datasetId) {
   try {
+    if (personId === null || personId === undefined) return null;
     const db = getDatabase(datasetId);
-    const entries = await db.codexEntries
-      .filter(entry => entry.personId === personId)
-      .toArray();
-
-    // Return the first match (should only be one per person)
-    return entries.length > 0 ? entries[0] : null;
+    // Indexed since schema v18 — this was a full-table .filter() scan.
+    // Dexie throws on .equals(null), hence the guard above; rows with a null
+    // personId are simply absent from the index, which is what we want.
+    const entry = await db.codexEntries.where('personId').equals(personId).first();
+    return entry || null;
   } catch (error) {
     console.error('Error getting codex entry by personId:', error);
     throw error;
@@ -189,13 +189,13 @@ export async function getEntryByPersonId(personId, datasetId) {
  */
 export async function getEntryByHouseId(houseId, datasetId) {
   try {
+    if (houseId === null || houseId === undefined) return null;
     const db = getDatabase(datasetId);
-    const entries = await db.codexEntries
-      .filter(entry => entry.houseId === houseId)
-      .toArray();
-
-    // Return the first match (should only be one per house)
-    return entries.length > 0 ? entries[0] : null;
+    // Indexed since schema v18 — this was a full-table .filter() scan.
+    // Dexie throws on .equals(null), hence the guard above; rows with a null
+    // houseId are simply absent from the index, which is what we want.
+    const entry = await db.codexEntries.where('houseId').equals(houseId).first();
+    return entry || null;
   } catch (error) {
     console.error('Error getting codex entry by houseId:', error);
     throw error;
@@ -214,13 +214,13 @@ export async function getEntryByHouseId(houseId, datasetId) {
  */
 export async function getEntryByDignityId(dignityId, datasetId) {
   try {
+    if (dignityId === null || dignityId === undefined) return null;
     const db = getDatabase(datasetId);
-    const entries = await db.codexEntries
-      .filter(entry => entry.dignityId === dignityId)
-      .toArray();
-
-    // Return the first match (should only be one per dignity)
-    return entries.length > 0 ? entries[0] : null;
+    // Indexed since schema v18 — this was a full-table .filter() scan.
+    // Dexie throws on .equals(null), hence the guard above; rows with a null
+    // dignityId are simply absent from the index, which is what we want.
+    const entry = await db.codexEntries.where('dignityId').equals(dignityId).first();
+    return entry || null;
   } catch (error) {
     console.error('Error getting codex entry by dignityId:', error);
     throw error;
@@ -239,13 +239,13 @@ export async function getEntryByDignityId(dignityId, datasetId) {
  */
 export async function getEntryByHeraldryId(heraldryId, datasetId) {
   try {
+    if (heraldryId === null || heraldryId === undefined) return null;
     const db = getDatabase(datasetId);
-    const entries = await db.codexEntries
-      .filter(entry => entry.heraldryId === heraldryId)
-      .toArray();
-
-    // Return the first match (should only be one per heraldry)
-    return entries.length > 0 ? entries[0] : null;
+    // Indexed since schema v18 — this was a full-table .filter() scan.
+    // Dexie throws on .equals(null), hence the guard above; rows with a null
+    // heraldryId are simply absent from the index, which is what we want.
+    const entry = await db.codexEntries.where('heraldryId').equals(heraldryId).first();
+    return entry || null;
   } catch (error) {
     console.error('Error getting codex entry by heraldryId:', error);
     throw error;

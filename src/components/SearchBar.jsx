@@ -58,6 +58,26 @@ function SearchBar({ people, onSearchResults, onPersonSelect }) {
   const inputRef = useRef(null);
   const dropdownRef = useRef(null);
 
+  // onSearchResults feeds `searchResults` in FamilyTree, which is a dependency
+  // of the drawTree effect — so every call tears down and rebuilds the entire
+  // SVG. The dropdown below stays instant; only that callback is debounced.
+  const emitTimerRef = useRef(null);
+
+  const emitResults = (searchResults, { immediate = false } = {}) => {
+    if (emitTimerRef.current) clearTimeout(emitTimerRef.current);
+    if (immediate) {
+      onSearchResults(searchResults);
+      return;
+    }
+    emitTimerRef.current = setTimeout(() => onSearchResults(searchResults), 300);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (emitTimerRef.current) clearTimeout(emitTimerRef.current);
+    };
+  }, []);
+
   const handleSearch = (query) => {
     setSearchQuery(query);
     setHighlightedIndex(-1);
@@ -65,7 +85,7 @@ function SearchBar({ people, onSearchResults, onPersonSelect }) {
     if (!query.trim()) {
       setResults([]);
       setShowDropdown(false);
-      onSearchResults([]);
+      emitResults([], { immediate: true });
       return;
     }
 
@@ -82,13 +102,15 @@ function SearchBar({ people, onSearchResults, onPersonSelect }) {
 
     setResults(searchResults);
     setShowDropdown(searchResults.length > 0);
-    onSearchResults(searchResults);
+    emitResults(searchResults);
   };
 
   const handleSelectPerson = (person) => {
     setSearchQuery(`${person.firstName} ${person.lastName}`);
     setShowDropdown(false);
-    onSearchResults([person]);
+    // Discrete action — emit now, and cancel any pending debounced emit so a
+    // stale keystroke result can't land after the selection.
+    emitResults([person], { immediate: true });
     if (onPersonSelect) {
       onPersonSelect(person);
     }
@@ -99,7 +121,7 @@ function SearchBar({ people, onSearchResults, onPersonSelect }) {
     setResults([]);
     setShowDropdown(false);
     setHighlightedIndex(-1);
-    onSearchResults([]);
+    emitResults([], { immediate: true });
     inputRef.current?.focus();
   };
 

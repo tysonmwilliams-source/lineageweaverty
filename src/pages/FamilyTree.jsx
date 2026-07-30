@@ -142,7 +142,16 @@ function FamilyTree() {
   }, [selectedHouseId, people, houses, showCadetHouses]);
 
   // RELATIONSHIP MAP BUILDER (delegates to extracted utility)
-  const buildRelationshipMaps = () => buildRelationshipMapsUtil(people, houses, relationships);
+  //
+  // Memoized on the source data. This used to be a plain arrow re-created every
+  // render and called from six places, each rebuilding six Maps over the entire
+  // dataset — so a single render did six full passes over people, houses and
+  // relationships before any drawing happened.
+  const relationshipMaps = useMemo(
+    () => buildRelationshipMapsUtil(people, houses, relationships),
+    [people, houses, relationships]
+  );
+  const buildRelationshipMaps = useCallback(() => relationshipMaps, [relationshipMaps]);
 
   const fragmentInfo = useMemo(() => {
     if (!selectedHouseId || people.length === 0) {
@@ -1117,6 +1126,9 @@ function FamilyTree() {
       }
 
     generations.forEach((genIds, genIndex) => {
+      // Set lookup — genIds.includes() inside the per-child loops below was
+      // O(n^2) across a wide generation.
+      const genIdSet = new Set(genIds);
       const isLastGeneration = genIndex === generations.length - 1;
       console.log(`Drawing generation ${genIndex} with ${genIds.length} people`);
       
@@ -1244,7 +1256,7 @@ function FamilyTree() {
           const singleParentChildren = []; // Children of only this parent (bastards)
 
           parentChildren.forEach(childId => {
-            if (!genIds.includes(childId) || processedChildIds.has(childId)) return;
+            if (!genIdSet.has(childId) || processedChildIds.has(childId)) return;
 
             const childParents = parentMap.get(childId) || [];
             const hasBothParents = spouseId && childParents.includes(parentId) && childParents.includes(spouseId);
@@ -1260,7 +1272,7 @@ function FamilyTree() {
           // Also check spouse's children (in case they have children from another relationship)
           if (spouseId) {
             spouseChildren.forEach(childId => {
-              if (!genIds.includes(childId) || processedChildIds.has(childId)) return;
+              if (!genIdSet.has(childId) || processedChildIds.has(childId)) return;
 
               const childParents = parentMap.get(childId) || [];
               // Already handled if both parents, so this would be spouse-only child
@@ -1335,7 +1347,7 @@ function FamilyTree() {
         }
         
         const genChildren = Array.from(childSet)
-          .filter(id => genIds.includes(id) && !processedChildren.has(id))
+          .filter(id => genIdSet.has(id) && !processedChildren.has(id))
           .map(id => fragmentPeopleById.get(id))
           .filter(p => p)
           .sort((a, b) => parseInt(a.dateOfBirth) - parseInt(b.dateOfBirth));

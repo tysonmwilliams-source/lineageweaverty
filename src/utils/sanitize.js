@@ -12,6 +12,49 @@
 
 import DOMPurify from 'dompurify';
 
+// ==================== SANITIZE CACHE ====================
+//
+// DOMPurify parses the whole string on every call, and sanitizeSVG is called
+// directly in render bodies all over the app — the Armory gallery re-sanitised
+// all 33 of its inline SVGs on every keystroke in the search box.
+//
+// Keys are the input strings themselves. That costs nothing extra: a given
+// record hands us the same string reference each render, so the Map holds a
+// reference, not a copy. The sanitized output IS new memory, so the cache is
+// bounded by total output size rather than entry count — composite shields can
+// run to megabytes.
+const SVG_CACHE_MAX_CHARS = 8_000_000; // ~16MB of UTF-16
+const svgCache = new Map();
+let svgCacheChars = 0;
+
+function cacheGet(input) {
+  const hit = svgCache.get(input);
+  if (hit === undefined) return undefined;
+  // Refresh recency: delete + re-set moves it to the end of the Map's order.
+  svgCache.delete(input);
+  svgCache.set(input, hit);
+  return hit;
+}
+
+function cacheSet(input, output) {
+  svgCache.set(input, output);
+  svgCacheChars += output.length;
+
+  // Evict least-recently-used until back under budget.
+  while (svgCacheChars > SVG_CACHE_MAX_CHARS && svgCache.size > 1) {
+    const oldestKey = svgCache.keys().next().value;
+    const oldest = svgCache.get(oldestKey);
+    svgCache.delete(oldestKey);
+    svgCacheChars -= oldest.length;
+  }
+}
+
+/** Exposed for tests and for callers that mutate SVGs in place. */
+export function clearSanitizeCache() {
+  svgCache.clear();
+  svgCacheChars = 0;
+}
+
 /**
  * Sanitize SVG content for safe rendering
  *
@@ -30,7 +73,10 @@ import DOMPurify from 'dompurify';
 export function sanitizeSVG(svgContent) {
   if (!svgContent) return '';
 
-  return DOMPurify.sanitize(svgContent, {
+  const cached = cacheGet(svgContent);
+  if (cached !== undefined) return cached;
+
+  const sanitized = DOMPurify.sanitize(svgContent, {
     USE_PROFILES: { svg: true, svgFilters: true },
     // Allow common SVG elements
     ADD_TAGS: ['use', 'symbol', 'defs', 'clipPath', 'mask', 'pattern'],
@@ -41,6 +87,9 @@ export function sanitizeSVG(svgContent) {
     // Remove script tags and similar
     FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed'],
   });
+
+  cacheSet(svgContent, sanitized);
+  return sanitized;
 }
 
 /**

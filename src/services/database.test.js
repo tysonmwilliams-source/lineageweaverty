@@ -591,6 +591,37 @@ describe('Database Service', () => {
     });
   });
 
+  describe('Codex Entry Indexes (schema v18)', () => {
+    it('should look up entries by back-reference without a full scan', async () => {
+      const { createEntry, getEntryByPersonId, getEntryByHouseId } =
+        await import('./codexService.js');
+
+      const personEntryId = await createEntry(
+        { type: 'personage', title: 'Aldric', personId: 42 }, TEST_DATASET_ID
+      );
+      const houseEntryId = await createEntry(
+        { type: 'house', title: 'House Test', houseId: 7 }, TEST_DATASET_ID
+      );
+      await createEntry({ type: 'event', title: 'Unlinked' }, TEST_DATASET_ID);
+
+      const byPerson = await getEntryByPersonId(42, TEST_DATASET_ID);
+      expect(byPerson?.id).toBe(personEntryId);
+
+      const byHouse = await getEntryByHouseId(7, TEST_DATASET_ID);
+      expect(byHouse?.id).toBe(houseEntryId);
+
+      expect(await getEntryByPersonId(999, TEST_DATASET_ID)).toBeNull();
+    });
+
+    it('should return null rather than throwing on a null id', async () => {
+      const { getEntryByPersonId, getEntryByHeraldryId } =
+        await import('./codexService.js');
+      // Dexie throws on .equals(null); these must be guarded.
+      expect(await getEntryByPersonId(null, TEST_DATASET_ID)).toBeNull();
+      expect(await getEntryByHeraldryId(undefined, TEST_DATASET_ID)).toBeNull();
+    });
+  });
+
   describe('Full Backup', () => {
     it('should export every table, not just the core four', async () => {
       const db = getDatabase(TEST_DATASET_ID);

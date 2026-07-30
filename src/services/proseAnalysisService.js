@@ -50,6 +50,33 @@ const FILTER_WORDS = [
   'remembered', 'remember', 'remembers', 'remembering'
 ];
 
+// ============================================================================
+// PRE-COMPILED PATTERNS
+// ============================================================================
+// These were built with `new RegExp(...)` inside nested per-sentence loops, so
+// a single analysis pass compiled tens of thousands of regexes — and the whole
+// pass ran synchronously on every keystroke. Compiling once at module load and
+// scanning with one alternation removes both costs.
+//
+// NOTE: these carry the `g` flag, so `lastIndex` must be reset before each use.
+// Every call site does so explicitly.
+
+const escapeForRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const ADVERB_REGEX = new RegExp(
+  `\\b(?:${WEAK_ADVERBS.map(escapeForRegex).join('|')})\\b`,
+  'gi'
+);
+
+const FILTER_WORD_REGEX = new RegExp(
+  `\\b(he|she|they|i|we|\\w+)\\s+(${FILTER_WORDS.map(escapeForRegex).join('|')})\\s+(the|a|an|that|how|what)\\b`,
+  'gi'
+);
+
+// Hoisted out of detectAdverbs' inner loop.
+const WEAK_VERB_BEFORE_RE = /\b(walked|ran|said|looked|went|came|got|made|did|had)\s*$/i;
+const WEAK_VERB_AFTER_RE = /^\w+\s+(walked|ran|said|looked|went|came|got|made|did|had)\b/i;
+
 /**
  * "To be" verbs for passive voice detection
  */
@@ -201,31 +228,34 @@ export function detectAdverbs(text) {
   const sentences = splitIntoSentences(text);
 
   sentences.forEach((sentence, sentenceIndex) => {
-    WEAK_ADVERBS.forEach(adverb => {
-      const regex = new RegExp(`\\b${adverb}\\b`, 'gi');
-      let match;
+    // One pre-compiled alternation, scanned once, instead of constructing and
+    // running 56 separate RegExp objects per sentence. On a 3,000-word chapter
+    // (~200 sentences) that was ~11,000 regex compilations — per keystroke.
+    ADVERB_REGEX.lastIndex = 0;
+    let match;
 
-      while ((match = regex.exec(sentence)) !== null) {
-        // Check context - is it modifying a weak verb?
-        const beforeAdverb = sentence.slice(Math.max(0, match.index - 30), match.index);
-        const afterAdverb = sentence.slice(match.index, Math.min(sentence.length, match.index + 30));
+    while ((match = ADVERB_REGEX.exec(sentence)) !== null) {
+      const adverb = match[0].toLowerCase();
 
-        const isWithWeakVerb = /\b(walked|ran|said|looked|went|came|got|made|did|had)\s*$/i.test(beforeAdverb) ||
-                              /^\w+\s+(walked|ran|said|looked|went|came|got|made|did|had)\b/i.test(afterAdverb);
+      // Check context - is it modifying a weak verb?
+      const beforeAdverb = sentence.slice(Math.max(0, match.index - 30), match.index);
+      const afterAdverb = sentence.slice(match.index, Math.min(sentence.length, match.index + 30));
 
-        issues.push({
-          type: 'adverb',
-          severity: isWithWeakVerb ? 'warning' : 'info',
-          text: match[0],
-          sentence: sentence.trim(),
-          sentenceIndex,
-          message: isWithWeakVerb
-            ? `"${match[0]}" with weak verb - consider a stronger, more specific verb`
-            : `Adverb "${match[0]}" - could a stronger verb eliminate the need for this?`,
-          suggestion: getAdverbSuggestion(adverb, beforeAdverb + afterAdverb)
-        });
-      }
-    });
+      const isWithWeakVerb = WEAK_VERB_BEFORE_RE.test(beforeAdverb) ||
+                             WEAK_VERB_AFTER_RE.test(afterAdverb);
+
+      issues.push({
+        type: 'adverb',
+        severity: isWithWeakVerb ? 'warning' : 'info',
+        text: match[0],
+        sentence: sentence.trim(),
+        sentenceIndex,
+        message: isWithWeakVerb
+          ? `"${match[0]}" with weak verb - consider a stronger, more specific verb`
+          : `Adverb "${match[0]}" - could a stronger verb eliminate the need for this?`,
+        suggestion: getAdverbSuggestion(adverb, beforeAdverb + afterAdverb)
+      });
+    }
   });
 
   return issues;
@@ -241,23 +271,22 @@ export function detectFilterWords(text) {
   const sentences = splitIntoSentences(text);
 
   sentences.forEach((sentence, sentenceIndex) => {
-    FILTER_WORDS.forEach(filterWord => {
-      // Look for patterns like "She saw the..." or "He felt the..."
-      const regex = new RegExp(`\\b(he|she|they|i|we|\\w+)\\s+(${filterWord})\\s+(the|a|an|that|how|what)\\b`, 'gi');
-      let match;
+    // Single pre-compiled alternation rather than 56 RegExp constructions per
+    // sentence. Looks for patterns like "She saw the..." or "He felt the...".
+    FILTER_WORD_REGEX.lastIndex = 0;
+    let match;
 
-      while ((match = regex.exec(sentence)) !== null) {
-        issues.push({
-          type: 'filter-word',
-          severity: 'info',
-          text: match[0],
-          sentence: sentence.trim(),
-          sentenceIndex,
-          message: `Filter word "${match[2]}" creates distance. In close POV, consider removing.`,
-          suggestion: `Instead of "${match[0]}", try describing directly what follows.`
-        });
-      }
-    });
+    while ((match = FILTER_WORD_REGEX.exec(sentence)) !== null) {
+      issues.push({
+        type: 'filter-word',
+        severity: 'info',
+        text: match[0],
+        sentence: sentence.trim(),
+        sentenceIndex,
+        message: `Filter word "${match[2]}" creates distance. In close POV, consider removing.`,
+        suggestion: `Instead of "${match[0]}", try describing directly what follows.`
+      });
+    }
   });
 
   return issues;

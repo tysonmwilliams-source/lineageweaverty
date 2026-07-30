@@ -38,6 +38,7 @@ import DignityEducationPanel from '../components/DignityEducationPanel';
 import DignityTerm, { LearningModeToggle } from '../components/DignityTerm';
 import { RankPips } from '../components/DignityVisuals';
 import { useDignityAnalysis } from '../hooks';
+import useDebouncedValue from '../hooks/useDebouncedValue';
 import './DignitiesLanding.css';
 
 // Animation variants
@@ -91,6 +92,9 @@ function DignitiesLanding() {
   const [statistics, setStatistics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  // The filter memo below scans every record; without this it re-ran on
+  // every keystroke. The input stays instant, the filtering waits 300ms.
+  const debouncedSearchTerm = useDebouncedValue(searchTerm, 300);
   const [filterClass, setFilterClass] = useState('all');
   const [filterRank, setFilterRank] = useState('all');
   const [filterNature, setFilterNature] = useState('all');
@@ -183,8 +187,8 @@ function DignitiesLanding() {
     let filtered = [...dignities];
 
     // Search filter
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
+    if (debouncedSearchTerm) {
+      const term = debouncedSearchTerm.toLowerCase();
       filtered = filtered.filter(d => {
         if (d.name?.toLowerCase().includes(term)) return true;
         if (d.shortName?.toLowerCase().includes(term)) return true;
@@ -239,7 +243,7 @@ function DignitiesLanding() {
     });
 
     return filtered;
-  }, [dignities, searchTerm, filterClass, filterRank, filterNature, sortBy, getPersonName, getHouseName]);
+  }, [dignities, debouncedSearchTerm, filterClass, filterRank, filterNature, sortBy, getPersonName, getHouseName]);
 
   // Build hierarchy tree for hierarchy view (uses filteredDignities so search/filter works)
   const hierarchyTree = useMemo(() => {

@@ -284,14 +284,19 @@ export function calculateGenerationPositions(
   // Group children by their parent block
   const childrenByParentBlock = new Map();
 
+  // Set lookup instead of Array.includes inside a per-child loop.
+  const genIdSet = new Set(genIds);
+
   prevGenBlocks.forEach(block => {
     const blockChildren = [];
+    const blockChildSet = new Set();
 
     // Get children of the block root
     const rootChildren = childrenMap.get(block.rootId) || [];
     rootChildren.forEach(childId => {
-      if (genIds.includes(childId)) {
+      if (genIdSet.has(childId)) {
         blockChildren.push(childId);
+        blockChildSet.add(childId);
       }
     });
 
@@ -299,8 +304,9 @@ export function calculateGenerationPositions(
     if (block.spouseId) {
       const spouseChildren = childrenMap.get(block.spouseId) || [];
       spouseChildren.forEach(childId => {
-        if (genIds.includes(childId) && !blockChildren.includes(childId)) {
+        if (genIdSet.has(childId) && !blockChildSet.has(childId)) {
           blockChildren.push(childId);
+          blockChildSet.add(childId);
         }
       });
     }
@@ -417,7 +423,8 @@ export function calculateBlockBasedLayout(
 
       // Filter to children in next generation
       const nextGenIds = generations[genIndex + 1] || [];
-      const myChildren = Array.from(childSet).filter(id => nextGenIds.includes(id));
+      const nextGenIdSet = new Set(nextGenIds);
+      const myChildren = Array.from(childSet).filter(id => nextGenIdSet.has(id));
 
       if (myChildren.length === 0) {
         // Leaf node - width is just person + spouse
@@ -505,18 +512,19 @@ export function calculateBlockBasedLayout(
     } else {
       // Subsequent generations - position within parent's allocated block
       const prevGenIds = generations[genIndex - 1];
+      const prevGenIdSet = new Set(prevGenIds);
 
       // Group children by parent
       const childrenByParent = new Map();
       genIds.forEach(childId => {
         const parents = parentMap.get(childId) || [];
         // Find a parent that's in the previous generation
-        let parentId = parents.find(pid => prevGenIds.includes(pid));
+        let parentId = parents.find(pid => prevGenIdSet.has(pid));
         if (!parentId) {
           // Check if parent's spouse is in prev gen
           parents.forEach(pid => {
             const pSpouse = spouseMap.get(pid);
-            if (pSpouse && prevGenIds.includes(pSpouse)) {
+            if (pSpouse && prevGenIdSet.has(pSpouse)) {
               parentId = pSpouse;
             }
           });
@@ -540,8 +548,9 @@ export function calculateBlockBasedLayout(
         const spouseId = spouseMap.get(parentId);
         if (spouseId) {
           const spouseChildren = childrenByParent.get(spouseId) || [];
+          const mine = new Set(myChildren);
           spouseChildren.forEach(c => {
-            if (!myChildren.includes(c)) myChildren.push(c);
+            if (!mine.has(c)) { myChildren.push(c); mine.add(c); }
           });
           childrenByParent.delete(spouseId); // Don't process again
         }
