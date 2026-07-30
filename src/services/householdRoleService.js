@@ -4,10 +4,15 @@
  * CRUD operations for household roles (non-hereditary service positions).
  * These are service roles tied to a house like Master-at-Arms, Steward, etc.
  *
+ * Every function takes an optional `datasetId`. Previously this module imported
+ * the default-dataset `db` singleton directly, so roles created in one world
+ * were written into another. Mutations also take an optional `userId`; when
+ * present the change is mirrored to the cloud via dataSyncService.
+ *
  * @module householdRoleService
  */
 
-import { db } from './database';
+import { getDatabase } from './database';
 import { HOUSEHOLD_ROLE_TYPES, getRoleType } from '../data/householdRoleTypes';
 import {
   syncAddHouseholdRole,
@@ -28,9 +33,11 @@ import {
  * @param {string} [roleData.startDate] - When current holder started
  * @param {string} [roleData.notes] - Additional notes
  * @param {string} [userId] - Optional user ID for cloud sync
+ * @param {string} [datasetId] - Dataset ID
  * @returns {Promise<number>} New role ID
  */
-export async function createHouseholdRole(roleData, userId = null) {
+export async function createHouseholdRole(roleData, userId = null, datasetId = null) {
+  const db = getDatabase(datasetId);
   const now = new Date().toISOString();
 
   const role = {
@@ -50,9 +57,8 @@ export async function createHouseholdRole(roleData, userId = null) {
       console.log('Household role created:', id);
     }
 
-    // Sync to cloud if userId provided
     if (userId) {
-      await syncAddHouseholdRole(userId, id, role);
+      await syncAddHouseholdRole(userId, datasetId, id, { ...role, id });
     }
 
     return id;
@@ -66,11 +72,12 @@ export async function createHouseholdRole(roleData, userId = null) {
  * Get a household role by ID
  *
  * @param {number} id - Role ID
+ * @param {string} [datasetId] - Dataset ID
  * @returns {Promise<Object|undefined>} Role object or undefined
  */
-export async function getHouseholdRole(id) {
+export async function getHouseholdRole(id, datasetId = null) {
   try {
-    return await db.householdRoles.get(id);
+    return await getDatabase(datasetId).householdRoles.get(id);
   } catch (error) {
     console.error('Error getting household role:', error);
     throw error;
@@ -80,11 +87,12 @@ export async function getHouseholdRole(id) {
 /**
  * Get all household roles
  *
+ * @param {string} [datasetId] - Dataset ID
  * @returns {Promise<Object[]>} Array of all roles
  */
-export async function getAllHouseholdRoles() {
+export async function getAllHouseholdRoles(datasetId = null) {
   try {
-    return await db.householdRoles.toArray();
+    return await getDatabase(datasetId).householdRoles.toArray();
   } catch (error) {
     console.error('Error getting all household roles:', error);
     throw error;
@@ -95,11 +103,12 @@ export async function getAllHouseholdRoles() {
  * Get all roles for a specific house
  *
  * @param {number} houseId - House ID
+ * @param {string} [datasetId] - Dataset ID
  * @returns {Promise<Object[]>} Array of roles for the house
  */
-export async function getRolesForHouse(houseId) {
+export async function getRolesForHouse(houseId, datasetId = null) {
   try {
-    const roles = await db.householdRoles
+    const roles = await getDatabase(datasetId).householdRoles
       .where('houseId')
       .equals(houseId)
       .toArray();
@@ -120,11 +129,12 @@ export async function getRolesForHouse(houseId) {
  * Get all roles held by a specific person
  *
  * @param {number} personId - Person ID
+ * @param {string} [datasetId] - Dataset ID
  * @returns {Promise<Object[]>} Array of roles held by the person
  */
-export async function getRolesForPerson(personId) {
+export async function getRolesForPerson(personId, datasetId = null) {
   try {
-    return await db.householdRoles
+    return await getDatabase(datasetId).householdRoles
       .where('currentHolderId')
       .equals(personId)
       .toArray();
@@ -140,23 +150,23 @@ export async function getRolesForPerson(personId) {
  * @param {number} id - Role ID
  * @param {Object} updates - Fields to update
  * @param {string} [userId] - Optional user ID for cloud sync
+ * @param {string} [datasetId] - Dataset ID
  * @returns {Promise<number>} Number of records updated (1 if successful)
  */
-export async function updateHouseholdRole(id, updates, userId = null) {
+export async function updateHouseholdRole(id, updates, userId = null, datasetId = null) {
   try {
     const updateData = {
       ...updates,
       updated: new Date().toISOString()
     };
 
-    const count = await db.householdRoles.update(id, updateData);
+    const count = await getDatabase(datasetId).householdRoles.update(id, updateData);
     if (import.meta.env.DEV) {
       console.log('Household role updated:', id);
     }
 
-    // Sync to cloud if userId provided
     if (userId) {
-      await syncUpdateHouseholdRole(userId, id, updateData);
+      await syncUpdateHouseholdRole(userId, datasetId, id, updateData);
     }
 
     return count;
@@ -171,18 +181,18 @@ export async function updateHouseholdRole(id, updates, userId = null) {
  *
  * @param {number} id - Role ID
  * @param {string} [userId] - Optional user ID for cloud sync
+ * @param {string} [datasetId] - Dataset ID
  * @returns {Promise<void>}
  */
-export async function deleteHouseholdRole(id, userId = null) {
+export async function deleteHouseholdRole(id, userId = null, datasetId = null) {
   try {
-    await db.householdRoles.delete(id);
+    await getDatabase(datasetId).householdRoles.delete(id);
     if (import.meta.env.DEV) {
       console.log('Household role deleted:', id);
     }
 
-    // Sync to cloud if userId provided
     if (userId) {
-      await syncDeleteHouseholdRole(userId, id);
+      await syncDeleteHouseholdRole(userId, datasetId, id);
     }
   } catch (error) {
     console.error('Error deleting household role:', error);
@@ -196,26 +206,30 @@ export async function deleteHouseholdRole(id, userId = null) {
  * @param {number} roleId - Role ID
  * @param {number} personId - Person to assign
  * @param {string} [startDate] - When they started (defaults to now)
+ * @param {string} [userId] - Optional user ID for cloud sync
+ * @param {string} [datasetId] - Dataset ID
  * @returns {Promise<number>} Number of records updated
  */
-export async function assignRoleHolder(roleId, personId, startDate = null) {
+export async function assignRoleHolder(roleId, personId, startDate = null, userId = null, datasetId = null) {
   return updateHouseholdRole(roleId, {
     currentHolderId: personId,
     startDate: startDate || new Date().toISOString().split('T')[0]
-  });
+  }, userId, datasetId);
 }
 
 /**
  * Remove the current holder from a role (make it vacant)
  *
  * @param {number} roleId - Role ID
+ * @param {string} [userId] - Optional user ID for cloud sync
+ * @param {string} [datasetId] - Dataset ID
  * @returns {Promise<number>} Number of records updated
  */
-export async function vacateRole(roleId) {
+export async function vacateRole(roleId, userId = null, datasetId = null) {
   return updateHouseholdRole(roleId, {
     currentHolderId: null,
     startDate: null
-  });
+  }, userId, datasetId);
 }
 
 // ==================== QUERY HELPERS ====================
@@ -224,10 +238,11 @@ export async function vacateRole(roleId) {
  * Get filled roles for a house (roles with current holders)
  *
  * @param {number} houseId - House ID
+ * @param {string} [datasetId] - Dataset ID
  * @returns {Promise<Object[]>} Array of filled roles
  */
-export async function getFilledRolesForHouse(houseId) {
-  const roles = await getRolesForHouse(houseId);
+export async function getFilledRolesForHouse(houseId, datasetId = null) {
+  const roles = await getRolesForHouse(houseId, datasetId);
   return roles.filter(r => r.currentHolderId !== null);
 }
 
@@ -235,10 +250,11 @@ export async function getFilledRolesForHouse(houseId) {
  * Get vacant roles for a house (roles without current holders)
  *
  * @param {number} houseId - House ID
+ * @param {string} [datasetId] - Dataset ID
  * @returns {Promise<Object[]>} Array of vacant roles
  */
-export async function getVacantRolesForHouse(houseId) {
-  const roles = await getRolesForHouse(houseId);
+export async function getVacantRolesForHouse(houseId, datasetId = null) {
+  const roles = await getRolesForHouse(houseId, datasetId);
   return roles.filter(r => r.currentHolderId === null);
 }
 
@@ -247,10 +263,11 @@ export async function getVacantRolesForHouse(houseId) {
  *
  * @param {number} houseId - House ID
  * @param {string} roleType - Role type ID
+ * @param {string} [datasetId] - Dataset ID
  * @returns {Promise<boolean>} True if house has this role type
  */
-export async function houseHasRoleType(houseId, roleType) {
-  const roles = await getRolesForHouse(houseId);
+export async function houseHasRoleType(houseId, roleType, datasetId = null) {
+  const roles = await getRolesForHouse(houseId, datasetId);
   return roles.some(r => r.roleType === roleType);
 }
 
@@ -258,10 +275,11 @@ export async function houseHasRoleType(houseId, roleType) {
  * Get role statistics for a house
  *
  * @param {number} houseId - House ID
+ * @param {string} [datasetId] - Dataset ID
  * @returns {Promise<Object>} Statistics object
  */
-export async function getRoleStatsForHouse(houseId) {
-  const roles = await getRolesForHouse(houseId);
+export async function getRoleStatsForHouse(houseId, datasetId = null) {
+  const roles = await getRolesForHouse(houseId, datasetId);
 
   const filled = roles.filter(r => r.currentHolderId !== null);
   const vacant = roles.filter(r => r.currentHolderId === null);
@@ -294,18 +312,20 @@ export async function getRoleStatsForHouse(houseId) {
  * Delete all roles for a house
  *
  * @param {number} houseId - House ID
+ * @param {string} [userId] - Optional user ID for cloud sync
+ * @param {string} [datasetId] - Dataset ID
  * @returns {Promise<number>} Number of roles deleted
  */
-export async function deleteRolesForHouse(houseId) {
+export async function deleteRolesForHouse(houseId, userId = null, datasetId = null) {
   try {
-    const count = await db.householdRoles
-      .where('houseId')
-      .equals(houseId)
-      .delete();
-    if (import.meta.env.DEV) {
-      console.log(`Deleted ${count} roles for house ${houseId}`);
+    const roles = await getRolesForHouse(houseId, datasetId);
+    for (const role of roles) {
+      await deleteHouseholdRole(role.id, userId, datasetId);
     }
-    return count;
+    if (import.meta.env.DEV) {
+      console.log(`Deleted ${roles.length} roles for house ${houseId}`);
+    }
+    return roles.length;
   } catch (error) {
     console.error('Error deleting roles for house:', error);
     throw error;
@@ -316,15 +336,17 @@ export async function deleteRolesForHouse(houseId) {
  * Clear holder from all roles (when person is deleted)
  *
  * @param {number} personId - Person ID
+ * @param {string} [userId] - Optional user ID for cloud sync
+ * @param {string} [datasetId] - Dataset ID
  * @returns {Promise<number>} Number of roles updated
  */
-export async function clearHolderFromAllRoles(personId) {
+export async function clearHolderFromAllRoles(personId, userId = null, datasetId = null) {
   try {
-    const roles = await getRolesForPerson(personId);
+    const roles = await getRolesForPerson(personId, datasetId);
     let count = 0;
 
     for (const role of roles) {
-      await vacateRole(role.id);
+      await vacateRole(role.id, userId, datasetId);
       count++;
     }
 

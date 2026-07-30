@@ -29,6 +29,7 @@ import {
 } from '../../../services/planningService';
 import { getAllPeople } from '../../../services/database';
 import { suggestPlotThread } from '../../../services/planningAIService';
+import { useAuth } from '../../../contexts/AuthContext';
 import './PlotThreadsView.css';
 
 // Thread type colors
@@ -75,6 +76,8 @@ function PlotThreadsView({
   datasetId,
   onClose
 }) {
+  const { user } = useAuth();
+  const userId = user?.uid || null;
   // State
   const [threads, setThreads] = useState([]);
   const [scenes, setScenes] = useState([]);
@@ -162,7 +165,7 @@ function PlotThreadsView({
       const newId = await createPlotThread({
         storyPlanId,
         ...formData
-      }, datasetId);
+      }, datasetId, userId);
 
       await loadData();
       setSelectedThread(newId);
@@ -179,7 +182,7 @@ function PlotThreadsView({
     if (!currentThread || !formData.name.trim()) return;
 
     try {
-      await updatePlotThread(currentThread.id, formData, datasetId);
+      await updatePlotThread(currentThread.id, formData, datasetId, userId);
       await loadData();
       setShowEditThread(false);
     } catch (error) {
@@ -193,7 +196,7 @@ function PlotThreadsView({
     if (!confirm('Delete this plot thread? This cannot be undone.')) return;
 
     try {
-      await deletePlotThread(threadId, datasetId);
+      await deletePlotThread(threadId, datasetId, userId);
       if (selectedThread === threadId) {
         setSelectedThread(threads.find(t => t.id !== threadId)?.id || null);
       }
@@ -209,7 +212,7 @@ function PlotThreadsView({
     if (!currentThread) return;
 
     try {
-      await updatePlotThread(currentThread.id, { status: newStatus }, datasetId);
+      await updatePlotThread(currentThread.id, { status: newStatus }, datasetId, userId);
       await loadData();
     } catch (error) {
       console.error('Error updating status:', error);
@@ -226,7 +229,7 @@ function PlotThreadsView({
         sceneId: plantForm.sceneId,
         isPayoff: plantForm.isPayoff,
         createdAt: new Date().toISOString()
-      }, datasetId);
+      }, datasetId, userId);
       await loadData();
       setShowAddPlant(false);
       setPlantForm({ description: '', sceneId: null, isPayoff: false });
@@ -242,7 +245,7 @@ function PlotThreadsView({
 
     try {
       const updatedPlants = currentThread.plants.filter(p => p.id !== plantId);
-      await updatePlotThread(currentThread.id, { plants: updatedPlants }, datasetId);
+      await updatePlotThread(currentThread.id, { plants: updatedPlants }, datasetId, userId);
       await loadData();
     } catch (error) {
       console.error('Error removing plant:', error);
@@ -259,7 +262,7 @@ function PlotThreadsView({
         ? linkedScenes.filter(id => id !== sceneId)
         : [...linkedScenes, sceneId];
 
-      await updatePlotThread(currentThread.id, { linkedScenes: newLinkedScenes }, datasetId);
+      await updatePlotThread(currentThread.id, { linkedScenes: newLinkedScenes }, datasetId, userId);
       await loadData();
     } catch (error) {
       console.error('Error linking scene:', error);
@@ -276,7 +279,7 @@ function PlotThreadsView({
         ? involvedCharacters.filter(id => id !== charId)
         : [...involvedCharacters, charId];
 
-      await updatePlotThread(currentThread.id, { involvedCharacters: newInvolved }, datasetId);
+      await updatePlotThread(currentThread.id, { involvedCharacters: newInvolved }, datasetId, userId);
       await loadData();
     } catch (error) {
       console.error('Error updating character involvement:', error);
@@ -291,7 +294,7 @@ function PlotThreadsView({
       const update = type === 'setup'
         ? { setupSceneId: sceneId }
         : { payoffSceneId: sceneId };
-      await updatePlotThread(currentThread.id, update, datasetId);
+      await updatePlotThread(currentThread.id, update, datasetId, userId);
       await loadData();
     } catch (error) {
       console.error('Error setting key scene:', error);
@@ -316,7 +319,7 @@ function PlotThreadsView({
         await updatePlotThread(currentThread.id, {
           description: suggestion.description || currentThread.description,
           notes: suggestion.notes ? `${currentThread.notes}\n\nAI Suggestion:\n${suggestion.notes}` : currentThread.notes
-        }, datasetId);
+        }, datasetId, userId);
 
         // Add suggested plants if any
         if (suggestion.suggestedPlants?.length > 0) {
@@ -325,7 +328,7 @@ function PlotThreadsView({
               description: plant,
               isPayoff: false,
               createdAt: new Date().toISOString()
-            }, datasetId);
+            }, datasetId, userId);
           }
         }
 

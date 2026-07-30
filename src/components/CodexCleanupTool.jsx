@@ -16,10 +16,12 @@
 
 import { useState, useEffect } from 'react';
 import { useDataset } from '../contexts/DatasetContext';
+import { useAuth } from '../contexts/AuthContext';
 import { getAllEntries, deleteEntry } from '../services/codexService';
 
 function CodexCleanupTool({ onCleanupComplete }) {
   const { activeDataset } = useDataset();
+  const { user } = useAuth();
   const [allEntries, setAllEntries] = useState([]);
   const [duplicateGroups, setDuplicateGroups] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -145,7 +147,7 @@ function CodexCleanupTool({ onCleanupComplete }) {
     for (const entryId of selectedForDeletion) {
       const entry = allEntries.find(e => e.id === entryId);
       try {
-        await deleteEntry(entryId, datasetId);
+        await deleteEntry(entryId, datasetId, user?.uid);
         log.push(`✅ Deleted: "${entry?.title}" (ID: ${entryId})`);
         deleted++;
       } catch (error) {

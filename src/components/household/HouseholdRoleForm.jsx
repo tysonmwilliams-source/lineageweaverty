@@ -19,6 +19,8 @@ import { useState, useCallback, useMemo, memo } from 'react';
 import { motion } from 'framer-motion';
 import Icon from '../icons/Icon';
 import ActionButton from '../shared/ActionButton';
+import { useAuth } from '../../contexts/AuthContext';
+import { useDataset } from '../../contexts/DatasetContext';
 import {
   createHouseholdRole,
   updateHouseholdRole
@@ -66,6 +68,9 @@ function HouseholdRoleForm({
   onClose
 }) {
   const isEditing = !!role;
+  const { user } = useAuth();
+  const { activeDataset } = useDataset();
+  const datasetId = activeDataset?.id || 'default';
 
   // Form state
   const [roleType, setRoleType] = useState(role?.roleType || '');
@@ -110,9 +115,9 @@ function HouseholdRoleForm({
       };
 
       if (isEditing) {
-        await updateHouseholdRole(role.id, roleData);
+        await updateHouseholdRole(role.id, roleData, user?.uid, datasetId);
       } else {
-        await createHouseholdRole(roleData);
+        await createHouseholdRole(roleData, user?.uid, datasetId);
       }
 
       onSave?.();
@@ -124,7 +129,7 @@ function HouseholdRoleForm({
     } finally {
       setSaving(false);
     }
-  }, [isValid, houseId, roleType, customRoleName, currentHolderId, startDate, notes, isEditing, role, onSave]);
+  }, [isValid, houseId, roleType, customRoleName, currentHolderId, startDate, notes, isEditing, role, onSave, user, datasetId]);
 
   // Handle overlay click
   const handleOverlayClick = useCallback((e) => {

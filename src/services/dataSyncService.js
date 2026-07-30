@@ -387,13 +387,29 @@ async function syncSingleChange(userId, datasetId, entityType, change) {
       add: () => addArcMilestoneCloud(userId, datasetId, { ...data, id: entityId }),
       update: () => updateArcMilestoneCloud(userId, datasetId, entityId, data),
       delete: () => deleteArcMilestoneCloud(userId, datasetId, entityId)
+    },
+    // These three were queued by their sync wrappers but had no replay handler,
+    // so offline changes were dropped on the floor AND marked synced.
+    dignityTenure: {
+      add: () => addDignityTenureCloud(userId, datasetId, { ...data, id: entityId }),
+      update: () => updateDignityTenureCloud(userId, datasetId, entityId, data),
+      delete: () => deleteDignityTenureCloud(userId, datasetId, entityId)
+    },
+    dignityLink: {
+      add: () => addDignityLinkCloud(userId, datasetId, { ...data, id: entityId }),
+      delete: () => deleteDignityLinkCloud(userId, datasetId, entityId)
+    },
+    heraldryLink: {
+      add: () => addHeraldryLinkCloud(userId, datasetId, { ...data, id: entityId }),
+      delete: () => deleteHeraldryLinkCloud(userId, datasetId, entityId)
     }
   };
 
   const handler = syncMap[entityType]?.[operation];
   if (!handler) {
-    console.warn(`Unknown sync operation: ${entityType}.${operation}`);
-    return;
+    // Must throw, not return. Returning here looked like success to the caller,
+    // which then marked the queue row synced and discarded the change.
+    throw new Error(`No cloud sync handler for ${entityType}.${operation}`);
   }
 
   await handler();

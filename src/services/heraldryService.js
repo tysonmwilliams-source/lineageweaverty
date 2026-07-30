@@ -20,7 +20,9 @@ import {
   syncUpdateHeraldry,
   syncDeleteHeraldry,
   syncAddHeraldryLink,
-  syncDeleteHeraldryLink
+  syncDeleteHeraldryLink,
+  syncUpdateHouse,
+  syncUpdatePerson
 } from './dataSyncService';
 
 // ==================== HERALDRY CRUD OPERATIONS ====================
@@ -203,6 +205,40 @@ export async function deleteHeraldry(id, userId = null, datasetId = null) {
     // First, get all links to this heraldry (for cloud sync)
     const links = await db.heraldryLinks.where('heraldryId').equals(id).toArray();
 
+    // Clear the denormalized heraldryId columns that mirror these links.
+    // unlinkHeraldry() does this; deleting the heraldry outright used to skip
+    // it, leaving houses and people pointing at a record that no longer exists
+    // — while the UI promised "this will unlink it from any houses or people".
+    const clearedHouses = [];
+    const clearedPeople = [];
+    for (const link of links) {
+      if (link.entityType === 'house' && link.linkType === 'primary') {
+        await db.houses.update(link.entityId, { heraldryId: null });
+        clearedHouses.push(link.entityId);
+      }
+      if (link.entityType === 'person' && link.linkType === 'primary') {
+        await db.people.update(link.entityId, { heraldryId: null });
+        clearedPeople.push(link.entityId);
+      }
+    }
+
+    // Any house/person that points here without a link row (legacy data)
+    // must be cleared too, or the dangling id survives.
+    const strayHouses = await db.houses.where('heraldryId').equals(id).toArray();
+    for (const h of strayHouses) {
+      if (!clearedHouses.includes(h.id)) {
+        await db.houses.update(h.id, { heraldryId: null });
+        clearedHouses.push(h.id);
+      }
+    }
+    const strayPeople = await db.people.where('heraldryId').equals(id).toArray();
+    for (const p of strayPeople) {
+      if (!clearedPeople.includes(p.id)) {
+        await db.people.update(p.id, { heraldryId: null });
+        clearedPeople.push(p.id);
+      }
+    }
+
     // Remove all links to this heraldry
     await db.heraldryLinks.where('heraldryId').equals(id).delete();
 
@@ -212,6 +248,12 @@ export async function deleteHeraldry(id, userId = null, datasetId = null) {
 
     // Sync to cloud if userId and datasetId provided
     if (userId && datasetId) {
+      for (const houseId of clearedHouses) {
+        await syncUpdateHouse(userId, datasetId, houseId, { heraldryId: null });
+      }
+      for (const personId of clearedPeople) {
+        await syncUpdatePerson(userId, datasetId, personId, { heraldryId: null });
+      }
       // Delete all the links from cloud
       for (const link of links) {
         await syncDeleteHeraldryLink(userId, datasetId, link.id);

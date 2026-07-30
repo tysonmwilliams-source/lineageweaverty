@@ -33,16 +33,20 @@ export default function EnhancedCodexImportTool() {
     setResults(null);
 
     try {
+      const datasetId = activeDataset?.id || 'default';
+
       const result = await importCodexData(NORTHERN_SEATS_CODEX_DATA, {
         skipDuplicates: true,
         userId: user?.uid || null,
+        datasetId,
         onProgress: (p) => setProgress(p)
       });
 
-      // Cloud sync after import
-      if (user?.uid && activeDataset?.id) {
+      // Cloud sync after import. Previously this uploaded the active dataset
+      // while the import itself wrote to the default one.
+      if (user?.uid) {
         try {
-          await forceUploadToCloud(user.uid, activeDataset.id);
+          await forceUploadToCloud(user.uid, datasetId);
         } catch (syncErr) {
           console.warn('Cloud sync after import failed:', syncErr);
         }

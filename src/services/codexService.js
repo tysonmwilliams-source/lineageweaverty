@@ -418,7 +418,7 @@ export async function updateEntry(id, updates, datasetId) {
 /**
  * Delete a codex entry
  */
-export async function deleteEntry(id, datasetId) {
+export async function deleteEntry(id, datasetId, userId = null) {
   try {
     const db = getDatabase(datasetId);
 
@@ -429,9 +429,21 @@ export async function deleteEntry(id, datasetId) {
     await db.codexEntries.delete(id);
 
     // Delete all links associated with this entry
-    await deleteLinksForEntry(id, datasetId);
+    await deleteLinksForEntry(id, datasetId, userId);
 
     console.log('Codex entry deleted:', id);
+
+    // Propagate to the cloud. Without this the entry was restored on the next
+    // download — which made the Codex cleanup tool actively counter-productive,
+    // since the duplicates it removed always came back.
+    if (userId) {
+      const { syncDeleteCodexEntry } = await import('./dataSyncService.js');
+      try {
+        await syncDeleteCodexEntry(userId, datasetId, id);
+      } catch (syncError) {
+        console.error('☁️ Failed to sync codex entry delete:', syncError);
+      }
+    }
 
     // Notify context system of change
     if (entry) {
@@ -575,14 +587,38 @@ export async function getAllLinksForEntry(entryId, datasetId) {
 /**
  * Delete all links associated with an entry
  */
-export async function deleteLinksForEntry(entryId, datasetId) {
+export async function deleteLinksForEntry(entryId, datasetId, userId = null) {
   try {
     const db = getDatabase(datasetId);
+
+    // Collect ids first so the cloud copies can be removed too — a bulk
+    // .delete() drops them locally and leaves Firestore to restore them.
+    const doomed = userId
+      ? [
+          ...await db.codexLinks.where('sourceId').equals(entryId).toArray(),
+          ...await db.codexLinks.where('targetId').equals(entryId).toArray()
+        ]
+      : [];
+
     // Delete where this entry is the source
     await db.codexLinks.where('sourceId').equals(entryId).delete();
 
     // Delete where this entry is the target
     await db.codexLinks.where('targetId').equals(entryId).delete();
+
+    if (userId && doomed.length > 0) {
+      const { syncDeleteCodexLink } = await import('./dataSyncService.js');
+      const seen = new Set();
+      for (const link of doomed) {
+        if (seen.has(link.id)) continue;
+        seen.add(link.id);
+        try {
+          await syncDeleteCodexLink(userId, datasetId, link.id);
+        } catch (syncError) {
+          console.error('☁️ Failed to sync codex link delete:', syncError);
+        }
+      }
+    }
 
     console.log('All links deleted for entry:', entryId);
   } catch (error) {

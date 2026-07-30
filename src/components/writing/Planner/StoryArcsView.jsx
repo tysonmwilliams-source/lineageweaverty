@@ -29,6 +29,7 @@ import {
 } from '../../../services/planningService';
 import { getAllPeople } from '../../../services/database';
 import { suggestStoryArc } from '../../../services/planningAIService';
+import { useAuth } from '../../../contexts/AuthContext';
 import './StoryArcsView.css';
 
 // Arc type icons
@@ -64,6 +65,8 @@ function StoryArcsView({
   datasetId,
   onClose
 }) {
+  const { user } = useAuth();
+  const userId = user?.uid || null;
   // State
   const [arcs, setArcs] = useState([]);
   const [beats, setBeats] = useState([]);
@@ -162,7 +165,7 @@ function StoryArcsView({
       const newId = await createStoryArc({
         storyPlanId,
         ...formData
-      }, datasetId);
+      }, datasetId, userId);
 
       await loadData();
       setSelectedArc(newId);
@@ -179,7 +182,7 @@ function StoryArcsView({
     if (!currentArc || !formData.name.trim()) return;
 
     try {
-      await updateStoryArc(currentArc.id, formData, datasetId);
+      await updateStoryArc(currentArc.id, formData, datasetId, userId);
       await loadData();
       setShowEditArc(false);
     } catch (error) {
@@ -193,7 +196,7 @@ function StoryArcsView({
     if (!confirm('Delete this story arc? This cannot be undone.')) return;
 
     try {
-      await deleteStoryArc(arcId, datasetId);
+      await deleteStoryArc(arcId, datasetId, userId);
       if (selectedArc === arcId) {
         setSelectedArc(arcs.find(a => a.id !== arcId)?.id || null);
       }
@@ -209,7 +212,7 @@ function StoryArcsView({
     if (!currentArc) return;
 
     try {
-      await updateStoryArc(currentArc.id, { status: newStatus }, datasetId);
+      await updateStoryArc(currentArc.id, { status: newStatus }, datasetId, userId);
       await loadData();
     } catch (error) {
       console.error('Error updating status:', error);
@@ -226,7 +229,7 @@ function StoryArcsView({
         ? linkedCharacters.filter(id => id !== charId)
         : [...linkedCharacters, charId];
 
-      await updateStoryArc(currentArc.id, { linkedCharacters: newLinked }, datasetId);
+      await updateStoryArc(currentArc.id, { linkedCharacters: newLinked }, datasetId, userId);
       await loadData();
     } catch (error) {
       console.error('Error updating character link:', error);
@@ -245,8 +248,8 @@ function StoryArcsView({
       const currentOrder = arcs[arcIndex].order;
       const targetOrder = arcs[newIndex].order;
 
-      await updateStoryArc(arcId, { order: targetOrder }, datasetId);
-      await updateStoryArc(arcs[newIndex].id, { order: currentOrder }, datasetId);
+      await updateStoryArc(arcId, { order: targetOrder }, datasetId, userId);
+      await updateStoryArc(arcs[newIndex].id, { order: currentOrder }, datasetId, userId);
       await loadData();
     } catch (error) {
       console.error('Error reordering arcs:', error);
@@ -272,7 +275,7 @@ function StoryArcsView({
           startingState: suggestion.startingState || currentArc.startingState,
           endingState: suggestion.endingState || currentArc.endingState,
           valueAtStake: suggestion.valueAtStake || currentArc.valueAtStake
-        }, datasetId);
+        }, datasetId, userId);
         await loadData();
       }
     } catch (error) {

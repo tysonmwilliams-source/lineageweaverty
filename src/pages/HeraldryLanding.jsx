@@ -28,6 +28,7 @@ import {
 import { getAllHouses, getDatabase } from '../services/database';
 import { getAllEntries } from '../services/codexService';
 import { useDataset } from '../contexts/DatasetContext';
+import { useAuth } from '../contexts/AuthContext';
 import { sanitizeSVG } from '../utils/sanitize';
 import Navigation from '../components/Navigation';
 import Icon from '../components/icons';
@@ -88,6 +89,7 @@ const CATEGORY_ICONS = {
 function HeraldryLanding() {
   const navigate = useNavigate();
   const { activeDataset } = useDataset();
+  const { user } = useAuth();
 
   // State
   const [heraldry, setHeraldry] = useState([]);
@@ -237,11 +239,14 @@ function HeraldryLanding() {
     }
 
     try {
-      await deleteHeraldry(id);
+      const datasetId = activeDataset?.id;
+      // Without userId/datasetId this deleted from the default world and never
+      // reached the cloud, so the record came back on the next pull.
+      await deleteHeraldry(id, user?.uid, datasetId);
       // Refresh data
       const [heraldryData, stats] = await Promise.all([
-        getAllHeraldry(),
-        getHeraldryStatistics()
+        getAllHeraldry(datasetId),
+        getHeraldryStatistics(datasetId)
       ]);
       setHeraldry(heraldryData);
       setStatistics(stats);
@@ -249,7 +254,7 @@ function HeraldryLanding() {
       console.error('Error deleting heraldry:', error);
       alert('Failed to delete heraldry');
     }
-  }, []);
+  }, [user, activeDataset]);
 
   const handleViewInCodex = useCallback((entryId, event) => {
     event.stopPropagation();

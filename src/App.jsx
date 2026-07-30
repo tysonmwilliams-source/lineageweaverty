@@ -366,8 +366,13 @@ function AppContent() {
   // Database ready - render the app with GenealogyProvider
   // GenealogyProvider is here (inside ProtectedRoute) so it has access to user
   // BugTrackerProvider wraps everything so the floating bug reporter works on all pages
+  // Keying on the dataset id forces a full remount of the genealogy tree when
+  // the active world changes, so its state can never describe world A while
+  // writes are going to world B. Both switch paths currently also call
+  // window.location.reload(), which masks this — but that reload is incidental,
+  // not a guarantee, and nothing should depend on it.
   return (
-    <GenealogyProvider>
+    <GenealogyProvider key={activeDataset?.id || 'default'}>
       <BugTrackerProvider>
         <DatasetManagerContext.Provider value={{ openDatasetManager: () => setDatasetManagerOpen(true) }}>
           <Router>

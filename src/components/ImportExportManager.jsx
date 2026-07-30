@@ -18,16 +18,19 @@ import {
   getAllPeople,
   getAllHouses,
   getAllRelationships,
-  getDatabase
+  getDatabase,
+  exportFullDatabase,
+  importFullDatabase,
+  FULL_BACKUP_FORMAT
 } from '../services/database';
 import { useGenealogy } from '../contexts/GenealogyContext';
 import { useDataset } from '../contexts/DatasetContext';
+import { useAuth } from '../contexts/AuthContext';
+import { forceUploadToCloud } from '../services/dataSyncService';
 import {
-  exportData,
   importData,
   CURRENT_VERSION
 } from '../services/database/MigrationHooks';
-import { getAllEntries } from '../services/codexService';
 import {
   getContextSystemStatus,
   getContextRegistry,
@@ -112,6 +115,7 @@ const ITEM_VARIANTS = {
 function ImportExportManager() {
   // Access context for data refresh after import
   const { refreshData } = useGenealogy();
+  const { user } = useAuth();
   const { activeDataset } = useDataset();
 
   // Export state
@@ -212,30 +216,14 @@ function ImportExportManager() {
       setExportSuccess(false);
       setProgress(0);
 
-      setProgressMessage('Gathering people...');
-      setProgress(20);
-      const people = await getAllPeople(datasetId);
-
-      setProgressMessage('Gathering houses...');
+      setProgressMessage('Gathering all tables...');
       setProgress(40);
-      const houses = await getAllHouses(datasetId);
 
-      setProgressMessage('Gathering relationships...');
-      setProgress(60);
-      const relationships = await getAllRelationships(datasetId);
-
-      setProgressMessage('Gathering Codex entries...');
-      setProgress(70);
-      const codexEntries = await getAllEntries(datasetId);
-
-      setProgressMessage('Formatting export...');
-      setProgress(80);
-      const exportedData = exportData({
-        people,
-        houses,
-        relationships,
-        codexEntries: codexEntries || []
-      }, 'json');
+      // Dumps every table verbatim. The old path exported 4 of 26 tables with
+      // field whitelists, silently dropping all heraldry, dignities, writings,
+      // planning data, household roles and codex links — and flattening cadet
+      // branches by omitting parentHouseId.
+      const exportedData = await exportFullDatabase(datasetId);
 
       setProgressMessage('Creating download...');
       setProgress(90);
@@ -347,6 +335,69 @@ function ImportExportManager() {
       const fileContent = await readFileAsText(importFile);
       const data = JSON.parse(fileContent);
 
+      // Full-backup restore: every table, replacing what's there.
+      if (data.format === FULL_BACKUP_FORMAT) {
+        const tableSummary = Object.entries(data.counts || {})
+          .filter(([, n]) => n > 0)
+          .map(([name, n]) => `  ${name}: ${n}`)
+          .join('\n');
+
+        if (!confirm(
+          `Restore full backup from ${data.exportDate?.slice(0, 10) || 'unknown date'}?\n\n` +
+          `${tableSummary}\n\n` +
+          `This REPLACES all data in the current world. It cannot be undone.`
+        )) {
+          setImporting(false);
+          setProgress(0);
+          setProgressMessage('');
+          return;
+        }
+
+        setProgressMessage('Restoring all tables...');
+        setProgress(30);
+        const { restored, skipped } = await importFullDatabase(data, datasetId, { replace: true });
+
+        if (skipped.length > 0) {
+          console.warn('Backup contained unknown tables, skipped:', skipped);
+        }
+
+        // Push the restored world up as the new cloud truth. Without this the
+        // restore never enters syncQueue, so initializeSync sees no pending
+        // changes and overwrites everything from the cloud on next start.
+        if (user?.uid) {
+          setProgressMessage('Uploading restored data to cloud...');
+          setProgress(70);
+          try {
+            await forceUploadToCloud(user.uid, datasetId || 'default');
+          } catch (syncError) {
+            console.error('Cloud upload after restore failed:', syncError);
+            setImportErrors(
+              'Data restored locally, but the cloud upload failed. ' +
+              'Run a manual sync before closing the app, or the next sync may overwrite it.'
+            );
+          }
+        }
+
+        setProgress(100);
+        const total = Object.values(restored).reduce((a, b) => a + b, 0);
+        setProgressMessage(`Restored ${total} records across ${Object.keys(restored).length} tables`);
+        setImportSuccess(true);
+
+        await refreshData();
+
+        setTimeout(() => {
+          setImportFile(null);
+          setImportPreview(null);
+          setImportConflicts(null);
+          setImportSuccess(false);
+          setProgress(0);
+          setProgressMessage('');
+          const input = document.getElementById('import-file-input');
+          if (input) input.value = '';
+        }, 4000);
+        return;
+      }
+
       let finalPeople = data.people;
       let finalHouses = data.houses;
       let finalRelationships = data.relationships;
@@ -401,22 +452,33 @@ function ImportExportManager() {
         }
       }
 
-      setProgressMessage(`Importing ${finalHouses.length} houses...`);
+      setProgressMessage('Importing records...');
       setProgress(40);
-      await db.houses.bulkAdd(finalHouses);
 
-      setProgressMessage(`Importing ${finalPeople.length} people...`);
-      setProgress(60);
-      await db.people.bulkAdd(finalPeople);
+      // One transaction: a failure part-way through rolls back rather than
+      // leaving a world with houses but no people.
+      await db.transaction('rw', db.houses, db.people, db.relationships, db.codexEntries, async () => {
+        if (finalHouses?.length) await db.houses.bulkAdd(finalHouses);
+        if (finalPeople?.length) await db.people.bulkAdd(finalPeople);
+        if (finalRelationships?.length) await db.relationships.bulkAdd(finalRelationships);
+        if (data.codexEntries?.length) await db.codexEntries.bulkAdd(data.codexEntries);
+      });
 
-      setProgressMessage(`Importing ${finalRelationships.length} relationships...`);
       setProgress(80);
-      await db.relationships.bulkAdd(finalRelationships);
 
-      if (data.codexEntries && data.codexEntries.length > 0) {
-        setProgressMessage(`Importing ${data.codexEntries.length} Codex entries...`);
-        setProgress(90);
-        await db.codexEntries.bulkAdd(data.codexEntries);
+      // As with a full restore, an import that never touches syncQueue leaves
+      // initializeSync free to overwrite it from the cloud on next start.
+      if (user?.uid) {
+        setProgressMessage('Uploading imported data to cloud...');
+        try {
+          await forceUploadToCloud(user.uid, datasetId || 'default');
+        } catch (syncError) {
+          console.error('Cloud upload after import failed:', syncError);
+          setImportErrors(
+            'Data imported locally, but the cloud upload failed. ' +
+            'Run a manual sync before closing the app, or the next sync may overwrite it.'
+          );
+        }
       }
 
       setProgress(100);

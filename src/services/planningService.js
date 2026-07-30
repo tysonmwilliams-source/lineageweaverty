@@ -9,10 +9,45 @@
  * - Character Arcs (character development tracking)
  * - Plot Threads (narrative thread management)
  *
- * All functions accept an optional datasetId parameter for multi-dataset support.
+ * All functions accept an optional datasetId parameter for multi-dataset support,
+ * and every mutation accepts an optional trailing userId. When userId is present
+ * the change is mirrored to the cloud.
+ *
+ * That userId matters more than it looks: planner writes previously never
+ * entered the sync queue at all, so getPendingChangeCount() was blind to them
+ * and initializeSync's data-loss guard would happily wipe local planning data
+ * and "restore" it from a Firestore subtree that had never been written.
  */
 
 import { getDatabase } from './database.js';
+import {
+  syncAddStoryPlan, syncUpdateStoryPlan, syncDeleteStoryPlan,
+  syncAddStoryArc, syncUpdateStoryArc, syncDeleteStoryArc,
+  syncAddStoryBeat, syncUpdateStoryBeat, syncDeleteStoryBeat,
+  syncAddScenePlan, syncUpdateScenePlan, syncDeleteScenePlan,
+  syncAddCharacterArc, syncUpdateCharacterArc, syncDeleteCharacterArc,
+  syncAddPlotThread, syncUpdatePlotThread, syncDeletePlotThread
+} from './dataSyncService.js';
+
+/**
+ * Mirror a planning mutation to the cloud.
+ *
+ * No-ops without a userId (signed-out / local-only use). Never throws: a sync
+ * failure must never break the local write, per the local-first contract.
+ *
+ * @param {Function} syncFn - one of the sync{Add,Update,Delete}* wrappers
+ * @param {string|null} userId
+ * @param {string} datasetId
+ * @param {...any} args - (entityId) or (entityId, data)
+ */
+async function syncPlanning(syncFn, userId, datasetId, ...args) {
+  if (!userId) return;
+  try {
+    await syncFn(userId, datasetId, ...args);
+  } catch (error) {
+    console.error(`☁️ Planning sync failed (${syncFn.name}):`, error);
+  }
+}
 
 // ==================== CONSTANTS ====================
 
@@ -177,7 +212,7 @@ export const PLAN_STATUS = {
  * @param {string} [datasetId] - Dataset ID
  * @returns {Promise<number>} The new story plan ID
  */
-export async function createStoryPlan(planData, datasetId) {
+export async function createStoryPlan(planData, datasetId, userId = null) {
   try {
     const database = getDatabase(datasetId);
     const now = new Date().toISOString();
@@ -200,10 +235,11 @@ export async function createStoryPlan(planData, datasetId) {
 
     const id = await database.storyPlans.add(plan);
     console.log('📖 Story plan created with ID:', id);
+    await syncPlanning(syncAddStoryPlan, userId, datasetId, id, { ...plan, id });
 
     // Auto-create beats for the selected framework
     if (planData.framework && planData.framework !== 'custom') {
-      await createBeatsForFramework(id, planData.framework, datasetId);
+      await createBeatsForFramework(id, planData.framework, datasetId, userId);
     }
 
     return id;
@@ -258,12 +294,14 @@ export async function getAllStoryPlans(datasetId) {
 /**
  * Update a story plan
  */
-export async function updateStoryPlan(id, updates, datasetId) {
+export async function updateStoryPlan(id, updates, datasetId, userId = null) {
   try {
     const database = getDatabase(datasetId);
-    updates.updatedAt = new Date().toISOString();
-    await database.storyPlans.update(id, updates);
+    // Don't mutate the caller's object — components pass state slices in here.
+    const patch = { ...updates, updatedAt: new Date().toISOString() };
+    await database.storyPlans.update(id, patch);
     console.log('📖 Story plan updated:', id);
+    await syncPlanning(syncUpdateStoryPlan, userId, datasetId, id, patch);
     return await database.storyPlans.get(id);
   } catch (error) {
     console.error('Error updating story plan:', error);
@@ -274,11 +312,21 @@ export async function updateStoryPlan(id, updates, datasetId) {
 /**
  * Delete a story plan and all associated data
  */
-export async function deleteStoryPlan(id, datasetId) {
+export async function deleteStoryPlan(id, datasetId, userId = null) {
   try {
     const database = getDatabase(datasetId);
 
-    // Cascade delete all associated data
+    // Cascade delete all associated data. Collect ids first so each child
+    // delete can be propagated to the cloud too — a bulk .delete() would
+    // remove them locally and leave the Firestore copies to be restored.
+    const [arcs, beats, scenes, charArcs, threads] = await Promise.all([
+      database.storyArcs.where('storyPlanId').equals(id).toArray(),
+      database.storyBeats.where('storyPlanId').equals(id).toArray(),
+      database.scenePlans.where('storyPlanId').equals(id).toArray(),
+      database.characterArcs.where('storyPlanId').equals(id).toArray(),
+      database.plotThreads.where('storyPlanId').equals(id).toArray()
+    ]);
+
     await database.storyArcs.where('storyPlanId').equals(id).delete();
     await database.storyBeats.where('storyPlanId').equals(id).delete();
     await database.scenePlans.where('storyPlanId').equals(id).delete();
@@ -288,6 +336,16 @@ export async function deleteStoryPlan(id, datasetId) {
     // Delete the plan itself
     await database.storyPlans.delete(id);
     console.log('📖 Story plan deleted:', id);
+
+    if (userId) {
+      for (const a of arcs) await syncPlanning(syncDeleteStoryArc, userId, datasetId, a.id);
+      for (const b of beats) await syncPlanning(syncDeleteStoryBeat, userId, datasetId, b.id);
+      for (const s of scenes) await syncPlanning(syncDeleteScenePlan, userId, datasetId, s.id);
+      for (const c of charArcs) await syncPlanning(syncDeleteCharacterArc, userId, datasetId, c.id);
+      for (const t of threads) await syncPlanning(syncDeletePlotThread, userId, datasetId, t.id);
+      await syncPlanning(syncDeleteStoryPlan, userId, datasetId, id);
+    }
+
     return true;
   } catch (error) {
     console.error('Error deleting story plan:', error);
@@ -332,7 +390,7 @@ export async function getStoryPlanComplete(id, datasetId) {
 /**
  * Create a story arc
  */
-export async function createStoryArc(arcData, datasetId) {
+export async function createStoryArc(arcData, datasetId, userId = null) {
   try {
     const database = getDatabase(datasetId);
     const now = new Date().toISOString();
@@ -362,6 +420,7 @@ export async function createStoryArc(arcData, datasetId) {
 
     const id = await database.storyArcs.add(arc);
     console.log('📊 Story arc created:', id);
+    await syncPlanning(syncAddStoryArc, userId, datasetId, id, { ...arc, id });
     return id;
   } catch (error) {
     console.error('Error creating story arc:', error);
@@ -388,11 +447,12 @@ export async function getStoryArcs(storyPlanId, datasetId) {
 /**
  * Update a story arc
  */
-export async function updateStoryArc(id, updates, datasetId) {
+export async function updateStoryArc(id, updates, datasetId, userId = null) {
   try {
     const database = getDatabase(datasetId);
-    updates.updatedAt = new Date().toISOString();
-    await database.storyArcs.update(id, updates);
+    const patch = { ...updates, updatedAt: new Date().toISOString() };
+    await database.storyArcs.update(id, patch);
+    await syncPlanning(syncUpdateStoryArc, userId, datasetId, id, patch);
     return await database.storyArcs.get(id);
   } catch (error) {
     console.error('Error updating story arc:', error);
@@ -403,11 +463,12 @@ export async function updateStoryArc(id, updates, datasetId) {
 /**
  * Delete a story arc
  */
-export async function deleteStoryArc(id, datasetId) {
+export async function deleteStoryArc(id, datasetId, userId = null) {
   try {
     const database = getDatabase(datasetId);
     await database.storyArcs.delete(id);
     console.log('📊 Story arc deleted:', id);
+    await syncPlanning(syncDeleteStoryArc, userId, datasetId, id);
     return true;
   } catch (error) {
     console.error('Error deleting story arc:', error);
@@ -420,7 +481,7 @@ export async function deleteStoryArc(id, datasetId) {
 /**
  * Create beats for a framework
  */
-async function createBeatsForFramework(storyPlanId, frameworkId, datasetId) {
+async function createBeatsForFramework(storyPlanId, frameworkId, datasetId, userId = null) {
   const framework = PLANNING_FRAMEWORKS[frameworkId];
   if (!framework || !framework.beats.length) return;
 
@@ -444,14 +505,20 @@ async function createBeatsForFramework(storyPlanId, frameworkId, datasetId) {
     updatedAt: now
   }));
 
-  await database.storyBeats.bulkAdd(beats);
+  const ids = await database.storyBeats.bulkAdd(beats, { allKeys: true });
   console.log(`📍 Created ${beats.length} beats for framework: ${frameworkId}`);
+
+  if (userId) {
+    for (let i = 0; i < ids.length; i++) {
+      await syncPlanning(syncAddStoryBeat, userId, datasetId, ids[i], { ...beats[i], id: ids[i] });
+    }
+  }
 }
 
 /**
  * Create a single story beat
  */
-export async function createStoryBeat(beatData, datasetId) {
+export async function createStoryBeat(beatData, datasetId, userId = null) {
   try {
     const database = getDatabase(datasetId);
     const now = new Date().toISOString();
@@ -482,6 +549,7 @@ export async function createStoryBeat(beatData, datasetId) {
 
     const id = await database.storyBeats.add(beat);
     console.log('📍 Story beat created:', id);
+    await syncPlanning(syncAddStoryBeat, userId, datasetId, id, { ...beat, id });
     return id;
   } catch (error) {
     console.error('Error creating story beat:', error);
@@ -508,11 +576,12 @@ export async function getStoryBeats(storyPlanId, datasetId) {
 /**
  * Update a story beat
  */
-export async function updateStoryBeat(id, updates, datasetId) {
+export async function updateStoryBeat(id, updates, datasetId, userId = null) {
   try {
     const database = getDatabase(datasetId);
-    updates.updatedAt = new Date().toISOString();
-    await database.storyBeats.update(id, updates);
+    const patch = { ...updates, updatedAt: new Date().toISOString() };
+    await database.storyBeats.update(id, patch);
+    await syncPlanning(syncUpdateStoryBeat, userId, datasetId, id, patch);
     return await database.storyBeats.get(id);
   } catch (error) {
     console.error('Error updating story beat:', error);
@@ -523,11 +592,12 @@ export async function updateStoryBeat(id, updates, datasetId) {
 /**
  * Delete a story beat
  */
-export async function deleteStoryBeat(id, datasetId) {
+export async function deleteStoryBeat(id, datasetId, userId = null) {
   try {
     const database = getDatabase(datasetId);
     await database.storyBeats.delete(id);
     console.log('📍 Story beat deleted:', id);
+    await syncPlanning(syncDeleteStoryBeat, userId, datasetId, id);
     return true;
   } catch (error) {
     console.error('Error deleting story beat:', error);
@@ -538,16 +608,15 @@ export async function deleteStoryBeat(id, datasetId) {
 /**
  * Reorder story beats
  */
-export async function reorderStoryBeats(storyPlanId, beatIds, datasetId) {
+export async function reorderStoryBeats(storyPlanId, beatIds, datasetId, userId = null) {
   try {
     const database = getDatabase(datasetId);
     const now = new Date().toISOString();
 
     for (let i = 0; i < beatIds.length; i++) {
-      await database.storyBeats.update(beatIds[i], {
-        order: i,
-        updatedAt: now
-      });
+      const patch = { order: i, updatedAt: now };
+      await database.storyBeats.update(beatIds[i], patch);
+      await syncPlanning(syncUpdateStoryBeat, userId, datasetId, beatIds[i], patch);
     }
 
     console.log('📍 Story beats reordered');
@@ -563,7 +632,7 @@ export async function reorderStoryBeats(storyPlanId, beatIds, datasetId) {
 /**
  * Create a scene plan
  */
-export async function createScenePlan(sceneData, datasetId) {
+export async function createScenePlan(sceneData, datasetId, userId = null) {
   try {
     const database = getDatabase(datasetId);
     const now = new Date().toISOString();
@@ -617,6 +686,7 @@ export async function createScenePlan(sceneData, datasetId) {
 
     const id = await database.scenePlans.add(scene);
     console.log('🎬 Scene plan created:', id);
+    await syncPlanning(syncAddScenePlan, userId, datasetId, id, { ...scene, id });
     return id;
   } catch (error) {
     console.error('Error creating scene plan:', error);
@@ -659,11 +729,12 @@ export async function getScenePlansByChapter(chapterId, datasetId) {
 /**
  * Update a scene plan
  */
-export async function updateScenePlan(id, updates, datasetId) {
+export async function updateScenePlan(id, updates, datasetId, userId = null) {
   try {
     const database = getDatabase(datasetId);
-    updates.updatedAt = new Date().toISOString();
-    await database.scenePlans.update(id, updates);
+    const patch = { ...updates, updatedAt: new Date().toISOString() };
+    await database.scenePlans.update(id, patch);
+    await syncPlanning(syncUpdateScenePlan, userId, datasetId, id, patch);
     return await database.scenePlans.get(id);
   } catch (error) {
     console.error('Error updating scene plan:', error);
@@ -674,11 +745,12 @@ export async function updateScenePlan(id, updates, datasetId) {
 /**
  * Delete a scene plan
  */
-export async function deleteScenePlan(id, datasetId) {
+export async function deleteScenePlan(id, datasetId, userId = null) {
   try {
     const database = getDatabase(datasetId);
     await database.scenePlans.delete(id);
     console.log('🎬 Scene plan deleted:', id);
+    await syncPlanning(syncDeleteScenePlan, userId, datasetId, id);
     return true;
   } catch (error) {
     console.error('Error deleting scene plan:', error);
@@ -689,16 +761,15 @@ export async function deleteScenePlan(id, datasetId) {
 /**
  * Reorder scene plans
  */
-export async function reorderScenePlans(storyPlanId, sceneIds, datasetId) {
+export async function reorderScenePlans(storyPlanId, sceneIds, datasetId, userId = null) {
   try {
     const database = getDatabase(datasetId);
     const now = new Date().toISOString();
 
     for (let i = 0; i < sceneIds.length; i++) {
-      await database.scenePlans.update(sceneIds[i], {
-        order: i,
-        updatedAt: now
-      });
+      const patch = { order: i, updatedAt: now };
+      await database.scenePlans.update(sceneIds[i], patch);
+      await syncPlanning(syncUpdateScenePlan, userId, datasetId, sceneIds[i], patch);
     }
 
     console.log('🎬 Scene plans reordered');
@@ -714,7 +785,7 @@ export async function reorderScenePlans(storyPlanId, sceneIds, datasetId) {
 /**
  * Create a character arc
  */
-export async function createCharacterArc(arcData, datasetId) {
+export async function createCharacterArc(arcData, datasetId, userId = null) {
   try {
     const database = getDatabase(datasetId);
     const now = new Date().toISOString();
@@ -745,6 +816,7 @@ export async function createCharacterArc(arcData, datasetId) {
 
     const id = await database.characterArcs.add(arc);
     console.log('👤 Character arc created:', id);
+    await syncPlanning(syncAddCharacterArc, userId, datasetId, id, { ...arc, id });
     return id;
   } catch (error) {
     console.error('Error creating character arc:', error);
@@ -788,11 +860,12 @@ export async function getCharacterArcByCharacter(storyPlanId, characterId, datas
 /**
  * Update a character arc
  */
-export async function updateCharacterArc(id, updates, datasetId) {
+export async function updateCharacterArc(id, updates, datasetId, userId = null) {
   try {
     const database = getDatabase(datasetId);
-    updates.updatedAt = new Date().toISOString();
-    await database.characterArcs.update(id, updates);
+    const patch = { ...updates, updatedAt: new Date().toISOString() };
+    await database.characterArcs.update(id, patch);
+    await syncPlanning(syncUpdateCharacterArc, userId, datasetId, id, patch);
     return await database.characterArcs.get(id);
   } catch (error) {
     console.error('Error updating character arc:', error);
@@ -803,21 +876,21 @@ export async function updateCharacterArc(id, updates, datasetId) {
 /**
  * Add a milestone to a character arc
  */
-export async function addCharacterMilestone(arcId, milestone, datasetId) {
+export async function addCharacterMilestone(arcId, milestone, datasetId, userId = null) {
   try {
     const database = getDatabase(datasetId);
     const arc = await database.characterArcs.get(arcId);
     if (!arc) throw new Error('Character arc not found');
 
-    const milestones = [...(arc.milestones || []), {
-      id: Date.now(),
-      ...milestone
-    }];
+    const existing = arc.milestones || [];
+    // Date.now() collides when two milestones are added in the same tick.
+    const nextId = existing.reduce((max, m) => Math.max(max, Number(m.id) || 0), 0) + 1;
 
-    await database.characterArcs.update(arcId, {
-      milestones,
-      updatedAt: new Date().toISOString()
-    });
+    const milestones = [...existing, { id: nextId, ...milestone }];
+
+    const patch = { milestones, updatedAt: new Date().toISOString() };
+    await database.characterArcs.update(arcId, patch);
+    await syncPlanning(syncUpdateCharacterArc, userId, datasetId, arcId, patch);
 
     console.log('👤 Milestone added to character arc:', arcId);
     return milestones;
@@ -830,11 +903,12 @@ export async function addCharacterMilestone(arcId, milestone, datasetId) {
 /**
  * Delete a character arc
  */
-export async function deleteCharacterArc(id, datasetId) {
+export async function deleteCharacterArc(id, datasetId, userId = null) {
   try {
     const database = getDatabase(datasetId);
     await database.characterArcs.delete(id);
     console.log('👤 Character arc deleted:', id);
+    await syncPlanning(syncDeleteCharacterArc, userId, datasetId, id);
     return true;
   } catch (error) {
     console.error('Error deleting character arc:', error);
@@ -847,7 +921,7 @@ export async function deleteCharacterArc(id, datasetId) {
 /**
  * Create a plot thread
  */
-export async function createPlotThread(threadData, datasetId) {
+export async function createPlotThread(threadData, datasetId, userId = null) {
   try {
     const database = getDatabase(datasetId);
     const now = new Date().toISOString();
@@ -878,6 +952,7 @@ export async function createPlotThread(threadData, datasetId) {
 
     const id = await database.plotThreads.add(thread);
     console.log('🧵 Plot thread created:', id);
+    await syncPlanning(syncAddPlotThread, userId, datasetId, id, { ...thread, id });
     return id;
   } catch (error) {
     console.error('Error creating plot thread:', error);
@@ -904,11 +979,12 @@ export async function getPlotThreads(storyPlanId, datasetId) {
 /**
  * Update a plot thread
  */
-export async function updatePlotThread(id, updates, datasetId) {
+export async function updatePlotThread(id, updates, datasetId, userId = null) {
   try {
     const database = getDatabase(datasetId);
-    updates.updatedAt = new Date().toISOString();
-    await database.plotThreads.update(id, updates);
+    const patch = { ...updates, updatedAt: new Date().toISOString() };
+    await database.plotThreads.update(id, patch);
+    await syncPlanning(syncUpdatePlotThread, userId, datasetId, id, patch);
     return await database.plotThreads.get(id);
   } catch (error) {
     console.error('Error updating plot thread:', error);
@@ -919,21 +995,21 @@ export async function updatePlotThread(id, updates, datasetId) {
 /**
  * Add a plant (foreshadowing) to a thread
  */
-export async function addThreadPlant(threadId, plant, datasetId) {
+export async function addThreadPlant(threadId, plant, datasetId, userId = null) {
   try {
     const database = getDatabase(datasetId);
     const thread = await database.plotThreads.get(threadId);
     if (!thread) throw new Error('Plot thread not found');
 
-    const plants = [...(thread.plants || []), {
-      id: Date.now(),
-      ...plant
-    }];
+    const existing = thread.plants || [];
+    // Date.now() collides when two plants are added in the same tick.
+    const nextId = existing.reduce((max, p) => Math.max(max, Number(p.id) || 0), 0) + 1;
 
-    await database.plotThreads.update(threadId, {
-      plants,
-      updatedAt: new Date().toISOString()
-    });
+    const plants = [...existing, { id: nextId, ...plant }];
+
+    const patch = { plants, updatedAt: new Date().toISOString() };
+    await database.plotThreads.update(threadId, patch);
+    await syncPlanning(syncUpdatePlotThread, userId, datasetId, threadId, patch);
 
     console.log('🧵 Plant added to thread:', threadId);
     return plants;
@@ -946,11 +1022,12 @@ export async function addThreadPlant(threadId, plant, datasetId) {
 /**
  * Delete a plot thread
  */
-export async function deletePlotThread(id, datasetId) {
+export async function deletePlotThread(id, datasetId, userId = null) {
   try {
     const database = getDatabase(datasetId);
     await database.plotThreads.delete(id);
     console.log('🧵 Plot thread deleted:', id);
+    await syncPlanning(syncDeletePlotThread, userId, datasetId, id);
     return true;
   } catch (error) {
     console.error('Error deleting plot thread:', error);

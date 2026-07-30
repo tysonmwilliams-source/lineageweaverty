@@ -36,7 +36,10 @@ import {
   deleteRelationship,
   calculateAge,
   isEligibleForCeremony,
-  canFoundCadetHouse
+  canFoundCadetHouse,
+  exportFullDatabase,
+  importFullDatabase,
+  FULL_BACKUP_FORMAT
 } from './database';
 
 // Use a unique dataset ID for each test to ensure isolation
@@ -555,6 +558,76 @@ describe('Database Service', () => {
         await deleteDatabaseForDataset(dataset1);
         await deleteDatabaseForDataset(dataset2);
       }
+    });
+  });
+
+  describe('Full Backup', () => {
+    it('should export every table, not just the core four', async () => {
+      const db = getDatabase(TEST_DATASET_ID);
+      await addPerson({ firstName: 'Aldric', lastName: 'Wilfrey' }, TEST_DATASET_ID);
+      await db.heraldry.add({ name: 'Arms of Test', blazon: 'Or, a lion gules' });
+      await db.dignities.add({ name: 'Duke of Test', dignityClass: 'ducal' });
+
+      const backup = await exportFullDatabase(TEST_DATASET_ID);
+
+      expect(backup.format).toBe(FULL_BACKUP_FORMAT);
+      expect(backup.tables.people).toHaveLength(1);
+      // These were silently dropped by the previous export.
+      expect(backup.tables.heraldry).toHaveLength(1);
+      expect(backup.tables.dignities).toHaveLength(1);
+      // syncQueue is transient and must not be captured.
+      expect(backup.tables.syncQueue).toBeUndefined();
+    });
+
+    it('should preserve parentHouseId so cadet branches survive a round trip', async () => {
+      const opts = { datasetId: TEST_DATASET_ID, skipCodexCreation: true };
+      const parentId = await addHouse({ houseName: 'House Wilfrey' }, opts);
+      await addHouse(
+        { houseName: 'House Wilfrey of Bramblehall', parentHouseId: parentId },
+        opts
+      );
+
+      const backup = await exportFullDatabase(TEST_DATASET_ID);
+      await deleteDatabaseForDataset(TEST_DATASET_ID);
+      await importFullDatabase(backup, TEST_DATASET_ID);
+
+      const houses = await getAllHouses(TEST_DATASET_ID);
+      const cadet = houses.find(h => h.houseName === 'House Wilfrey of Bramblehall');
+      expect(cadet).toBeDefined();
+      expect(cadet.parentHouseId).toBe(parentId);
+    });
+
+    it('should round-trip people, houses and relationships with ids intact', async () => {
+      const houseId = await addHouse(
+        { houseName: 'House Test' },
+        { datasetId: TEST_DATASET_ID, skipCodexCreation: true }
+      );
+      const p1 = await addPerson({ firstName: 'Parent', lastName: 'Test', houseId }, TEST_DATASET_ID);
+      const p2 = await addPerson({ firstName: 'Child', lastName: 'Test', houseId }, TEST_DATASET_ID);
+      await addRelationship(
+        { person1Id: p1, person2Id: p2, relationshipType: 'parent' },
+        TEST_DATASET_ID
+      );
+
+      const backup = await exportFullDatabase(TEST_DATASET_ID);
+      await deleteDatabaseForDataset(TEST_DATASET_ID);
+      const { restored } = await importFullDatabase(backup, TEST_DATASET_ID);
+
+      expect(restored.people).toBe(2);
+      const people = await getAllPeople(TEST_DATASET_ID);
+      expect(people.map(p => p.id).sort()).toEqual([p1, p2].sort());
+      expect(people.every(p => p.houseId === houseId)).toBe(true);
+
+      const rels = await getAllRelationships(TEST_DATASET_ID);
+      expect(rels).toHaveLength(1);
+      expect(rels[0].person1Id).toBe(p1);
+      expect(rels[0].person2Id).toBe(p2);
+    });
+
+    it('should reject a file that is not a full backup', async () => {
+      await expect(
+        importFullDatabase({ people: [], houses: [] }, TEST_DATASET_ID)
+      ).rejects.toThrow(/not a lineageweaver full backup/i);
     });
   });
 });

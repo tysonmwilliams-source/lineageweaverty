@@ -849,20 +849,23 @@ export async function deleteHouse(id, options = {}) {
     const house = await database.houses.get(id);
 
     // Clear houseId for all people belonging to this house
-    // This prevents orphaned references when a house is deleted
+    // This prevents orphaned references when a house is deleted.
+    // `houseId` is indexed, so use the index rather than a full table scan.
     const peopleInHouse = await database.people
-      .filter(p => p.houseId === id)
+      .where('houseId')
+      .equals(id)
       .toArray();
 
+    const clearedPersonIds = peopleInHouse.map(p => p.id);
+
     if (peopleInHouse.length > 0) {
-      for (const person of peopleInHouse) {
-        await database.people.update(person.id, { houseId: null });
-      }
+      await database.people.where('houseId').equals(id).modify({ houseId: null });
       clearedPeopleCount = peopleInHouse.length;
       console.log(`Cleared houseId for ${clearedPeopleCount} people from house ${id}`);
     }
 
     // Cascade delete Codex entry if it exists (unless explicitly skipped)
+    let deletedCodexEntryId = null;
     if (!options.skipCodexDeletion) {
       try {
         // Use dynamic import to avoid circular dependency
@@ -871,7 +874,8 @@ export async function deleteHouse(id, options = {}) {
         // Find and delete the associated Codex entry
         const codexEntry = await getEntryByHouseId(id, options.datasetId);
         if (codexEntry) {
-          await deleteEntry(codexEntry.id, options.datasetId);
+          await deleteEntry(codexEntry.id, options.datasetId, options.userId);
+          deletedCodexEntryId = codexEntry.id;
           console.log('📚 Cascade deleted Codex entry for house:', codexEntry.id);
         }
       } catch (codexError) {
@@ -888,7 +892,10 @@ export async function deleteHouse(id, options = {}) {
       notifyContextChange('house', 'delete', house, options.datasetId);
     }
 
-    return { clearedPeopleCount };
+    // Callers need the affected ids so they can propagate the cascade to the
+    // cloud and to React state. Without them, the next download restored every
+    // member's houseId and the orphaned Codex entry.
+    return { clearedPeopleCount, clearedPersonIds, deletedCodexEntryId };
   } catch (error) {
     console.error('Error deleting house:', error);
     throw error;
@@ -1203,6 +1210,108 @@ export async function foundCadetHouse(ceremonyData, datasetId) {
   }
 }
 
+// ==================== FULL BACKUP ====================
+
+/**
+ * Tables excluded from a full backup.
+ *
+ * `syncQueue` is transient bookkeeping and restoring it would replay stale
+ * operations. The `context*` tables are a derived search/context index that
+ * contextService regenerates from the primary data.
+ */
+const BACKUP_EXCLUDED_TABLES = new Set([
+  'syncQueue',
+  'contextRegistry',
+  'contextFiles',
+  'contextLog'
+]);
+
+export const FULL_BACKUP_FORMAT = 'lineageweaver-full-backup';
+export const FULL_BACKUP_FORMAT_VERSION = 1;
+
+/**
+ * Dump every table in a dataset, verbatim.
+ *
+ * Tables are enumerated from the live Dexie schema rather than a hand-written
+ * list, and rows are copied whole rather than field-whitelisted. The previous
+ * export covered 4 of 26 tables and dropped fields within those four (notably
+ * `parentHouseId`, which flattened every cadet branch on restore) while the UI
+ * described it as "a complete backup".
+ *
+ * @param {string} [datasetId]
+ * @returns {Promise<Object>} Backup envelope with a `tables` map
+ */
+export async function exportFullDatabase(datasetId) {
+  const database = getDatabase(datasetId);
+
+  const tables = {};
+  const counts = {};
+
+  for (const table of database.tables) {
+    if (BACKUP_EXCLUDED_TABLES.has(table.name)) continue;
+    const rows = await table.toArray();
+    tables[table.name] = rows;
+    counts[table.name] = rows.length;
+  }
+
+  return {
+    format: FULL_BACKUP_FORMAT,
+    formatVersion: FULL_BACKUP_FORMAT_VERSION,
+    schemaVersion: database.verno,
+    exportDate: new Date().toISOString(),
+    datasetId: datasetId || 'default',
+    counts,
+    tables
+  };
+}
+
+/**
+ * Restore a full backup produced by exportFullDatabase().
+ *
+ * Runs inside a single transaction so a mid-import failure rolls back rather
+ * than leaving a half-populated world. Unknown tables in the file are skipped
+ * (forward compatibility) and reported.
+ *
+ * @param {Object} backup - Parsed backup envelope
+ * @param {string} [datasetId]
+ * @param {Object} [options]
+ * @param {boolean} [options.replace=true] - Clear each table before writing
+ * @returns {Promise<Object>} { restored: {table: count}, skipped: string[] }
+ */
+export async function importFullDatabase(backup, datasetId, options = {}) {
+  const { replace = true } = options;
+
+  if (!backup || backup.format !== FULL_BACKUP_FORMAT || !backup.tables) {
+    throw new Error('Not a Lineageweaver full backup file');
+  }
+
+  const database = getDatabase(datasetId);
+  const known = new Map(database.tables.map(t => [t.name, t]));
+
+  const incoming = Object.keys(backup.tables).filter(
+    name => known.has(name) && !BACKUP_EXCLUDED_TABLES.has(name)
+  );
+  const skipped = Object.keys(backup.tables).filter(name => !incoming.includes(name));
+
+  const restored = {};
+
+  await database.transaction('rw', incoming.map(name => known.get(name)), async () => {
+    for (const name of incoming) {
+      const rows = backup.tables[name] || [];
+      if (replace) await known.get(name).clear();
+      if (rows.length > 0) await known.get(name).bulkPut(rows);
+      restored[name] = rows.length;
+    }
+  });
+
+  console.log('📦 Full backup restored:', restored);
+  if (skipped.length > 0) {
+    console.warn('📦 Skipped unknown tables in backup:', skipped);
+  }
+
+  return { restored, skipped };
+}
+
 // ==================== DELETE ALL DATA ====================
 
 /**
@@ -1231,8 +1340,15 @@ export async function deleteAllData(datasetId, options = {}) {
     await database.codexEntries.clear();
     await database.codexLinks.clear();
 
-    // Clear other tables
-    await database.acknowledgedDuplicates.clear();
+    // `acknowledgedDuplicates` and `bugs` are local-only: neither appears in
+    // syncAllToCloud or downloadAllFromCloud. Clearing them on the cloud-restore
+    // path (which is most calls) destroyed them permanently with nothing to
+    // restore from, so they are only cleared for a deliberate user-initiated
+    // wipe, which passes includeLocalOnly.
+    if (options.includeLocalOnly) {
+      await database.acknowledgedDuplicates.clear();
+      if (database.bugs) await database.bugs.clear();
+    }
 
     // Clear heraldry tables if they exist
     if (database.heraldry) await database.heraldry.clear();
@@ -1242,9 +1358,6 @@ export async function deleteAllData(datasetId, options = {}) {
     if (database.dignities) await database.dignities.clear();
     if (database.dignityTenures) await database.dignityTenures.clear();
     if (database.dignityLinks) await database.dignityLinks.clear();
-
-    // Clear bugs table if it exists
-    if (database.bugs) await database.bugs.clear();
 
     // Clear household roles table if it exists
     if (database.householdRoles) await database.householdRoles.clear();

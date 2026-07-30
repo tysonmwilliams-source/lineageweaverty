@@ -153,43 +153,44 @@ export default function WritingEditor() {
 
   // Save chapter content
   const saveChapterContent = useCallback(async (data) => {
-    if (!activeChapterId || !data) return;
+    // Write to the chapter the content was captured from, NOT the currently
+    // selected one — a debounced save can land after the user switched away.
+    const targetChapterId = data?.chapterId;
+    if (!targetChapterId || !data) return;
 
     const datasetId = activeDataset?.id;
     const writingId = parseInt(id);
 
-    await updateChapter(activeChapterId, {
+    const contentFields = {
       content: data.json,
       contentHtml: data.html,
       contentPlainText: data.text,
       wordCount: data.wordCount
-    }, datasetId);
+    };
+
+    await updateChapter(targetChapterId, contentFields, datasetId);
 
     // Extract and sync wiki-links
     const wikiLinks = extractWikiLinksFromContent(data.json);
-    await syncChapterLinks(activeChapterId, writingId, wikiLinks, datasetId);
+    await syncChapterLinks(targetChapterId, writingId, wikiLinks, datasetId, user?.uid);
 
     // Sync to cloud
     if (user && activeDataset) {
-      syncUpdateChapter(user.uid, datasetId, activeChapterId, {
-        content: data.json,
-        contentHtml: data.html,
-        contentPlainText: data.text,
-        wordCount: data.wordCount
-      });
+      syncUpdateChapter(user.uid, datasetId, targetChapterId, contentFields);
     }
 
     // Update local state - ONLY update wordCount, not content
     // The editor already has the content, and updating content in state
     // triggers TipTapEditor's content sync effect, causing an infinite loop
-    setActiveChapter(prev => ({
-      ...prev,
-      wordCount: data.wordCount
-    }));
+    setActiveChapter(prev =>
+      prev && prev.id === targetChapterId
+        ? { ...prev, wordCount: data.wordCount }
+        : prev
+    );
     setChapters(prev => prev.map(ch =>
-      ch.id === activeChapterId ? { ...ch, wordCount: data.wordCount } : ch
+      ch.id === targetChapterId ? { ...ch, wordCount: data.wordCount } : ch
     ));
-  }, [id, activeChapterId, user, activeDataset]);
+  }, [id, user, activeDataset]);
 
   // Auto-save hook
   const { isSaving, lastSaved, saveNow, hasUnsavedChanges } = useAutoSave({
@@ -261,9 +262,16 @@ export default function WritingEditor() {
   }, [activeChapterId, activeDataset?.id]);
 
   // Handle chapter selection
-  const handleSelectChapter = useCallback((chapterId) => {
+  const handleSelectChapter = useCallback(async (chapterId) => {
+    if (chapterId === activeChapterId) return;
+    // Flush any pending edit to the outgoing chapter before switching, so the
+    // debounce window can never straddle a chapter change.
+    if (pendingSaveData) {
+      await saveNow();
+      setPendingSaveData(null);
+    }
     setActiveChapterId(chapterId);
-  }, []);
+  }, [activeChapterId, pendingSaveData, saveNow]);
 
   // Handle adding a new chapter
   const handleAddChapter = useCallback(async () => {
@@ -319,7 +327,10 @@ export default function WritingEditor() {
     const text = editorInstance.getText();
     const wordCount = editorInstance.storage.characterCount?.words() || 0;
 
-    setPendingSaveData({ json, html, text, wordCount });
+    // Stamp the chapter this content belongs to. The debounced save may resolve
+    // after the user has already switched chapters, so the payload must carry
+    // its own target rather than relying on whatever activeChapterId is by then.
+    setPendingSaveData({ chapterId: activeChapterId, json, html, text, wordCount });
   }, [activeChapterId]);
 
   // Handle wiki-link insertion - triggers the autocomplete

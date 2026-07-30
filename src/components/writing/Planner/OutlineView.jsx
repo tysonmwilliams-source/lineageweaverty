@@ -28,6 +28,7 @@ import {
 import { getChaptersByWriting } from '../../../services/chapterService';
 import { getPerson } from '../../../services/database';
 import { useDataset } from '../../../contexts/DatasetContext';
+import { useAuth } from '../../../contexts/AuthContext';
 import './OutlineView.css';
 
 // Animation variants
@@ -44,6 +45,8 @@ function OutlineView({
   onClose
 }) {
   const { activeDataset } = useDataset();
+  const { user } = useAuth();
+  const userId = user?.uid || null;
 
   // State
   const [plan, setPlan] = useState(null);
@@ -170,7 +173,7 @@ function OutlineView({
         chapterId: chapterId === 'unassigned' ? null : chapterId,
         title: newSceneTitle.trim(),
         status: 'idea'
-      }, activeDataset?.id);
+      }, activeDataset?.id, userId);
 
       setNewSceneTitle('');
       setAddingSceneTo(null);
@@ -186,7 +189,7 @@ function OutlineView({
     if (!confirm('Delete this scene?')) return;
 
     try {
-      await deleteScenePlan(sceneId, activeDataset?.id);
+      await deleteScenePlan(sceneId, activeDataset?.id, userId);
       await loadData();
     } catch (error) {
       console.error('Error deleting scene:', error);

@@ -30,11 +30,18 @@ export default function useAutoSave({
   const timeoutRef = useRef(null);
   const lastSavedDataRef = useRef(null);
   const onSaveRef = useRef(onSave);
+  const dataRef = useRef(data);
 
   // Keep onSave ref up to date
   useEffect(() => {
     onSaveRef.current = onSave;
   }, [onSave]);
+
+  // Keep the latest data in a ref so the unmount handler can read it
+  // without needing `data` in its dependency array (see below).
+  useEffect(() => {
+    dataRef.current = data;
+  }, [data]);
 
   // Perform save
   const performSave = useCallback(async (dataToSave) => {
@@ -92,19 +99,27 @@ export default function useAutoSave({
     };
   }, [data, delay, enabled, performSave]);
 
-  // Save on unmount if there are unsaved changes
+  // Save on unmount if there are unsaved changes.
+  //
+  // The dependency array MUST stay empty. With `[data]` here React runs this
+  // cleanup before every re-run — i.e. on every keystroke — which fired an
+  // immediate save alongside the debounced one and defeated the debounce
+  // entirely. Reading the latest value from dataRef keeps this a true
+  // unmount-only handler.
   useEffect(() => {
     return () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
       }
-      // Final save on unmount
-      const dataStr = JSON.stringify(data);
+      const latest = dataRef.current;
+      if (!latest) return;
+      const dataStr = JSON.stringify(latest);
       if (dataStr !== lastSavedDataRef.current && onSaveRef.current) {
-        onSaveRef.current(data);
+        onSaveRef.current(latest);
       }
     };
-  }, [data]);
+  }, []);
 
   return {
     isSaving,

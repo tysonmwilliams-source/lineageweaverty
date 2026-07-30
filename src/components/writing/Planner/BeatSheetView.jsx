@@ -30,6 +30,7 @@ import {
 } from '../../../services/planningService';
 import { suggestBeatContent } from '../../../services/planningAIService';
 import { useDataset } from '../../../contexts/DatasetContext';
+import { useAuth } from '../../../contexts/AuthContext';
 import './BeatSheetView.css';
 
 // Animation variants
@@ -68,6 +69,8 @@ function BeatSheetView({
 }) {
   const { activeDataset } = useDataset();
   const datasetId = propDatasetId || activeDataset?.id;
+  const { user } = useAuth();
+  const userId = user?.uid || null;
 
   // State
   const [plan, setPlan] = useState(null);
@@ -178,7 +181,7 @@ function BeatSheetView({
         ...editForm,
         targetWordCount: editForm.targetWordCount ? parseInt(editForm.targetWordCount) : null,
         updatedAt: new Date().toISOString()
-      }, datasetId);
+      }, datasetId, userId);
 
       setEditingBeat(null);
       setEditForm({});
@@ -206,7 +209,7 @@ function BeatSheetView({
         actNumber: parseInt(newBeatForm.actNumber),
         beatType: 'custom',
         status: 'planned'
-      }, datasetId);
+      }, datasetId, userId);
 
       setShowAddBeat(false);
       setNewBeatForm({ name: '', description: '', actNumber: 2 });
@@ -222,7 +225,7 @@ function BeatSheetView({
     if (!confirm('Delete this beat? This cannot be undone.')) return;
 
     try {
-      await deleteStoryBeat(beatId, datasetId);
+      await deleteStoryBeat(beatId, datasetId, userId);
       await loadData();
     } catch (error) {
       console.error('Error deleting beat:', error);
@@ -235,7 +238,7 @@ function BeatSheetView({
       await updateStoryBeat(beatId, {
         status: newStatus,
         updatedAt: new Date().toISOString()
-      }, datasetId);
+      }, datasetId, userId);
       await loadData();
     } catch (error) {
       console.error('Error updating beat status:', error);
@@ -260,7 +263,7 @@ function BeatSheetView({
           description: suggestion.description,
           notes: suggestion.notes || beat.notes,
           updatedAt: new Date().toISOString()
-        }, datasetId);
+        }, datasetId, userId);
         await loadData();
       }
     } catch (error) {

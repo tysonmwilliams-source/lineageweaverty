@@ -5,6 +5,7 @@ import { getEntry, getAllLinksForEntry, getEntry as getBacklinkEntry, updateEntr
 import { getHeraldry } from '../services/heraldryService';
 import { getDatabase } from '../services/database';
 import { useDataset } from '../contexts/DatasetContext';
+import { useAuth } from '../contexts/AuthContext';
 import { parseWikiLinks, getContextSnippet } from '../utils/wikiLinkParser';
 import { getPrimaryEpithet } from '../utils/epithetUtils';
 import { sanitizeSVG, sanitizeHTML } from '../utils/sanitize';
@@ -70,6 +71,7 @@ function CodexEntryView() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { activeDataset } = useDataset();
+  const { user } = useAuth();
 
   const [entry, setEntry] = useState(null);
   const [renderedContent, setRenderedContent] = useState('');
@@ -268,13 +270,13 @@ function CodexEntryView() {
     if (!window.confirm(`Delete "${entry.title}"?\n\nThis action cannot be undone.`)) return;
 
     try {
-      await deleteEntry(parseInt(id), activeDataset?.id);
+      await deleteEntry(parseInt(id), activeDataset?.id, user?.uid);
       navigate('/codex');
     } catch (err) {
       console.error('Error deleting entry:', err);
       alert('Failed to delete entry: ' + err.message);
     }
-  }, [entry, id, activeDataset?.id, navigate]);
+  }, [entry, id, activeDataset?.id, user, navigate]);
 
   // Move mysteria entry to Dignities & Titles subsection
   const handleMoveToTitles = useCallback(async () => {

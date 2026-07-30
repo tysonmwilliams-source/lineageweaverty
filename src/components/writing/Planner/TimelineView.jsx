@@ -18,6 +18,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Icon from '../../icons';
+import { useAuth } from '../../../contexts/AuthContext';
 import {
   getStoryPlanComplete,
   getScenePlans,
@@ -64,6 +65,8 @@ function TimelineView({
   onBeatSelect,
   onClose
 }) {
+  const { user } = useAuth();
+  const userId = user?.uid || null;
   const timelineRef = useRef(null);
   const [planData, setPlanData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -209,7 +212,7 @@ function TimelineView({
         try {
           await updateScenePlan(scene.id, {
             linkedBeats: [closestBeat.beat.id]
-          }, datasetId);
+          }, datasetId, userId);
 
           // Refresh data
           const data = await getStoryPlanComplete(storyPlanId, datasetId);

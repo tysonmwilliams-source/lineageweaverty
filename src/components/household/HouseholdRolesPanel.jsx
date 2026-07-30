@@ -19,6 +19,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Icon from '../icons/Icon';
 import ActionButton from '../shared/ActionButton';
 import HouseholdRoleForm from './HouseholdRoleForm';
+import { useAuth } from '../../contexts/AuthContext';
+import { useDataset } from '../../contexts/DatasetContext';
 import {
   getRolesForHouse,
   deleteHouseholdRole,
@@ -72,6 +74,10 @@ function HouseholdRolesPanel({
   defaultExpanded = false,
   readOnly = false
 }) {
+  const { user } = useAuth();
+  const { activeDataset } = useDataset();
+  const datasetId = activeDataset?.id || 'default';
+
   // State
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -85,7 +91,7 @@ function HouseholdRolesPanel({
 
     try {
       setLoading(true);
-      const houseRoles = await getRolesForHouse(houseId);
+      const houseRoles = await getRolesForHouse(houseId, datasetId);
       setRoles(houseRoles);
     } catch (error) {
       if (import.meta.env.DEV) {
@@ -94,7 +100,7 @@ function HouseholdRolesPanel({
     } finally {
       setLoading(false);
     }
-  }, [houseId]);
+  }, [houseId, datasetId]);
 
   useEffect(() => {
     loadRoles();
@@ -154,7 +160,7 @@ function HouseholdRolesPanel({
     if (!confirm('Remove this role from the household?')) return;
 
     try {
-      await deleteHouseholdRole(roleId);
+      await deleteHouseholdRole(roleId, user?.uid, datasetId);
       loadRoles();
       onRoleChange?.();
     } catch (error) {
@@ -162,11 +168,11 @@ function HouseholdRolesPanel({
         console.error('Error deleting role:', error);
       }
     }
-  }, [loadRoles, onRoleChange]);
+  }, [loadRoles, onRoleChange, user, datasetId]);
 
   const handleVacateRole = useCallback(async (roleId) => {
     try {
-      await vacateRole(roleId);
+      await vacateRole(roleId, user?.uid, datasetId);
       loadRoles();
       onRoleChange?.();
     } catch (error) {
@@ -174,7 +180,7 @@ function HouseholdRolesPanel({
         console.error('Error vacating role:', error);
       }
     }
-  }, [loadRoles, onRoleChange]);
+  }, [loadRoles, onRoleChange, user, datasetId]);
 
   // Render role item
   const renderRoleItem = (role) => {

@@ -34,11 +34,8 @@ import ExternalChargeRenderer, {
 import { useAuth } from '../contexts/AuthContext';
 import { useDataset } from '../contexts/DatasetContext';
 import {
-  syncAddHeraldry,
-  syncUpdateHeraldry,
   syncUpdateHouse,
-  syncAddCodexEntry,
-  syncUpdateHeraldry as syncUpdateHeraldryForCodex
+  syncAddCodexEntry
 } from '../services/dataSyncService';
 import './HeraldryCreator.css';
 
@@ -1625,21 +1622,17 @@ function HeraldryCreator() {
       
       let heraldryId;
 
+      // createHeraldry/updateHeraldry sync internally when given userId +
+      // datasetId. The explicit sync* calls that used to sit here passed their
+      // arguments in the wrong order — (userId, id, data, datasetId) against a
+      // (userId, datasetId, id, data) signature — so datasetId received a
+      // numeric id and getDatabase() spun up a phantom `LineageweaverDB_<id>`
+      // per record. They were redundant as well as wrong.
       if (isEditMode) {
         await updateHeraldry(parseInt(id), heraldryData, user?.uid, datasetId);
         heraldryId = parseInt(id);
-
-        // ☁️ Sync update to cloud
-        if (user?.uid) {
-          syncUpdateHeraldry(user.uid, heraldryId, heraldryData, datasetId);
-        }
       } else {
         heraldryId = await createHeraldry(heraldryData, user?.uid, datasetId);
-
-        // ☁️ Sync new heraldry to cloud
-        if (user?.uid) {
-          syncAddHeraldry(user.uid, heraldryId, { ...heraldryData, id: heraldryId }, datasetId);
-        }
       }
       
       // ═══════════════════════════════════════════════════════════════════════
@@ -1658,13 +1651,13 @@ function HeraldryCreator() {
           
           const codexEntryId = await createEntry(codexEntryData, datasetId);
 
-          // Update heraldry with codex link (bidirectional)
+          // Update heraldry with codex link (bidirectional).
+          // This syncs internally — no separate sync call needed.
           await updateHeraldry(heraldryId, { codexEntryId: codexEntryId }, user?.uid, datasetId);
 
-          // ☁️ Sync to cloud
+          // codexService has no internal sync, so this one is required.
           if (user?.uid) {
-            syncAddCodexEntry(user.uid, codexEntryId, { ...codexEntryData, id: codexEntryId }, datasetId);
-            syncUpdateHeraldryForCodex(user.uid, heraldryId, { codexEntryId: codexEntryId }, datasetId);
+            syncAddCodexEntry(user.uid, datasetId, codexEntryId, { ...codexEntryData, id: codexEntryId });
           }
           
           console.log(`✅ Auto-created Codex entry ${codexEntryId} for heraldry "${name.trim()}"`);

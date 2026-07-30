@@ -220,7 +220,9 @@ function HouseForm({
     try {
       const datasetId = activeDataset?.id;
       if (heraldryLinkId) {
-        await unlinkHeraldry(heraldryLinkId, datasetId);
+        // Signature is (linkId, userId, datasetId) — passing datasetId in the
+        // userId slot silently unlinked from the default world and skipped sync.
+        await unlinkHeraldry(heraldryLinkId, user?.uid, datasetId);
       }
 
       setLinkedHeraldry(null);

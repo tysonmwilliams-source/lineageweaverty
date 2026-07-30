@@ -159,7 +159,7 @@ export async function processCodexEntries(entries, options = {}) {
       // Cloud sync
       if (userId) {
         try {
-          await syncAddCodexEntry(userId, id, { ...entryData, id });
+          await syncAddCodexEntry(userId, datasetId, id, { ...entryData, id });
         } catch (syncErr) {
           console.warn(`Cloud sync failed for codex entry "${item.title}":`, syncErr.message);
         }

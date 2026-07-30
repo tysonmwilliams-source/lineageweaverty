@@ -6,6 +6,7 @@
  */
 
 import { getDatabase } from './database';
+import { syncAddWritingLink, syncDeleteWritingLink } from './dataSyncService';
 
 // ==================== CONSTANTS ====================
 
@@ -165,28 +166,69 @@ export async function restoreWritingLink(data, datasetId) {
 }
 
 /**
- * Sync links for a chapter based on parsed content
- * Removes old links and creates new ones
+ * Identity of a wiki-link within a chapter, ignoring volatile fields
+ * (`context` and `position` shift whenever surrounding prose is edited).
+ */
+function linkSignature(link) {
+  return `${link.targetType}|${link.targetId}|${link.displayText || ''}`;
+}
+
+/**
+ * Sync links for a chapter based on parsed content.
+ *
+ * Diffs against what is already stored rather than deleting and recreating
+ * everything: on a typical edit nothing changes, so this writes nothing. The
+ * previous delete-all-then-recreate ran on every save and, with the cloud
+ * calls below, would have multiplied Firestore writes by the link count.
  *
  * @param {number} chapterId - Chapter ID
  * @param {number} writingId - Writing ID
  * @param {Array} parsedLinks - Array of { targetType, targetId, displayText, context, position }
  * @param {string} [datasetId] - Dataset ID
+ * @param {string} [userId] - Firebase uid; when present, changes are synced to the cloud
  */
-export async function syncChapterLinks(chapterId, writingId, parsedLinks, datasetId) {
-  // Delete existing links for this chapter
-  await deleteLinksByChapter(chapterId, datasetId);
+export async function syncChapterLinks(chapterId, writingId, parsedLinks, datasetId, userId = null) {
+  const existing = await getLinksByChapter(chapterId, datasetId);
 
-  // Create new links
-  for (const link of parsedLinks) {
-    await createWritingLink({
-      writingId,
-      chapterId,
-      ...link
-    }, datasetId);
+  // Bucket existing rows by signature so repeated links to the same entity
+  // are matched one-for-one rather than collapsed.
+  const existingBySignature = new Map();
+  for (const row of existing) {
+    const sig = linkSignature(row);
+    if (!existingBySignature.has(sig)) existingBySignature.set(sig, []);
+    existingBySignature.get(sig).push(row);
   }
 
-  console.log('Synced', parsedLinks.length, 'links for chapter', chapterId);
+  const toAdd = [];
+  for (const link of parsedLinks) {
+    const bucket = existingBySignature.get(linkSignature(link));
+    if (bucket && bucket.length > 0) {
+      // Retained. `context`/`position` may be marginally stale until the link
+      // itself changes; that is invisible in the sidebar snippet and saves a
+      // write on every save of every chapter.
+      bucket.shift();
+    } else {
+      toAdd.push(link);
+    }
+  }
+
+  // Whatever is left unmatched is no longer present in the prose.
+  const toDelete = Array.from(existingBySignature.values()).flat();
+
+  for (const row of toDelete) {
+    await deleteWritingLink(row.id, datasetId);
+    if (userId) await syncDeleteWritingLink(userId, datasetId, row.id);
+  }
+
+  for (const link of toAdd) {
+    const linkData = { writingId, chapterId, ...link };
+    const newId = await createWritingLink(linkData, datasetId);
+    if (userId) await syncAddWritingLink(userId, datasetId, newId, { ...linkData, id: newId });
+  }
+
+  if (import.meta.env.DEV && (toAdd.length || toDelete.length)) {
+    console.log(`Chapter ${chapterId} links: +${toAdd.length} -${toDelete.length}`);
+  }
 }
 
 /**

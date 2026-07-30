@@ -37,6 +37,7 @@ import {
   generateSynopsis
 } from '../../../services/planningAIService';
 import { useDataset } from '../../../contexts/DatasetContext';
+import { useAuth } from '../../../contexts/AuthContext';
 import './StoryPlannerDashboard.css';
 
 // Animation variants
@@ -66,6 +67,8 @@ function StoryPlannerDashboard({
   onClose
 }) {
   const { activeDataset } = useDataset();
+  const { user } = useAuth();
+  const userId = user?.uid || null;
 
   // State
   const [plan, setPlan] = useState(null);
@@ -132,7 +135,7 @@ function StoryPlannerDashboard({
         writingId,
         title: writingTitle || 'Story Plan',
         framework
-      }, activeDataset?.id);
+      }, activeDataset?.id, userId);
 
       await loadPlanData();
       setShowFrameworkPicker(false);
@@ -147,7 +150,7 @@ function StoryPlannerDashboard({
   const handleSavePremise = async () => {
     if (!plan) return;
     try {
-      await updateStoryPlan(plan.id, { premise: premiseText }, activeDataset?.id);
+      await updateStoryPlan(plan.id, { premise: premiseText }, activeDataset?.id, userId);
       setPlan(prev => ({ ...prev, premise: premiseText }));
       setEditingPremise(false);
     } catch (error) {
@@ -160,7 +163,7 @@ function StoryPlannerDashboard({
     if (!plan) return;
     setIsDeleting(true);
     try {
-      await deleteStoryPlan(plan.id, activeDataset?.id);
+      await deleteStoryPlan(plan.id, activeDataset?.id, userId);
       setPlan(null);
       setProgress(null);
       setBeats([]);

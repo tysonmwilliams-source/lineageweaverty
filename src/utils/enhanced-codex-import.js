@@ -51,7 +51,8 @@ export async function importCodexData(source, options = {}) {
     skipDuplicates = true,
     onProgress = null,
     validateOnly = false,
-    userId = null  // ☁️ Cloud sync: pass userId to sync imported entries
+    userId = null,  // ☁️ Cloud sync: pass userId to sync imported entries
+    datasetId = null // Which world to import into; defaults to the default DB
   } = options;
   
   console.log('📚 Starting enhanced codex import...');
@@ -87,7 +88,7 @@ export async function importCodexData(source, options = {}) {
   };
   
   // Get existing entries for duplicate detection
-  const existingEntries = skipDuplicates ? await getAllEntries() : [];
+  const existingEntries = skipDuplicates ? await getAllEntries(datasetId) : [];
   const existingTitles = new Set(existingEntries.map(e => e.title));
   
   // Calculate total for progress tracking
@@ -139,14 +140,14 @@ export async function importCodexData(source, options = {}) {
         
         // Import the entry
         try {
-          const id = await createEntry(item);
+          const id = await createEntry(item, datasetId);
           results[category.key].push({ title: item.title, id });
           console.log(`  ✓ Created: ${item.title} (ID: ${id})`);
-          
+
           // ☁️ CLOUD SYNC: Push to Firestore so entries persist across sessions
           if (userId) {
             try {
-              await syncAddCodexEntry(userId, id, { ...item, id });
+              await syncAddCodexEntry(userId, datasetId, id, { ...item, id });
               console.log(`  ☁️ Synced to cloud: ${item.title}`);
             } catch (syncErr) {
               console.warn(`  ⚠️ Cloud sync failed for ${item.title}:`, syncErr.message);

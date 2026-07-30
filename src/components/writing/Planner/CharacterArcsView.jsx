@@ -30,6 +30,7 @@ import {
 import { getAllPeople } from '../../../services/database';
 import { suggestCharacterArc } from '../../../services/planningAIService';
 import { useDataset } from '../../../contexts/DatasetContext';
+import { useAuth } from '../../../contexts/AuthContext';
 import './CharacterArcsView.css';
 
 // Animation variants
@@ -63,6 +64,8 @@ function CharacterArcsView({
 }) {
   const { activeDataset } = useDataset();
   const datasetId = propDatasetId || activeDataset?.id;
+  const { user } = useAuth();
+  const userId = user?.uid || null;
 
   // State
   const [characterArcs, setCharacterArcs] = useState([]);
@@ -146,7 +149,7 @@ function CharacterArcsView({
         characterId: parseInt(newArcCharacterId),
         arcType: 'positive',
         status: 'planned'
-      }, datasetId);
+      }, datasetId, userId);
 
       setShowAddArc(false);
       setNewArcCharacterId('');
@@ -178,7 +181,7 @@ function CharacterArcsView({
     if (!editingArc) return;
 
     try {
-      await updateCharacterArc(editingArc, editForm, datasetId);
+      await updateCharacterArc(editingArc, editForm, datasetId, userId);
       setEditingArc(null);
       setEditForm({});
       await loadData();
@@ -193,7 +196,7 @@ function CharacterArcsView({
     if (!confirm(`Delete ${getCharacterName(currentArc.characterId)}'s character arc? This cannot be undone.`)) return;
 
     try {
-      await deleteCharacterArc(currentArc.id, datasetId);
+      await deleteCharacterArc(currentArc.id, datasetId, userId);
       setSelectedArc(null);
       await loadData();
     } catch (error) {
@@ -211,7 +214,7 @@ function CharacterArcsView({
         internalShift: milestoneForm.internalShift.trim(),
         externalChange: milestoneForm.externalChange.trim(),
         sceneId: milestoneForm.sceneId ? parseInt(milestoneForm.sceneId) : null
-      }, datasetId);
+      }, datasetId, userId);
 
       setShowAddMilestone(false);
       setMilestoneForm({ description: '', internalShift: '', externalChange: '', sceneId: '' });
@@ -227,7 +230,7 @@ function CharacterArcsView({
 
     try {
       const updatedMilestones = currentArc.milestones.filter(m => m.id !== milestoneId);
-      await updateCharacterArc(currentArc.id, { milestones: updatedMilestones }, datasetId);
+      await updateCharacterArc(currentArc.id, { milestones: updatedMilestones }, datasetId, userId);
       await loadData();
     } catch (error) {
       console.error('Error removing milestone:', error);
@@ -255,7 +258,7 @@ function CharacterArcsView({
           ghost: suggestion.ghost || currentArc.ghost,
           want: suggestion.want || currentArc.want,
           need: suggestion.need || currentArc.need
-        }, datasetId);
+        }, datasetId, userId);
         await loadData();
       }
     } catch (error) {
@@ -271,7 +274,7 @@ function CharacterArcsView({
     if (!currentArc) return;
 
     try {
-      await updateCharacterArc(currentArc.id, { status: newStatus }, datasetId);
+      await updateCharacterArc(currentArc.id, { status: newStatus }, datasetId, userId);
       await loadData();
     } catch (error) {
       console.error('Error updating arc status:', error);
