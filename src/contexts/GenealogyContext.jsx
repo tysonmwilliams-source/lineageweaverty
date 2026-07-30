@@ -315,9 +315,12 @@ export function GenealogyProvider({ children }) {
   const updatePerson = useCallback(async (id, updates) => {
     try {
       const datasetId = activeDataset?.id || 'default';
-      await dbUpdatePerson(id, updates, datasetId);
-      
-      setPeople(prev => prev.map(person => 
+      // userId is passed so a rename can propagate to the linked Codex entry
+      // title *and* sync that title change; without it the Codex title would be
+      // corrected locally and then reverted by the next cloud download.
+      await dbUpdatePerson(id, updates, datasetId, user?.uid || null);
+
+      setPeople(prev => prev.map(person =>
         person.id === id ? { ...person, ...updates } : person
       ));
       setDataVersion(v => v + 1);
@@ -408,7 +411,8 @@ export function GenealogyProvider({ children }) {
   const updateHouse = useCallback(async (id, updates) => {
     try {
       const datasetId = activeDataset?.id || 'default';
-      await dbUpdateHouse(id, updates, datasetId);
+      // See updatePerson: userId lets the Codex title rename sync.
+      await dbUpdateHouse(id, updates, datasetId, user?.uid || null);
       setHouses(prev => prev.map(house =>
         house.id === id ? { ...house, ...updates } : house
       ));

@@ -1031,6 +1031,18 @@
   padding: 4px;
 }
 
+/* Empty state for a charge search that matched nothing */
+.charge-search-empty {
+  margin: 12px 0 4px;
+  padding: 12px;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--text-tertiary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-subtle, var(--border-primary));
+  border-radius: var(--radius-sm, 4px);
+}
+
 /* Custom scrollbar */
 .unified-charge-grid::-webkit-scrollbar {
   width: 8px;
@@ -1593,4 +1605,96 @@
 .select-input:focus-visible {
   outline: var(--focus-ring-width, 2px) solid var(--focus-ring);
   outline-offset: var(--focus-ring-offset, 2px);
+}
+
+/* ── Export buttons in the preview panel ─────────────────────────────────── */
+
+.preview-export {
+  margin-top: 16px;
+}
+
+.preview-export h3 {
+  margin: 0 0 8px;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.preview-export__buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.preview-export__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  justify-content: center;
+  padding: 8px 12px;
+  font-family: inherit;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm, 4px);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.preview-export__btn:hover:not(:disabled) {
+  background: var(--bg-hover, var(--bg-secondary));
+  border-color: var(--accent-primary);
+}
+
+.preview-export__btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.preview-export__error {
+  margin: 8px 0 0;
+  font-size: var(--text-xs);
+  color: var(--color-error, #b3261e);
+}
+
+/* ── Personal arms / cadency panel ────────────────────────────────────────── */
+
+.personal-arms-panel {
+  margin-top: 16px;
+  padding: 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm, 4px);
+}
+
+.personal-arms-panel h3 {
+  margin: 0 0 6px;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.personal-arms-panel__note {
+  margin: 0 0 8px;
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  color: var(--text-tertiary);
+}
+
+.personal-arms-panel__toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.personal-arms-panel__toggle input:disabled {
+  cursor: not-allowed;
+}
+
+.personal-arms-panel__toggle input:disabled + span {
+  opacity: 0.6;
 }

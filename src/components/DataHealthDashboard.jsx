@@ -17,7 +17,12 @@
 
 import { useState, useCallback } from 'react';
 import { useGenealogy } from '../contexts/GenealogyContext';
+import { useDataset } from '../contexts/DatasetContext';
 import { runHealthCheck } from '../utils/SmartDataValidator';
+import { runIntegrityCheck } from '../utils/dataIntegrity';
+import { getAllDignities } from '../services/dignityService';
+import { getAllEntries, getAllLinks } from '../services/codexService';
+import { getAllHeraldry } from '../services/heraldryService';
 import { logger } from '../utils/logger';
 import Icon from './icons';
 
@@ -31,8 +36,13 @@ function DataHealthDashboard({ isDarkTheme = true, onNavigateToPerson, onNavigat
     addRelationship
   } = useGenealogy();
   
+  const { activeDataset } = useDataset();
+  const datasetId = activeDataset?.id || 'default';
+
   const [report, setReport] = useState(null);
   const [isScanning, setIsScanning] = useState(false);
+  const [integrity, setIntegrity] = useState(null);
+  const [integrityError, setIntegrityError] = useState(null);
   const [activeCategory, setActiveCategory] = useState('all');
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null); // { type, id, name }
@@ -74,14 +84,42 @@ function DataHealthDashboard({ isDarkTheme = true, onNavigateToPerson, onNavigat
     setIsScanning(true);
     setDeleteConfirm(null);
     setNamedAfterConfirm(null);
-    
+    setIntegrityError(null);
+
     // Use setTimeout to allow UI to update before heavy computation
-    setTimeout(() => {
+    setTimeout(async () => {
       const healthReport = runHealthCheck({ people, relationships, houses });
       setReport(healthReport);
+
+      // Referential integrity runs alongside the quality checks. It needs the
+      // tables GenealogyContext doesn't hold, so they're read here. A failure to
+      // load them must not lose the health report that already succeeded.
+      try {
+        const [dignities, codexEntries, codexLinks, heraldry] = await Promise.all([
+          getAllDignities(datasetId),
+          getAllEntries(datasetId),
+          getAllLinks(datasetId),
+          getAllHeraldry(datasetId)
+        ]);
+
+        setIntegrity(runIntegrityCheck({
+          people,
+          houses,
+          relationships,
+          codexEntries,
+          codexLinks,
+          dignities,
+          heraldry
+        }));
+      } catch (error) {
+        logger.error('Integrity check failed:', error);
+        setIntegrity(null);
+        setIntegrityError(error.message || 'Could not load data for the integrity check.');
+      }
+
       setIsScanning(false);
     }, 100);
-  }, [people, relationships, houses]);
+  }, [people, relationships, houses, datasetId]);
 
   /**
    * Delete a single person
@@ -956,8 +994,154 @@ function DataHealthDashboard({ isDarkTheme = true, onNavigateToPerson, onNavigat
     );
   };
 
+  /**
+   * Referential integrity — dangling IDs between tables.
+   *
+   * Distinct from the quality checks above, which look for implausible data.
+   * This looks for data that is structurally broken: a dignity held by a person
+   * who no longer exists, a house wearing arms that were deleted. These fail
+   * silently at runtime (succession returns an empty list and warns), so they
+   * are invisible until someone goes looking.
+   */
+  const renderIntegrity = () => {
+    if (integrityError) {
+      return (
+        <div
+          className="p-4 rounded-lg mb-6"
+          style={{ backgroundColor: theme.bgLight, border: `1px solid ${theme.error}` }}
+        >
+          <h3 className="font-semibold mb-1 flex items-center gap-2" style={{ color: theme.text }}>
+            <Icon name="alert-triangle" /> Referential integrity
+          </h3>
+          <p className="text-sm" style={{ color: theme.textSecondary }}>{integrityError}</p>
+        </div>
+      );
+    }
+
+    if (!integrity) return null;
+
+    const groups = [
+      {
+        key: 'orphanedDignities',
+        label: 'Dignities with missing references',
+        note: 'A dignity pointing at a deleted person or house. Succession silently returns nothing for these.',
+        items: integrity.issues.orphanedDignities,
+        describe: (d) => {
+          const parts = [];
+          if (d.missingHolderId) parts.push(`holder #${d.missingHolderId} does not exist`);
+          if (d.missingHouseId) parts.push(`house #${d.missingHouseId} does not exist`);
+          if (d.missingSwornToId) parts.push(`sworn to dignity #${d.missingSwornToId} does not exist`);
+          if (d.missingGrantedById) parts.push(`granted by person #${d.missingGrantedById} does not exist`);
+          if (d.missingCodexEntryId) parts.push(`codex entry #${d.missingCodexEntryId} does not exist`);
+          return `${d.dignityName} — ${parts.join('; ')}`;
+        }
+      },
+      {
+        key: 'orphanedRelationships',
+        label: 'Relationships referencing missing people',
+        note: 'These render as gaps in the tree.',
+        items: integrity.issues.orphanedRelationships,
+        describe: (r) => {
+          const missing = [r.missingPerson1, r.missingPerson2].filter(Boolean);
+          return `Relationship #${r.id} — missing person ${missing.map(m => `#${m}`).join(' and ')}`;
+        }
+      },
+      {
+        key: 'orphanedPeopleHouses',
+        label: 'People assigned to a missing house',
+        note: null,
+        items: integrity.issues.orphanedPeopleHouses,
+        describe: (p) => `${p.personName} — house #${p.missingHouseId} does not exist`
+      },
+      {
+        key: 'orphanedHeraldryRefs',
+        label: 'Arms references pointing at deleted heraldry',
+        note: null,
+        items: integrity.issues.orphanedHeraldryRefs,
+        describe: (h) => `${h.entityName} (${h.entityType}) — heraldry #${h.missingHeraldryId} does not exist`
+      },
+      {
+        key: 'orphanedCodexLinks',
+        label: 'Codex links to missing entries',
+        note: 'These produce phantom backlinks.',
+        items: integrity.issues.orphanedCodexLinks,
+        describe: (l) => {
+          const parts = [];
+          if (l.missingSource) parts.push(`source #${l.missingSource}`);
+          if (l.missingTarget) parts.push(`target #${l.missingTarget}`);
+          return `Link #${l.id} — missing ${parts.join(' and ')}`;
+        }
+      },
+      {
+        key: 'circularAncestry',
+        label: 'Circular ancestry',
+        note: 'A person appearing in their own ancestry. This can freeze the tree renderer.',
+        items: integrity.issues.circularAncestry,
+        describe: (c) => `Person #${c.personId} — cycle reached at #${c.cycleAt}`
+      },
+      {
+        key: 'bidirectionalInconsistencies',
+        label: 'Marriage records that disagree',
+        note: 'Two records for the same marriage with different dates.',
+        items: integrity.issues.bidirectionalInconsistencies,
+        describe: (b) => `Relationships #${b.relationship1} and #${b.relationship2} — mismatched marriage date`
+      }
+    ].filter(g => (g.items?.length || 0) > 0);
+
+    return (
+      <div
+        className="p-4 rounded-lg mb-6"
+        style={{
+          backgroundColor: theme.bgLight,
+          border: `1px solid ${integrity.healthy ? theme.success : theme.error}`
+        }}
+      >
+        <h3 className="font-semibold mb-1 flex items-center gap-2" style={{ color: theme.text }}>
+          <Icon name={integrity.healthy ? 'check-circle' : 'alert-triangle'} />
+          Referential integrity
+        </h3>
+
+        {integrity.healthy ? (
+          <p className="text-sm" style={{ color: theme.textSecondary }}>
+            No dangling references. Every relationship, house, dignity, codex link
+            and arms reference resolves to a record that exists.
+          </p>
+        ) : (
+          <>
+            <p className="text-sm mb-3" style={{ color: theme.textSecondary }}>
+              These are structural breaks, not judgement calls — each one points at
+              a record that no longer exists.
+            </p>
+            {groups.map(group => (
+              <div key={group.key} className="mb-3">
+                <div className="text-sm font-semibold" style={{ color: theme.text }}>
+                  {group.label} ({group.items.length})
+                </div>
+                {group.note && (
+                  <div className="text-xs mb-1" style={{ color: theme.textSecondary }}>
+                    {group.note}
+                  </div>
+                )}
+                <ul className="text-xs" style={{ color: theme.textSecondary }}>
+                  {group.items.slice(0, 10).map((item, i) => (
+                    <li key={i}>• {group.describe(item)}</li>
+                  ))}
+                  {group.items.length > 10 && (
+                    <li style={{ opacity: 0.8 }}>
+                      … and {group.items.length - 10} more
+                    </li>
+                  )}
+                </ul>
+              </div>
+            ))}
+          </>
+        )}
+      </div>
+    );
+  };
+
   return (
-    <div 
+    <div
       className="p-6 rounded-lg"
       style={{ backgroundColor: theme.bg }}
       onClick={() => {
@@ -1026,6 +1210,7 @@ function DataHealthDashboard({ isDarkTheme = true, onNavigateToPerson, onNavigat
       {report && (
         <>
           {renderHealthScore()}
+          {renderIntegrity()}
           {renderCleanupTools()}
           {renderSummary()}
           {renderTabs()}

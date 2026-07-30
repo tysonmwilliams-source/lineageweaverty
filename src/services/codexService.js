@@ -389,7 +389,7 @@ export async function searchEntriesFullText(searchTerm, datasetId) {
 /**
  * Update an existing codex entry
  */
-export async function updateEntry(id, updates, datasetId) {
+export async function updateEntry(id, updates, datasetId, userId = null) {
   try {
     const db = getDatabase(datasetId);
     // Always update the 'updated' timestamp and recalculate word count
@@ -404,6 +404,12 @@ export async function updateEntry(id, updates, datasetId) {
 
     const result = await db.codexEntries.update(id, modifiedUpdates);
     logger.log('Codex entry updated:', result);
+
+    // Drop links to targets the content no longer mentions. Content is
+    // authoritative at save time; see reconcileWikiLinks.
+    if (updates.content !== undefined) {
+      await reconcileWikiLinks(id, updates.content, datasetId, userId);
+    }
 
     // Notify context system of change
     const updatedEntry = await db.codexEntries.get(id);
@@ -480,6 +486,72 @@ export async function createLink(linkData, datasetId) {
   } catch (error) {
     logger.error('Error creating codex link:', error);
     throw error;
+  }
+}
+
+/**
+ * Reconcile an entry's outgoing wiki-links against what its content actually says.
+ *
+ * parseWikiLinks() creates links additively as a side effect of *rendering* an
+ * entry, and nothing ever removed them. Delete a `[[Riverhead]]` from a paragraph
+ * and the link row survives, so Riverhead keeps listing that entry as a backlink
+ * forever — a reference to a sentence that no longer exists.
+ *
+ * Called on save, where the content is authoritative. Only 'wiki-reference'
+ * links are touched: links created deliberately through the UI are not derived
+ * from prose and must not be pruned by editing it.
+ *
+ * @param {number} entryId - The entry whose content changed
+ * @param {string} content - The new content
+ * @param {string} [datasetId]
+ * @param {string} [userId] - When present, deletions are propagated to the cloud
+ * @returns {Promise<number>} How many stale links were removed
+ */
+export async function reconcileWikiLinks(entryId, content, datasetId, userId = null) {
+  try {
+    const db = getDatabase(datasetId);
+
+    // Resolve the targets the content currently names, the same way the renderer
+    // does: case-insensitive on title, honouring [[Display|Actual]] aliases.
+    const targets = new Set();
+    for (const match of String(content || '').matchAll(/\[\[([^\]]+)\]\]/g)) {
+      const text = match[1].trim();
+      targets.add((text.includes('|') ? text.split('|')[1] : text).trim().toLowerCase());
+    }
+
+    const allEntries = await db.codexEntries.toArray();
+    const idsByTitle = new Map(allEntries.map(e => [String(e.title).toLowerCase(), e.id]));
+    const liveTargetIds = new Set(
+      [...targets].map(t => idsByTitle.get(t)).filter(id => id !== undefined)
+    );
+
+    const outgoing = await db.codexLinks.where('sourceId').equals(entryId).toArray();
+    const stale = outgoing.filter(
+      link => link.type === 'wiki-reference' && !liveTargetIds.has(link.targetId)
+    );
+
+    if (stale.length === 0) return 0;
+
+    await db.codexLinks.bulkDelete(stale.map(l => l.id));
+    logger.log(`Pruned ${stale.length} stale wiki-link(s) from entry ${entryId}`);
+
+    // A pruned link that never syncs comes back on the next cloud download.
+    if (userId) {
+      const { syncDeleteCodexLink } = await import('./dataSyncService.js');
+      for (const link of stale) {
+        try {
+          await syncDeleteCodexLink(userId, datasetId, link.id);
+        } catch (syncError) {
+          logger.error('☁️ Failed to sync codex link delete:', syncError);
+        }
+      }
+    }
+
+    return stale.length;
+  } catch (error) {
+    // Never let link bookkeeping fail a save.
+    logger.error('Error reconciling wiki-links:', error);
+    return 0;
   }
 }
 
@@ -568,6 +640,26 @@ export async function getIncomingLinks(entryId, datasetId) {
 /**
  * Get all links for an entry (both incoming and outgoing)
  */
+/**
+ * Get every codex link in the dataset.
+ *
+ * Every other table had a bulk reader; codexLinks only had the per-entry
+ * getAllLinksForEntry, which is why the integrity check could not see dangling
+ * links without N queries.
+ *
+ * @param {string} [datasetId] - Dataset ID (optional)
+ * @returns {Promise<Array>} All codex links
+ */
+export async function getAllLinks(datasetId) {
+  try {
+    const db = getDatabase(datasetId);
+    return await db.codexLinks.toArray();
+  } catch (error) {
+    logger.error('Error getting all codex links:', error);
+    throw error;
+  }
+}
+
 export async function getAllLinksForEntry(entryId, datasetId) {
   try {
     const [outgoing, incoming] = await Promise.all([
@@ -891,6 +983,8 @@ export default {
   createLink,
   getOutgoingLinks,
   getIncomingLinks,
+  reconcileWikiLinks,
+  getAllLinks,
   getAllLinksForEntry,
   deleteLinksForEntry,
   deleteLink,

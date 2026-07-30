@@ -646,14 +646,74 @@ export async function getPeopleByHouse(houseId, datasetId) {
   }
 }
 
-export async function updatePerson(id, updates, datasetId) {
+/**
+ * Push a renamed entity's name onto its linked Codex entry title.
+ *
+ * The Codex stores the title denormalized, so nothing kept it in step with the
+ * person/house/dignity it describes. Two consequences, both silent: the Codex
+ * kept showing the old name, and since wiki-links resolve on lowercased title,
+ * `[[New Name]]` resolved to nothing while `[[Old Name]]` still worked.
+ *
+ * Deliberately a no-op when there is no linked entry, when the title is already
+ * correct, or when the new name is empty — a half-typed rename must not blank a
+ * Codex title. Failures are logged, never thrown: renaming a person must not be
+ * blocked by Codex bookkeeping.
+ *
+ * @param {number|null} codexEntryId - The linked entry, if any
+ * @param {string} newTitle - The title the entry should now have
+ * @param {string} [datasetId]
+ * @param {string} [userId] - When present, the title change is synced
+ */
+async function propagateNameToCodex(codexEntryId, newTitle, datasetId, userId = null) {
+  if (!codexEntryId || !newTitle?.trim()) return;
+
+  try {
+    const database = getDatabase(datasetId);
+    const entry = await database.codexEntries.get(codexEntryId);
+    if (!entry || entry.title === newTitle) return;
+
+    await database.codexEntries.update(codexEntryId, {
+      title: newTitle,
+      updated: new Date().toISOString()
+    });
+    logger.log(`📚 Codex title follows rename: "${entry.title}" → "${newTitle}"`);
+
+    if (userId) {
+      const { syncUpdateCodexEntry } = await import('./dataSyncService.js');
+      try {
+        await syncUpdateCodexEntry(userId, datasetId, codexEntryId, { title: newTitle });
+      } catch (syncError) {
+        logger.error('☁️ Failed to sync Codex title rename:', syncError);
+      }
+    }
+  } catch (error) {
+    logger.error('Error propagating rename to Codex:', error);
+  }
+}
+
+export async function updatePerson(id, updates, datasetId, userId = null) {
   try {
     const database = getDatabase(datasetId);
     const result = await database.people.update(id, updates);
     logger.log('Person updated:', result);
 
-    // Notify context system
     const person = await database.people.get(id);
+
+    // Keep the linked Codex entry's title in step with the person's name.
+    // The title is denormalized into codexEntries, so renaming a person used to
+    // leave the Codex showing the old name — and because wiki-links resolve on
+    // lowercased title, every [[New Name]] link silently failed to resolve while
+    // [[Old Name]] kept working.
+    if (updates.firstName !== undefined || updates.lastName !== undefined) {
+      await propagateNameToCodex(
+        person?.codexEntryId,
+        `${person?.firstName || ''} ${person?.lastName || ''}`.trim(),
+        datasetId,
+        userId
+      );
+    }
+
+    // Notify context system
     notifyContextChange('person', 'update', person, datasetId);
 
     return result;
@@ -832,14 +892,27 @@ export function isBastardCadet(house) {
   return /^(Dum|Dun)/i.test(house.houseName);
 }
 
-export async function updateHouse(id, updates, datasetId) {
+export async function updateHouse(id, updates, datasetId, userId = null) {
   try {
     const database = getDatabase(datasetId);
     const result = await database.houses.update(id, updates);
     logger.log('House updated:', result);
 
-    // Notify context system
     const house = await database.houses.get(id);
+
+    // Same as updatePerson, using the "House X" convention addHouse applies when
+    // it auto-creates the entry, so a rename can't drift from the original title.
+    if (updates.houseName !== undefined) {
+      const houseName = house?.houseName || '';
+      await propagateNameToCodex(
+        house?.codexEntryId,
+        houseName.startsWith('House ') ? houseName : `House ${houseName}`,
+        datasetId,
+        userId
+      );
+    }
+
+    // Notify context system
     notifyContextChange('house', 'update', house, datasetId);
 
     return result;

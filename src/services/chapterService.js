@@ -216,18 +216,45 @@ export async function restoreChapter(data, datasetId) {
 
 /**
  * Reorder chapters
+ *
+ * Takes a trailing userId and syncs. These functions had no callers, so the
+ * missing sync was never hit — but wiring them to the UI without it would mean
+ * every reorder silently reverted on the next cloud download.
+ *
  * @param {number} writingId - Writing ID
  * @param {number[]} chapterIds - Array of chapter IDs in new order
  * @param {string} [datasetId] - Dataset ID
+ * @param {string} [userId] - For cloud sync
  */
-export async function reorderChapters(writingId, chapterIds, datasetId) {
+export async function reorderChapters(writingId, chapterIds, datasetId, userId = null) {
   const db = getDatabase(datasetId);
 
   for (let i = 0; i < chapterIds.length; i++) {
     await db.chapters.update(chapterIds[i], { order: i + 1 });
   }
 
+  await syncChapterOrders(chapterIds.map((id, i) => ({ id, order: i + 1 })), datasetId, userId);
+
   logger.log('Chapters reordered for writing:', writingId);
+}
+
+/**
+ * Push a batch of {id, order} changes to the cloud.
+ *
+ * Sync failures are logged, never thrown — a reorder that saved locally must not
+ * report failure to the user because the network was down.
+ */
+async function syncChapterOrders(changes, datasetId, userId) {
+  if (!userId || changes.length === 0) return;
+
+  const { syncUpdateChapter } = await import('./dataSyncService.js');
+  for (const { id, order } of changes) {
+    try {
+      await syncUpdateChapter(userId, datasetId, id, { order });
+    } catch (syncError) {
+      logger.error('☁️ Failed to sync chapter order:', syncError);
+    }
+  }
 }
 
 /**
@@ -235,8 +262,9 @@ export async function reorderChapters(writingId, chapterIds, datasetId) {
  * @param {number} chapterId - Chapter ID
  * @param {number} newOrder - New position (1-based)
  * @param {string} [datasetId] - Dataset ID
+ * @param {string} [userId] - For cloud sync
  */
-export async function moveChapter(chapterId, newOrder, datasetId) {
+export async function moveChapter(chapterId, newOrder, datasetId, userId = null) {
   const db = getDatabase(datasetId);
 
   const chapter = await db.chapters.get(chapterId);
@@ -253,12 +281,16 @@ export async function moveChapter(chapterId, newOrder, datasetId) {
     .equals(writingId)
     .sortBy('order');
 
+  // Track what actually changed so only those rows are synced.
+  const changed = [];
+
   // Update orders
   if (newOrder > oldOrder) {
     // Moving down: decrement orders of chapters between old and new
     for (const c of chapters) {
       if (c.order > oldOrder && c.order <= newOrder) {
         await db.chapters.update(c.id, { order: c.order - 1 });
+        changed.push({ id: c.id, order: c.order - 1 });
       }
     }
   } else {
@@ -266,12 +298,16 @@ export async function moveChapter(chapterId, newOrder, datasetId) {
     for (const c of chapters) {
       if (c.order >= newOrder && c.order < oldOrder) {
         await db.chapters.update(c.id, { order: c.order + 1 });
+        changed.push({ id: c.id, order: c.order + 1 });
       }
     }
   }
 
   // Set the moved chapter's order
   await db.chapters.update(chapterId, { order: newOrder });
+  changed.push({ id: chapterId, order: newOrder });
+
+  await syncChapterOrders(changed, datasetId, userId);
 
   logger.log('Chapter moved:', chapterId, 'to position', newOrder);
 }

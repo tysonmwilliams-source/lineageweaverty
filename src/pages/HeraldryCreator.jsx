@@ -16,8 +16,12 @@ import {
   CHARGES,
   CHARGE_CATEGORIES,
   getChargesByCategory,
+  searchCharges,
   generateChargeBlazon
 } from '../data/unifiedChargesLibrary';
+import ListSearchBar from '../components/shared/ListSearchBar';
+import { downloadHeraldrySVG, downloadHeraldryPNG } from '../utils/downloadHeraldry';
+import { addCadencyToSVG, generatePersonalArmsBlazon } from '../utils/personalArmsRenderer';
 import {
   TINCTURES,
   LINE_STYLES,
@@ -1003,7 +1007,12 @@ function ChargeCard({
     const chargeData = CHARGES[charge.chargeId];
     return chargeData?.category || 'beasts';
   });
-  
+  // Searching spans the whole library — 287 charges across 17 categories is far
+  // too many to find anything by clicking through tabs, which was the only way
+  // to browse them. searchCharges() matches name, blazon term, description and
+  // keywords, so "bird" finds the martlet and "war" finds the sword.
+  const [chargeSearch, setChargeSearch] = useState('');
+
   const chargeData = CHARGES[charge.chargeId];
   const tinctureDef = TINCTURES[charge.tincture];
   const sizeDef = CHARGE_SIZES[charge.size];
@@ -1011,8 +1020,13 @@ function ChargeCard({
   
   const summaryText = `${chargeData?.name || charge.chargeId} — ${tinctureDef?.name.split(' ')[0] || charge.tincture}, ${sizeDef?.name || charge.size}`;
   
-  const categoryCharges = getChargesByCategory(activeCategory);
-  
+  const trimmedSearch = chargeSearch.trim();
+  const isSearching = trimmedSearch.length > 0;
+  const visibleCharges = isSearching
+    ? searchCharges(trimmedSearch)
+    : getChargesByCategory(activeCategory);
+  const visibleChargeCount = Object.keys(visibleCharges).length;
+
   return (
     <div className={`element-card ${!isVisible ? 'hidden-layer' : ''}`}>
       <div className="element-card-header" onClick={() => setExpanded(!expanded)}>
@@ -1070,40 +1084,63 @@ function ChargeCard({
       
       {expanded && (
         <div className="element-card-body">
-          {/* Category Tabs */}
+          {/* Search — spans all categories */}
           <div className="element-option">
-            <label>Category</label>
-            <div className="charge-category-tabs">
-              {Object.entries(CHARGE_CATEGORIES).map(([catId, cat]) => (
-                <button
-                  key={catId}
-                  type="button"
-                  className={`line-style-option ${activeCategory === catId ? 'selected' : ''}`}
-                  onClick={() => setActiveCategory(catId)}
-                  title={cat.description}
-                >
-                  <span>{cat.icon}</span> {cat.name}
-                </button>
-              ))}
-            </div>
+            <label>Find a charge</label>
+            <ListSearchBar
+              value={chargeSearch}
+              onChangeDebounced={setChargeSearch}
+              placeholder="Search 287 charges by name, blazon or keyword…"
+            />
           </div>
-          
+
+          {/* Category Tabs — hidden while searching, since results span categories */}
+          {!isSearching && (
+            <div className="element-option">
+              <label>Category</label>
+              <div className="charge-category-tabs">
+                {Object.entries(CHARGE_CATEGORIES).map(([catId, cat]) => (
+                  <button
+                    key={catId}
+                    type="button"
+                    className={`line-style-option ${activeCategory === catId ? 'selected' : ''}`}
+                    onClick={() => setActiveCategory(catId)}
+                    title={cat.description}
+                  >
+                    <span>{cat.icon}</span> {cat.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Charge Grid */}
           <div className="element-option">
-            <label>Select Charge</label>
-            <div className="unified-charge-grid">
-              {Object.entries(categoryCharges).map(([id]) => (
-                <LazyChargePreview
-                  key={id}
-                  chargeId={id}
-                  tincture={TINCTURES[charge.tincture]?.hex || '#000000'}
-                  size={45}
-                  selected={charge.chargeId === id}
-                  onClick={(chargeId) => onUpdate(index, { chargeId })}
-                  showName={true}
-                />
-              ))}
-            </div>
+            <label>
+              {isSearching
+                ? `${visibleChargeCount} ${visibleChargeCount === 1 ? 'match' : 'matches'} for “${trimmedSearch}”`
+                : 'Select Charge'}
+            </label>
+            {isSearching && visibleChargeCount === 0 ? (
+              <p className="charge-search-empty">
+                No charges match “{trimmedSearch}”. Try a broader term — searches
+                cover the blazon term and keywords, not just the name.
+              </p>
+            ) : (
+              <div className="unified-charge-grid">
+                {Object.entries(visibleCharges).map(([id]) => (
+                  <LazyChargePreview
+                    key={id}
+                    chargeId={id}
+                    tincture={TINCTURES[charge.tincture]?.hex || '#000000'}
+                    size={45}
+                    selected={charge.chargeId === id}
+                    onClick={(chargeId) => onUpdate(index, { chargeId })}
+                    showName={true}
+                  />
+                ))}
+              </div>
+            )}
           </div>
           
           {/* Tincture */}
@@ -1205,6 +1242,20 @@ function HeraldryCreator() {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const presetHouseId = searchParams.get('houseId');
+
+  // Personal-arms context. "Create Personal Arms" in PersonalArmsSection has
+  // always navigated here with personId/deriveFrom/birthPosition, and the creator
+  // read none of them — so it opened a blank shield and the whole cadency engine
+  // in personalArmsRenderer.js was unreachable.
+  const personIdParam = searchParams.get('personId');
+  const deriveFromParam = searchParams.get('deriveFrom');
+  const birthPositionParam = searchParams.get('birthPosition');
+
+  const personId = personIdParam ? parseInt(personIdParam) : null;
+  const deriveFromHeraldryId = deriveFromParam ? parseInt(deriveFromParam) : null;
+  // Cadency marks are 1-based: 1st son gets one triangle.
+  const birthPosition = birthPositionParam ? parseInt(birthPositionParam) : null;
+  const isPersonalArms = Boolean(personId);
 
   // ☁️ Get user for cloud sync
   const { user } = useAuth();
@@ -1376,7 +1427,38 @@ function HeraldryCreator() {
   const [saving, setSaving] = useState(false);
   const [activeSection, setActiveSection] = useState('field');
   const [showRuleWarning, setShowRuleWarning] = useState(false);
-  
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState(null);
+
+  // Cadency is on by default when arriving from "Create Personal Arms" — that's
+  // the point of the flow — but it stays a toggle, because a bastard, an heiress
+  // or an adopted child may be differenced some other way, and that's the
+  // owner's call, not the app's.
+  const [applyCadency, setApplyCadency] = useState(isPersonalArms);
+  const [derivedFromName, setDerivedFromName] = useState(null);
+
+  // Export the current preview. Works on an unsaved design too — you can compose
+  // arms and take the file without committing it to the Armory.
+  const handleDownload = useCallback(async (format) => {
+    if (!previewSVG) return;
+
+    setExportError(null);
+    setExporting(true);
+    try {
+      const filenameBase = name?.trim() || blazon || 'coat-of-arms';
+      if (format === 'png') {
+        await downloadHeraldryPNG(previewSVG, filenameBase);
+      } else {
+        downloadHeraldrySVG(previewSVG, filenameBase);
+      }
+    } catch (error) {
+      logger.error('Heraldry export failed:', error);
+      setExportError(error.message || 'Export failed.');
+    } finally {
+      setExporting(false);
+    }
+  }, [previewSVG, name, blazon]);
+
   // Get current field division info
   const currentDivision = FIELD_DIVISIONS[field.division] || {};
   const needsThirdTincture = ['tiercedPale', 'tiercedFess'].includes(field.division);
@@ -1484,6 +1566,33 @@ function HeraldryCreator() {
           setLinkedHouseId(presetHouseId);
         }
       }
+
+      // Personal arms: seed the composition from the house arms being derived
+      // from, so the shield opens as the parent arms and the cadency marks
+      // difference it. Without this the flow opened a blank shield and there was
+      // nothing for cadency to be applied *to*.
+      if (isPersonalArms && !isEditMode && deriveFromHeraldryId) {
+        try {
+          const parentArms = await getHeraldry(deriveFromHeraldryId, datasetId);
+          if (parentArms) {
+            setDerivedFromName(parentArms.name || null);
+
+            const comp = parentArms.composition;
+            if (comp?.field) {
+              setField(comp.field);
+              setOrdinaries(comp.ordinaries || []);
+              setCharges(comp.charges || []);
+            }
+            if (parentArms.shieldType) {
+              setShieldType(parentArms.shieldType);
+            }
+            setCategory('personal');
+          }
+        } catch (parentError) {
+          // A missing parent must not block creating arms from scratch.
+          logger.error('Could not load the arms being derived from:', parentError);
+        }
+      }
     } catch (error) {
       logger.error('Error loading data:', error);
     }
@@ -1565,17 +1674,28 @@ function HeraldryCreator() {
       
       // 4. Apply shield mask
       const maskedSVG = await createSVGHeraldryWithMask(fullSVG, shieldType, 400);
-      setPreviewSVG(maskedSVG);
-      
-      // 5. Generate blazon
-      const newBlazon = generateFullBlazon(field, ordinaries, charges);
-      setBlazon(newBlazon);
-      
+
+      // 5. For personal arms, difference the shield with cadency marks. Applied
+      // after masking so the triangles sit on the finished shield rather than
+      // being clipped by it.
+      const finalSVG = (isPersonalArms && applyCadency && birthPosition >= 1)
+        ? addCadencyToSVG(maskedSVG, birthPosition)
+        : maskedSVG;
+      setPreviewSVG(finalSVG);
+
+      // 6. Generate blazon — cadency gets its own blazon clause.
+      const baseBlazon = generateFullBlazon(field, ordinaries, charges);
+      setBlazon(
+        (isPersonalArms && applyCadency && birthPosition >= 1)
+          ? generatePersonalArmsBlazon(baseBlazon, birthPosition)
+          : baseBlazon
+      );
+
     } catch (error) {
       logger.error('Error generating preview:', error);
     }
     setGenerating(false);
-  }, [field, ordinaries, charges, shieldType]);
+  }, [field, ordinaries, charges, shieldType, isPersonalArms, applyCadency, birthPosition]);
   
   useEffect(() => {
     generatePreview();
@@ -1766,6 +1886,65 @@ function HeraldryCreator() {
                 )}
               </div>
               
+              {isPersonalArms && (
+                <div className="personal-arms-panel">
+                  <h3>Personal arms</h3>
+                  <p className="personal-arms-panel__note">
+                    {derivedFromName
+                      ? <>Derived from <strong>{derivedFromName}</strong>.</>
+                      : 'Building personal arms from scratch — no parent arms were found to derive from.'}
+                  </p>
+                  <label className="personal-arms-panel__toggle">
+                    <input
+                      type="checkbox"
+                      checked={applyCadency}
+                      onChange={(e) => setApplyCadency(e.target.checked)}
+                      disabled={!birthPosition || birthPosition < 1}
+                    />
+                    <span>
+                      Apply cadency
+                      {birthPosition >= 1 && (
+                        <> — {birthPosition} {birthPosition === 1 ? 'mark' : 'marks'} (birth position {birthPosition})</>
+                      )}
+                    </span>
+                  </label>
+                  {(!birthPosition || birthPosition < 1) && (
+                    <p className="personal-arms-panel__note">
+                      No birth position was passed, so cadency can’t be calculated.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {previewSVG && (
+                <div className="preview-export">
+                  <h3>Export</h3>
+                  <div className="preview-export__buttons">
+                    <button
+                      type="button"
+                      className="preview-export__btn"
+                      onClick={() => handleDownload('svg')}
+                      disabled={exporting}
+                      title="Download as a scalable vector file"
+                    >
+                      <Icon name="download" /> SVG
+                    </button>
+                    <button
+                      type="button"
+                      className="preview-export__btn"
+                      onClick={() => handleDownload('png')}
+                      disabled={exporting}
+                      title="Download as a 400px PNG image"
+                    >
+                      <Icon name="download" /> PNG
+                    </button>
+                  </div>
+                  {exportError && (
+                    <p className="preview-export__error" role="alert">{exportError}</p>
+                  )}
+                </div>
+              )}
+
               {blazon && (
                 <div className="blazon-display">
                   <h3>Blazon</h3>

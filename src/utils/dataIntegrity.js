@@ -155,17 +155,23 @@ export function findOrphanedRecords(data) {
     houses = [],
     relationships = [],
     codexEntries = [],
-    codexLinks = []
+    codexLinks = [],
+    dignities = [],
+    heraldry = []
   } = data;
 
   const peopleIds = new Set(people.map(p => p.id));
   const houseIds = new Set(houses.map(h => h.id));
   const codexIds = new Set(codexEntries.map(e => e.id));
+  const dignityIds = new Set(dignities.map(d => d.id));
+  const heraldryIds = new Set(heraldry.map(h => h.id));
 
   const orphans = {
     relationships: [],
     peopleWithMissingHouse: [],
-    codexLinks: []
+    codexLinks: [],
+    dignities: [],
+    heraldryRefs: []
   };
 
   // Check relationships for missing people
@@ -197,6 +203,64 @@ export function findOrphanedRecords(data) {
         id: link.id,
         missingSource: !codexIds.has(link.sourceId) ? link.sourceId : null,
         missingTarget: !codexIds.has(link.targetId) ? link.targetId : null
+      });
+    }
+  }
+
+  // Check dignities for dangling references.
+  //
+  // This is the check that matters most and was missing entirely: a dignity
+  // whose currentHolderId points at a deleted person breaks
+  // calculateSuccessionLine, which returns an empty array and only warns. If
+  // that dignity is a superior in the feudal chain, every dignity beneath it is
+  // affected. Silent failure with a wide blast radius.
+  for (const dignity of dignities) {
+    const missing = {};
+
+    if (dignity.currentHolderId && !peopleIds.has(dignity.currentHolderId)) {
+      missing.missingHolderId = dignity.currentHolderId;
+    }
+    if (dignity.currentHouseId && !houseIds.has(dignity.currentHouseId)) {
+      missing.missingHouseId = dignity.currentHouseId;
+    }
+    if (dignity.swornToId && !dignityIds.has(dignity.swornToId)) {
+      missing.missingSwornToId = dignity.swornToId;
+    }
+    if (dignity.grantedById && !peopleIds.has(dignity.grantedById)) {
+      missing.missingGrantedById = dignity.grantedById;
+    }
+    if (dignity.codexEntryId && !codexIds.has(dignity.codexEntryId)) {
+      missing.missingCodexEntryId = dignity.codexEntryId;
+    }
+
+    if (Object.keys(missing).length > 0) {
+      orphans.dignities.push({
+        id: dignity.id,
+        dignityName: dignity.name || `Dignity ${dignity.id}`,
+        ...missing
+      });
+    }
+  }
+
+  // Check people and houses for dangling heraldryId. deleteHeraldry used to
+  // leave these behind, so a house could claim arms that no longer exist.
+  for (const person of people) {
+    if (person.heraldryId && !heraldryIds.has(person.heraldryId)) {
+      orphans.heraldryRefs.push({
+        entityType: 'person',
+        entityId: person.id,
+        entityName: `${person.firstName || ''} ${person.lastName || ''}`.trim() || `Person ${person.id}`,
+        missingHeraldryId: person.heraldryId
+      });
+    }
+  }
+  for (const house of houses) {
+    if (house.heraldryId && !heraldryIds.has(house.heraldryId)) {
+      orphans.heraldryRefs.push({
+        entityType: 'house',
+        entityId: house.id,
+        entityName: house.houseName || `House ${house.id}`,
+        missingHeraldryId: house.heraldryId
       });
     }
   }
@@ -315,6 +379,8 @@ export function runIntegrityCheck(data) {
     orphans.relationships.length > 0 ||
     orphans.peopleWithMissingHouse.length > 0 ||
     orphans.codexLinks.length > 0 ||
+    orphans.dignities.length > 0 ||
+    orphans.heraldryRefs.length > 0 ||
     bidirectionalIssues.length > 0 ||
     circularIssues.length > 0;
 
@@ -325,6 +391,8 @@ export function runIntegrityCheck(data) {
       orphanedRelationships: orphans.relationships,
       orphanedPeopleHouses: orphans.peopleWithMissingHouse,
       orphanedCodexLinks: orphans.codexLinks,
+      orphanedDignities: orphans.dignities,
+      orphanedHeraldryRefs: orphans.heraldryRefs,
       bidirectionalInconsistencies: bidirectionalIssues,
       circularAncestry: circularIssues
     },
@@ -332,6 +400,8 @@ export function runIntegrityCheck(data) {
       totalOrphanedRelationships: orphans.relationships.length,
       totalOrphanedPeopleHouses: orphans.peopleWithMissingHouse.length,
       totalOrphanedCodexLinks: orphans.codexLinks.length,
+      totalOrphanedDignities: orphans.dignities.length,
+      totalOrphanedHeraldryRefs: orphans.heraldryRefs.length,
       totalBidirectionalIssues: bidirectionalIssues.length,
       totalCircularIssues: circularIssues.length
     }

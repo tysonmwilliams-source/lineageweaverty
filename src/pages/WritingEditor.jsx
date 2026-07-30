@@ -23,7 +23,8 @@ import {
   createChapter,
   updateChapter,
   deleteChapter,
-  getChapter
+  getChapter,
+  moveChapter
 } from '../services/chapterService';
 import {
   syncUpdateWriting,
@@ -56,9 +57,33 @@ function ChapterSidebar({
   onSelectChapter,
   onAddChapter,
   onDeleteChapter,
+  onRenameChapter,
+  onMoveChapter,
   isMultiChapter
 }) {
+  // Which chapter is being renamed inline, and the draft title.
+  const [renamingId, setRenamingId] = useState(null);
+  const [draftTitle, setDraftTitle] = useState('');
+
   if (!isMultiChapter) return null;
+
+  const beginRename = (chapter) => {
+    setRenamingId(chapter.id);
+    setDraftTitle(chapter.title || '');
+  };
+
+  const commitRename = () => {
+    if (renamingId === null) return;
+    const trimmed = draftTitle.trim();
+    const original = chapters.find(c => c.id === renamingId);
+    // An empty title is meaningful — the list falls back to "Chapter N" — but
+    // don't write a no-op update.
+    if (original && trimmed !== (original.title || '')) {
+      onRenameChapter(renamingId, trimmed);
+    }
+    setRenamingId(null);
+    setDraftTitle('');
+  };
 
   return (
     <div className="chapter-sidebar">
@@ -74,30 +99,99 @@ function ChapterSidebar({
       </div>
 
       <div className="chapter-sidebar__list">
-        {chapters.map((chapter) => (
+        {chapters.map((chapter, index) => (
           <div
             key={chapter.id}
             className={`chapter-sidebar__item ${activeChapterId === chapter.id ? 'chapter-sidebar__item--active' : ''}`}
-            onClick={() => onSelectChapter(chapter.id)}
+            onClick={() => {
+              if (renamingId !== chapter.id) onSelectChapter(chapter.id);
+            }}
           >
-            <span className="chapter-sidebar__item-title">
-              {chapter.title || `Chapter ${chapter.order}`}
-            </span>
-            <span className="chapter-sidebar__item-words">
-              {chapter.wordCount?.toLocaleString() || 0}
-            </span>
-            {chapters.length > 1 && (
+            <div className="chapter-sidebar__item-main">
+              {renamingId === chapter.id ? (
+                <input
+                  className="chapter-sidebar__item-rename"
+                  value={draftTitle}
+                  autoFocus
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={(e) => setDraftTitle(e.target.value)}
+                  onBlur={commitRename}
+                  onKeyDown={(e) => {
+                    e.stopPropagation();
+                    if (e.key === 'Enter') commitRename();
+                    if (e.key === 'Escape') { setRenamingId(null); setDraftTitle(''); }
+                  }}
+                  placeholder={`Chapter ${chapter.order}`}
+                  aria-label="Chapter title"
+                />
+              ) : (
+                <span
+                  className="chapter-sidebar__item-title"
+                  onDoubleClick={(e) => {
+                    e.stopPropagation();
+                    beginRename(chapter);
+                  }}
+                  title="Double-click to rename"
+                >
+                  {chapter.title || `Chapter ${chapter.order}`}
+                </span>
+              )}
+
+              {/* status and POV are persisted per chapter and were never shown */}
+              <span className="chapter-sidebar__item-meta">
+                {chapter.status && (
+                  <span className={`chapter-sidebar__status chapter-sidebar__status--${chapter.status}`}>
+                    {chapter.status}
+                  </span>
+                )}
+                {chapter.povCharacter && (
+                  <span className="chapter-sidebar__pov" title="POV character">
+                    <Icon name="user" size={11} strokeWidth={2} /> {chapter.povCharacter}
+                  </span>
+                )}
+                <span className="chapter-sidebar__item-words">
+                  {chapter.wordCount?.toLocaleString() || 0} words
+                </span>
+              </span>
+            </div>
+
+            <div className="chapter-sidebar__item-controls" onClick={(e) => e.stopPropagation()}>
               <button
-                className="chapter-sidebar__item-delete"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDeleteChapter(chapter.id);
-                }}
-                title="Delete Chapter"
+                className="chapter-sidebar__item-btn"
+                onClick={() => onMoveChapter(chapter.id, chapter.order - 1)}
+                disabled={index === 0}
+                title="Move up"
+                aria-label={`Move ${chapter.title || `Chapter ${chapter.order}`} up`}
               >
-                <Icon name="x" size={14} strokeWidth={2} />
+                <Icon name="chevron-up" size={14} strokeWidth={2} />
               </button>
-            )}
+              <button
+                className="chapter-sidebar__item-btn"
+                onClick={() => onMoveChapter(chapter.id, chapter.order + 1)}
+                disabled={index === chapters.length - 1}
+                title="Move down"
+                aria-label={`Move ${chapter.title || `Chapter ${chapter.order}`} down`}
+              >
+                <Icon name="chevron-down" size={14} strokeWidth={2} />
+              </button>
+              <button
+                className="chapter-sidebar__item-btn"
+                onClick={() => beginRename(chapter)}
+                title="Rename chapter"
+                aria-label={`Rename ${chapter.title || `Chapter ${chapter.order}`}`}
+              >
+                <Icon name="pencil" size={14} strokeWidth={2} />
+              </button>
+              {chapters.length > 1 && (
+                <button
+                  className="chapter-sidebar__item-delete"
+                  onClick={() => onDeleteChapter(chapter.id)}
+                  title="Delete Chapter"
+                >
+                  <Icon name="x" size={14} strokeWidth={2} />
+                </button>
+              )}
+            </div>
           </div>
         ))}
       </div>
@@ -116,6 +210,9 @@ export default function WritingEditor() {
   const { activeDataset } = useDataset();
 
   const editorRef = useRef(null);
+  // Total word count when this editor was opened, for the session counter. A ref,
+  // not state: it must not trigger a re-render and must not reset on chapter switch.
+  const sessionBaselineRef = useRef(null);
   const [editor, setEditor] = useState(null);
   const [writing, setWriting] = useState(null);
   const [chapters, setChapters] = useState([]);
@@ -249,6 +346,15 @@ export default function WritingEditor() {
 
         setChapters(chaptersData);
 
+        // Capture the session baseline once, on the initial load only, so the
+        // "this session" counter measures from when the editor was opened.
+        if (sessionBaselineRef.current === null) {
+          sessionBaselineRef.current = chaptersData.reduce(
+            (sum, ch) => sum + (ch.wordCount || 0),
+            0
+          );
+        }
+
         // Select first chapter by default
         if (chaptersData.length > 0) {
           setActiveChapterId(chaptersData[0].id);
@@ -330,6 +436,34 @@ export default function WritingEditor() {
       setActiveChapterId(updatedChapters[0].id);
     }
   }, [id, chapters.length, activeChapterId, user, activeDataset]);
+
+  // Rename a chapter inline. The title was editable in the data model and in
+  // the cloud schema, but there was no way to change it after creation.
+  const handleRenameChapter = useCallback(async (chapterId, newTitle) => {
+    const datasetId = activeDataset?.id;
+
+    await updateChapter(chapterId, { title: newTitle }, datasetId);
+
+    if (user && activeDataset) {
+      syncUpdateChapter(user.uid, datasetId, chapterId, { title: newTitle });
+    }
+
+    setChapters(prev => prev.map(c => (c.id === chapterId ? { ...c, title: newTitle } : c)));
+  }, [user, activeDataset]);
+
+  // Move a chapter up or down. moveChapter handles renumbering the chapters it
+  // displaces and syncs each changed row.
+  const handleMoveChapter = useCallback(async (chapterId, newOrder) => {
+    if (newOrder < 1 || newOrder > chapters.length) return;
+
+    const datasetId = activeDataset?.id;
+    await moveChapter(chapterId, newOrder, datasetId, user?.uid || null);
+
+    // Re-read rather than reordering locally: moveChapter renumbers several rows
+    // and the sorted result is the source of truth.
+    const updatedChapters = await getChaptersByWriting(parseInt(id), datasetId);
+    setChapters(updatedChapters);
+  }, [id, chapters.length, user, activeDataset]);
 
   // Handle editor content change - sets data for auto-save
   const handleEditorUpdate = useCallback(({ editor: editorInstance }) => {
@@ -581,6 +715,24 @@ Be encouraging but honest. Give specific examples from the text when possible. K
   // Calculate total word count
   const totalWordCount = chapters.reduce((sum, ch) => sum + (ch.wordCount || 0), 0);
 
+  // targetWordCount has been persisted on every writing since writingService was
+  // written and was never rendered anywhere — so a target you set was invisible.
+  const targetWordCount = writing.targetWordCount || 0;
+  const hasTarget = targetWordCount > 0;
+  const progressRatio = hasTarget ? Math.min(totalWordCount / targetWordCount, 1) : 0;
+  const progressPercent = Math.round(progressRatio * 100);
+
+  // Words written since this editor was opened. Baseline is captured on load, so
+  // it survives chapter switches but resets when you leave — which is what a
+  // "this session" number should mean.
+  const sessionWords = sessionBaselineRef.current === null
+    ? 0
+    : Math.max(0, totalWordCount - sessionBaselineRef.current);
+
+  // A 36px ring, stroke 3.5, so r = (36 - 3.5) / 2
+  const RING_RADIUS = 16.25;
+  const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
+
   return (
     <>
       <Navigation compactMode />
@@ -595,6 +747,36 @@ Be encouraging but honest. Give specific examples from the text when possible. K
             >
               <Icon name="arrow-left" size={20} strokeWidth={2} />
             </button>
+            {hasTarget && (
+              <div
+                className="writing-editor__progress"
+                role="progressbar"
+                aria-valuenow={progressPercent}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label={`${progressPercent}% of ${targetWordCount.toLocaleString()} word target`}
+                title={`${totalWordCount.toLocaleString()} of ${targetWordCount.toLocaleString()} words`}
+              >
+                <svg width="36" height="36" viewBox="0 0 36 36" aria-hidden="true">
+                  <circle
+                    className="writing-editor__progress-track"
+                    cx="18" cy="18" r={RING_RADIUS}
+                    fill="none" strokeWidth="3.5"
+                  />
+                  <circle
+                    className="writing-editor__progress-fill"
+                    cx="18" cy="18" r={RING_RADIUS}
+                    fill="none" strokeWidth="3.5"
+                    strokeLinecap="round"
+                    strokeDasharray={RING_CIRCUMFERENCE}
+                    strokeDashoffset={RING_CIRCUMFERENCE * (1 - progressRatio)}
+                    // Start the arc at 12 o'clock instead of 3 o'clock
+                    transform="rotate(-90 18 18)"
+                  />
+                </svg>
+                <span className="writing-editor__progress-label">{progressPercent}%</span>
+              </div>
+            )}
             <div className="writing-editor__title-section">
               <h1 className="writing-editor__title">{writing.title}</h1>
               <div className="writing-editor__meta">
@@ -609,7 +791,16 @@ Be encouraging but honest. Give specific examples from the text when possible. K
                 </select>
                 <span className="writing-editor__word-count">
                   {totalWordCount.toLocaleString()} words
+                  {hasTarget && ` of ${targetWordCount.toLocaleString()}`}
                 </span>
+                {sessionWords > 0 && (
+                  <span
+                    className="writing-editor__session-count"
+                    title="Words added since you opened this editor"
+                  >
+                    +{sessionWords.toLocaleString()} this session
+                  </span>
+                )}
                 {hasUnsavedChanges && !isSaving && (
                   <span className="writing-editor__unsaved">Unsaved changes</span>
                 )}
@@ -709,6 +900,8 @@ Be encouraging but honest. Give specific examples from the text when possible. K
             onSelectChapter={handleSelectChapter}
             onAddChapter={handleAddChapter}
             onDeleteChapter={handleDeleteChapter}
+            onRenameChapter={handleRenameChapter}
+            onMoveChapter={handleMoveChapter}
             isMultiChapter={isMultiChapter}
           />
 

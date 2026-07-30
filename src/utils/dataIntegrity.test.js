@@ -224,6 +224,129 @@ describe('dataIntegrity', () => {
       expect(orphans.relationships[0].missingPerson2).toBe(888);
     });
 
+// ── Dignity and heraldry integrity ──────────────────────────────────────
+    //
+    // These checks did not exist. The audit claimed runIntegrityCheck() would
+    // have caught the broken Crown (dignity 7, currentHolderId -> nonexistent
+    // person 82); it would not have, because nothing looked at dignities at all.
+    // The failure is silent — calculateSuccessionLine returns [] and warns — so
+    // it needs a test.
+
+    it('should find a dignity whose holder does not exist (the broken-Crown case)', () => {
+      const data = {
+        people: [{ id: 1, firstName: 'Real', lastName: 'Person' }],
+        houses: [],
+        relationships: [],
+        dignities: [
+          { id: 7, name: 'The Crown', currentHolderId: 82 }
+        ]
+      };
+
+      const orphans = findOrphanedRecords(data);
+
+      expect(orphans.dignities).toHaveLength(1);
+      expect(orphans.dignities[0].id).toBe(7);
+      expect(orphans.dignities[0].dignityName).toBe('The Crown');
+      expect(orphans.dignities[0].missingHolderId).toBe(82);
+    });
+
+    it('should find a dignity sworn to a dignity that does not exist', () => {
+      const data = {
+        people: [],
+        houses: [],
+        relationships: [],
+        dignities: [
+          { id: 2, name: 'Ward of Riverhead', swornToId: 999 }
+        ]
+      };
+
+      const orphans = findOrphanedRecords(data);
+
+      expect(orphans.dignities).toHaveLength(1);
+      expect(orphans.dignities[0].missingSwornToId).toBe(999);
+    });
+
+    it('should report every dangling reference on one dignity together', () => {
+      const data = {
+        people: [],
+        houses: [],
+        relationships: [],
+        codexEntries: [],
+        dignities: [
+          {
+            id: 3,
+            name: 'Broken Everything',
+            currentHolderId: 11,
+            currentHouseId: 22,
+            grantedById: 33,
+            codexEntryId: 44
+          }
+        ]
+      };
+
+      const orphans = findOrphanedRecords(data);
+
+      expect(orphans.dignities).toHaveLength(1);
+      expect(orphans.dignities[0]).toMatchObject({
+        missingHolderId: 11,
+        missingHouseId: 22,
+        missingGrantedById: 33,
+        missingCodexEntryId: 44
+      });
+    });
+
+    it('should not flag a dignity whose references all resolve', () => {
+      const data = {
+        people: [{ id: 5, firstName: 'Held', lastName: 'By' }],
+        houses: [{ id: 6, houseName: 'House Real' }],
+        relationships: [],
+        dignities: [
+          { id: 1, name: 'Fine', currentHolderId: 5, currentHouseId: 6 }
+        ]
+      };
+
+      expect(findOrphanedRecords(data).dignities).toHaveLength(0);
+    });
+
+    it('should not flag a vacant dignity (null holder is legitimate)', () => {
+      const data = {
+        people: [],
+        houses: [],
+        relationships: [],
+        dignities: [
+          { id: 1, name: 'Vacant Seat', currentHolderId: null, isVacant: true }
+        ]
+      };
+
+      expect(findOrphanedRecords(data).dignities).toHaveLength(0);
+    });
+
+    it('should find houses and people wearing deleted arms', () => {
+      const data = {
+        people: [{ id: 1, firstName: 'Armed', lastName: 'Person', heraldryId: 900 }],
+        houses: [{ id: 2, houseName: 'House Armiger', heraldryId: 901 }],
+        relationships: [],
+        heraldry: [{ id: 5 }]
+      };
+
+      const orphans = findOrphanedRecords(data);
+
+      expect(orphans.heraldryRefs).toHaveLength(2);
+      expect(orphans.heraldryRefs.find(h => h.entityType === 'person').missingHeraldryId).toBe(900);
+      expect(orphans.heraldryRefs.find(h => h.entityType === 'house').entityName).toBe('House Armiger');
+    });
+
+    it('should treat a dataset with no dignities or heraldry as clean', () => {
+      const orphans = findOrphanedRecords({
+        people: [{ id: 1, firstName: 'A', lastName: 'B' }],
+        houses: [],
+        relationships: []
+      });
+
+      expect(orphans.dignities).toEqual([]);
+      expect(orphans.heraldryRefs).toEqual([]);
+    });
+
     it('should find people with missing house references', () => {
       const data = {
         people: [

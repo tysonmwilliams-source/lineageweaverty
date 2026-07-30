@@ -268,15 +268,18 @@ export function extractWikiLinks(markdown) {
 /**
  * Validate wiki-links against database
  * Returns list of broken links
- * 
+ *
  * @param {string} markdown - Raw markdown text
+ * @param {string} [datasetId] - Dataset to validate against. Required in
+ *   practice: without it getAllEntries() silently reads the *default* database,
+ *   so every link in a non-default world would report as broken.
  * @returns {Promise<Array<string>>} - Array of entry names that don't exist
  */
-export async function validateWikiLinks(markdown) {
+export async function validateWikiLinks(markdown, datasetId) {
   const links = extractWikiLinks(markdown);
   if (links.length === 0) return [];
-  
-  const allEntries = await getAllEntries();
+
+  const allEntries = await getAllEntries(datasetId);
   const entryTitles = new Set(
     allEntries.map(e => e.title.toLowerCase())
   );
@@ -294,12 +297,14 @@ export async function validateWikiLinks(markdown) {
  * 
  * @param {string} partialText - Partial entry name being typed
  * @param {number} limit - Maximum number of suggestions
+ * @param {string} [datasetId] - Dataset to search. See validateWikiLinks for why
+ *   omitting this reads the wrong database.
  * @returns {Promise<Array<Object>>} - Array of matching entries
  */
-export async function getSuggestedEntries(partialText, limit = 10) {
+export async function getSuggestedEntries(partialText, limit = 10, datasetId) {
   if (!partialText || partialText.length < 2) return [];
-  
-  const allEntries = await getAllEntries();
+
+  const allEntries = await getAllEntries(datasetId);
   const searchLower = partialText.toLowerCase();
   
   // Fuzzy match: title starts with OR contains the search text
@@ -330,10 +335,44 @@ export async function getSuggestedEntries(partialText, limit = 10) {
   return matches.slice(0, limit);
 }
 
+/**
+ * Find the wiki-link the caret is currently inside, for autocomplete.
+ *
+ * Scans back from the caret to the nearest `[[` and gives up if it crosses a
+ * `]]` or a newline — so a already-closed link earlier in the paragraph, or a
+ * stray bracket on a previous line, doesn't trigger suggestions.
+ *
+ * Kept here rather than inline in the form so it can be tested, and so the
+ * TipTap editor can reuse it.
+ *
+ * @param {string} text - Full textarea contents
+ * @param {number} caret - Caret offset (selectionStart)
+ * @returns {{start: number, end: number, query: string}|null}
+ */
+export function findLinkSpanAtCaret(text, caret) {
+  if (typeof text !== 'string' || typeof caret !== 'number' || caret < 0) return null;
+
+  const open = text.lastIndexOf('[[', caret - 1);
+  if (open === -1) return null;
+
+  // The caret must be past the closing bracket of the `[[` token itself.
+  // Without this, a caret at 0 makes lastIndexOf search from index 0 (JS clamps
+  // a negative fromIndex), matching a `[[` that starts *at* the caret and
+  // yielding start=2, end=0 — a backwards span that corrupts the text when a
+  // suggestion is inserted into it.
+  if (caret < open + 2) return null;
+
+  const between = text.slice(open + 2, caret);
+  if (between.includes(']]') || between.includes('\n')) return null;
+
+  return { start: open + 2, end: caret, query: between };
+}
+
 export default {
   parseWikiLinks,
   extractWikiLinks,
   validateWikiLinks,
   getSuggestedEntries,
+  findLinkSpanAtCaret,
   getContextSnippet
 };

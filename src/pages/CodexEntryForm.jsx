@@ -6,7 +6,7 @@
  * Features medieval manuscript aesthetic with animations.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -24,6 +24,8 @@ import ActionButton from '../components/shared/ActionButton';
 import LoadingState from '../components/shared/LoadingState';
 import './CodexEntryForm.css';
 import { logger } from '../utils/logger';
+import { validateWikiLinks, getSuggestedEntries, findLinkSpanAtCaret } from '../utils/wikiLinkParser';
+import useDebouncedValue from '../hooks/useDebouncedValue';
 
 const CONTAINER_VARIANTS = {
   hidden: { opacity: 0 },
@@ -86,6 +88,23 @@ function CodexEntryForm() {
   const [loading, setLoading] = useState(isEditing);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+
+  // ── Wiki-link tooling ──────────────────────────────────────────────────────
+  //
+  // The form told you to write [[Entry Name]] and then gave you no way to know
+  // whether the name was right. 219 of 1,787 links in the real world data point
+  // at nothing, and a typo is indistinguishable from a deliberate
+  // forward-reference until you go looking. Both of these are now surfaced while
+  // you type: suggestions so the name comes out right, and a report so a link
+  // that resolves to nothing says so.
+  const contentRef = useRef(null);
+  const [brokenLinks, setBrokenLinks] = useState([]);
+  const [suggestions, setSuggestions] = useState([]);
+  const [suggestionIndex, setSuggestionIndex] = useState(0);
+  // The [[ ... span under the caret, if any: { start, end, query }
+  const [activeLinkSpan, setActiveLinkSpan] = useState(null);
+
+  const debouncedContent = useDebouncedValue(formData.content, 500);
 
   // Load existing entry if editing
   useEffect(() => {
@@ -151,6 +170,104 @@ function CodexEntryForm() {
       [field]: value
     }));
   }
+
+  // ── Wiki-link validation ───────────────────────────────────────────────────
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!debouncedContent?.trim()) {
+      setBrokenLinks([]);
+      return undefined;
+    }
+
+    validateWikiLinks(debouncedContent, activeDataset?.id)
+      .then(broken => {
+        if (!cancelled) setBrokenLinks(broken);
+      })
+      .catch(err => {
+        // A validation failure must never block writing.
+        logger.error('Wiki-link validation failed:', err);
+        if (!cancelled) setBrokenLinks([]);
+      });
+
+    return () => { cancelled = true; };
+  }, [debouncedContent, activeDataset]);
+
+  // ── [[ autocomplete ────────────────────────────────────────────────────────
+
+  const handleContentChange = useCallback((e) => {
+    const { value, selectionStart } = e.target;
+    handleInputChange('content', value);
+    setActiveLinkSpan(findLinkSpanAtCaret(value, selectionStart));
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const query = activeLinkSpan?.query?.trim();
+    if (!query || query.length < 2) {
+      setSuggestions([]);
+      return undefined;
+    }
+
+    getSuggestedEntries(query, 8, activeDataset?.id)
+      .then(results => {
+        if (cancelled) return;
+        setSuggestions(results);
+        setSuggestionIndex(0);
+      })
+      .catch(err => {
+        logger.error('Wiki-link suggestions failed:', err);
+        if (!cancelled) setSuggestions([]);
+      });
+
+    return () => { cancelled = true; };
+  }, [activeLinkSpan, activeDataset]);
+
+  /** Replace the partial name under the caret with a chosen entry title. */
+  const applySuggestion = useCallback((entry) => {
+    if (!activeLinkSpan) return;
+
+    const { start, end } = activeLinkSpan;
+    const text = formData.content;
+    // Swallow a `]]` that is already there so selecting doesn't produce `]]]]`.
+    const alreadyClosed = text.slice(end, end + 2) === ']]';
+    const after = alreadyClosed ? text.slice(end + 2) : text.slice(end);
+
+    const next = `${text.slice(0, start)}${entry.title}]]${after}`;
+    handleInputChange('content', next);
+    setActiveLinkSpan(null);
+    setSuggestions([]);
+
+    // Put the caret after the closing brackets.
+    const caret = start + entry.title.length + 2;
+    requestAnimationFrame(() => {
+      const el = contentRef.current;
+      if (!el) return;
+      el.focus();
+      el.setSelectionRange(caret, caret);
+    });
+  }, [activeLinkSpan, formData.content]);
+
+  const handleContentKeyDown = useCallback((e) => {
+    if (suggestions.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSuggestionIndex(i => (i + 1) % suggestions.length);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSuggestionIndex(i => (i - 1 + suggestions.length) % suggestions.length);
+    } else if (e.key === 'Enter' || e.key === 'Tab') {
+      e.preventDefault();
+      applySuggestion(suggestions[suggestionIndex]);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setSuggestions([]);
+      setActiveLinkSpan(null);
+    }
+  }, [suggestions, suggestionIndex, applySuggestion]);
 
   // Strip formatting on paste - always use plain text, remove code fences and leading indentation
   function handlePlainTextPaste(e, field) {
@@ -271,7 +388,7 @@ function CodexEntryForm() {
       let codexEntryId;
 
       if (isEditing) {
-        await updateEntry(parseInt(id), entryData, datasetId);
+        await updateEntry(parseInt(id), entryData, datasetId, user?.uid || null);
         codexEntryId = parseInt(id);
 
         // ☁️ Sync update to cloud
@@ -555,17 +672,73 @@ function CodexEntryForm() {
               </ActionButton>
             </div>
             <p className="codex-entry-form__hint">
-              Use <code>[[Entry Name]]</code> to link to other entries
+              Use <code>[[Entry Name]]</code> to link to other entries — start typing
+              inside the brackets for suggestions
             </p>
-            <textarea
-              id="content"
-              className="codex-entry-form__textarea"
-              placeholder="Write your entry content here..."
-              value={formData.content}
-              onChange={(e) => handleInputChange('content', e.target.value)}
-              onPaste={(e) => handlePlainTextPaste(e)}
-              rows={20}
-            />
+            <div className="codex-entry-form__editor">
+              <textarea
+                id="content"
+                ref={contentRef}
+                className="codex-entry-form__textarea"
+                placeholder="Write your entry content here..."
+                value={formData.content}
+                onChange={handleContentChange}
+                onKeyDown={handleContentKeyDown}
+                onPaste={(e) => handlePlainTextPaste(e)}
+                onBlur={() => {
+                  // Delay so a click on a suggestion still registers.
+                  setTimeout(() => setSuggestions([]), 150);
+                }}
+                rows={20}
+                aria-autocomplete="list"
+                aria-expanded={suggestions.length > 0}
+              />
+
+              {suggestions.length > 0 && (
+                <ul className="codex-entry-form__suggestions" role="listbox">
+                  {suggestions.map((entry, i) => (
+                    <li key={entry.id}>
+                      <button
+                        type="button"
+                        role="option"
+                        aria-selected={i === suggestionIndex}
+                        className={`codex-entry-form__suggestion ${
+                          i === suggestionIndex ? 'codex-entry-form__suggestion--active' : ''
+                        }`}
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => applySuggestion(entry)}
+                      >
+                        <span className="codex-entry-form__suggestion-title">{entry.title}</span>
+                        {entry.type && (
+                          <span className="codex-entry-form__suggestion-type">{entry.type}</span>
+                        )}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {brokenLinks.length > 0 && (
+              <div className="codex-entry-form__broken-links" role="status">
+                <div className="codex-entry-form__broken-links-head">
+                  <Icon name="alert-triangle" size={16} />
+                  <span>
+                    {brokenLinks.length} link{brokenLinks.length === 1 ? '' : 's'} point
+                    {brokenLinks.length === 1 ? 's' : ''} to an entry that doesn’t exist yet
+                  </span>
+                </div>
+                <ul className="codex-entry-form__broken-links-list">
+                  {[...new Set(brokenLinks)].map(name => (
+                    <li key={name}><code>[[{name}]]</code></li>
+                  ))}
+                </ul>
+                <p className="codex-entry-form__hint">
+                  This isn’t an error — a link can legitimately run ahead of the entry
+                  it points at. It’s here so a typo doesn’t look like a plan.
+                </p>
+              </div>
+            )}
           </motion.section>
         </div>
 

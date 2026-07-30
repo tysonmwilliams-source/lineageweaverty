@@ -737,6 +737,33 @@ export async function updateDignity(id, updates, userId = null, datasetId = null
     });
     logger.log('📜 Dignity updated:', id);
 
+    // Keep the linked Codex entry's title in step with the dignity's name — the
+    // title is denormalized, so a rename otherwise left the Codex showing the old
+    // one and broke [[New Name]] wiki-links (which resolve on title).
+    if (updates.name !== undefined) {
+      const dignity = await db.dignities.get(id);
+      if (dignity?.codexEntryId && dignity.name?.trim()) {
+        try {
+          const entry = await db.codexEntries.get(dignity.codexEntryId);
+          if (entry && entry.title !== dignity.name) {
+            await db.codexEntries.update(dignity.codexEntryId, {
+              title: dignity.name,
+              updated: new Date().toISOString()
+            });
+            logger.log(`📚 Codex title follows dignity rename: "${entry.title}" → "${dignity.name}"`);
+
+            if (userId) {
+              const { syncUpdateCodexEntry } = await import('./dataSyncService.js');
+              syncUpdateCodexEntry(userId, datasetId, dignity.codexEntryId, { title: dignity.name });
+            }
+          }
+        } catch (codexError) {
+          // Codex bookkeeping must never block a dignity edit.
+          logger.error('Error propagating dignity rename to Codex:', codexError);
+        }
+      }
+    }
+
     // Sync to cloud if userId provided
     if (userId) {
       syncUpdateDignity(userId, datasetId, id, updates);

@@ -691,4 +691,110 @@ describe('Database Service', () => {
       ).rejects.toThrow(/not a lineageweaver full backup/i);
     });
   });
+
+  // ── Rename propagation to the linked Codex entry ───────────────────────────
+  //
+  // The Codex stores the title denormalized, so nothing kept it in step with the
+  // person or house it describes. Renaming used to leave the Codex on the old
+  // name — and since wiki-links resolve on lowercased title, a [[New Name]] link
+  // silently resolved to nothing while [[Old Name]] kept working.
+  describe('Codex title follows renames', () => {
+    async function makeLinkedEntry(title, extra = {}) {
+      const db = getDatabase(TEST_DATASET_ID);
+      return await db.codexEntries.add({
+        type: 'personage',
+        title,
+        content: '',
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+        ...extra
+      });
+    }
+
+    it('updates the linked Codex title when a person is renamed', async () => {
+      const db = getDatabase(TEST_DATASET_ID);
+      const codexEntryId = await makeLinkedEntry('Aldric Wilfrey');
+      const personId = await addPerson(
+        { firstName: 'Aldric', lastName: 'Wilfrey', codexEntryId },
+        TEST_DATASET_ID
+      );
+
+      await updatePerson(personId, { firstName: 'Aldous' }, TEST_DATASET_ID);
+
+      const entry = await db.codexEntries.get(codexEntryId);
+      expect(entry.title).toBe('Aldous Wilfrey');
+    });
+
+    it('applies the House-prefix convention when a house is renamed', async () => {
+      const db = getDatabase(TEST_DATASET_ID);
+      const codexEntryId = await makeLinkedEntry('House Riverhead', { type: 'house' });
+      const houseId = await addHouse(
+        { houseName: 'Riverhead', codexEntryId },
+        { datasetId: TEST_DATASET_ID, skipCodexCreation: true }
+      );
+
+      await updateHouse(houseId, { houseName: 'Breakmount' }, TEST_DATASET_ID);
+
+      const entry = await db.codexEntries.get(codexEntryId);
+      expect(entry.title).toBe('House Breakmount');
+    });
+
+    it('does not double the prefix when the name already starts with House', async () => {
+      const db = getDatabase(TEST_DATASET_ID);
+      const codexEntryId = await makeLinkedEntry('House Old', { type: 'house' });
+      const houseId = await addHouse(
+        { houseName: 'Old', codexEntryId },
+        { datasetId: TEST_DATASET_ID, skipCodexCreation: true }
+      );
+
+      await updateHouse(houseId, { houseName: 'House Wilfson' }, TEST_DATASET_ID);
+
+      const entry = await db.codexEntries.get(codexEntryId);
+      expect(entry.title).toBe('House Wilfson');
+    });
+
+    it('leaves the Codex alone when a person has no linked entry', async () => {
+      const personId = await addPerson(
+        { firstName: 'Unlinked', lastName: 'Person' },
+        TEST_DATASET_ID
+      );
+
+      // What matters is that the rename still succeeds and does not throw.
+      await updatePerson(personId, { firstName: 'Renamed' }, TEST_DATASET_ID);
+
+      const person = await getPerson(personId, TEST_DATASET_ID);
+      expect(person.firstName).toBe('Renamed');
+    });
+
+    it('does not touch the Codex title when the name did not change', async () => {
+      const db = getDatabase(TEST_DATASET_ID);
+      const codexEntryId = await makeLinkedEntry('Kept Title');
+      const personId = await addPerson(
+        { firstName: 'Kept', lastName: 'Title', codexEntryId },
+        TEST_DATASET_ID
+      );
+
+      // A non-name edit must not rewrite the title.
+      await updatePerson(personId, { dateOfBirth: '1700' }, TEST_DATASET_ID);
+
+      const entry = await db.codexEntries.get(codexEntryId);
+      expect(entry.title).toBe('Kept Title');
+    });
+
+    it('does not blank a Codex title from a half-typed rename', async () => {
+      const db = getDatabase(TEST_DATASET_ID);
+      const codexEntryId = await makeLinkedEntry('Has A Title');
+      const personId = await addPerson(
+        { firstName: 'Has', lastName: 'Title', codexEntryId },
+        TEST_DATASET_ID
+      );
+
+      // Clearing both name fields computes an empty title, which must be ignored
+      // rather than written.
+      await updatePerson(personId, { firstName: '', lastName: '' }, TEST_DATASET_ID);
+
+      const entry = await db.codexEntries.get(codexEntryId);
+      expect(entry.title).toBe('Has A Title');
+    });
+  });
 });
