@@ -38,7 +38,7 @@
      'Cormorant Garamond', which is not among the webfonts requested — the
      themes override it to Crimson Text, so the wrong value only surfaced
      during the first paint, before the theme stylesheet applied. */
-  --font-body: 'Crimson Text', 'Georgia', serif;
+  --font-body: 'Source Serif 4', 'Crimson Text', 'Georgia', serif;
   --font-mono: 'Consolas', 'Monaco', monospace;
 
   /* Font sizes */

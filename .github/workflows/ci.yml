@@ -23,9 +23,7 @@ jobs:
 
       - run: npm run test:run
 
-      # Lint is not a gate yet: `no-unused-vars` is set to `error` and there are
-      # several hundred pre-existing violations, so a blocking lint step would
-      # fail every run. Reported for visibility; see audit decision F3 for
-      # whether to downgrade the rule or bulk-fix first.
+      # Blocking as of decision F3. `no-unused-vars` and the React Compiler rules
+      # are warnings; no-undef, no-dupe-keys and rules-of-hooks are hard errors.
+      # A new undefined identifier or hook-order violation now fails the build.
       - run: npm run lint
-        continue-on-error: true
