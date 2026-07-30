@@ -15,6 +15,7 @@
 import { useState } from 'react';
 import { migrateHeraldryCompositions } from '../../services/heraldryCompositionMigration';
 import { useDataset } from '../../contexts/DatasetContext';
+import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../icons';
 import { logger } from '../../utils/logger';
 import './CompositionMigrationPanel.css';
@@ -30,24 +31,39 @@ function Stat({ label, value, tone }) {
 
 function CompositionMigrationPanel() {
   const { activeDataset } = useDataset();
+  const { user } = useAuth();
   const [report, setReport] = useState(null);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState(null);
+  const [confirmingApply, setConfirmingApply] = useState(false);
 
-  const runDryRun = async () => {
+  const run = async ({ apply }) => {
     setRunning(true);
     setError(null);
+    setConfirmingApply(false);
     try {
-      // apply is omitted, so nothing is written. See the service's default.
-      const result = await migrateHeraldryCompositions({ datasetId: activeDataset?.id });
+      // For a dry run `apply` is omitted entirely rather than passed as false,
+      // so the service's own default is what protects the data.
+      const result = await migrateHeraldryCompositions({
+        datasetId: activeDataset?.id,
+        // updateHeraldry only syncs when it is given a userId, and this repo's
+        // conflict resolution is last-write-wins. Without this, applying would
+        // rewrite 33 records locally and leave the cloud holding the old ones,
+        // so the next download would quietly undo the migration.
+        userId: user?.uid ?? null,
+        ...(apply ? { apply: true } : {})
+      });
       setReport(result);
     } catch (err) {
-      logger.error('Composition migration dry run failed:', err);
+      logger.error(`Composition migration ${apply ? 'apply' : 'dry run'} failed:`, err);
       setError(err.message);
     } finally {
       setRunning(false);
     }
   };
+
+  const applied = report?.apply === true;
+  const canApply = report && !applied && report.migrated > 0;
 
   return (
     <section className="composition-migration">
@@ -61,7 +77,7 @@ function CompositionMigrationPanel() {
         </div>
         <button
           className="composition-migration__run"
-          onClick={runDryRun}
+          onClick={() => run({ apply: false })}
           disabled={running}
         >
           <Icon name={running ? 'loader-2' : 'play'} size={16} className={running ? 'is-spinning' : undefined} />
@@ -143,9 +159,54 @@ function CompositionMigrationPanel() {
               </p>
             )}
 
+            {applied ? (
+              <p className="composition-migration__clean">
+                <Icon name="check-circle" size={14} />
+                Applied. {report.migrated} record(s) rewritten to version 3.
+              </p>
+            ) : canApply && (
+              /* Two-step on purpose. This is the only control in the app that
+                 rewrites saved coats of arms, and a single click next to a
+                 "Run dry run" button is too easy to hit by accident. */
+              <div className="composition-migration__apply">
+                {confirmingApply ? (
+                  <>
+                    <span className="composition-migration__apply-warning">
+                      <Icon name="alert-triangle" size={14} />
+                      Rewrite {report.migrated} saved record(s)? This also syncs to the cloud.
+                    </span>
+                    <button
+                      className="composition-migration__confirm"
+                      onClick={() => run({ apply: true })}
+                      disabled={running}
+                    >
+                      Yes, apply
+                    </button>
+                    <button
+                      className="composition-migration__cancel"
+                      onClick={() => setConfirmingApply(false)}
+                      disabled={running}
+                    >
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    className="composition-migration__confirm"
+                    onClick={() => setConfirmingApply(true)}
+                    disabled={running}
+                  >
+                    <Icon name="check" size={14} />
+                    <span>Apply migration</span>
+                  </button>
+                )}
+              </div>
+            )}
+
             <p className="composition-migration__footnote">
-              Nothing was written. Applying comes with step 3, once the renderer
-              understands version 3.
+              {applied
+                ? 'Records were rewritten. Re-run the dry run to confirm nothing is left behind.'
+                : 'Nothing was written.'}
             </p>
         </div>
       )}

@@ -28,3 +28,5 @@ export {
   allLeaves,
   readCadency
 } from './readComposition';
+
+export { composeCoat } from './composeCoat';

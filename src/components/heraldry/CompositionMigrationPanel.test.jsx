@@ -19,6 +19,10 @@ vi.mock('../../contexts/DatasetContext', () => ({
   useDataset: () => ({ activeDataset: { id: 'test-world' } })
 }));
 
+vi.mock('../../contexts/AuthContext', () => ({
+  useAuth: () => ({ user: { uid: 'user-1' } })
+}));
+
 const { default: CompositionMigrationPanel } = await import('./CompositionMigrationPanel');
 
 const emptyReport = {
@@ -48,7 +52,7 @@ describe('CompositionMigrationPanel', () => {
     // `apply` must be absent, not merely false — the service defaults to a dry
     // run, and this panel must never be the thing that writes.
     const [options] = mockMigrate.mock.calls[0];
-    expect(options).toEqual({ datasetId: 'test-world' });
+    expect(options).toEqual({ datasetId: 'test-world', userId: 'user-1' });
     expect(options).not.toHaveProperty('apply');
   });
 
@@ -122,5 +126,96 @@ describe('CompositionMigrationPanel', () => {
     await userEvent.click(screen.getByRole('button', { name: /run dry run/i }));
 
     await waitFor(() => expect(screen.getByText(/nothing was written/i)).toBeInTheDocument());
+  });
+});
+
+describe('CompositionMigrationPanel — applying (decision C3, step 3)', () => {
+  const pending = { ...emptyReport, total: 33, migrated: 33 };
+
+  async function dryRunFirst() {
+    mockMigrate.mockResolvedValue(pending);
+    render(<CompositionMigrationPanel />);
+    await userEvent.click(screen.getByRole('button', { name: /run dry run/i }));
+    await waitFor(() => expect(screen.getByText(/nothing was written/i)).toBeInTheDocument());
+  }
+
+  it('offers no way to apply before a dry run has been read', () => {
+    render(<CompositionMigrationPanel />);
+    expect(screen.queryByRole('button', { name: /apply/i })).not.toBeInTheDocument();
+  });
+
+  it('offers no way to apply when nothing would change', async () => {
+    mockMigrate.mockResolvedValue({ ...emptyReport, total: 33, alreadyCurrent: 33 });
+    render(<CompositionMigrationPanel />);
+    await userEvent.click(screen.getByRole('button', { name: /run dry run/i }));
+
+    await waitFor(() => expect(screen.getByText(/nothing to migrate/i)).toBeInTheDocument());
+    expect(screen.queryByRole('button', { name: /apply/i })).not.toBeInTheDocument();
+  });
+
+  it('does not write on the first click — it asks first', async () => {
+    await dryRunFirst();
+    mockMigrate.mockClear();
+
+    await userEvent.click(screen.getByRole('button', { name: /apply migration/i }));
+
+    // This is the only control in the app that rewrites saved coats of arms.
+    // One click next to "Run dry run" is too easy to hit by accident.
+    expect(mockMigrate).not.toHaveBeenCalled();
+    expect(screen.getByText(/rewrite 33 saved record\(s\)\?/i)).toBeInTheDocument();
+  });
+
+  it('writes only after the confirmation', async () => {
+    await dryRunFirst();
+    mockMigrate.mockClear();
+    mockMigrate.mockResolvedValue({ ...pending, apply: true });
+
+    await userEvent.click(screen.getByRole('button', { name: /apply migration/i }));
+    await userEvent.click(screen.getByRole('button', { name: /yes, apply/i }));
+
+    await waitFor(() => expect(mockMigrate).toHaveBeenCalledTimes(1));
+    // userId must be present, or updateHeraldry writes locally without syncing
+    // and the next cloud download reverts the migration.
+    expect(mockMigrate.mock.calls[0][0]).toEqual({
+      datasetId: 'test-world',
+      userId: 'user-1',
+      apply: true
+    });
+  });
+
+  it('backs out cleanly on cancel', async () => {
+    await dryRunFirst();
+    mockMigrate.mockClear();
+
+    await userEvent.click(screen.getByRole('button', { name: /apply migration/i }));
+    await userEvent.click(screen.getByRole('button', { name: /cancel/i }));
+
+    expect(mockMigrate).not.toHaveBeenCalled();
+    expect(screen.queryByText(/rewrite 33 saved record\(s\)\?/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /apply migration/i })).toBeInTheDocument();
+  });
+
+  it('reports that records were written, and stops offering to apply again', async () => {
+    await dryRunFirst();
+    mockMigrate.mockResolvedValue({ ...pending, apply: true });
+
+    await userEvent.click(screen.getByRole('button', { name: /apply migration/i }));
+    await userEvent.click(screen.getByRole('button', { name: /yes, apply/i }));
+
+    await waitFor(() => expect(screen.getByText(/33 record\(s\) rewritten/i)).toBeInTheDocument());
+    // Claiming "nothing was written" after writing is the dangerous direction.
+    expect(screen.queryByText(/^nothing was written\.$/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /apply migration/i })).not.toBeInTheDocument();
+  });
+
+  it('surfaces a failed apply instead of claiming success', async () => {
+    await dryRunFirst();
+    mockMigrate.mockRejectedValue(new Error('write failed mid-run'));
+
+    await userEvent.click(screen.getByRole('button', { name: /apply migration/i }));
+    await userEvent.click(screen.getByRole('button', { name: /yes, apply/i }));
+
+    await waitFor(() => expect(screen.getByText(/write failed mid-run/i)).toBeInTheDocument());
+    expect(screen.queryByText(/rewritten/i)).not.toBeInTheDocument();
   });
 });

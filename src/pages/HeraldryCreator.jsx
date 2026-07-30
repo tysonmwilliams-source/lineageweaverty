@@ -22,7 +22,7 @@ import {
 import ListSearchBar from '../components/shared/ListSearchBar';
 import { downloadHeraldrySVG, downloadHeraldryPNG } from '../utils/downloadHeraldry';
 import { addCadencyToSVG, generatePersonalArmsBlazon } from '../utils/personalArmsRenderer';
-import { primaryLeaf } from '../utils/heraldry';
+import { primaryLeaf, readComposition, collectLeaves, composeCoat } from '../utils/heraldry';
 import {
   TINCTURES,
   LINE_STYLES,
@@ -1438,6 +1438,12 @@ function HeraldryCreator() {
   const [applyCadency, setApplyCadency] = useState(isPersonalArms);
   const [derivedFromName, setDerivedFromName] = useState(null);
 
+  // Keys a legacy composition carried that the migration did not recognise.
+  // Held across an edit so that re-saving a record does not drop them — the
+  // migration deliberately preserves unknown data, and it would be pointless
+  // for the first save afterwards to throw it away.
+  const [carriedUnmigrated, setCarriedUnmigrated] = useState(null);
+
   // Export the current preview. Works on an unsaved design too — you can compose
   // arms and take the file without committing it to the Armory.
   const handleDownload = useCallback(async (format) => {
@@ -1503,12 +1509,14 @@ function HeraldryCreator() {
           // primaryLeaf accepts any stored version, so this no longer cares
           // which format the record is in — which is what lets the data
           // migration and the code land in either order.
-          const leaf = primaryLeaf(heraldry.composition);
+          const stored = readComposition(heraldry.composition);
+          const leaf = stored && collectLeaves(stored.root)[0];
           if (leaf) {
             setField(leaf.field);
             setOrdinaries(leaf.ordinaries);
             setCharges(leaf.charges);
           }
+          if (stored?.unmigrated) setCarriedUnmigrated(stored.unmigrated);
           
           if (heraldry.heraldrySVG) {
             setPreviewSVG(heraldry.heraldrySVG);
@@ -1713,14 +1721,28 @@ function HeraldryCreator() {
         heraldryThumbnail: pngVersions.thumbnail,
         heraldryHighRes: pngVersions.highRes,
         shieldType: shieldType,
-        composition: {
-          // New layered format
+        // Decision C3, step 3. Was an inline object literal carrying its own
+        // `version: 2`, which is how a format acquires three spellings and no
+        // owner. composeCoat is now the single place a saved composition is
+        // shaped.
+        //
+        // Cadency is recorded here for the first time. It was previously only
+        // ever burned into the SVG by addCadencyToSVG, so the composition —
+        // the thing that is supposed to describe how the coat is built — did
+        // not know the arms were differenced at all. That was survivable while
+        // rendering read the stored SVG, and becomes data loss in step 4, which
+        // renders from the composition: personal arms would quietly lose their
+        // cadency marks on the next redraw.
+        composition: composeCoat({
           field,
           ordinaries,
           charges,
+          cadency: (isPersonalArms && applyCadency && birthPosition >= 1)
+            ? { type: 'triangles', count: birthPosition, position: 'chief', tincture: 'sable' }
+            : null,
           generatedAt: new Date().toISOString(),
-          version: 2 // Mark as layered format
-        },
+          unmigrated: carriedUnmigrated
+        }),
         category: category,
         tags: tags.split(',').map(t => t.trim()).filter(t => t),
         source: 'creator'

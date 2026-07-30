@@ -25,6 +25,7 @@ import {
   syncUpdatePerson
 } from './dataSyncService';
 import { logger } from '../utils/logger';
+import { readComposition } from '../utils/heraldry';
 
 // ==================== HERALDRY CRUD OPERATIONS ====================
 
@@ -617,16 +618,30 @@ export async function createPersonalArmsFromHouse(options, datasetId = null) {
       heraldryHighRes: houseHeraldry.heraldryHighRes,
       shieldType: houseHeraldry.shieldType,
       
-      // Store the original composition plus cadency
-      composition: {
-        ...houseHeraldry.composition,
-        cadency: cadencyComposition || {
-          type: 'triangles',
-          count: birthPosition,
-          position: 'chief',
-          tincture: 'sable'
-        }
-      },
+      // Decision C3, step 3. This spread the house composition raw, which had
+      // two problems. It propagated whatever storage version the house record
+      // happened to be in, so derived arms inherited a legacy format; and when
+      // the house had *no* composition — uploaded or generated arms — the
+      // spread of null produced `{ cadency }` alone, an object with no field
+      // and no root. Read back, that parses as a legacy composition and
+      // migrates into a default azure coat, fabricating arms for a house whose
+      // arms were only ever an image.
+      //
+      // Now: normalise to the current version, and if there is nothing to
+      // derive from, derive nothing.
+      composition: (() => {
+        const base = readComposition(houseHeraldry.composition);
+        if (!base) return null;
+        return {
+          ...base,
+          cadency: cadencyComposition || {
+            type: 'triangles',
+            count: birthPosition,
+            position: 'chief',
+            tincture: 'sable'
+          }
+        };
+      })(),
       
       // Classification
       category: 'personal',
