@@ -1,5 +1,33 @@
 # Lineageweaver — Full Audit
 
+> **Status:** Part One (Phases 0–5) is complete as of commits `2332671`,
+> `8fb5fa2`, `05f61df`, `bd01c46`, `cbcbeec`, `f51c6cc`. Part Two is untouched
+> and awaits the owner. See [`HANDOFF.md`](HANDOFF.md) for current baselines and
+> a consolidated list of every place this document turned out to be wrong.
+
+> **Correction (Phase 5):** three Part One items were described inaccurately.
+> **#66** — `downloadHeraldry()` does not exist and never did; there was no
+> heraldry export path at all, so it was written from scratch rather than wired
+> up. **#64** — `runIntegrityCheck()` could *not* have caught the broken Crown:
+> `findOrphanedRecords` never looked at dignities in any form. It was extended
+> with dignity and heraldry reference checks before being wired. **#68** —
+> `targetWordCount` was already rendered for story *beats*; the unrendered one is
+> the per-writing target. Separately, `reorderChapters`/`moveChapter` (#67) and
+> `validateWikiLinks`/`getSuggestedEntries` (#63) each carried a latent bug that
+> only became reachable once wired — no cloud sync, and a missing `datasetId`
+> respectively — so both were fixed as part of connecting them.
+
+> **Correction (Phase 4):** **#60** — SVGO also needs `mergePaths` disabled, not
+> only `convertColors`. It collapsed 133 paths into 8 on a single charge, and
+> rewriting subpaths into one `d` can flip even-odd/nonzero winding and silently
+> alter traced art that has no source to regenerate from. **#61** understated the
+> count: CLAUDE.md was wrong in six places, not three. **#55** — `.DS_Store` was
+> already in `.gitignore`. **#57** — dropping `@types/react*` would pre-empt
+> decision F4, which recommends keeping them; they were left in place. And the
+> `arcMilestones` phantom (#50) was actively harmful rather than inert: both
+> upload paths threw a `TypeError` reading its nonexistent Dexie table on every
+> sync.
+
 > **Correction (Phase 3):** Part One item #35 said to import the 1,468 lines of
 > shared CSS in `src/styles/shared/` and `shared-forms.css`. That was wrong.
 > Measured during implementation: those files define 112 class names, of which
