@@ -646,7 +646,7 @@ the only outstanding item that can damage heraldry already drawn.
 | 2 | Read path: readers go through `primaryLeaf`/`allLeaves`/`readCadency` | **done** — `5fa1bda` |
 | 3 | Save path: `composeCoat` writes v3; cadency recorded; apply flow | **done** — `face632` |
 | 4 | Render marshalled nodes — the SVG pipeline divides a shield | **done** — `991171a` |
-| 5 | Full recursive tree editor; `linkType` set by real code paths | in progress — 5a–5c done, 5d remaining |
+| 5 | Full recursive tree editor | **done** — `1db2936`, `81db30f`, `26047a5`, `ffe2472` |
 | 6 | Marriage arms: derive an impaled coat from a spouse relationship | not started |
 
 Step 1 is inert by design — nothing imports it, so it cannot break anything.
@@ -754,7 +754,20 @@ Step 5 is being taken in four slices, because only the last one is visible:
 | 5a | Dimidiation, per the decision above | **done** — `1db2936` |
 | 5b | Extract the editing UI so it edits a *node*, not the page | **done** — `81db30f` |
 | 5c | Creator state becomes a composition tree + a selected path | **done** — `26047a5` |
-| 5d | Tree navigation UI, and `linkType` set by real code paths | not started |
+| 5d | Tree navigation UI; `linkType` corrected, not wired | **done** — `ffe2472` |
+
+**5d: the audit was wrong about `linkType`, and acting on it would have caused
+a bug.** The report lists `quartered`/`impaled` as enum values "no code path
+sets", which reads as an instruction to set them once marshalling exists.
+`linkType` records the *role a link plays for an entity*, not how the coat is
+composed — and `primary` is the lookup key in **eleven** places, including the
+back-links that assign `heraldryId` onto a house or person record,
+`getPersonalArms`, and the Armory's house-coverage count. A house whose arms are
+quartered still links as `primary`; labelling that link `quartered` would make
+its own arms invisible to every one of those lookups. The enum values are for
+*additional* links — another entity whose arms appear inside someone else's
+shield — and nothing creating them is correct rather than missing. Documented on
+`linkHeraldryToEntity`.
 
 **5c bought more than state plumbing.** A marshalled shield now survives a save
 and load — the old save path rebuilt one coat from three state variables, so a

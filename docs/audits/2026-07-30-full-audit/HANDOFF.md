@@ -86,7 +86,7 @@ gated on a green light for timing. See "What is left" below.
 
 ```bash
 npm run build      # passes, ~20s
-npx vitest run     # 629 tests pass, 21 files, exits 0
+npx vitest run     # 666 tests pass, 23 files, exits 0
 npx eslint .       # 0 errors, 343 warnings — exits 0, and CI blocks on it
 ```
 
@@ -132,7 +132,7 @@ first answering something — that is the honest state of it.
   the top of README.
 - **C2, C5, C6** — Gemini key architecture, household roles, multiple spouses.
   **C1 and C4 are decided and complete**; **C3 is decided and underway — steps 1
-  to 4 of 6 are done**. See the C3 progress table in README.
+  to 5 of 6 are done**. See the C3 progress table in README.
 - **D1–D4** — succession semantics. D4 (the broken Crown) is now *reported* by
   the integrity check instead of failing silently, but whether person 82 was
   deleted or the Crown should be vacant is still a worldbuilding answer.
@@ -151,7 +151,7 @@ first answering something — that is the honest state of it.
 All four of the queued batch (C3, C4, G7, F4) were answered. C4 and G7 are
 implemented and on `main`. **C3 and F4 were both answered at their largest
 option** — recursive heraldic composition, and a full TypeScript migration.
-**C3 is underway: steps 1-4 of 6 are done** (`87aa243`, `5fa1bda`, `face632`, `991171a`) — see the
+**C3 is underway: steps 1-5 of 6 are done.** Only step 6 (marriage arms) remains — see the
 C3 progress table in README. F4 is not started.
 
 **No bulk rewrite has been run.** The migration is dry-run by default and must
