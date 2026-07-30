@@ -22,7 +22,7 @@ import {
 import ListSearchBar from '../components/shared/ListSearchBar';
 import { downloadHeraldrySVG, downloadHeraldryPNG } from '../utils/downloadHeraldry';
 import { addCadencyToSVG, generatePersonalArmsBlazon } from '../utils/personalArmsRenderer';
-import { primaryLeaf, readComposition, collectLeaves, composeCoat } from '../utils/heraldry';
+import { primaryLeaf, readComposition, collectLeaves, composeCoat, renderNode } from '../utils/heraldry';
 import {
   TINCTURES,
   LINE_STYLES,
@@ -1613,53 +1613,57 @@ function HeraldryCreator() {
   const generatePreview = useCallback(async () => {
     setGenerating(true);
     try {
-      // 1. Generate field SVG
-      let svgContent = generateFieldSVG(field);
-      
-      // 2. Add ordinaries in order (skip hidden ones)
-      for (const ordinary of ordinaries) {
-        if (ordinary.visible === false) continue;
-        const ordinarySVG = generateOrdinarySVG(ordinary);
-        svgContent += ordinarySVG;
-      }
-      
-      // 3. Add charges in order (skip hidden ones)
-      for (const charge of charges) {
-        if (charge.visible === false) continue;
-        const chargeHex = TINCTURES[charge.tincture]?.hex || charge.tincture;
-        const sizeScale = CHARGE_SIZES[charge.size]?.scale || 0.9;
-        
-        let chargeSVGContent = '';
-        
-        if (charge.count === 1) {
-          chargeSVGContent = await generateExternalChargeSVGAsync(
-            charge.chargeId, 
-            chargeHex, 
-            100, 90, 
-            sizeScale
-          );
-        } else {
-          const arrangements = CHARGE_ARRANGEMENTS[charge.count];
-          const arrangementKey = charge.arrangement || Object.keys(arrangements)[0];
-          const positions = arrangements[arrangementKey];
-          
-          const chargePromises = positions.map(pos =>
-            generateExternalChargeSVGAsync(
+      // Decision C3, step 4. The body of this used to be the preview: field,
+      // then ordinaries, then charges, straight into one string. It is now the
+      // *leaf* renderer, and the preview is whatever renderNode makes of the
+      // composition — one coat today, a divided shield once step 5 can build
+      // one. Everything below the composition boundary is unchanged.
+      const renderLeaf = async (leaf) => {
+        let content = generateFieldSVG(leaf.field);
+
+        for (const ordinary of leaf.ordinaries) {
+          if (ordinary.visible === false) continue;
+          content += generateOrdinarySVG(ordinary);
+        }
+
+        for (const charge of leaf.charges) {
+          if (charge.visible === false) continue;
+          const chargeHex = TINCTURES[charge.tincture]?.hex || charge.tincture;
+          const sizeScale = CHARGE_SIZES[charge.size]?.scale || 0.9;
+
+          if (charge.count === 1) {
+            content += await generateExternalChargeSVGAsync(
               charge.chargeId,
               chargeHex,
-              pos.x,
-              pos.y,
-              sizeScale * 0.7
-            )
-          );
-          
-          const chargeResults = await Promise.all(chargePromises);
-          chargeSVGContent = chargeResults.join('');
+              100, 90,
+              sizeScale
+            );
+          } else {
+            const arrangements = CHARGE_ARRANGEMENTS[charge.count];
+            const arrangementKey = charge.arrangement || Object.keys(arrangements)[0];
+            const positions = arrangements[arrangementKey];
+
+            const chargeResults = await Promise.all(
+              positions.map(pos =>
+                generateExternalChargeSVGAsync(
+                  charge.chargeId,
+                  chargeHex,
+                  pos.x,
+                  pos.y,
+                  sizeScale * 0.7
+                )
+              )
+            );
+            content += chargeResults.join('');
+          }
         }
-        
-        svgContent += chargeSVGContent;
-      }
-      
+
+        return content;
+      };
+
+      const composition = composeCoat({ field, ordinaries, charges });
+      const svgContent = await renderNode(composition.root, renderLeaf);
+
       // Wrap in SVG container
       const fullSVG = `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">${svgContent}</svg>`;
       setRawSVG(fullSVG);

@@ -30,3 +30,11 @@ export {
 } from './readComposition';
 
 export { composeCoat } from './composeCoat';
+
+export {
+  COAT_SIZE,
+  PART_RECTS,
+  placePart,
+  marshalParts,
+  renderNode
+} from './marshalSVG';
