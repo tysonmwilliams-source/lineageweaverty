@@ -40,7 +40,7 @@ import { EntitySidebar } from '../components/writing/Sidebar';
 import { CanonCheckPanel } from '../components/writing/CanonCheck';
 import WritingWizard from '../components/writing/WritingWizard';
 import ReferenceBrowser from '../components/writing/ReferenceBrowser';
-import { PlanningSidebar, StoryPlannerModal } from '../components/writing/Planner';
+import { PlanningSidebar } from '../components/writing/Planner';
 import ExportModal from '../components/writing/ExportModal';
 import { runRuleBasedChecks, runAICanonCheck } from '../services/canonCheckService';
 import { askGemini } from '../services/aiAssistantService';
@@ -242,8 +242,13 @@ export default function WritingEditor() {
   // Export modal state
   const [showExportModal, setShowExportModal] = useState(false);
 
-  // Planner modal state
-  const [showPlannerModal, setShowPlannerModal] = useState(false);
+  // Decision C4: opening the planner is a navigation now. Leaving the editor
+  // unmounts TipTap, which is safe — useAutoSave flushes pending content on
+  // unmount (see the empty-dep cleanup in hooks/useAutoSave.js), so a save in
+  // flight is not lost by walking away mid-sentence.
+  const openPlanner = useCallback(() => {
+    navigate(`/writing/${id}/plan`);
+  }, [navigate, id]);
 
   // Mobile drawer state (decision C1).
   //
@@ -983,8 +988,8 @@ Be encouraging but honest. Give specific examples from the text when possible. K
               <PlanningSidebar
                 writingId={parseInt(id)}
                 chapterId={activeChapterId}
-                onOpenPlanner={() => setShowPlannerModal(true)}
-                onCreatePlan={() => setShowPlannerModal(true)}
+                onOpenPlanner={openPlanner}
+                onCreatePlan={openPlanner}
               />
             ) : showWizardPanel ? (
               <WritingWizard
@@ -1027,14 +1032,6 @@ Be encouraging but honest. Give specific examples from the text when possible. K
         datasetId={activeDataset?.id}
       />
 
-      {/* Story Planner Modal */}
-      <StoryPlannerModal
-        isOpen={showPlannerModal}
-        onClose={() => setShowPlannerModal(false)}
-        writingId={parseInt(id)}
-        writingTitle={writing.title}
-        datasetId={activeDataset?.id}
-      />
     </>
   );
 }

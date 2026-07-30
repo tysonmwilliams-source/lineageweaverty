@@ -7,7 +7,8 @@
 export { default as StoryPlannerDashboard } from './StoryPlannerDashboard';
 export { default as SceneCard } from './SceneCard';
 export { default as PlanningSidebar } from './PlanningSidebar';
-export { default as StoryPlannerModal } from './StoryPlannerModal';
+// StoryPlannerModal was removed by decision C4 — the planner is a route now,
+// pages/StoryPlanner.jsx. Recoverable from git if the modal is ever wanted back.
 export { default as OutlineView } from './OutlineView';
 export { default as TimelineView } from './TimelineView';
 export { default as BeatSheetView } from './BeatSheetView';

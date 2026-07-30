@@ -26,7 +26,6 @@ import {
   syncAddWriting,
   syncDeleteWriting
 } from '../services/dataSyncService';
-import { StoryPlannerModal } from '../components/writing/Planner';
 import './WritingStudio.css';
 import { logger } from '../utils/logger';
 
@@ -329,7 +328,6 @@ export default function WritingStudio() {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [writingToDelete, setWritingToDelete] = useState(null);
-  const [plannerWritingId, setPlannerWritingId] = useState(null);
 
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
@@ -426,9 +424,11 @@ export default function WritingStudio() {
     navigate(`/writing/${writingId}`);
   }, [navigate]);
 
+  // Decision C4: a navigation, not a modal. The planner loads the writing
+  // itself, so it no longer depends on this page having already fetched it.
   const handleOpenPlanner = useCallback((writingId) => {
-    setPlannerWritingId(writingId);
-  }, []);
+    navigate(`/writing/${writingId}/plan`);
+  }, [navigate]);
 
   // Stats
   const stats = useMemo(() => ({
@@ -616,14 +616,6 @@ export default function WritingStudio() {
         )}
       </AnimatePresence>
 
-      {/* Story Planner Modal */}
-      <StoryPlannerModal
-        isOpen={!!plannerWritingId}
-        onClose={() => setPlannerWritingId(null)}
-        writingId={plannerWritingId}
-        writingTitle={writings.find(w => w.id === plannerWritingId)?.title}
-        datasetId={activeDataset?.id}
-      />
     </>
   );
 }

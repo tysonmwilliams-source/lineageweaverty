@@ -25,6 +25,7 @@ const DignityCrisisDashboard = lazy(() => import('./pages/DignityCrisisDashboard
 const BugTracker = lazy(() => import('./pages/BugTracker'));
 const WritingStudio = lazy(() => import('./pages/WritingStudio'));
 const WritingEditor = lazy(() => import('./pages/WritingEditor'));
+const StoryPlanner = lazy(() => import('./pages/StoryPlanner'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 // Loading fallback for lazy-loaded routes
@@ -403,6 +404,12 @@ function AppContent() {
                 <Route path="/bugs" element={<BugTracker />} />
                 <Route path="/writing" element={<WritingStudio />} />
                 <Route path="/writing/:id" element={<WritingEditor />} />
+                {/* Decision C4: the planner is a place you can link to, not a
+                    modal that forgets where you were. `:planId/:view` must come
+                    before the bare dashboard route is matched, which React
+                    Router handles by specificity, not by order. */}
+                <Route path="/writing/:id/plan" element={<StoryPlanner />} />
+                <Route path="/writing/:id/plan/:planId/:view" element={<StoryPlanner />} />
                 {/* Catch-all. Without this a mistyped or stale URL rendered a
                     blank page with no explanation and no way back. */}
                 <Route path="*" element={<NotFound />} />
