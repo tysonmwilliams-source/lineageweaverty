@@ -8,9 +8,14 @@
  * legacy keys the migration deliberately preserved.
  */
 import { describe, it, expect } from 'vitest';
-import { composeCoat } from './composeCoat';
+import { composeCoat, composeFromRoot } from './composeCoat';
 import { readComposition, primaryLeaf, readCadency } from './readComposition';
-import { validateComposition, COMPOSITION_VERSION } from './compositionModel';
+import {
+  validateComposition,
+  COMPOSITION_VERSION,
+  createPlainNode,
+  createMarshalledNode
+} from './compositionModel';
 
 const field = {
   division: 'perPale',
@@ -90,6 +95,51 @@ describe('composeCoat', () => {
     const composition = composeCoat();
     expect(validateComposition(composition).valid).toBe(true);
     expect(composition.root.field).toBeTruthy();
+  });
+});
+
+describe('composeFromRoot — saving a whole tree (step 5c)', () => {
+  const azure = createPlainNode({ field: { tincture1: 'azure' } });
+  const gules = createPlainNode({ field: { tincture1: 'gules' } });
+
+  it('saves a marshalled shield and reads it back as the same shield', () => {
+    // The claim step 5c makes. Before it, the creator rebuilt a single coat
+    // from three state variables on save, so a marshalled shield could not have
+    // survived a round trip even if something had built one.
+    const marriage = createMarshalledNode('impaled', [azure, gules]);
+    const composition = composeFromRoot(marriage);
+
+    expect(validateComposition(composition).valid).toBe(true);
+
+    const read = readComposition(composition);
+    expect(read.root.type).toBe('marshalled');
+    expect(read.root.arrangement).toBe('impaled');
+    expect(read.root.parts).toHaveLength(2);
+    expect(read.root.parts[0].field.tincture1).toBe('azure');
+    expect(read.root.parts[1].field.tincture1).toBe('gules');
+  });
+
+  it('survives nesting', () => {
+    const inner = createMarshalledNode('quartered', [azure, gules, azure, gules]);
+    const grand = createMarshalledNode('quartered', [inner, gules, azure, gules]);
+
+    const read = readComposition(composeFromRoot(grand));
+    expect(read.root.parts[0].parts[3].field.tincture1).toBe('gules');
+    expect(validateComposition(read).valid).toBe(true);
+  });
+
+  it('keeps cadency beside a marshalled root, not inside a quarter', () => {
+    const cadency = { type: 'triangles', count: 3, position: 'chief', tincture: 'sable' };
+    const composition = composeFromRoot(createMarshalledNode('impaled', [azure, gules]), { cadency });
+
+    expect(composition.cadency).toEqual(cadency);
+    expect(composition.root.parts[0]).not.toHaveProperty('cadency');
+  });
+
+  it('is what composeCoat is built on, so the two cannot drift', () => {
+    const viaCoat = composeCoat({ field, ordinaries, charges });
+    const viaRoot = composeFromRoot(createPlainNode({ field, ordinaries, charges }));
+    expect(viaCoat).toEqual(viaRoot);
   });
 });
 

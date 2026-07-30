@@ -29,7 +29,16 @@ export {
   readCadency
 } from './readComposition';
 
-export { composeCoat } from './composeCoat';
+export { composeCoat, composeFromRoot } from './composeCoat';
+
+export {
+  getNodeAtPath,
+  setNodeAtPath,
+  clampPath,
+  listPaths,
+  describePath,
+  samePath
+} from './nodePath';
 
 export {
   COAT_SIZE,

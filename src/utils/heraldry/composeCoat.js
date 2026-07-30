@@ -37,10 +37,23 @@ export function composeCoat({
   generatedAt,
   unmigrated
 } = {}) {
-  const composition = {
-    version: COMPOSITION_VERSION,
-    root: createPlainNode({ field, ordinaries, charges })
-  };
+  return composeFromRoot(createPlainNode({ field, ordinaries, charges }), {
+    cadency,
+    generatedAt,
+    unmigrated
+  });
+}
+
+/**
+ * A composition around an already-built root, which may be marshalled.
+ *
+ * `composeCoat` is the single-coat convenience over this. Once the creator
+ * holds a tree rather than one field-plus-charges (step 5c), this is what it
+ * saves through — the root is whatever the user has built, and only the
+ * fields that live *beside* it need assembling.
+ */
+export function composeFromRoot(root, { cadency, generatedAt, unmigrated } = {}) {
+  const composition = { version: COMPOSITION_VERSION, root };
 
   if (cadency) composition.cadency = cadency;
   if (generatedAt) composition.generatedAt = generatedAt;

@@ -20,7 +20,16 @@ import {
 import ListSearchBar from '../components/shared/ListSearchBar';
 import { downloadHeraldrySVG, downloadHeraldryPNG } from '../utils/downloadHeraldry';
 import { addCadencyToSVG, generatePersonalArmsBlazon } from '../utils/personalArmsRenderer';
-import { primaryLeaf, readComposition, collectLeaves, composeCoat, renderNode } from '../utils/heraldry';
+import {
+  readComposition,
+  composeFromRoot,
+  renderNode,
+  createPlainNode,
+  isPlainNode,
+  getNodeAtPath,
+  setNodeAtPath,
+  clampPath
+} from '../utils/heraldry';
 import {
   TINCTURES,
   LINE_STYLES,
@@ -705,6 +714,29 @@ function generateOrdinaryBlazon(ordinary) {
 /**
  * Generate full blazon from all layers
  */
+/**
+ * Blazon a composition tree (decision C3, step 5c).
+ *
+ * Marshalling has its own vocabulary, and it is not decoration: two coats side
+ * by side are blazoned "A impaling B", and four are "Quarterly, 1st ... 2nd ..."
+ * — so a marshalled shield described with only its first coat's blazon is
+ * simply the wrong blazon, not an abbreviated one.
+ */
+function generateTreeBlazon(node) {
+  if (!node) return '';
+
+  if (node.type === 'marshalled') {
+    const parts = (node.parts ?? []).map(generateTreeBlazon);
+    if (node.arrangement === 'impaled') {
+      return `${parts[0] ?? ''} impaling ${parts[1] ?? ''}`.trim();
+    }
+    const ordinals = ['1st', '2nd', '3rd', '4th'];
+    return `Quarterly, ${parts.map((p, i) => `${ordinals[i] ?? `${i + 1}th`} ${p}`).join(', ')}`;
+  }
+
+  return generateFullBlazon(node.field, node.ordinaries ?? [], node.charges ?? []);
+}
+
 function generateFullBlazon(field, ordinaries, charges) {
   let blazon = generateFieldBlazon(field);
   
@@ -773,22 +805,31 @@ function HeraldryCreator() {
   // LAYERED STATE STRUCTURE
   // ═══════════════════════════════════════════════════════════════════════════
   
-  // Field (base layer - always present)
-  const [field, setField] = useState({
-    division: 'plain',
-    tincture1: 'azure',
-    tincture2: 'or',
-    tincture3: 'gules',
-    lineStyle: 'straight',
-    count: 6,
-    inverted: false
-  });
-  
-  // Ordinaries array (0-3 items)
-  const [ordinaries, setOrdinaries] = useState([]);
-  
-  // Charges array (0-3 items)
-  const [charges, setCharges] = useState([]);
+  // Decision C3, step 5c. The design used to be three pieces of page state —
+  // field, ordinaries, charges — which can describe exactly one coat. It is now
+  // the composition tree, and the coat being edited is whichever node
+  // `selectedPath` points at. A single undivided coat is a tree of one, so this
+  // changes nothing on screen until step 5d can divide a shield.
+  const [root, setRoot] = useState(() => createPlainNode());
+
+  // [] is the whole shield; [1] its second part; [1, 0] the first part of that.
+  const [selectedPath, setSelectedPath] = useState([]);
+
+  // Clamped on read, because a path can outlive the shape it referred to —
+  // un-marshalling a quarter while it is selected would otherwise leave the
+  // editor pointing at a node that no longer exists, and rendering nothing.
+  const safePath = clampPath(root, selectedPath);
+  const selectedNode = getNodeAtPath(root, safePath) ?? root;
+
+  const replaceSelectedNode = useCallback((nextNode) => {
+    setRoot((current) => setNodeAtPath(current, clampPath(current, selectedPath), nextNode));
+  }, [selectedPath]);
+
+  // The coat currently being edited. Marshalled nodes have no field of their
+  // own, so the editing panel follows the selection down to a leaf.
+  const field = isPlainNode(selectedNode) ? selectedNode.field : createPlainNode().field;
+  const ordinaries = isPlainNode(selectedNode) ? selectedNode.ordinaries : [];
+  const charges = isPlainNode(selectedNode) ? selectedNode.charges : [];
   
   // ═══════════════════════════════════════════════════════════════════════════
   // LAYER MANAGEMENT FUNCTIONS
@@ -894,11 +935,11 @@ function HeraldryCreator() {
           // which format the record is in — which is what lets the data
           // migration and the code land in either order.
           const stored = readComposition(heraldry.composition);
-          const leaf = stored && collectLeaves(stored.root)[0];
-          if (leaf) {
-            setField(leaf.field);
-            setOrdinaries(leaf.ordinaries);
-            setCharges(leaf.charges);
+          if (stored?.root) {
+            // The whole tree, not just its first leaf — a marshalled coat now
+            // loads back as the shield it was saved as.
+            setRoot(stored.root);
+            setSelectedPath([]);
           }
           if (stored?.unmigrated) setCarriedUnmigrated(stored.unmigrated);
           
@@ -953,11 +994,13 @@ function HeraldryCreator() {
             // else — so deriving from a legacy record opened a blank shield,
             // and deriving from a migrated one would have done the same the
             // moment step 3 started writing version 3.
-            const parentLeaf = primaryLeaf(parentArms.composition);
-            if (parentLeaf) {
-              setField(parentLeaf.field);
-              setOrdinaries(parentLeaf.ordinaries);
-              setCharges(parentLeaf.charges);
+            const parentComposition = readComposition(parentArms.composition);
+            if (parentComposition?.root) {
+              // Derived arms start as the parent's whole shield, marshalling
+              // included — cadency differences the achievement, it does not
+              // flatten it to one coat.
+              setRoot(parentComposition.root);
+              setSelectedPath([]);
             }
             if (parentArms.shieldType) {
               setShieldType(parentArms.shieldType);
@@ -1045,8 +1088,7 @@ function HeraldryCreator() {
         return content;
       };
 
-      const composition = composeCoat({ field, ordinaries, charges });
-      const svgContent = await renderNode(composition.root, renderLeaf);
+      const svgContent = await renderNode(root, renderLeaf);
 
       // Wrap in SVG container
       const fullSVG = `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">${svgContent}</svg>`;
@@ -1064,7 +1106,7 @@ function HeraldryCreator() {
       setPreviewSVG(finalSVG);
 
       // 6. Generate blazon — cadency gets its own blazon clause.
-      const baseBlazon = generateFullBlazon(field, ordinaries, charges);
+      const baseBlazon = generateTreeBlazon(root);
       setBlazon(
         (isPersonalArms && applyCadency && birthPosition >= 1)
           ? generatePersonalArmsBlazon(baseBlazon, birthPosition)
@@ -1075,7 +1117,7 @@ function HeraldryCreator() {
       logger.error('Error generating preview:', error);
     }
     setGenerating(false);
-  }, [field, ordinaries, charges, shieldType, isPersonalArms, applyCadency, birthPosition]);
+  }, [root, shieldType, isPersonalArms, applyCadency, birthPosition]);
   
   useEffect(() => {
     generatePreview();
@@ -1121,10 +1163,9 @@ function HeraldryCreator() {
         // rendering read the stored SVG, and becomes data loss in step 4, which
         // renders from the composition: personal arms would quietly lose their
         // cadency marks on the next redraw.
-        composition: composeCoat({
-          field,
-          ordinaries,
-          charges,
+        // Step 5c: the whole tree is saved, not a rebuilt single coat. A
+        // marshalled shield therefore survives a save/load round trip.
+        composition: composeFromRoot(root, {
           cadency: (isPersonalArms && applyCadency && birthPosition >= 1)
             ? { type: 'triangles', count: birthPosition, position: 'chief', tincture: 'sable' }
             : null,
@@ -1429,16 +1470,13 @@ function HeraldryCreator() {
             {/* ═══════════════════════════════════════════════════════════════
                 FIELD (Base Layer)
                 ═══════════════════════════════════════════════════════════════ */}
-            {/* Decision C3, step 5: the field/ordinaries/charges editor is now
-                a component that edits a *node*, so it can be pointed at any
-                coat in a marshalled shield rather than only at this page. */}
+            {/* Decision C3, step 5. The editor edits whichever node the
+                selection points at, and hands back a replacement — so the same
+                panel serves the whole shield today and any quarter of it once
+                step 5d can divide one. */}
             <CoatEditor
-              node={{ type: 'plain', field, ordinaries, charges }}
-              onChange={(next) => {
-                setField(next.field);
-                setOrdinaries(next.ordinaries);
-                setCharges(next.charges);
-              }}
+              node={selectedNode}
+              onChange={replaceSelectedNode}
               activeSection={activeSection}
               onSectionChange={setActiveSection}
             />
