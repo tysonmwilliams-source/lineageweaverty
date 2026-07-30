@@ -644,7 +644,7 @@ the only outstanding item that can damage heraldry already drawn.
 |---|---|---|
 | 1 | The recursive model, the v1/v2 → v3 migration, and its tests | **done** — `87aa243` |
 | 2 | Read path: readers go through `primaryLeaf`/`allLeaves`/`readCadency` | **done** — `5fa1bda` |
-| 3 | Save path: `HeraldryCreator` writes v3 and stops migrating on load | not started |
+| 3 | Save path: `composeCoat` writes v3; cadency recorded; apply flow | **done** — `face632` |
 | 4 | Render marshalled nodes — the SVG pipeline learns to divide a shield | not started |
 | 5 | UI to build a marshalled coat, and `linkType` `impaled`/`quartered` set by real code paths | not started |
 | 6 | Marriage arms: derive an impaled coat from a spouse relationship | not started |
@@ -693,6 +693,27 @@ A third composition shape also turned up and was deleted:
 `createPersonalArmsSVG` returned `composition: { base, cadency }`, nested unlike
 either stored format, which nothing read. Left alone it would have been adopted
 by step 4.
+
+**What step 3 found.** Two problems, both of which would have surfaced as data
+loss rather than errors:
+
+- **Cadency was never in the composition.** It existed only as marks burned into
+  the stored SVG by `addCadencyToSVG`. Harmless while rendering read that SVG,
+  and data loss the moment step 4 renders from the composition instead — every
+  set of personal arms would lose its cadency on the next redraw. Now recorded
+  on save.
+- **`createPersonalArmsFromHouse` could invent a coat.** It spread the house
+  composition raw; when the house had none (uploaded or generated arms), the
+  spread of `null` produced `{ cadency }` alone, which reads back as a legacy
+  composition and migrates into a default azure coat. Deriving personal arms
+  from an image-only house therefore fabricated arms nobody drew. It also has
+  **zero callers** — the live path is the creator — and is kept only because
+  derived arms are what step 6 is about.
+
+The apply flow also exposed a sync gap worth remembering: `updateHeraldry` only
+syncs when passed a `userId`, and conflict resolution here is last-write-wins.
+Applying the migration without one would have rewritten every record locally
+while the cloud kept the old copies, letting the next download silently undo it.
 
 Two things step 1 established that the rest depends on:
 
