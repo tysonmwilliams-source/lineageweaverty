@@ -21,3 +21,10 @@ export {
   needsCompositionMigration,
   classifyComposition
 } from './migrateComposition';
+
+export {
+  readComposition,
+  primaryLeaf,
+  allLeaves,
+  readCadency
+} from './readComposition';

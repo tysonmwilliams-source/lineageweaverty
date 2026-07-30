@@ -22,6 +22,7 @@ import {
 import ListSearchBar from '../components/shared/ListSearchBar';
 import { downloadHeraldrySVG, downloadHeraldryPNG } from '../utils/downloadHeraldry';
 import { addCadencyToSVG, generatePersonalArmsBlazon } from '../utils/personalArmsRenderer';
+import { primaryLeaf } from '../utils/heraldry';
 import {
   TINCTURES,
   LINE_STYLES,
@@ -1492,42 +1493,21 @@ function HeraldryCreator() {
           setTags(heraldry.tags?.join(', ') || '');
           setBlazon(heraldry.blazon || '');
           
-          if (heraldry.composition) {
-            const comp = heraldry.composition;
-            
-            // Check if this is the new layered format
-            if (comp.field) {
-              // New layered format
-              setField(comp.field);
-              setOrdinaries(comp.ordinaries || []);
-              setCharges(comp.charges || []);
-            } else {
-              // Legacy flat format - migrate to new structure
-              setField({
-                division: comp.division || 'plain',
-                tincture1: comp.tincture1 || 'azure',
-                tincture2: comp.tincture2 || 'or',
-                tincture3: comp.tincture3 || 'gules',
-                lineStyle: comp.lineStyle || 'straight',
-                count: comp.count || 6,
-                inverted: comp.inverted || false
-              });
-              
-              // If legacy format had a charge enabled, migrate it
-              if (comp.chargeEnabled && comp.chargeId) {
-                setCharges([{
-                  chargeId: comp.externalChargeId || comp.chargeId,
-                  tincture: comp.chargeTincture || 'or',
-                  size: comp.chargeSize || 'medium',
-                  count: comp.chargeCount || 1,
-                  arrangement: comp.chargeArrangement || 'fessPoint'
-                }]);
-              }
-              
-              // Note: Legacy format stored ordinaries AS divisions (chief, fess, etc.)
-              // We'd need to detect if the division was actually an ordinary and migrate
-              // For now, we leave ordinaries empty in legacy migration
-            }
+          // Decision C3, step 2. This used to be an inline format conversion:
+          // it branched on `comp.field`, and rebuilt legacy records from a copy
+          // of the migration logic that admitted, in its own closing comment,
+          // to dropping ordinaries it could not classify. That conversion also
+          // never persisted, so a legacy record stayed legacy until the day it
+          // happened to be saved.
+          //
+          // primaryLeaf accepts any stored version, so this no longer cares
+          // which format the record is in — which is what lets the data
+          // migration and the code land in either order.
+          const leaf = primaryLeaf(heraldry.composition);
+          if (leaf) {
+            setField(leaf.field);
+            setOrdinaries(leaf.ordinaries);
+            setCharges(leaf.charges);
           }
           
           if (heraldry.heraldrySVG) {
@@ -1577,11 +1557,15 @@ function HeraldryCreator() {
           if (parentArms) {
             setDerivedFromName(parentArms.name || null);
 
-            const comp = parentArms.composition;
-            if (comp?.field) {
-              setField(comp.field);
-              setOrdinaries(comp.ordinaries || []);
-              setCharges(comp.charges || []);
+            // Was `if (comp?.field)`, which recognised version 2 and nothing
+            // else — so deriving from a legacy record opened a blank shield,
+            // and deriving from a migrated one would have done the same the
+            // moment step 3 started writing version 3.
+            const parentLeaf = primaryLeaf(parentArms.composition);
+            if (parentLeaf) {
+              setField(parentLeaf.field);
+              setOrdinaries(parentLeaf.ordinaries);
+              setCharges(parentLeaf.charges);
             }
             if (parentArms.shieldType) {
               setShieldType(parentArms.shieldType);

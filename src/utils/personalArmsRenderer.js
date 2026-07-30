@@ -122,20 +122,20 @@ export function createPersonalArmsSVG(houseHeraldry, birthPosition, options = {}
   // Add cadency marks
   const personalArmsSVG = addCadencyToSVG(baseSVG, birthPosition, options);
   
+  // Decision C3, step 2: this used to also return
+  // `composition: { base: <house composition>, cadency: {...} }` — a third
+  // composition shape, nested differently from both the stored formats. Nothing
+  // ever read it: both call sites in PersonalArmsSection use `result.svg` and
+  // discard the rest. It was removed rather than aligned, because this function
+  // overlays cadency marks on a finished SVG and does not compose a coat —
+  // returning a composition from here would be inventing one. Cadency belongs
+  // beside the root on the stored composition, which is where the version-3
+  // model puts it.
   return {
     success: true,
     svg: personalArmsSVG,
     birthPosition,
-    parentHeraldryId: houseHeraldry.id,
-    composition: {
-      base: houseHeraldry.composition,
-      cadency: {
-        type: 'triangles',
-        count: birthPosition,
-        position: 'chief',
-        tincture: 'sable'
-      }
-    }
+    parentHeraldryId: houseHeraldry.id
   };
 }
 
