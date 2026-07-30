@@ -824,7 +824,7 @@ function OrdinaryCard({
             disabled={index === 0}
             title="Move up (render earlier)"
           >
-            ▲
+            <Icon name="chevron-up" size={14} />
           </button>
           <button 
             type="button"
@@ -833,7 +833,7 @@ function OrdinaryCard({
             disabled={index >= totalCount - 1}
             title="Move down (render later)"
           >
-            ▼
+            <Icon name="chevron-down" size={14} />
           </button>
           <button 
             type="button"
@@ -842,7 +842,7 @@ function OrdinaryCard({
             disabled={totalCount >= 3}
             title="Duplicate this ordinary"
           >
-            📋
+            <Icon name="copy" size={14} />
           </button>
           <button 
             type="button"
@@ -850,7 +850,7 @@ function OrdinaryCard({
             onClick={() => onToggleVisibility(index)}
             title={isVisible ? 'Hide from preview' : 'Show in preview'}
           >
-            {isVisible ? '👁' : '👁‍🗨'}
+            {isVisible ? <Icon name="eye" size={14} /> : <Icon name="eye-off" size={14} />}
           </button>
           <button 
             type="button"
@@ -858,10 +858,10 @@ function OrdinaryCard({
             onClick={() => onRemove(index)}
             title="Remove this ordinary"
           >
-            ✕
+            <Icon name="x" size={14} />
           </button>
         </div>
-        <span className="element-card-expand">{expanded ? '▼' : '▶'}</span>
+        <span className="element-card-expand">{expanded ? <Icon name="chevron-down" size={14} /> : <Icon name="chevron-right" size={14} />}</span>
       </div>
       
       {expanded && (
@@ -1042,7 +1042,7 @@ function ChargeCard({
             disabled={index === 0}
             title="Move up (render earlier)"
           >
-            ▲
+            <Icon name="chevron-up" size={14} />
           </button>
           <button 
             type="button"
@@ -1051,7 +1051,7 @@ function ChargeCard({
             disabled={index >= totalCount - 1}
             title="Move down (render later)"
           >
-            ▼
+            <Icon name="chevron-down" size={14} />
           </button>
           <button 
             type="button"
@@ -1060,7 +1060,7 @@ function ChargeCard({
             disabled={totalCount >= 3}
             title="Duplicate this charge"
           >
-            📋
+            <Icon name="copy" size={14} />
           </button>
           <button 
             type="button"
@@ -1068,7 +1068,7 @@ function ChargeCard({
             onClick={() => onToggleVisibility(index)}
             title={isVisible ? 'Hide from preview' : 'Show in preview'}
           >
-            {isVisible ? '👁' : '👁‍🗨'}
+            {isVisible ? <Icon name="eye" size={14} /> : <Icon name="eye-off" size={14} />}
           </button>
           <button 
             type="button"
@@ -1076,10 +1076,10 @@ function ChargeCard({
             onClick={() => onRemove(index)}
             title="Remove this charge"
           >
-            ✕
+            <Icon name="x" size={14} />
           </button>
         </div>
-        <span className="element-card-expand">{expanded ? '▼' : '▶'}</span>
+        <span className="element-card-expand">{expanded ? <Icon name="chevron-down" size={14} /> : <Icon name="chevron-right" size={14} />}</span>
       </div>
       
       {expanded && (
@@ -1975,7 +1975,7 @@ function HeraldryCreator() {
               {/* PHASE 5 Batch 3: Codex Integration Link */}
               {isEditMode && (
                 <div className="codex-link-section">
-                  <h3>📜 Codex Entry</h3>
+                  <h3><Icon name="scroll-text" size={14} /> Codex Entry</h3>
                   {linkedCodexEntry ? (
                     <div className="codex-link-content">
                       <p className="codex-link-title">{linkedCodexEntry.title}</p>
@@ -2041,7 +2041,7 @@ function HeraldryCreator() {
                 onClick={() => setActiveSection(activeSection === 'field' ? '' : 'field')}
               >
                 <span>🏴 Field (Base Layer)</span>
-                <span className="collapse-icon">{activeSection === 'field' ? '▼' : '▶'}</span>
+                <span className="collapse-icon">{activeSection === 'field' ? <Icon name="chevron-down" size={14} /> : <Icon name="chevron-right" size={14} />}</span>
               </h2>
               
               {activeSection === 'field' && (
@@ -2202,7 +2202,7 @@ function HeraldryCreator() {
                 onClick={() => setActiveSection(activeSection === 'ordinaries' ? '' : 'ordinaries')}
               >
                 <span>▬ Ordinaries ({ordinaries.length}/3)</span>
-                <span className="collapse-icon">{activeSection === 'ordinaries' ? '▼' : '▶'}</span>
+                <span className="collapse-icon">{activeSection === 'ordinaries' ? <Icon name="chevron-down" size={14} /> : <Icon name="chevron-right" size={14} />}</span>
               </h2>
               
               {activeSection === 'ordinaries' && (
@@ -2252,8 +2252,8 @@ function HeraldryCreator() {
                 className={`section-title collapsible ${activeSection === 'charges' ? 'active' : ''}`}
                 onClick={() => setActiveSection(activeSection === 'charges' ? '' : 'charges')}
               >
-                <span>⚜ Charges ({charges.length}/3)</span>
-                <span className="collapse-icon">{activeSection === 'charges' ? '▼' : '▶'}</span>
+                <span><Icon name="crown" size={14} /> Charges ({charges.length}/3)</span>
+                <span className="collapse-icon">{activeSection === 'charges' ? <Icon name="chevron-down" size={14} /> : <Icon name="chevron-right" size={14} />}</span>
               </h2>
               
               {activeSection === 'charges' && (
@@ -2309,7 +2309,7 @@ function HeraldryCreator() {
                 onClick={() => setActiveSection(activeSection === 'shield' ? '' : 'shield')}
               >
                 <span>Shield Shape</span>
-                <span className="collapse-icon">{activeSection === 'shield' ? '▼' : '▶'}</span>
+                <span className="collapse-icon">{activeSection === 'shield' ? <Icon name="chevron-down" size={14} /> : <Icon name="chevron-right" size={14} />}</span>
               </h2>
               
               {activeSection === 'shield' && (
@@ -2337,7 +2337,7 @@ function HeraldryCreator() {
                 onClick={() => setActiveSection(activeSection === 'classification' ? '' : 'classification')}
               >
                 <span>Classification</span>
-                <span className="collapse-icon">{activeSection === 'classification' ? '▼' : '▶'}</span>
+                <span className="collapse-icon">{activeSection === 'classification' ? <Icon name="chevron-down" size={14} /> : <Icon name="chevron-right" size={14} />}</span>
               </h2>
               
               {activeSection === 'classification' && (
@@ -2380,7 +2380,7 @@ function HeraldryCreator() {
                 onClick={() => setActiveSection(activeSection === 'linking' ? '' : 'linking')}
               >
                 <span>Link to House</span>
-                <span className="collapse-icon">{activeSection === 'linking' ? '▼' : '▶'}</span>
+                <span className="collapse-icon">{activeSection === 'linking' ? <Icon name="chevron-down" size={14} /> : <Icon name="chevron-right" size={14} />}</span>
               </h2>
               
               {activeSection === 'linking' && (

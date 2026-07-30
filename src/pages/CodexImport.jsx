@@ -10,6 +10,7 @@
 import { useNavigate } from 'react-router-dom';
 import EnhancedCodexImportTool from '../components/EnhancedCodexImportTool';
 import './CodexImport.css';
+import Icon from '../components/icons';
 
 export default function CodexImport() {
   const navigate = useNavigate();
@@ -21,7 +22,7 @@ export default function CodexImport() {
         <div className="codex-import__header-content">
           <div className="codex-import__header-text">
             <h1 className="codex-import__title">
-              📚 Codex Import
+              <Icon name="book-open" size={24} /> Codex Import
             </h1>
             <p className="codex-import__subtitle">
               Import worldbuilding content into The Codex

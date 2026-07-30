@@ -466,7 +466,7 @@ function DataHealthDashboard({ isDarkTheme = true, onNavigateToPerson, onNavigat
         </div>
         
         <p className="text-xs mt-3" style={{ color: theme.textSecondary }}>
-          ⚠️ These actions cannot be undone. Consider exporting your data first.
+          <Icon name="alert-triangle" size={14} /> These actions cannot be undone. Consider exporting your data first.
         </p>
       </div>
     );
@@ -856,12 +856,12 @@ function DataHealthDashboard({ isDarkTheme = true, onNavigateToPerson, onNavigat
                 {/* Confirmation messages */}
                 {isConfirmingDelete && (
                   <p className="text-xs mt-2 font-semibold" style={{ color: theme.error }}>
-                    ⚠️ Click delete again to confirm, or click elsewhere to cancel
+                    <Icon name="alert-triangle" size={14} /> Click delete again to confirm, or click elsewhere to cancel
                   </p>
                 )}
                 {isConfirmingNamedAfter && (
                   <p className="text-xs mt-2 font-semibold" style={{ color: theme.namesake }}>
-                    👤 Click "Named After" again to confirm: {namedAfterConfirm.person1Name} was named after {namedAfterConfirm.person2Name}
+                    <Icon name="user" size={14} /> Click "Named After" again to confirm: {namedAfterConfirm.person1Name} was named after {namedAfterConfirm.person2Name}
                   </p>
                 )}
               </div>

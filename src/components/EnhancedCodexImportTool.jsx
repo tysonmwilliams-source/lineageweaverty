@@ -15,6 +15,7 @@ import { forceUploadToCloud } from '../services/dataSyncService';
 import NORTHERN_SEATS_CODEX_DATA from '../data/northern-seats-codex-data';
 import './EnhancedCodexImportTool.css';
 import { logger } from '../utils/logger';
+import Icon from './icons';
 
 export default function EnhancedCodexImportTool() {
   const { user } = useAuth();
@@ -73,7 +74,7 @@ export default function EnhancedCodexImportTool() {
 
       {/* Cloud Sync Status */}
       <div className={`import-tool__sync-status ${user ? 'import-tool__sync-status--active' : 'import-tool__sync-status--warning'}`}>
-        <span className="import-tool__sync-icon">{user ? '☁️' : '⚠️'}</span>
+        <span className="import-tool__sync-icon">{user ? <Icon name="cloud" size={14} /> : <Icon name="alert-triangle" size={14} />}</span>
         <span>
           {user
             ? <><strong>Cloud Sync Active:</strong> Your codex is synced to the cloud.</>
@@ -170,7 +171,7 @@ export default function EnhancedCodexImportTool() {
 
       {/* Completed Archives */}
       <div className="import-tool__empty">
-        <div className="import-tool__empty-icon">✅</div>
+        <div className="import-tool__empty-icon"><Icon name="check-circle" size={48} /></div>
         <h3 className="import-tool__empty-title">Completed Imports</h3>
         <p className="import-tool__empty-description">
           Previously imported worldbuilding data:

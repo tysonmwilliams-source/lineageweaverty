@@ -130,11 +130,22 @@
   color: var(--text-secondary);
 }
 
-.generating-indicator span {
+/* These two selectors were written for an emoji in a <span>, which sized by
+   font-size. The markup now renders <Icon>, i.e. an <svg class="lw-icon">, so the
+   span selector stopped matching entirely: the spinner silently stopped spinning
+   and the placeholder shield shrank to the default 20px. An SVG doesn't inherit
+   font-size either, so it needs explicit width/height. */
+.generating-indicator span,
+.generating-indicator .lw-icon {
   font-size: 3rem;
   animation: spin 1s linear infinite;
   display: block;
-  margin-bottom: 0.5rem;
+  margin: 0 auto 0.5rem;
+}
+
+.generating-indicator .lw-icon {
+  width: 3rem;
+  height: 3rem;
 }
 
 .preview-placeholder {
@@ -142,11 +153,17 @@
   color: var(--text-tertiary);
 }
 
-.preview-placeholder span {
+.preview-placeholder span,
+.preview-placeholder .lw-icon {
   font-size: 4rem;
   opacity: 0.5;
   display: block;
-  margin-bottom: 0.5rem;
+  margin: 0 auto 0.5rem;
+}
+
+.preview-placeholder .lw-icon {
+  width: 4rem;
+  height: 4rem;
 }
 
 /* Blazon Display */

@@ -30,6 +30,7 @@ import React, { useState, useEffect } from 'react';
 import { useDataset } from '../contexts/DatasetContext';
 import { getHeraldry } from '../services/heraldryService';
 import { logger } from '../utils/logger';
+import Icon from './icons';
 
 // Shield aspect ratio - most heraldic shields are taller than wide
 // Common ratios: heater ~5:6, french ~4:5, etc.
@@ -284,7 +285,7 @@ function HeraldryThumbnail({
         fontWeight: 'bold',
         fontFamily: 'serif'
       }}>
-        🛡️
+        <Icon name="shield" size={Math.round(baseSize * 0.5)} />
       </div>
     </div>
   );

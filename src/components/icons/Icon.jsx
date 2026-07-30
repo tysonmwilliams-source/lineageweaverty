@@ -165,7 +165,37 @@ import {
   Lock,
   Unlock,
   Link as LinkIcon,
-  Unlink
+  Unlink,
+
+  // Referenced by name across the app but absent from the map below, which made
+  // Icon return null — 47 call sites rendered nothing at all.
+  ChevronsUp,
+  ChevronsDown,
+  Loader2,
+  Dna,
+  LogOut,
+  UserMinus,
+  UserCheck,
+  Film,
+  GripVertical,
+  Circle,
+  CircleOff,
+  Square,
+  Grid3x3,
+  SearchX,
+  MousePointerClick,
+  Dog,
+  Bird,
+  Scale,
+  Sparkle,
+  Link2Off,
+  CalendarPlus,
+  CalendarCheck,
+  ScanSearch,
+  Hourglass,
+  Gavel,
+  Stamp,
+  FilePlus
 } from 'lucide-react';
 import { logger } from '../../utils/logger';
 
@@ -439,7 +469,40 @@ const LUCIDE_ICONS = {
   'lock': Lock,
   'unlock': Unlock,
   'link-2': LinkIcon,
-  'unlink': Unlink
+  'unlink': Unlink,
+
+  // ── Names that were in use but unmapped ──────────────────────────────────
+  // Every one of these was already referenced by a <Icon name="..." /> somewhere
+  // in the app. Icon returns null for an unmapped name and only warns in DEV, so
+  // in production these were simply invisible: loading spinners with no spinner,
+  // drag handles with nothing to grab, empty status pips.
+  'chevrons-up': ChevronsUp,
+  'chevrons-down': ChevronsDown,
+  'loader-2': Loader2,
+  'dna': Dna,
+  'log-out': LogOut,
+  'user-minus': UserMinus,
+  'user-check': UserCheck,
+  'film': Film,
+  'grip-vertical': GripVertical,
+  'circle': Circle,
+  'circle-off': CircleOff,
+  'square': Square,
+  'grid-3x3': Grid3x3,
+  'search-x': SearchX,
+  'mouse-pointer-click': MousePointerClick,
+  'dog': Dog,
+  'bird': Bird,
+  'scale': Scale,
+  'sparkle': Sparkle,
+  'link-2-off': Link2Off,
+  'calendar-plus': CalendarPlus,
+  'calendar-check': CalendarCheck,
+  'scan-search': ScanSearch,
+  'hourglass': Hourglass,
+  'gavel': Gavel,
+  'stamp': Stamp,
+  'file-plus': FilePlus
 };
 
 /**

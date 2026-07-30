@@ -29,14 +29,22 @@ import { logger } from './logger';
 
 /**
  * Parse markdown content with wiki-link processing
- * 
+ *
  * @param {string} markdown - Raw markdown text with [[wiki-links]]
  * @param {number} sourceEntryId - ID of the entry containing this content (for auto-linking)
+ * @param {string} [datasetId] - Dataset to resolve links against.
+ *
+ *   This parameter did not exist while `CodexEntryView.jsx:183` was already
+ *   passing it as a third argument — so it was silently dropped. Every entry in a
+ *   non-default world resolved its wiki-links against the *default* database
+ *   (making valid links render as broken), and the links this function
+ *   auto-creates were written to the default database too, which is the phantom-
+ *   database bug class from Phase 0.
  * @returns {Promise<string>} - HTML with processed wiki-links
  */
-export async function parseWikiLinks(markdown, sourceEntryId = null) {
+export async function parseWikiLinks(markdown, sourceEntryId = null, datasetId = undefined) {
   if (!markdown) return '';
-  
+
   try {
     // Step 1: Convert markdown to HTML
     const html = marked.parse(markdown);
@@ -50,7 +58,7 @@ export async function parseWikiLinks(markdown, sourceEntryId = null) {
     }
     
     // Step 3: Get all entries from database (for lookup)
-    const allEntries = await getAllEntries();
+    const allEntries = await getAllEntries(datasetId);
     
     // Create a lookup map: title → entry
     const entryMap = new Map();
@@ -62,7 +70,7 @@ export async function parseWikiLinks(markdown, sourceEntryId = null) {
     // Step 4: Get existing outgoing links (if sourceEntryId provided)
     let existingLinks = [];
     if (sourceEntryId) {
-      existingLinks = await getOutgoingLinks(sourceEntryId);
+      existingLinks = await getOutgoingLinks(sourceEntryId, datasetId);
     }
     
     // Create a Set of existing link pairs for faster lookup
@@ -124,7 +132,7 @@ export async function parseWikiLinks(markdown, sourceEntryId = null) {
     // Step 6: Auto-create new links (future hook for knowledge graph)
     if (linksToCreate.length > 0) {
       await Promise.all(
-        linksToCreate.map(linkData => createLink(linkData))
+        linksToCreate.map(linkData => createLink(linkData, datasetId))
       );
       logger.log(`Auto-created ${linksToCreate.length} wiki-links from entry ${sourceEntryId}`);
     }

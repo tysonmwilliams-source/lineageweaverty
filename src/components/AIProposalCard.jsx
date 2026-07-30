@@ -107,7 +107,7 @@ export default function AIProposalCard({
             className="expand-toggle"
             title={expanded ? 'Collapse' : 'Expand'}
           >
-            {expanded ? '▲' : '▼'}
+            {expanded ? <Icon name="chevron-up" size={14} /> : <Icon name="chevron-down" size={14} />}
           </button>
         </div>
       </div>
@@ -183,7 +183,7 @@ export default function AIProposalCard({
             disabled={isExecuting}
             title="Approve and execute this change"
           >
-            ✓ Approve
+            <Icon name="check" size={14} /> Approve
           </button>
           <button
             className="proposal-btn reject"
@@ -191,7 +191,7 @@ export default function AIProposalCard({
             disabled={isExecuting}
             title="Reject this change"
           >
-            ✗ Reject
+            <Icon name="x" size={14} /> Reject
           </button>
         </div>
       )}
@@ -235,14 +235,14 @@ export function AIProposalList({
               onClick={onApproveAll}
               title="Approve all pending proposals"
             >
-              ✓ Approve All ({pendingCount})
+              <Icon name="check" size={14} /> Approve All ({pendingCount})
             </button>
             <button
               className="batch-btn reject-all"
               onClick={onRejectAll}
               title="Reject all pending proposals"
             >
-              ✗ Reject All
+              <Icon name="x" size={14} /> Reject All
             </button>
           </div>
         )}

@@ -20,6 +20,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { getAllEntries, deleteEntry } from '../services/codexService';
 import { logger } from '../utils/logger';
 import { formatShortDateTime as formatDate } from '../utils/formatDate';
+import Icon from './icons';
 
 function CodexCleanupTool({ onCleanupComplete }) {
   const { activeDataset } = useDataset();
@@ -201,7 +202,7 @@ function CodexCleanupTool({ onCleanupComplete }) {
     <div className="codex-cleanup-tool" style={styles.container}>
       {/* Header */}
       <div style={styles.header}>
-        <h2 style={styles.title}>🧹 Codex Cleanup Tool</h2>
+        <h2 style={styles.title}><Icon name="wrench" size={20} /> Codex Cleanup Tool</h2>
         <p style={styles.subtitle}>
           Find and remove duplicate entries caused by sync issues
         </p>
@@ -331,7 +332,7 @@ function CodexCleanupTool({ onCleanupComplete }) {
                           onClick={() => toggleEntrySelection(entry.id)}
                           title={isSelected ? 'Click to keep this copy' : 'Click to mark for deletion'}
                         >
-                          {isSelected ? '🗑️' : '✓'}
+                          {isSelected ? <Icon name="trash-2" size={14} /> : <Icon name="check" size={14} />}
                         </button>
                       )}
                     </div>

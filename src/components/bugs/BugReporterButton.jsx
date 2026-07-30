@@ -265,7 +265,7 @@ function BugReporterButton() {
           >
             {/* Header */}
             <div className="bug-reporter-header">
-              <h2 className="bug-reporter-title">🐛 Report a Bug</h2>
+              <h2 className="bug-reporter-title"><Icon name="alert-circle" size={20} /> Report a Bug</h2>
               <button 
                 className="bug-reporter-close"
                 onClick={handleClose}

@@ -23,6 +23,7 @@ import {
   removeEpithet,
   setPrimaryEpithet
 } from '../utils/epithetUtils';
+import Icon from './icons';
 
 function EpithetsSection({ 
   epithets = [], 
@@ -167,7 +168,7 @@ function EpithetsSection({
           
           {!readOnly && (
             <div className="flex items-center gap-1 ml-2">
-              <span className="text-xs opacity-60">{isExpanded ? '▲' : '▼'}</span>
+              <span className="text-xs opacity-60">{isExpanded ? <Icon name="chevron-up" size={14} /> : <Icon name="chevron-down" size={14} />}</span>
             </div>
           )}
         </div>
@@ -226,7 +227,7 @@ function EpithetsSection({
                         backgroundColor: 'transparent'
                       }}
                     >
-                      ⭐ Set Primary
+                      <Icon name="star" size={14} /> Set Primary
                     </button>
                   )}
                   <button
@@ -241,7 +242,7 @@ function EpithetsSection({
                       backgroundColor: 'transparent'
                     }}
                   >
-                    🗑️ Remove
+                    <Icon name="trash-2" size={14} /> Remove
                   </button>
                 </div>
               )}
@@ -403,7 +404,7 @@ function EpithetsSection({
               opacity: newEpithet.text.trim() ? 1 : 0.6
             }}
           >
-            ✓ Add Epithet
+            <Icon name="check" size={14} /> Add Epithet
           </button>
         </div>
       </div>

@@ -8,6 +8,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTheme } from './ThemeContext';
 import './ThemeSelector.css';
+import Icon from './icons';
 
 /**
  * Theme color swatches for visual preview
@@ -157,7 +158,7 @@ export const ThemeSelector = ({
                         {themeConfig.name}
                       </span>
                       <span className={`theme-selector__nav-category theme-selector__nav-category--${themeConfig.category}`}>
-                        {isLight ? '☀️' : '🌙'} {themeConfig.category}
+                        {isLight ? <Icon name="sun" size={14} /> : <Icon name="moon" size={14} />} {themeConfig.category}
                       </span>
                     </span>
                     
