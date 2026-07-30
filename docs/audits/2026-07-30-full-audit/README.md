@@ -646,7 +646,7 @@ the only outstanding item that can damage heraldry already drawn.
 | 2 | Read path: readers go through `primaryLeaf`/`allLeaves`/`readCadency` | **done** — `5fa1bda` |
 | 3 | Save path: `composeCoat` writes v3; cadency recorded; apply flow | **done** — `face632` |
 | 4 | Render marshalled nodes — the SVG pipeline divides a shield | **done** — `991171a` |
-| 5 | UI to build a marshalled coat, and `linkType` `impaled`/`quartered` set by real code paths | not started |
+| 5 | Full recursive tree editor; `linkType` set by real code paths | in progress — dimidiation done (`1db2936`) |
 | 6 | Marriage arms: derive an impaled coat from a spouse relationship | not started |
 
 Step 1 is inert by design — nothing imports it, so it cannot break anything.
@@ -725,17 +725,30 @@ Marshalled coats were rendered and looked at in a browser, not only asserted on
 as strings, and all four cases are correct. That raised a question the tests
 could not:
 
-> **Open for step 5 — how should an impaled coat be fitted into its half?**
-> Squeezing a full 200×200 coat into a 100×200 half visibly distorts charges: a
-> roundel becomes an ellipse. Squeezing is what the current code does and it is
-> defensible — impaled arms *are* compressed, and `createSVGHeraldryWithMask`
-> already scales non-uniformly. The alternatives are scaling uniformly and
-> accepting empty space, or dimidiating (showing half of each coat), which is
-> the older practice and loses charges. **This was chosen by implication rather
-> than decided**, and it is the owner's aesthetic call.
+**DECIDED — impalement is dimidiated** (`1db2936`). The three options were
+rendered side by side and looked at. Squeezing a full coat into the half
+distorts every charge in it, and since step 6 generates marriage arms
+automatically that distortion would appear on every married couple rather than
+once. Dimidiation distorts nothing and fills the shield; the cost is that half
+of each coat is cut away and abutting halves can merge into a hybrid — which is
+the historical artefact, and also what medieval marriage arms actually look
+like.
 
-Quartering does not have this problem: quarters scale 0.5 in both axes, so
-charges stay in proportion.
+Fit is **per-arrangement**, declared in `PART_FIT`. Quartering is *not*
+dimidiated: quarters are square, so the whole coat is fitted in with equal scale
+in both axes and charges keep their proportions.
+
+**DECIDED — no dividing line between parts.** Armory reads the division from
+the tinctures meeting; a drawn line would be house style, not convention. The
+known cost is that two adjacent parts sharing a field tincture will merge
+visually.
+
+**DECIDED — step 5 is the full recursive tree editor**, chosen over a
+pick-a-saved-coat picker. Arbitrary depth built by hand, no reference
+resolution, no cycles. It is the most UI-heavy item in C3 and it lands in a
+2,400-line component, so the creator's editing panel wants extracting to operate
+on a selected node before the tree navigation goes in — that extraction is the
+first slice, not a detour.
 
 Two things step 1 established that the rest depends on:
 
