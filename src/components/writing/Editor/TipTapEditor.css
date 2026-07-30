@@ -230,3 +230,34 @@
   outline: var(--focus-ring-width, 2px) solid var(--focus-ring);
   outline-offset: var(--focus-ring-offset, 2px);
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   READING TYPOGRAPHY  (decision B1)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* A measure and a generous leading, for the one surface in the app that is
+   nothing but long-form prose. 34rem is roughly 62-68 characters at the body
+   size, which is the readable range. */
+.tiptap-editor__content {
+  max-width: 34rem;
+  margin: 0 auto;
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: 1.75;
+}
+
+/* Deliberately NOT applying .lw-dropcap here.
+   This element is contenteditable, and a floated ::first-letter inside an
+   editable region makes caret placement on the first character unreliable —
+   clicking the cap can drop the caret in the wrong place, and selection across
+   it behaves inconsistently between browsers. Drop caps belong on the read-only
+   renderings (the Codex entry view, and the export preview), where they carry
+   the same effect with none of the risk. */
+
+.tiptap-editor__content blockquote {
+  margin: var(--space-4, 1rem) 0;
+  padding-left: var(--space-4, 1rem);
+  border-left: 2px solid var(--accent-primary);
+  font-style: italic;
+  color: var(--text-secondary);
+}

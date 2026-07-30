@@ -614,21 +614,21 @@ function CodexEntryView() {
             </header>
 
             {/* Decorative Divider */}
-            <div className="entry-divider">
-              <Icon name="sparkle" size={16} />
+            <div className="lw-ornament" role="presentation">
+              <span className="lw-ornament__mark" />
             </div>
 
             {/* Entry Content (Rendered Markdown) */}
             <section className="entry-content">
               <div
-                className="entry-content__markdown"
+                className="entry-content__markdown lw-reading lw-dropcap lw-incipit"
                 dangerouslySetInnerHTML={{ __html: sanitizeHTML(renderedContent) }}
               />
             </section>
 
             {/* Divider before backlinks */}
-            <div className="entry-divider">
-              <Icon name="sparkle" size={16} />
+            <div className="lw-ornament" role="presentation">
+              <span className="lw-ornament__mark" />
             </div>
 
             {/* Backlinks Section */}

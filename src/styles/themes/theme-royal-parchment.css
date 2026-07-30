@@ -154,17 +154,17 @@
      Stronger shadows for depth in dark mode
      ============================================ */
   
-  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.5);
-  --shadow-xl: 0 16px 32px rgba(0, 0, 0, 0.6);
-  --shadow-2xl: 0 24px 48px rgba(0, 0, 0, 0.7);
+  --shadow-sm: 0 2px 4px rgba(14, 8, 3, 0.3);
+  --shadow-md: 0 4px 8px rgba(14, 8, 3, 0.4);
+  --shadow-lg: 0 8px 16px rgba(14, 8, 3, 0.5);
+  --shadow-xl: 0 16px 32px rgba(14, 8, 3, 0.6);
+  --shadow-2xl: 0 24px 48px rgba(14, 8, 3, 0.7);
   
   /* Focus shadows */
   --shadow-focus: 0 0 0 3px rgba(212, 165, 116, 0.15);
   
   /* Card hover */
-  --shadow-card-hover: 0 6px 12px rgba(0, 0, 0, 0.5);
+  --shadow-card-hover: 0 6px 12px rgba(14, 8, 3, 0.5);
 
   /* ============================================
      TYPOGRAPHY
@@ -217,11 +217,11 @@
      BORDER RADIUS SCALE
      ============================================ */
   
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-xl: 12px;
-  --radius-2xl: 16px;
+  --radius-sm: 1px;
+  --radius-md: 2px;
+  --radius-lg: 2px;
+  --radius-xl: 3px;
+  --radius-2xl: 4px;
   --radius-full: 9999px;
 
   /* ============================================

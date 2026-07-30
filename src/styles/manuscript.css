@@ -1,0 +1,169 @@
+/**
+ * manuscript.css — the ornamental layer (decision B1: full manuscript).
+ *
+ * Loaded globally from main.jsx, after the theme tokens.
+ *
+ * The audit's diagnosis was that the accent gold appears 456 times as *text
+ * colour* and never as *structure*, and that the only genuinely thematic assets
+ * in the app were one fleur-de-lis and two corner flourishes on the Home hero.
+ * This file is where the accent becomes structure: rules, drop caps and section
+ * breaks, all drawn with CSS rather than image assets so they inherit the active
+ * theme's accent and work in all seven.
+ *
+ * Everything here is opt-in via a class. Nothing changes appearance until a
+ * surface asks for it, which keeps dense data screens — the tree, Manage Data,
+ * the dignity tables — free of ornament that would fight scanning. That was the
+ * stated risk of a full-manuscript direction, and this is how it's contained.
+ */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RULE SYSTEM
+   Accent-hue rules, used for structure instead of grey 1px borders.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* A single hairline rule in the accent hue, for section separation. */
+.lw-rule {
+  border: none;
+  border-top: 1px solid var(--accent-primary);
+  opacity: 0.35;
+  margin: var(--space-6, 1.5rem) 0;
+}
+
+/* A double rule — the conventional manuscript division between major parts. */
+.lw-rule--double {
+  height: 3px;
+  border: none;
+  border-top: 1px solid var(--accent-primary);
+  border-bottom: 1px solid var(--accent-primary);
+  opacity: 0.4;
+}
+
+/* A heading underscored by an accent rule that stops at the text width. */
+.lw-ruled-heading {
+  display: inline-block;
+  padding-bottom: 0.3em;
+  border-bottom: 2px solid var(--accent-primary);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ORNAMENTAL SECTION BREAK
+   A centred lozenge flanked by tapering rules — drawn, not an image asset, so
+   it takes the theme accent.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.lw-ornament {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3, 0.75rem);
+  margin: var(--space-8, 2rem) 0;
+  color: var(--accent-primary);
+}
+
+.lw-ornament::before,
+.lw-ornament::after {
+  content: '';
+  flex: 1;
+  max-width: 8rem;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--accent-primary)
+  );
+  opacity: 0.5;
+}
+
+/* Mirror the gradient on the trailing rule so both taper away from the centre. */
+.lw-ornament::after {
+  background: linear-gradient(
+    to left,
+    transparent,
+    var(--accent-primary)
+  );
+}
+
+/* The lozenge itself. */
+.lw-ornament__mark {
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--accent-primary);
+  transform: rotate(45deg);
+  opacity: 0.8;
+  flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DROP CAP
+   For the opening paragraph of a Codex entry or a chapter.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.lw-dropcap > p:first-of-type::first-letter,
+.lw-dropcap::first-letter {
+  float: left;
+  font-family: var(--font-display);
+  font-size: 3.2em;
+  /* line-height 0.82 sits the cap's baseline on the third text line without
+     pushing the following lines apart. */
+  line-height: 0.82;
+  font-weight: 700;
+  color: var(--accent-primary);
+  margin: 0.05em 0.08em 0 0;
+  /* Old-style figures and a serif cap read better with a hair of optical
+     kerning against the following text. */
+  padding-right: 0.02em;
+}
+
+/* Small caps for the remainder of the opening line is the conventional
+   companion to a drop cap. Applied only where a wrapper opts in. */
+.lw-incipit > p:first-of-type::first-line {
+  font-variant-caps: small-caps;
+  letter-spacing: 0.03em;
+}
+
+/* A drop cap needs a minimum measure to work — below roughly 30 characters it
+   crowds the text badly. Turn it off on narrow viewports. */
+@media (max-width: 30rem) {
+  .lw-dropcap > p:first-of-type::first-letter,
+  .lw-dropcap::first-letter {
+    float: none;
+    font-size: inherit;
+    line-height: inherit;
+    font-weight: inherit;
+    color: inherit;
+    margin: 0;
+  }
+
+  .lw-incipit > p:first-of-type::first-line {
+    font-variant-caps: normal;
+    letter-spacing: normal;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   READING SURFACE
+   Applied to long-form prose: Codex entry bodies and the writing editor.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.lw-reading {
+  /* A measure, not a width — 62-68 characters is the readable range. */
+  max-width: 34rem;
+  font-family: var(--font-body);
+  line-height: 1.7;
+  color: var(--text-primary);
+}
+
+.lw-reading p + p {
+  margin-top: 0;
+  /* Indented continuation paragraphs rather than spaced ones — the manuscript
+     convention, and it keeps the column unbroken. */
+  text-indent: 1.4em;
+}
+
+.lw-reading blockquote {
+  margin: var(--space-4, 1rem) 0;
+  padding-left: var(--space-4, 1rem);
+  border-left: 2px solid var(--accent-primary);
+  font-style: italic;
+  color: var(--text-secondary);
+}
