@@ -1,9 +1,10 @@
 # Lineageweaver — Full Audit
 
-> **Status:** Part One (Phases 0–5) is complete as of commits `2332671`,
-> `8fb5fa2`, `05f61df`, `bd01c46`, `cbcbeec`, `f51c6cc`. Part Two is untouched
-> and awaits the owner. See [`HANDOFF.md`](HANDOFF.md) for current baselines and
-> a consolidated list of every place this document turned out to be wrong.
+> **Status:** Part One is complete and merged to `main` (Phases 0–5, plus a
+> Phase 6 follow-up pass for bugs found while implementing them). Part Two is
+> untouched and awaits the owner — see **Section G** for the items that stopped at
+> a decision during implementation, and [`HANDOFF.md`](HANDOFF.md) for current
+> baselines and every place this document turned out to be wrong.
 
 > **Correction (Phase 5):** three Part One items were described inaccurately.
 > **#66** — `downloadHeraldry()` does not exist and never did; there was no
@@ -417,11 +418,102 @@ I won't touch your creative content. These need a call:
 
 ---
 
+## G. Carried over from Phases 4–6
+
+Everything in Part One is now implemented. These are the items that surfaced
+*during* implementation and stopped at a decision rather than a technical
+blocker. Each one is small; none can be resolved without an answer.
+
+**G1. The remaining 44 emoji.** 55 more were converted to `<Icon>` in Phase 6, on
+top of the 30 in Phase 4. What's left is left for a reason, and each group needs a
+different kind of answer:
+
+- **9 inside `<option>` elements** (`BugReporterButton.jsx` — severity and
+  category selects). Browsers only allow text inside `<option>`, so a component
+  child is invalid markup. The options are `🟢 Low` / `🟡 Medium` / `🟠 High` /
+  `🔴 Critical` and `⚙️ General` / `🌳 Family Tree` / … Either they stay emoji, or
+  they become plain text and the colour cue is lost, or the selects become custom
+  listboxes (real work, and worse for accessibility unless done carefully).
+  **Recommend: keep the emoji here.** This is the one place where emoji is the
+  technically correct choice.
+- **The `heraldicData` division glyphs** — `✳` for gyronny, `☷` for tierced in
+  fess, `✚`, `✕`. These are diagram approximations of heraldic charges, not
+  chrome. Lucide has no gyronny and never will. The right fix is real division
+  artwork, which is what the (now deleted, recoverable from git) `divisions.js`
+  renderer was reaching for. Related to **C3**.
+- **`icon:` fields in the remaining data maps** (`epithetUtils`,
+  `unifiedChargesLibrary` categories, `heraldicData` categories, and
+  `DIGNITY_CLASSES.icon` which now has an `iconName` sibling). Mechanical to
+  convert, but which surfaces keep an illustrative glyph and which get a uniform
+  line icon is exactly what **B1** decides.
+- **`🏴`** on the Armory's "Field (Base Layer)" section header — no Lucide
+  equivalent. Needs either a different metaphor or a custom glyph.
+
+**G2. `RankPips` is still duplicated.** `DignityVisuals.jsx` exports a
+feature-rich version styled with `.rank-pips*`; `DignityEducationPanel.jsx` has a
+private copy styled with `.dignity-education__pip*`. The component logic is
+trivially unifiable — the APIs are already compatible — but the two have
+*different visual styling in different stylesheets*, so consolidating picks a
+winner on screen. That's **B1/B3**, not a dedupe. Say which pip style wins and
+this is ten minutes.
+
+**G3. `src/styles/shared/` + `shared-forms.css` — 1,468 lines, still unimported.**
+Unchanged since the Phase 3 correction at the top of this document. Delete them,
+or keep them as a seed for whatever **B1** decides? They cannot simply be
+imported; that was the original plan and it was wrong.
+
+**G4. The favicon is still Vite's default.** `index.html:5` points at
+`/vite.svg`. Phase 3 added the meta description and theme-color, so this is the
+last piece of default scaffolding in the page head. The app's only real mark is
+the fleur-de-lis inlined in `components/home/HeroSection.jsx` — extracting that
+into `public/favicon.svg` would work and would use your own artwork rather than
+inventing branding, but choosing the app's mark is yours. Also worth deciding
+whether the tab title stays plain "Lineageweaver".
+
+**G5. The stale `audit/comprehensive-fixes` branch exists locally and on
+`origin`.** Superseded by this audit's work. Deleting a remote branch is not
+reversible from here, so it needs an explicit yes.
+
+**G6. Lint is still not a gate — this is F3, and it is now the single biggest
+obstacle to CI being useful.** 411 of the 474 remaining errors are
+`no-unused-vars`, set to `error`, so `npm run lint` can never pass and CI runs it
+with `continue-on-error`. Every genuinely high-signal rule is already clean:
+`no-undef` 0, `no-dupe-keys` 0, `rules-of-hooks` 0. Answering F3 — downgrade
+`no-unused-vars` to `warn` and error only on the high-signal rules — would make
+lint a real blocking gate the same afternoon, at the cost of tolerating the unused
+-variable debt. **Recommend that**, and it's the highest-leverage of these six.
+
+---
+
 ## What I'd suggest
 
-If you want a single recommendation: **let me run Phase 0 now**, unprompted, because it stops active data loss and involves no judgement calls. Revoke the API key yourself today.
+*Updated after Phases 0–6. Part One is done and merged to `main`; everything
+below is Part Two.*
 
-Then answer **B1, B2 and B3** — those three unlock all the visual work, and Phase 3 gives you a repaired foundation to judge them on. Everything else can be decided as we reach it.
+**Today, and only you can do it: revoke the Gemini key (A1).** Rotating
+`.env.local` did not disable the old one, and it is in two commits on
+`origin/main`. Then decide A2 (rewrite that history or accept it).
+
+**Then answer B1, B2, B3.** Unchanged as the top priority, and now more so:
+Phases 3–6 repaired the foundation specifically so these can be judged on their
+merits rather than through broken contrast and invisible borders. Three items
+(G1, G2, G3) are parked directly on B1 and take under a day once it's answered.
+
+**One cheap high-leverage answer: F3.** Downgrading `no-unused-vars` to `warn`
+turns lint into a real blocking CI gate the same afternoon. Every high-signal rule
+is already clean (`no-undef` 0, `no-dupe-keys` 0, `rules-of-hooks` 0) — the only
+thing standing between this repo and an enforced quality gate is 411 unused
+variables and a severity setting.
+
+**Then E1–E9, at your pace.** These are your world, not the code's, and nothing
+should touch them without you. The integrity check now *reports* the structural
+ones (the broken Crown, dangling references) instead of failing silently, so they
+will stop being invisible while you decide.
+
+The two structural refactors (the sync manifest, the planner abstraction) remain
+worth doing and remain gated on timing, not on agreement. Answer C4 before the
+planner one — it decides whether that work is a component extraction or a routing
+change.
 
 ## Section index
 

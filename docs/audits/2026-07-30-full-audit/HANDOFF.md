@@ -1,12 +1,13 @@
 # Handoff — audit remediation
 
-**Branch:** `audit/phase-4-hygiene` (Phases 4–5; not merged, not pushed)
+**Branch:** merged to `main` and pushed. Phases 0–6 are all on `origin/main`.
 **Full audit:** [`README.md`](README.md) — read this first, especially Part One (the work plan) and Part Two (decisions pending the owner)
 **Detail sections:** [`sections/`](sections/) — eight files, one per subsystem/layer
 
-**Phases 0–5 of Part One are done.** What remains is Part Two (the owner's
-decisions) plus the two structural refactors, which were always gated on a green
-light for timing. See "What is left" below.
+**All of Part One is done and on `main`** (Phases 0–5, plus a Phase 6 follow-up
+pass for bugs found while implementing the earlier ones). What remains is Part
+Two — the owner's decisions — plus the two structural refactors, which were always
+gated on a green light for timing. See "What is left" below.
 
 ## Working rules for this repo
 
@@ -31,12 +32,14 @@ light for timing. See "What is left" below.
 | `bd01c46` | 3 | Design system foundations |
 | `cbcbeec` | 4 | Cleanup and hygiene |
 | `f51c6cc` | 5 | Wiring up what was already built |
+| `0d829ed` | — | Handoff + audit corrections |
+| `15bc158` | 6 | Invisible icons, dataset scoping, emoji sweep |
 
 **Current baselines** (verify these still hold before and after your work):
 
 ```bash
 npm run build      # passes, ~10s
-npx vitest run     # 285 tests pass, 8 files, exits 0
+npx vitest run     # 425 tests pass, 9 files, exits 0
 npx eslint .       # 474 errors, 36 warnings
 ```
 
@@ -60,25 +63,22 @@ first answering something — that is the honest state of it.
   `267d0e4` and `e4545d4`, both on `origin/main`. `.env.local` was rotated, which
   does **not** disable the old key. Then A2 (history rewrite or not).
 - **B1 / B2 / B3 / B4** — aesthetic direction, base font size, Tailwind
-  keep-or-remove, seven-themes-or-two. Phases 3–4 repaired the foundation
-  specifically so these can be judged on their merits. Three Phase 4/5 items were
-  deliberately left for B1 rather than pre-empted:
-  - ~300 remaining emoji. The 30 unambiguous `<span>emoji</span>` chrome
-    instances are converted; what's left is mostly `icon:` fields in data maps
-    (whose treatment B1 governs) plus the `heraldicData` glyphs, which are
-    approximations of divisions and ordinaries (`✳` gyronny, `☷` tierced in
-    fess) that Lucide has no equivalent for — converting those makes them worse.
-  - `RankPips` ×2. `DignityVisuals` and `DignityEducationPanel` use
-    separately-styled class names in separate stylesheets, so unifying them picks
-    a winner *visually*. That's B1/B3, not a mechanical dedupe.
-  - `src/styles/shared/` + `shared-forms.css` — 1,468 lines, still unimported.
-    Keep-as-seed or delete is part of B1/B3.
+  keep-or-remove, seven-themes-or-two. **Still the top priority after A1.** Phases
+  3–6 repaired the foundation specifically so these can be judged on their merits
+  rather than through broken contrast and invisible borders. G1–G3 below are
+  parked directly on B1 and take under a day once it's answered.
 - **C1–C6** — mobile scope, Gemini key architecture, quartering/impalement,
   planner routing, household roles, multiple spouses.
 - **D1–D4** — succession semantics. D4 (the broken Crown) is now *reported* by
   the integrity check instead of failing silently, but whether person 82 was
   deleted or the Crown should be vacant is still a worldbuilding answer.
 - **E1–E9** — the owner's world data. **Never auto-change creative content.**
+- **G1–G6** (README Part Two, Section G) — the six items that stopped at a
+  decision during Phases 4–6: the remaining 44 emoji, the duplicated `RankPips`,
+  the unimported shared CSS, the Vite default favicon, the stale
+  `audit/comprehensive-fixes` branch, and F3 (lint as a gate). All small; none
+  resolvable without an answer. **G6/F3 is the highest-leverage one** — it is all
+  that stands between this repo and a blocking CI gate.
 - **F1–F8** — housekeeping calls: `extras/` (29 MB), the archive directories,
   `no-unused-vars` severity, TypeScript, feature flags, `claude-context` in git,
   docs restructure, bug-tracker path.
@@ -162,6 +162,30 @@ audit files themselves have been annotated.
 - **`[[` autocomplete already existed in the TipTap editor** via
   `entitySearchService`. The gap was the Codex entry form.
 
+**Phase 6** — none of these were in the audit at all; they were found by
+re-checking the work rather than by reading the report.
+
+- **47 `<Icon name="...">` call sites across 18 files rendered nothing.** `Icon`
+  returns `null` for a name missing from `LUCIDE_ICONS` and only warns in DEV, so
+  the whole class was invisible in production: `loader-2` on four loading
+  spinners, `grip-vertical` on the planner's drag handles, `hourglass` on
+  interregnum markers, `circle`/`square` status pips, `log-out` in the user menu.
+  27 icons added (map: 207 → 234 names). `src/test/icon-map.test.jsx` now scans
+  every `.jsx` and asserts each name renders an `<svg>`, so it can't recur.
+  **If you add an `<Icon name>` and the icon doesn't appear, this is why —
+  check the map, not the component.**
+- **`parseWikiLinks` silently dropped a third argument.**
+  `CodexEntryView.jsx:183` was already passing `datasetId` to a two-parameter
+  function. Every entry in a non-default world resolved its links against the
+  *default* database, and the links it auto-creates were written there too — the
+  phantom-database class Phase 0 was meant to have closed.
+- **Two CSS rules stopped matching when emoji became `<Icon>`.**
+  `.generating-indicator span` and `.preview-placeholder span` sized an emoji by
+  `font-size`; `Icon` renders an `<svg class="lw-icon">`, so the Armory's spinner
+  stopped spinning and the placeholder shield shrank to 20px. **General lesson:
+  when replacing an emoji with `<Icon>`, grep the stylesheet for a `span`
+  selector sizing it — an SVG inherits neither `font-size` nor that selector.**
+
 ---
 
 ## CLAUDE.md — fixed in Phase 4
@@ -202,8 +226,8 @@ and sync. Don't add one without it.
   what changed.
 - Verify build + tests + lint before each commit; report the deltas honestly,
   including when a number goes the wrong way.
-- **Add tests for anything whose failure mode is silent.** Phases 0–5 took the
-  suite from 148 to 285. Two real bugs were found *by writing the test*, not by
+- **Add tests for anything whose failure mode is silent.** Phases 0–6 took the
+  suite from 148 to 425. Two real bugs were found *by writing the test*, not by
   reading the code — the backwards caret span in `findLinkSpanAtCaret` and the
   `validation` ReferenceError.
 - **Re-verify the audit's claims before acting on them.** It is a good document
