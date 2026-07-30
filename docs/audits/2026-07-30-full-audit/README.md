@@ -312,6 +312,10 @@ Two structural refactors are also unambiguously right, but they're big enough th
 | **C1** | Mobile | **Full responsive** — complete | `4d1f784`…`1dc3d83` |
 | **A2** | Key history | **Revoke, leave history** — no code change | — |
 | **F2, F6, G4, G5** | Housekeeping | Archives + stale branch deleted, favicon, claude-context untracked | `705583f` |
+| **G7** | React Compiler lint | **`static-components` now**, rest scheduled — rule promoted to error | `bb8fd32` |
+| **C4** | Planner | **Promote to a route** — `/writing/:id/plan/:planId/:view` | `72068fe` |
+| **C3** | Marshalling | **Recursive composition** — the full rebuild, not shield shapes alone | *not started* |
+| **F4** | TypeScript | **Full migration** to `.ts`/`.tsx` | *not started* |
 
 Notes worth carrying forward:
 
@@ -337,7 +341,21 @@ Notes worth carrying forward:
   `CodexBrowse.jsx`) is a real bug class, and `set-state-in-effect` (14) is the
   cascading-render pattern. See G7.
 
-**Still to decide: C2–C6, D1–D4, E1–E9, F1, F4, F5, F7, F8, G1–G3, G7.**
+- **G7 exposed a wrong severity claim, not a wrong fix.** All four
+  `static-components` violations were one component — `SubsectionHeader` in
+  `CodexBrowse.jsx`, built with `useCallback(fn, [])` and rendered as JSX. An
+  empty dependency array makes the identity stable for a mounted instance, and
+  the component holds no state, so the "resets its state on every parent render"
+  framing in this document and in the handoff was wrong. What was true is that
+  nothing enforced the stability. Hoisted to module scope; the rule is now an
+  **error**, which is the part that prevents recurrence.
+- **C3 and F4 are both multi-period programs, chosen together.** Between them
+  they account for more calendar time than everything else outstanding. The
+  sequencing constraint is real and is recorded under "Sequencing C3 and F4"
+  below: a TypeScript migration and a heraldry-pipeline rewrite landing on the
+  same files simultaneously is worse than either alone.
+
+**Still to decide: C2, C5, C6, D1–D4, E1–E9, F1, F5, F7, F8, G1–G3.**
 
 ---
 
@@ -392,12 +410,35 @@ Right now it reads as *desaturated brown admin panel*, not *illuminated manuscri
 - (c) Firebase AI Logic — purpose-built, no key in the client, no new vendor; costs a transport rewrite and a Blaze plan.
 **Recommend (a)-with-Settings-field** unless you plan to deploy publicly, in which case (c).
 
-**C3. Quartering and impalement.** Verified: less built than "stubs" suggests. Shield shapes are ~30 minutes from working (files exist, UI is commented out). Quartering/impalement are *not built* — the two functions naively composite finished PNGs, live in a file with zero importers, and the `linkType` enum reserves `'quartered'`/`'impaled'` with no code path that sets them. Real quartering needs the composition model to become **recursive**.
-- (a) Ship shield shapes now, delete the quartering functions.
-- (b) Delete both and the enum values.
-- (c) Commit to recursive composition — multi-week, **but marriage arms *are* impalement, which makes this arguably the biggest feature gap for a genealogy app specifically**.
+**C3. ~~Quartering and impalement.~~ — DECIDED: commit to recursive composition. Not started.**
 
-**C4. Story Planner: modal or route?** Nothing in the planner is bookmarkable, linkable, or survives a refresh, and switching between views is dashboard-and-back. (a) keep the modal, add a tab bar; (b) promote to `/writing/:id/plan/:view`; (c) fold into the editor's right rail. This determines whether the planner refactor is a component extraction or a routing change.
+*Two corrections to what this entry originally said.* It claimed the quartering
+and impalement functions still exist and "naively composite finished PNGs in a
+file with zero importers". They do not exist: they lived in
+`src/utils/heraldryUtils.js`, all 459 lines of which were **deleted in Phase 4**
+(`cbcbeec`). The only survivor is two words in a JSDoc `@param` at
+`heraldryService.js:280`. Second, the shield-shape claim checks out and is
+better than stated — all five SVGs are present in `public/shields/`,
+`SHIELD_TYPES` is already a live export from `heraldicData.js`, and the only
+blockers are a commented-out `SHIELD_FILES` block
+(`shieldSVGProcessor.js:27`) and a commented-out UI section
+(`HeraldryCreator.jsx:2299-2331`).
+
+So the work is a build, not a repair: the composition model becomes a recursive
+node so quarters can contain quarters, and marriage arms — which *are*
+impalement — become expressible. Every renderer, the save format, the Dexie
+record shape and the SVG pipeline change, and existing coats need a migration.
+**This is the one outstanding item that can damage heraldry already drawn**, so
+it needs the migration and tests written before anything touches saved data.
+
+**C4. ~~Story Planner: modal or route?~~ — DECIDED: promoted to a route (`72068fe`).**
+`/writing/:id/plan` and `/writing/:id/plan/:planId/:view`. Bookmarkable,
+refresh-safe, back button works. `StoryPlannerModal` is deleted.
+
+*Correction:* this entry offered "fold into the editor's right rail" as an
+untouched option. `PlanningSidebar` (545 lines) already occupied that rail; its
+two buttons did nothing but open the modal. The planner refactor is now a
+**routing change**, as the choice determined.
 
 **C5. Household roles: fix or fold into Dignities?** Roles are dataset-unscoped, unsynced, and buried inside `HouseForm` — they read as an unfinished experiment, and `dignityService` already models offices via `dignityNature: 'office'`.
 
@@ -447,7 +488,14 @@ I won't touch your creative content. These need a call:
 
 **F3. ~~`no-unused-vars` severity.~~ — DECIDED: downgraded to warn; lint is now a blocking CI gate (`e14bfa7`).** Set to `error`, so lint can never pass and functions as noise rather than a gate. Downgrade to `warn` and error only on the high-signal rules (green gate today), or bulk-fix first?
 
-**F4. TypeScript.** `@types/react` is installed against zero TS files. The two highest-value bugs in this audit (`setFragmentNavExpanded` undefined, a duplicate JSON key) are exactly what a type checker catches for free. **Recommend: `// @ts-check` + JSDoc on `src/services/` only** — real safety, zero build change, no migration.
+**F4. ~~TypeScript.~~ — DECIDED: full migration to `.ts`/`.tsx`. Not started.**
+Chosen against the recommendation of `// @ts-check` + JSDoc on `src/services/`.
+Current state as verified: `@types/react` 19.2.5 and `@types/react-dom` are
+installed, there are zero TS files, and there is **no `tsconfig.json` or
+`jsconfig.json` and no `typescript` dependency at all** — so step one is
+toolchain, not conversion. The two highest-value bugs in this audit
+(`setFragmentNavExpanded` undefined, a duplicate JSON key) are exactly what a
+type checker catches for free. See "Sequencing C3 and F4".
 
 **F5. Feature flags.** 40 flags, 8 helpers, 368 lines — and exactly **3 flags are read**, all already `true`, one of the two consuming files being dead code. CLAUDE.md calls the rest "intentionally off", which reads as *implemented but disabled*; they are in fact **unimplemented**. Delete the file, or keep it as an explicit roadmap document? (If it *is* your roadmap, say so and I'll relabel it rather than delete it.)
 
@@ -522,7 +570,14 @@ Lint exits 0 and CI blocks on it. Every high-signal rule is a hard error
 (`no-undef`, `no-dupe-keys`, `rules-of-hooks`, all at zero); `no-unused-vars` and the
 React Compiler rules are warnings. See G7 for what this exposed.
 
-**G7. 33 React Compiler lint violations, exposed by answering F3.**
+**G7. ~~33 React Compiler lint violations.~~ — DECIDED: `static-components` taken, rest scheduled (`bb8fd32`).**
+Done: all four were `SubsectionHeader` in `CodexBrowse.jsx`, now hoisted to
+module scope, and `react-hooks/static-components` is promoted from `warn` to
+`error` so it cannot come back. See the correction in the DECIDED notes — the
+"resets state on every parent render" claim below was overstated for this
+instance. 29 warnings remain, scheduled, described accurately below.
+
+**G7 (original entry, for the 29 that remain).**
 `eslint-plugin-react-hooks` v7 ships five React Compiler rules as errors. They
 were downgraded to warnings so the lint gate could go green, and they are
 flagged in `eslint.config.js` as deserving a dedicated pass. Do not confuse them
@@ -538,8 +593,42 @@ with the unused-variable debt:
 
 Fixing them is mechanical but touches render logic in files with no test
 coverage, which is why it is a decision about appetite rather than something to
-fold into a cleanup pass. **Recommend: take `static-components` now** (4 sites, real
-bug, contained to one file) and schedule the rest.
+fold into a cleanup pass. ~~Recommend: take `static-components` now.~~ Done.
+
+---
+
+## Sequencing C3 and F4
+
+Both were answered at their most ambitious option, and together they are longer
+than everything else outstanding combined. They are not independent, and the
+order is not arbitrary.
+
+**Do not run them concurrently.** C3 rewrites the heraldry composition model —
+the SVG pipeline, the save format, the Dexie record shape, and every renderer
+that touches a coat. F4 converts those same files to TypeScript. Migrating a
+file to `.ts` and then rewriting it is the worst case: the types get written
+against a model that is about to be replaced, and the rewrite lands as a
+conflict with itself. Either order avoids that; running them at once does not.
+
+**Recommended order: C3 first, then F4 over the settled result.** Two reasons.
+The heraldry model is the thing whose shape is about to change, so typing it
+last is typing it once. And F4 is the interruptible one — a per-file migration
+can pause at any file boundary with the build green, whereas C3 has a
+mid-flight state where saved coats are in the old shape and the code expects the
+new one. Long-running work should be the interruptible kind.
+
+**F4's first step is toolchain, not conversion.** There is no `tsconfig.json`
+and no `typescript` dependency, so before any file is renamed: add `typescript`,
+add a config with `allowJs` so `.js` and `.ts` coexist during the migration, and
+add a `tsc --noEmit` step to CI alongside the existing lint gate. Vite compiles
+TS without type-checking it, so a build that passes proves nothing about types —
+without the CI step the migration produces the appearance of safety and not the
+fact of it.
+
+**C3's first step is the migration and its tests, not the renderer.** This is
+the only outstanding item that can damage heraldry already drawn. The reversible
+order is: define the recursive shape, write the old-shape → new-shape migration,
+test it against a copy of the real world data, and only then touch a renderer.
 
 ---
 
@@ -569,9 +658,15 @@ ones (the broken Crown, dangling references) instead of failing silently, so the
 will stop being invisible while you decide.
 
 The two structural refactors (the sync manifest, the planner abstraction) remain
-worth doing and remain gated on timing, not on agreement. Answer C4 before the
-planner one — it decides whether that work is a component extraction or a routing
-change.
+worth doing and remain gated on timing, not on agreement. C4 is now answered, so
+the planner one is a **routing change**: `pages/StoryPlanner.jsx` already mounts
+the seven views from the URL, and the shared shell each view reimplements is
+what lifts into the route.
+
+**The two big answered items, C3 and F4, now dominate the remaining calendar.**
+Read "Sequencing C3 and F4" above before starting either. If they run in series
+as recommended, most of the list above sits untouched until they are through —
+which is worth being deliberate about rather than discovering.
 
 ## Section index
 

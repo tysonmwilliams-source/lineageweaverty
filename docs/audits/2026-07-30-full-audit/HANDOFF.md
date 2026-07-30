@@ -71,20 +71,27 @@ gated on a green light for timing. See "What is left" below.
 | `4d1f784` | — | **C1**: responsive foundation, writing-editor drawers |
 | `630c09b` | — | **C1**: the tree as a navigable list on phones |
 | `1dc3d83` | — | **C1**: the Armory and remaining grids — C1 complete |
+| `bb8fd32` | — | **G7**: `static-components` fixed and promoted to an error |
+| `72068fe` | — | **C4**: the Story Planner is a route, not a modal |
 
 **Current baselines** (verify these still hold before and after your work):
 
 ```bash
-npm run build      # passes, ~10s
-npx vitest run     # 451 tests pass, 11 files, exits 0
-npx eslint .       # 0 errors, 349 warnings — exits 0, and CI blocks on it
+npm run build      # passes, ~25s
+npx vitest run     # 465 tests pass, 13 files, exits 0
+npx eslint .       # 0 errors, 343 warnings — exits 0, and CI blocks on it
 ```
 
-Lint is now a **blocking gate** (decision F3). `no-undef`, `no-dupe-keys` and
-`rules-of-hooks` are hard errors and all sit at zero — a new violation fails the
-build. `no-unused-vars` (249) and the React Compiler rules (33) are warnings; the
-warning count is the yardstick and should go down, never up. See Part Two G7 on
-the React Compiler set — those are not the same kind of debt as an unused import.
+Lint is now a **blocking gate** (decision F3). `no-undef`, `no-dupe-keys`,
+`rules-of-hooks` and — as of `bb8fd32` — `react-hooks/static-components` are hard
+errors and all sit at zero, so a new violation fails the build. `no-unused-vars`
+(250) and the remaining React Compiler rules (29) are warnings; the warning count
+is the yardstick and should go down, never up.
+
+**The pattern to copy when you clear a rule: fix the violations, then promote the
+rule to `error`.** A rule at zero that stays a warning has fixed today and
+guaranteed nothing about tomorrow. This is what makes the count a ratchet rather
+than a snapshot.
 
 ---
 
@@ -102,44 +109,61 @@ first answering something — that is the honest state of it.
 - **The whole B group is decided and implemented** — B1 manuscript, B2 Source
   Serif 4, B3 Tailwind removed, B4 keep all seven themes. See the DECIDED table at
   the top of README.
-- **C2–C6** — Gemini key architecture, quartering/impalement, planner routing,
-  household roles, multiple spouses. **C1 is decided and complete** — see the
-  DECIDED table in README.
+- **C2, C5, C6** — Gemini key architecture, household roles, multiple spouses.
+  **C1 and C4 are decided and complete**; **C3 is decided and not started** (the
+  full recursive-composition rebuild). See the DECIDED table in README.
 - **D1–D4** — succession semantics. D4 (the broken Crown) is now *reported* by
   the integrity check instead of failing silently, but whether person 82 was
   deleted or the Crown should be vacant is still a worldbuilding answer.
 - **E1–E9** — the owner's world data. **Never auto-change creative content.**
-- **G1–G3 and G7** (README Part Two, Section G) — what is still open of the items
-  that stopped at a decision during Phases 4–6: the remaining 44 emoji (G1), the
-  duplicated `RankPips` (G2), the unimported shared CSS (G3), and the 33 React
-  Compiler lint violations (G7). G4 favicon, G5 stale branch and G6 lint-as-a-gate
-  are **done**.
-- **F1–F8** — housekeeping calls: `extras/` (29 MB), the archive directories,
-  `no-unused-vars` severity, TypeScript, feature flags, `claude-context` in git,
-  docs restructure, bug-tracker path.
+- **G1–G3** (README Part Two, Section G) — what is still open of the items that
+  stopped at a decision during Phases 4–6: the remaining 44 emoji (G1), the
+  duplicated `RankPips` (G2), the unimported shared CSS (G3). G4 favicon, G5
+  stale branch, G6 lint-as-a-gate and G7 `static-components` are **done**; the
+  other 29 React Compiler warnings are scheduled, not open.
+- **F1, F5, F7, F8** — housekeeping calls: `extras/` (29 MB), feature flags,
+  docs restructure, bug-tracker path. F2, F3, F6 are done; **F4 is decided
+  (full TypeScript migration) and not started**.
+
+### The C3/F4 batch — answered, and what it means
+
+All four of the queued batch (C3, C4, G7, F4) were answered. C4 and G7 are
+implemented and on `main`. **C3 and F4 were both answered at their largest
+option** — recursive heraldic composition, and a full TypeScript migration —
+and neither is started.
+
+Read "Sequencing C3 and F4" in README before picking either up. The short
+version, because it is the kind of thing that gets rediscovered expensively:
+
+- **Do not run them concurrently.** F4 would type the exact files C3 is about
+  to rewrite. Either order is fine; both at once is not.
+- **C3 first is the recommendation**, because the heraldry model's shape is what
+  is changing (type it once, afterwards), and because F4 is the interruptible
+  one — it can pause at any file boundary with a green build, whereas C3 has a
+  mid-flight state where saved coats are in the old shape and the code expects
+  the new one.
+- **F4's first step is toolchain.** There is no `tsconfig.json` and no
+  `typescript` dependency. Vite compiles TS *without type-checking it*, so
+  a green build proves nothing about types — the migration needs a `tsc --noEmit`
+  CI step from day one or it produces the appearance of safety, not the fact.
+- **C3's first step is the migration and its tests**, not a renderer. It is the
+  only outstanding item that can damage heraldry the owner has already drawn.
 
 ### The next decision batch (proposed, not yet asked)
 
-These four were queued when the previous session ended. Present them with
-`AskUserQuestion` rather than describing them:
+Still unanswered and worth batching next, in rough order of leverage:
 
-- **C3 — quartering and impalement.** Verified as *less* built than stubs
-  suggests: shield shapes are ~30 min from working (files exist, UI commented
-  out), but quartering/impalement are **not built** — the two functions naively
-  composite finished PNGs, live in a file with zero importers, and the `linkType`
-  enum reserves `quartered`/`impaled` with no code path setting them. Real
-  quartering needs the composition model to become recursive. Worth flagging to the
-  owner that **marriage arms *are* impalement**, which makes this arguably the
-  biggest feature gap for a genealogy app specifically.
-- **C4 — planner modal or route.** Gates the planner refactor: it decides whether
-  that work is a component extraction or a routing change. Answer C4 first.
-- **G7 — the 33 React Compiler lint violations.** Recommend taking
-  `static-components` now: 4 sites, all in `CodexBrowse.jsx`, and it is a real bug
-  class (a component created during render resets state on every parent render).
-  Schedule the rest.
-- **F4 — TypeScript.** Recommend `// @ts-check` + JSDoc on `src/services/` only:
-  real safety, zero build change, no migration. The `@types/react*` packages were
-  deliberately kept for this.
+- **D1 — what the succession algorithm should model.** The largest correctness
+  item left, and the subsystem's entire purpose. Carries a real cost the owner
+  has to accept: fixing it reorders succession lines they may have written prose
+  around.
+- **C2 — Gemini key architecture.** Interacts with A1/A2 and with the repo being
+  public.
+- **E1 — the 219 broken wiki-links.** 8 mechanical + 4 placeholders can be fixed
+  on a yes; the other 72 look like a deliberate forward-reference backlog and
+  should not be touched.
+- **G1–G3** — the three items parked directly on B1, which is now answered, so
+  all three are unblocked and together are under a day.
 
 ### Green-light gated (Part One, below the line)
 
@@ -151,8 +175,11 @@ Both were always described as needing agreement on timing, not on whether:
   independently revertable steps.
 - **The planner view abstraction** — 3,873 lines of view code → ~1,400 and 7,858
   CSS → ~3,000, and the natural place to enforce the sync rule once. ~4 days.
-  Note this interacts with **C4** (planner modal vs route): C4 decides whether
-  it's a component extraction or a routing change, so answer C4 first.
+  **C4 is answered, so this is now a routing change**: the seven views are
+  already mounted by `pages/StoryPlanner.jsx` from `:planId`/`:view`, which is
+  the seam to abstract along. The shared shell each view currently reimplements
+  (load-by-plan-id, loading/empty states, the close handler) is what lifts into
+  the route.
 
 ---
 
@@ -243,6 +270,37 @@ re-checking the work rather than by reading the report.
   stopped spinning and the placeholder shield shrank to 20px. **General lesson:
   when replacing an emoji with `<Icon>`, grep the stylesheet for a `span`
   selector sizing it — an SVG inherits neither `font-size` nor that selector.**
+
+**The C3/C4/G7 batch** — three more, and two of them were entries that had gone
+stale rather than been wrong when written. That is a distinct failure mode worth
+naming: *the audit decays as the work proceeds*, so an unimplemented Part Two
+entry is not necessarily still true.
+
+- **C3's quartering functions do not exist.** The audit and this handoff both
+  described them in the present tense — "the two functions naively composite
+  finished PNGs, live in a file with zero importers". They lived in
+  `src/utils/heraldryUtils.js`, and all 459 lines of it were deleted in **Phase
+  4** (`cbcbeec`), by the audit's own cleanup. The only survivor is two words in
+  a JSDoc `@param` at `heraldryService.js:280`. The shield-shape half of the
+  claim holds and is slightly better than stated: all five SVGs are in
+  `public/shields/` and `SHIELD_TYPES` is already a live export.
+- **C4's "fold into the editor's right rail" was not an untaken option.**
+  `PlanningSidebar`, 545 lines, already occupied that rail. Its two buttons did
+  nothing but open the modal.
+- **G7's `static-components` severity was overstated.** All four violations were
+  one component, `SubsectionHeader` in `CodexBrowse.jsx`, written as
+  `useCallback(fn, [])` and used as JSX. With empty deps the identity is stable
+  for a mounted instance and the component holds no state — so the described
+  "resets its state on every parent render" was not happening. The fix is
+  unchanged and correct; the justification was not. **Promoting the rule to
+  `error` is what actually prevents recurrence**, and that is the reusable part.
+
+Also learned, not a correction: **the Phase 6 icon bug is still live for new
+code.** Writing the C4 route tests caught `pen-line` and `file-question` — two
+names I had just used that are not in `LUCIDE_ICONS` and would have rendered
+nothing in production. `icon-map.test.jsx` catches these, but only once a test
+renders the component. Check the map when you add an `<Icon name>`, don't
+assume a plausible Lucide name is mapped.
 
 ---
 
