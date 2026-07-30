@@ -5,6 +5,7 @@
  * logs them, and displays a fallback UI instead of crashing the app.
  */
 import { Component } from 'react';
+import { logger } from '../utils/logger';
 
 class ErrorBoundary extends Component {
   constructor(props) {
@@ -23,7 +24,7 @@ class ErrorBoundary extends Component {
 
   componentDidCatch(error, errorInfo) {
     // Log the error to console (could also send to error reporting service)
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    logger.error('ErrorBoundary caught an error:', error, errorInfo);
     this.setState({ errorInfo });
   }
 

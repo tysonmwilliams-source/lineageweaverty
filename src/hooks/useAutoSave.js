@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { logger } from '../utils/logger';
 
 /**
  * useAutoSave Hook
@@ -54,7 +55,7 @@ export default function useAutoSave({
       setLastSaved(new Date());
       setHasUnsavedChanges(false);
     } catch (error) {
-      console.error('Auto-save failed:', error);
+      logger.error('Auto-save failed:', error);
     } finally {
       setIsSaving(false);
     }

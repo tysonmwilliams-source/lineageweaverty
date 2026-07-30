@@ -6,6 +6,7 @@
  */
 
 import { getDatabase } from './database';
+import { logger } from '../utils/logger';
 
 // ==================== CONSTANTS ====================
 
@@ -90,7 +91,7 @@ export async function createWriting(data, datasetId) {
     updatedAt: now
   });
 
-  console.log('Writing created with ID:', writingId);
+  logger.log('Writing created with ID:', writingId);
   return writingId;
 }
 
@@ -153,7 +154,7 @@ export async function updateWriting(id, updates, datasetId) {
   };
 
   const result = await db.writings.update(id, updateData);
-  console.log('Writing updated:', id);
+  logger.log('Writing updated:', id);
   return result;
 }
 
@@ -179,7 +180,7 @@ export async function deleteWriting(id, datasetId) {
   // Delete writing
   await db.writings.delete(id);
 
-  console.log('Writing deleted:', id, {
+  logger.log('Writing deleted:', id, {
     chaptersDeleted,
     linksDeleted
   });
@@ -200,7 +201,7 @@ export async function restoreWriting(data, datasetId) {
     ...data,
     id: parseInt(data.id) || data.id
   });
-  console.log('Writing restored:', id);
+  logger.log('Writing restored:', id);
   return id;
 }
 

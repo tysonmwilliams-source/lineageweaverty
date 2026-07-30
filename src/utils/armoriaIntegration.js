@@ -10,6 +10,7 @@
  */
 
 import { createSVGHeraldryWithMask } from './shieldSVGProcessor';
+import { logger } from './logger';
 
 /**
  * Generate heraldry via Armoria API
@@ -42,11 +43,11 @@ export async function generateArmoriaHeraldry(houseName, customSeed = null, size
     
     const svgText = await response.text();
     
-    console.log('📥 Armoria API response (first 200 chars):', svgText.substring(0, 200));
+    logger.log('📥 Armoria API response (first 200 chars):', svgText.substring(0, 200));
     
     // Check if response is actually SVG
     if (!svgText.includes('<svg')) {
-      console.error('❌ Armoria API did not return SVG. Response:', svgText);
+      logger.error('❌ Armoria API did not return SVG. Response:', svgText);
       throw new Error('Armoria API returned invalid response (not SVG)');
     }
     
@@ -62,7 +63,7 @@ export async function generateArmoriaHeraldry(houseName, customSeed = null, size
     };
     
   } catch (error) {
-    console.error('Error generating Armoria heraldry:', error);
+    logger.error('Error generating Armoria heraldry:', error);
     throw error;
   }
 }
@@ -83,16 +84,16 @@ function extractHeraldricContent(svgText) {
     // Check for parsing errors
     const parserError = doc.querySelector('parsererror');
     if (parserError) {
-      console.error('❌ XML parsing error:', parserError.textContent);
-      console.log('📑 Returning original SVG as fallback');
+      logger.error('❌ XML parsing error:', parserError.textContent);
+      logger.log('📑 Returning original SVG as fallback');
       return svgText;
     }
     
     const svg = doc.querySelector('svg');
     
     if (!svg) {
-      console.error('❌ No SVG element found in parsed document');
-      console.log('📑 Returning original SVG as fallback');
+      logger.error('❌ No SVG element found in parsed document');
+      logger.log('📑 Returning original SVG as fallback');
       return svgText;
     }
     
@@ -127,7 +128,7 @@ function extractHeraldricContent(svgText) {
       if (id.includes('shield') || id.includes('outline') || 
           classes.includes('shield') || classes.includes('outline')) {
         // Skip shield outline
-        console.log('Skipping shield outline:', id || classes);
+        logger.log('Skipping shield outline:', id || classes);
         continue;
       }
       
@@ -138,7 +139,7 @@ function extractHeraldricContent(svgText) {
         
         // If it's just a black stroke with no fill, it's probably the outline
         if ((!fill || fill === 'none') && stroke) {
-          console.log('Skipping outline path');
+          logger.log('Skipping outline path');
           continue;
         }
       }
@@ -155,9 +156,9 @@ ${content.join('\n')}
     return contentSVG;
     
   } catch (error) {
-    console.error('Error extracting heraldic content:', error);
+    logger.error('Error extracting heraldic content:', error);
     // If extraction fails, return original
-    console.log('📑 Returning original SVG as fallback');
+    logger.log('📑 Returning original SVG as fallback');
     return svgText;
   }
 }
@@ -191,12 +192,12 @@ function hashString(str) {
 export async function createArmoriaHeraldryForHouse(house, customSeed = null) {
   try {
     // Step 1: Generate base heraldry from Armoria (content only, no shield outline)
-    console.log(`🛡️ Generating Armoria heraldry for ${house.houseName}...`);
+    logger.log(`🛡️ Generating Armoria heraldry for ${house.houseName}...`);
     const armoria = await generateArmoriaHeraldry(house.houseName, customSeed);
     
     // Step 2: Apply our professional shield mask to the content
     const shieldType = house.heraldryShieldType || 'heater';
-    console.log(`🛡️ Applying ${shieldType} shield mask...`);
+    logger.log(`🛡️ Applying ${shieldType} shield mask...`);
     const maskedSVG = await createSVGHeraldryWithMask(
       armoria.svg,
       shieldType,
@@ -204,7 +205,7 @@ export async function createArmoriaHeraldryForHouse(house, customSeed = null) {
     );
     
     // Step 3: Generate PNG versions for fallback/compatibility
-    console.log('🛡️ Converting to PNG fallbacks...');
+    logger.log('🛡️ Converting to PNG fallbacks...');
     const pngVersions = await convertSVGtoPNG(maskedSVG);
     
     // Step 4: Return complete heraldry package
@@ -230,11 +231,11 @@ export async function createArmoriaHeraldryForHouse(house, customSeed = null) {
       }
     };
     
-    console.log('✅ Armoria heraldry generation complete!');
+    logger.log('✅ Armoria heraldry generation complete!');
     return result;
     
   } catch (error) {
-    console.error('❌ Error in Armoria heraldry creation:', error);
+    logger.error('❌ Error in Armoria heraldry creation:', error);
     throw error;
   }
 }

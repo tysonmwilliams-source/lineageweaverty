@@ -16,6 +16,7 @@ import {
 } from '../../../services/entitySearchService';
 import { getLinksByWriting } from '../../../services/writingLinkService';
 import './EntitySidebar.css';
+import { logger } from '../../../utils/logger';
 
 /**
  * EntityItem Component - Single entity display
@@ -147,7 +148,7 @@ export default function EntitySidebar({
 
         setEntities(resolvedEntities);
       } catch (error) {
-        console.error('Failed to load entities:', error);
+        logger.error('Failed to load entities:', error);
       } finally {
         setLoading(false);
       }

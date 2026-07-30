@@ -14,6 +14,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../ThemeContext';
 import Icon from '../icons';
 import './LoginPage.css';
+import { logger } from '../../utils/logger';
 
 // ==================== ANIMATION VARIANTS ====================
 const CARD_VARIANTS = {
@@ -89,7 +90,7 @@ export default function LoginPage() {
       clearError();
       await signInWithGoogle();
     } catch (err) {
-      console.error('Sign-in error:', err);
+      logger.error('Sign-in error:', err);
     } finally {
       setIsSigningIn(false);
     }

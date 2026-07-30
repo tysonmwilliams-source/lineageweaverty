@@ -8,6 +8,7 @@
 import { getAllPeople, getAllHouses } from './database';
 import { getAllEntries } from './codexService';
 import { getAllDignities } from './dignityService';
+import { logger } from '../utils/logger';
 
 /**
  * Entity types available for wiki-linking
@@ -94,7 +95,7 @@ export async function searchEntities(query, datasetId, options = {}) {
         }));
       results.push(...matches);
     } catch (error) {
-      console.error('Error searching people:', error);
+      logger.error('Error searching people:', error);
     }
   }
 
@@ -118,7 +119,7 @@ export async function searchEntities(query, datasetId, options = {}) {
         }));
       results.push(...matches);
     } catch (error) {
-      console.error('Error searching houses:', error);
+      logger.error('Error searching houses:', error);
     }
   }
 
@@ -142,7 +143,7 @@ export async function searchEntities(query, datasetId, options = {}) {
         }));
       results.push(...matches);
     } catch (error) {
-      console.error('Error searching codex:', error);
+      logger.error('Error searching codex:', error);
     }
   }
 
@@ -166,7 +167,7 @@ export async function searchEntities(query, datasetId, options = {}) {
         }));
       results.push(...matches);
     } catch (error) {
-      console.error('Error searching dignities:', error);
+      logger.error('Error searching dignities:', error);
     }
   }
 
@@ -258,7 +259,7 @@ export async function getEntityById(type, id, datasetId) {
       }
     }
   } catch (error) {
-    console.error(`Error getting entity ${type}:${id}:`, error);
+    logger.error(`Error getting entity ${type}:${id}:`, error);
   }
   return null;
 }
@@ -334,7 +335,7 @@ export async function getRecentEntities(datasetId, limit = 5) {
       }));
     results.push(...recentDignities);
   } catch (error) {
-    console.error('Error getting recent entities:', error);
+    logger.error('Error getting recent entities:', error);
   }
 
   return results;

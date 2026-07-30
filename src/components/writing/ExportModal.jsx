@@ -15,6 +15,7 @@ import {
   downloadFile
 } from '../../services/exportService';
 import './ExportModal.css';
+import { logger } from '../../utils/logger';
 
 /**
  * ExportModal Component
@@ -46,7 +47,7 @@ export default function ExportModal({
       downloadFile(result.content, result.filename, result.mimeType);
       onClose();
     } catch (err) {
-      console.error('Export failed:', err);
+      logger.error('Export failed:', err);
       setError(err.message || 'Export failed. Please try again.');
     } finally {
       setIsExporting(false);

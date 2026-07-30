@@ -21,6 +21,7 @@ import {
   getCharacterArcs
 } from './planningService';
 import { getPerson } from './database';
+import { logger } from '../utils/logger';
 
 // ==================== PREMISE & STORY DEVELOPMENT ====================
 
@@ -75,7 +76,7 @@ Respond ONLY with valid JSON, no additional text.`;
     }
     throw new Error('Invalid response format');
   } catch (error) {
-    console.error('Error developing premise:', error);
+    logger.error('Error developing premise:', error);
     throw error;
   }
 }
@@ -141,7 +142,7 @@ Generate suggestions for ALL beats in the framework. Respond ONLY with valid JSO
     }
     throw new Error('Invalid response format');
   } catch (error) {
-    console.error('Error generating beat suggestions:', error);
+    logger.error('Error generating beat suggestions:', error);
     throw error;
   }
 }
@@ -198,7 +199,7 @@ Make the suggestion specific to the premise if provided, or give a genre-appropr
     }
     throw new Error('Invalid response format');
   } catch (error) {
-    console.error('Error suggesting beat content:', error);
+    logger.error('Error suggesting beat content:', error);
     throw error;
   }
 }
@@ -265,7 +266,7 @@ Respond ONLY with valid JSON.`;
     }
     throw new Error('Invalid response format');
   } catch (error) {
-    console.error('Error developing scene:', error);
+    logger.error('Error developing scene:', error);
     throw error;
   }
 }
@@ -321,7 +322,7 @@ Respond ONLY with valid JSON.`;
     }
     throw new Error('Invalid response format');
   } catch (error) {
-    console.error('Error getting suggestions:', error);
+    logger.error('Error getting suggestions:', error);
     throw error;
   }
 }
@@ -379,7 +380,7 @@ Make suggestions specific to the arc type and any provided context. Respond ONLY
     }
     throw new Error('Invalid response format');
   } catch (error) {
-    console.error('Error suggesting story arc:', error);
+    logger.error('Error suggesting story arc:', error);
     throw error;
   }
 }
@@ -438,7 +439,7 @@ Make suggestions specific to the thread type and any provided context. Respond O
     }
     throw new Error('Invalid response format');
   } catch (error) {
-    console.error('Error suggesting plot thread:', error);
+    logger.error('Error suggesting plot thread:', error);
     throw error;
   }
 }
@@ -487,7 +488,7 @@ Make suggestions specific to the character if background is provided. Respond ON
     }
     throw new Error('Invalid response format');
   } catch (error) {
-    console.error('Error suggesting character arc:', error);
+    logger.error('Error suggesting character arc:', error);
     throw error;
   }
 }
@@ -553,7 +554,7 @@ Respond ONLY with valid JSON.`;
     }
     throw new Error('Invalid response format');
   } catch (error) {
-    console.error('Error developing character arc:', error);
+    logger.error('Error developing character arc:', error);
     throw error;
   }
 }
@@ -634,7 +635,7 @@ Respond ONLY with valid JSON.`;
     }
     throw new Error('Invalid response format');
   } catch (error) {
-    console.error('Error analyzing pacing:', error);
+    logger.error('Error analyzing pacing:', error);
     throw error;
   }
 }
@@ -706,7 +707,7 @@ Be thorough but fair - not every ambiguity is a plot hole. Respond ONLY with val
     }
     throw new Error('Invalid response format');
   } catch (error) {
-    console.error('Error detecting plot holes:', error);
+    logger.error('Error detecting plot holes:', error);
     throw error;
   }
 }
@@ -757,7 +758,7 @@ Respond ONLY with valid JSON.`;
     }
     throw new Error('Invalid response format');
   } catch (error) {
-    console.error('Error strengthening beat:', error);
+    logger.error('Error strengthening beat:', error);
     throw error;
   }
 }
@@ -812,7 +813,7 @@ Give a brief transition approach in 2-3 sentences.`
     const response = await askGemini(prompt, {}, { temperature: 0.8, maxOutputTokens: 300 });
     return response.trim();
   } catch (error) {
-    console.error('Error getting quick suggestion:', error);
+    logger.error('Error getting quick suggestion:', error);
     throw error;
   }
 }
@@ -862,7 +863,7 @@ Write approximately ${targetWords} words. Write ONLY the synopsis, no additional
     const response = await askGemini(prompt, {}, { temperature: 0.7, maxOutputTokens: targetWords * 2 });
     return response.trim();
   } catch (error) {
-    console.error('Error generating synopsis:', error);
+    logger.error('Error generating synopsis:', error);
     throw error;
   }
 }

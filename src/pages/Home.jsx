@@ -24,6 +24,7 @@ import {
 } from '../components/home';
 
 import './Home.css';
+import { logger } from '../utils/logger';
 
 /**
  * Home Page Component
@@ -76,7 +77,7 @@ export default function Home() {
         }
       } catch (error) {
         if (!cancelled && import.meta.env.DEV) {
-          console.error('Error loading extra counts for home page:', error);
+          logger.error('Error loading extra counts for home page:', error);
         }
       } finally {
         if (!cancelled) {

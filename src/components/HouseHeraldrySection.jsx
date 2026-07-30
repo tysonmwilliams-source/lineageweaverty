@@ -31,6 +31,8 @@ import { useDataset } from '../contexts/DatasetContext';
 import { getHeraldry } from '../services/heraldryService';
 import HeraldryThumbnail from './HeraldryThumbnail';
 import './HouseHeraldrySection.css';
+import { logger } from '../utils/logger';
+import Icon from './icons';
 
 function HouseHeraldrySection({ house, isDarkTheme = true }) {
   const navigate = useNavigate();
@@ -81,7 +83,7 @@ function HouseHeraldrySection({ house, isDarkTheme = true }) {
       const data = await getHeraldry(heraldryId, datasetId);
       setHeraldry(data);
     } catch (err) {
-      console.error('❌ Failed to load heraldry:', err);
+      logger.error('❌ Failed to load heraldry:', err);
       setError('Failed to load heraldry');
       setHeraldry(null);
     } finally {
@@ -167,7 +169,7 @@ function HouseHeraldrySection({ house, isDarkTheme = true }) {
         className="section-header"
         style={{ color: theme.textSecondary }}
       >
-        <span>🛡️</span> House Heraldry
+        <Icon name="shield" /> House Heraldry
       </h3>
 
       {/* Loading State */}
@@ -256,7 +258,7 @@ function HouseHeraldrySection({ house, isDarkTheme = true }) {
                   color: isDarkTheme ? '#1a1410' : '#ffffff'
                 }}
               >
-                <span>🛡️</span>
+                <Icon name="shield" />
                 <span>Edit in Armory</span>
               </button>
             ) : (
@@ -270,7 +272,7 @@ function HouseHeraldrySection({ house, isDarkTheme = true }) {
                   borderColor: theme.accent
                 }}
               >
-                <span>✨</span>
+                <Icon name="sparkles" />
                 <span>Upgrade in Armory</span>
               </button>
             )}
@@ -307,7 +309,7 @@ function HouseHeraldrySection({ house, isDarkTheme = true }) {
                 color: isDarkTheme ? '#1a1410' : '#ffffff'
               }}
             >
-              <span>✨</span>
+              <Icon name="sparkles" />
               <span>Create Arms</span>
             </button>
             <button
@@ -319,7 +321,7 @@ function HouseHeraldrySection({ house, isDarkTheme = true }) {
                 borderColor: theme.border
               }}
             >
-              <span>🔍</span>
+              <Icon name="search" />
               <span>Browse Armory</span>
             </button>
           </div>
@@ -336,7 +338,7 @@ function HouseHeraldrySection({ house, isDarkTheme = true }) {
             color: theme.text
           }}
         >
-          <span>⚠️</span>
+          <Icon name="alert-triangle" />
           <span>{error}</span>
         </div>
       )}

@@ -44,6 +44,7 @@ import {
   serverTimestamp
 } from 'firebase/firestore';
 import { db as firestoreDb } from '../config/firebase';
+import { logger } from '../utils/logger';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CREATE THE CONTEXT
@@ -72,9 +73,9 @@ async function syncBugToCloud(userId, bugData) {
       syncedAt: serverTimestamp()
     });
     
-    console.log('☁️ Bug synced to cloud:', bugData.title);
+    logger.log('☁️ Bug synced to cloud:', bugData.title);
   } catch (error) {
-    console.error('☁️ Error syncing bug to cloud:', error);
+    logger.error('☁️ Error syncing bug to cloud:', error);
     // Don't throw - local-first approach, cloud sync is optional
   }
 }
@@ -88,9 +89,9 @@ async function deleteBugFromCloud(userId, bugId) {
   try {
     const docRef = doc(firestoreDb, 'users', userId, 'bugs', String(bugId));
     await deleteDoc(docRef);
-    console.log('☁️ Bug deleted from cloud:', bugId);
+    logger.log('☁️ Bug deleted from cloud:', bugId);
   } catch (error) {
-    console.error('☁️ Error deleting bug from cloud:', error);
+    logger.error('☁️ Error deleting bug from cloud:', error);
   }
 }
 
@@ -108,7 +109,7 @@ async function getAllBugsFromCloud(userId) {
       ...doc.data()
     }));
   } catch (error) {
-    console.error('☁️ Error getting bugs from cloud:', error);
+    logger.error('☁️ Error getting bugs from cloud:', error);
     return [];
   }
 }
@@ -151,9 +152,9 @@ export function BugTrackerProvider({ children }) {
       const allBugs = await dbGetAllBugs();
       setBugs(allBugs);
       
-      console.log('🐛 Loaded', allBugs.length, 'bugs');
+      logger.log('🐛 Loaded', allBugs.length, 'bugs');
     } catch (err) {
-      console.error('❌ Error loading bugs:', err);
+      logger.error('❌ Error loading bugs:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -195,7 +196,7 @@ export function BugTrackerProvider({ children }) {
       
       return id;
     } catch (err) {
-      console.error('❌ Error adding bug:', err);
+      logger.error('❌ Error adding bug:', err);
       throw err;
     }
   }, [user]);
@@ -224,7 +225,7 @@ export function BugTrackerProvider({ children }) {
         syncBugToCloud(user.uid, updatedBug);
       }
     } catch (err) {
-      console.error('❌ Error updating bug:', err);
+      logger.error('❌ Error updating bug:', err);
       throw err;
     }
   }, [user]);
@@ -247,7 +248,7 @@ export function BugTrackerProvider({ children }) {
         deleteBugFromCloud(user.uid, id);
       }
     } catch (err) {
-      console.error('❌ Error deleting bug:', err);
+      logger.error('❌ Error deleting bug:', err);
       throw err;
     }
   }, [user]);
@@ -333,9 +334,9 @@ export function BugTrackerProvider({ children }) {
       // Clean up
       URL.revokeObjectURL(url);
       
-      console.log('📥 Bug report downloaded');
+      logger.log('📥 Bug report downloaded');
     } catch (err) {
-      console.error('❌ Error downloading export:', err);
+      logger.error('❌ Error downloading export:', err);
       throw err;
     }
   }, []);

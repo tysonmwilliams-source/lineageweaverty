@@ -1047,15 +1047,6 @@
   gap: var(--space-3);
 }
 
-/* ============================================
-   ANIMATIONS
-   ============================================ */
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
 .spinning {
   animation: spin 1s linear infinite;
 }

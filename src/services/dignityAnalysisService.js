@@ -16,6 +16,7 @@
 import { getAllPeople, getAllHouses, getAllRelationships } from './database';
 import { getAllDignities, getTenuresForDignity, natureHasSuccession, natureHasTenureHistory } from './dignityService';
 import { SUGGESTION_TYPES, ACTION_TYPES } from '../data/suggestionTypes';
+import { logger } from '../utils/logger';
 
 // ==================== UTILITY FUNCTIONS ====================
 
@@ -940,7 +941,7 @@ export async function runFullAnalysis(options = {}) {
   } = options;
 
   if (import.meta.env.DEV) {
-    console.log('Starting dignity analysis...');
+    logger.log('Starting dignity analysis...');
   }
   const startTime = Date.now();
 
@@ -961,7 +962,7 @@ export async function runFullAnalysis(options = {}) {
     }
 
     if (import.meta.env.DEV) {
-      console.log(`Data loaded: ${people.length} people, ${houses.length} houses, ${dignities.length} dignities`);
+      logger.log(`Data loaded: ${people.length} people, ${houses.length} houses, ${dignities.length} dignities`);
     }
 
     // 2. Build lookup maps
@@ -993,7 +994,7 @@ export async function runFullAnalysis(options = {}) {
         const suggestions = analyzerFn();
         allSuggestions.push(...suggestions);
         if (import.meta.env.DEV) {
-          console.log(`  ${analyzerName}: ${suggestions.length} suggestions`);
+          logger.log(`  ${analyzerName}: ${suggestions.length} suggestions`);
         }
       }
     }
@@ -1028,7 +1029,7 @@ export async function runFullAnalysis(options = {}) {
 
     const duration = Date.now() - startTime;
     if (import.meta.env.DEV) {
-      console.log(`Analysis complete: ${allSuggestions.length} suggestions in ${duration}ms`);
+      logger.log(`Analysis complete: ${allSuggestions.length} suggestions in ${duration}ms`);
     }
 
     return {
@@ -1044,7 +1045,7 @@ export async function runFullAnalysis(options = {}) {
     };
 
   } catch (error) {
-    console.error('Analysis failed:', error);
+    logger.error('Analysis failed:', error);
     throw error;
   }
 }

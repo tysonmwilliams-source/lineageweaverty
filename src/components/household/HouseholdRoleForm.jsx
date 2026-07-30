@@ -31,6 +31,7 @@ import {
   getRolesGroupedByCategory
 } from '../../data/householdRoleTypes';
 import './HouseholdRoleForm.css';
+import { logger } from '../../utils/logger';
 
 // Animation variants
 const OVERLAY_VARIANTS = {
@@ -124,7 +125,7 @@ function HouseholdRoleForm({
     } catch (err) {
       setError(err.message || 'Failed to save role');
       if (import.meta.env.DEV) {
-        console.error('Error saving role:', err);
+        logger.error('Error saving role:', err);
       }
     } finally {
       setSaving(false);

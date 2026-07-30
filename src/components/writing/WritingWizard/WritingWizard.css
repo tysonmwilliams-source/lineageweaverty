@@ -717,10 +717,6 @@
   animation: spin 1s linear infinite;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
 /* Responsive */
 @media (max-width: 768px) {
   .wizard-stats__grid {

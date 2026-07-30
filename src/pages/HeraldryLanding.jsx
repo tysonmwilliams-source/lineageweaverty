@@ -36,6 +36,8 @@ import { LoadingState, EmptyState, SectionHeader, Card, ActionButton } from '../
 import DignityEducationPanel from '../components/DignityEducationPanel';
 import useDebouncedValue from '../hooks/useDebouncedValue';
 import './HeraldryLanding.css';
+import { logger } from '../utils/logger';
+import { formatRelativeDate as formatDate } from '../utils/formatDate';
 
 // Animation variants
 const CONTAINER_VARIANTS = {
@@ -134,7 +136,7 @@ function HeraldryLanding() {
         setLoading(false);
       } catch (error) {
         if (!cancelled && import.meta.env.DEV) {
-          console.error('Error loading heraldry data:', error);
+          logger.error('Error loading heraldry data:', error);
         }
         if (!cancelled) setLoading(false);
       }
@@ -255,7 +257,7 @@ function HeraldryLanding() {
       setHeraldry(heraldryData);
       setStatistics(stats);
     } catch (error) {
-      console.error('Error deleting heraldry:', error);
+      logger.error('Error deleting heraldry:', error);
       alert('Failed to delete heraldry');
     }
   }, [user, activeDataset]);
@@ -688,22 +690,5 @@ function getCategoryName(category) {
   return names[category] || category || 'Uncategorized';
 }
 
-function formatDate(isoString) {
-  if (!isoString) return 'Unknown';
-  const date = new Date(isoString);
-  const now = new Date();
-  const diffInHours = (now - date) / (1000 * 60 * 60);
-
-  if (diffInHours < 1) return 'Just now';
-  if (diffInHours < 24) return `${Math.floor(diffInHours)}h ago`;
-  if (diffInHours < 48) return 'Yesterday';
-  if (diffInHours < 168) return `${Math.floor(diffInHours / 24)}d ago`;
-
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
-  });
-}
 
 export default HeraldryLanding;

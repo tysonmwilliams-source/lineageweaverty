@@ -1,0 +1,22 @@
+/**
+ * Shared keyframes.
+ *
+ * @keyframes are global in CSS no matter which stylesheet declares them, so 21
+ * separate `spin` declarations across 21 component stylesheets were 21 copies of
+ * one global name — every one of them redefining the same animation, with the
+ * last stylesheet to load silently winning.
+ *
+ * Imported from main.jsx so it is present before any component stylesheet.
+ *
+ * Deliberately kept separate from src/styles/shared/ — that folder is two
+ * unadopted drafts pending decision B1/B3. This file is loaded and live.
+ */
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

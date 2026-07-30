@@ -29,6 +29,8 @@
 // FEATURE FLAGS CONFIGURATION
 // ═══════════════════════════════════════════════════════════════════════════
 
+import { logger } from '../utils/logger';
+
 export const FEATURE_FLAGS = {
   
   // ═══════════════════════════════════════════════════════════════════════
@@ -227,7 +229,7 @@ export const isFeatureEnabled = (featurePath) => {
   for (const key of keys) {
     value = value[key];
     if (value === undefined) {
-      console.warn(`[FeatureFlags] Unknown feature path: ${featurePath}`);
+      logger.warn(`[FeatureFlags] Unknown feature path: ${featurePath}`);
       return false;
     }
   }
@@ -331,7 +333,7 @@ export const toggleFeature = (featurePath, enabled) => {
   for (let i = 0; i < keys.length - 1; i++) {
     obj = obj[keys[i]];
     if (!obj) {
-      console.error(`[FeatureFlags] Cannot toggle: Invalid path ${featurePath}`);
+      logger.error(`[FeatureFlags] Cannot toggle: Invalid path ${featurePath}`);
       return;
     }
   }
@@ -339,7 +341,7 @@ export const toggleFeature = (featurePath, enabled) => {
   const finalKey = keys[keys.length - 1];
   obj[finalKey] = enabled;
   
-  console.log(`[FeatureFlags] ${featurePath} = ${enabled}`);
+  logger.log(`[FeatureFlags] ${featurePath} = ${enabled}`);
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -350,15 +352,16 @@ export const toggleFeature = (featurePath, enabled) => {
  * Log all feature flags to console (development only)
  */
 export const debugFeatureFlags = () => {
-  console.group('🚩 Feature Flags Status');
-  console.table(getFeatureStatus());
-  console.groupEnd();
+  logger.group('🚩 Feature Flags Status');
+  logger.table(getFeatureStatus());
+  logger.groupEnd();
 };
 
-// Make debugging function available globally in development
-if (process.env.NODE_ENV === 'development') {
+// Make debugging function available globally in development.
+// `import.meta.env.DEV` is the Vite idiom used everywhere else in src/; this was
+// the only `process` reference in browser source.
+if (import.meta.env.DEV) {
   window.debugFeatureFlags = debugFeatureFlags;
-  console.log('💡 Tip: Run debugFeatureFlags() in console to see all feature flags');
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

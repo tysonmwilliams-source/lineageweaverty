@@ -23,6 +23,7 @@ import Icon from '../components/icons/Icon';
 import ActionButton from '../components/shared/ActionButton';
 import LoadingState from '../components/shared/LoadingState';
 import './CodexEntryForm.css';
+import { logger } from '../utils/logger';
 
 const CONTAINER_VARIANTS = {
   hidden: { opacity: 0 },
@@ -116,7 +117,7 @@ function CodexEntryForm() {
       }
       setLoading(false);
     } catch (err) {
-      console.error('Error loading entry:', err);
+      logger.error('Error loading entry:', err);
       setError('Failed to load entry');
       setLoading(false);
     }
@@ -296,13 +297,13 @@ function CodexEntryForm() {
             syncUpdateHeraldry(user.uid, activeDataset.id, entryData.heraldryId, { codexEntryId });
           }
         } catch (linkError) {
-          console.error('Warning: Failed to create bidirectional link:', linkError);
+          logger.error('Warning: Failed to create bidirectional link:', linkError);
         }
       }
 
       navigate('/codex');
     } catch (err) {
-      console.error('Error saving entry:', err);
+      logger.error('Error saving entry:', err);
       setError('Failed to save entry');
       setSaving(false);
     }

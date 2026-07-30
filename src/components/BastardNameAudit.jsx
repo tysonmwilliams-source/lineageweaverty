@@ -29,6 +29,7 @@ import {
   BASTARD_PREFIX_MATERNAL
 } from '../utils/bastardNaming';
 import './BastardNameAudit.css';
+import { logger } from '../utils/logger';
 
 /**
  * BastardNameAudit Component
@@ -111,7 +112,7 @@ function BastardNameAudit({ people, houses, relationships = [], onUpdatePerson, 
         return newSet;
       });
     } catch (error) {
-      console.error('Error fixing surname:', error);
+      logger.error('Error fixing surname:', error);
       alert(`Error updating ${person.firstName}: ${error.message}`);
     } finally {
       setProcessingIds(prev => {

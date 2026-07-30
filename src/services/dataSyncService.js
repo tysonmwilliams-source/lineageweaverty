@@ -101,9 +101,6 @@ import {
   addCharacterArcCloud,
   updateCharacterArcCloud,
   deleteCharacterArcCloud,
-  addArcMilestoneCloud,
-  updateArcMilestoneCloud,
-  deleteArcMilestoneCloud,
   syncAllToCloud,
   downloadAllFromCloud,
   hasCloudData
@@ -174,6 +171,7 @@ import {
 } from './planningService';
 
 import { db as localDb } from './database';
+import { logger } from '../utils/logger';
 
 // ==================== SYNC STATE ====================
 
@@ -221,13 +219,13 @@ function updateSyncStatus(updates) {
 
 if (typeof window !== 'undefined') {
   window.addEventListener('online', () => {
-    console.log('🌐 Back online');
+    logger.log('🌐 Back online');
     isOnline = true;
     // Could trigger a sync here if there are pending changes
   });
 
   window.addEventListener('offline', () => {
-    console.log('📴 Gone offline');
+    logger.log('📴 Gone offline');
     isOnline = false;
   });
 }
@@ -258,7 +256,7 @@ export async function syncPendingChanges(userId, datasetId = DEFAULT_DATASET_ID)
       return { status: 'no-changes', synced: 0 };
     }
 
-    console.log(`🔄 Syncing ${totalPending} pending changes...`);
+    logger.log(`🔄 Syncing ${totalPending} pending changes...`);
 
     let syncedCount = 0;
     const errors = [];
@@ -272,12 +270,12 @@ export async function syncPendingChanges(userId, datasetId = DEFAULT_DATASET_ID)
           syncedCount++;
         } catch (error) {
           errors.push({ entityType, entityId: change.entityId, error: error.message });
-          console.error(`❌ Failed to sync ${entityType}:${change.entityId}:`, error);
+          logger.error(`❌ Failed to sync ${entityType}:${change.entityId}:`, error);
         }
       }
     }
 
-    console.log(`✅ Synced ${syncedCount}/${totalPending} changes`);
+    logger.log(`✅ Synced ${syncedCount}/${totalPending} changes`);
 
     return {
       status: errors.length === 0 ? 'success' : 'partial',
@@ -286,7 +284,7 @@ export async function syncPendingChanges(userId, datasetId = DEFAULT_DATASET_ID)
       errors
     };
   } catch (error) {
-    console.error('❌ Pending changes sync failed:', error);
+    logger.error('❌ Pending changes sync failed:', error);
     return { status: 'error', error: error.message };
   }
 }
@@ -383,11 +381,6 @@ async function syncSingleChange(userId, datasetId, entityType, change) {
       update: () => updateCharacterArcCloud(userId, datasetId, entityId, data),
       delete: () => deleteCharacterArcCloud(userId, datasetId, entityId)
     },
-    arcMilestone: {
-      add: () => addArcMilestoneCloud(userId, datasetId, { ...data, id: entityId }),
-      update: () => updateArcMilestoneCloud(userId, datasetId, entityId, data),
-      delete: () => deleteArcMilestoneCloud(userId, datasetId, entityId)
-    },
     // These three were queued by their sync wrappers but had no replay handler,
     // so offline changes were dropped on the floor AND marked synced.
     dignityTenure: {
@@ -441,10 +434,10 @@ async function performPeriodicSync() {
   if (periodicSyncCycleCount >= MAINTENANCE_FREQUENCY) {
     periodicSyncCycleCount = 0;
     try {
-      console.log('🔧 Running scheduled sync queue maintenance...');
+      logger.log('🔧 Running scheduled sync queue maintenance...');
       await performSyncQueueMaintenance(periodicSyncDatasetId);
     } catch (error) {
-      console.warn('⚠️ Sync queue maintenance failed:', error);
+      logger.warn('⚠️ Sync queue maintenance failed:', error);
     }
   }
 
@@ -453,20 +446,20 @@ async function performPeriodicSync() {
     return;
   }
 
-  console.log(`⏰ Periodic sync triggered (${pendingCount} pending changes)...`);
+  logger.log(`⏰ Periodic sync triggered (${pendingCount} pending changes)...`);
 
   try {
     // Use the smarter pending-only sync
     const result = await syncPendingChanges(periodicSyncUserId, periodicSyncDatasetId);
     if (result.status === 'success' || result.status === 'no-changes') {
-      console.log('✅ Periodic sync complete:', result.synced || 0, 'changes synced');
+      logger.log('✅ Periodic sync complete:', result.synced || 0, 'changes synced');
     } else if (result.status === 'partial') {
-      console.warn(`⚠️ Periodic sync partial: ${result.synced} synced, ${result.failed} failed`);
+      logger.warn(`⚠️ Periodic sync partial: ${result.synced} synced, ${result.failed} failed`);
     } else if (result.status !== 'skipped') {
-      console.warn('⚠️ Periodic sync issue:', result);
+      logger.warn('⚠️ Periodic sync issue:', result);
     }
   } catch (error) {
-    console.error('❌ Periodic sync failed:', error);
+    logger.error('❌ Periodic sync failed:', error);
   }
 }
 
@@ -480,7 +473,7 @@ export function startPeriodicSync(userId, datasetId = DEFAULT_DATASET_ID) {
   stopPeriodicSync();
 
   if (!userId) {
-    console.warn('⚠️ Cannot start periodic sync without userId');
+    logger.warn('⚠️ Cannot start periodic sync without userId');
     return;
   }
 
@@ -489,7 +482,7 @@ export function startPeriodicSync(userId, datasetId = DEFAULT_DATASET_ID) {
 
   // Start the interval
   periodicSyncIntervalId = setInterval(performPeriodicSync, PERIODIC_SYNC_INTERVAL);
-  console.log(`⏰ Periodic sync started (every ${PERIODIC_SYNC_INTERVAL / 60000} minutes)`);
+  logger.log(`⏰ Periodic sync started (every ${PERIODIC_SYNC_INTERVAL / 60000} minutes)`);
 }
 
 /**
@@ -499,7 +492,7 @@ export function stopPeriodicSync() {
   if (periodicSyncIntervalId) {
     clearInterval(periodicSyncIntervalId);
     periodicSyncIntervalId = null;
-    console.log('⏰ Periodic sync stopped');
+    logger.log('⏰ Periodic sync stopped');
   }
   periodicSyncUserId = null;
   periodicSyncDatasetId = null;
@@ -523,7 +516,7 @@ export function stopPeriodicSync() {
  */
 export async function initializeSync(userId, datasetId = DEFAULT_DATASET_ID) {
   if (!userId) {
-    console.warn('⚠️ No userId provided to initializeSync');
+    logger.warn('⚠️ No userId provided to initializeSync');
     return { status: 'no-user', data: null };
   }
 
@@ -532,7 +525,7 @@ export async function initializeSync(userId, datasetId = DEFAULT_DATASET_ID) {
 
   try {
     updateSyncStatus({ isSyncing: true, error: null });
-    console.log('🔄 Initializing sync for user:', userId, 'dataset:', dsId);
+    logger.log('🔄 Initializing sync for user:', userId, 'dataset:', dsId);
 
     // Check what data exists
     const [localPeople, localHouses, localRelationships] = await Promise.all([
@@ -544,7 +537,7 @@ export async function initializeSync(userId, datasetId = DEFAULT_DATASET_ID) {
     const hasLocalData = localPeople.length > 0 || localHouses.length > 0;
     const userHasCloudData = await hasCloudData(userId, dsId);
 
-    console.log('📊 Sync check:', {
+    logger.log('📊 Sync check:', {
       dataset: dsId,
       hasLocalData,
       hasCloudData: userHasCloudData,
@@ -554,14 +547,14 @@ export async function initializeSync(userId, datasetId = DEFAULT_DATASET_ID) {
 
     // Scenario 1: No data anywhere
     if (!hasLocalData && !userHasCloudData) {
-      console.log('✨ Fresh start - no data to sync');
+      logger.log('✨ Fresh start - no data to sync');
       updateSyncStatus({ isSyncing: false, lastSyncTime: new Date() });
       return { status: 'fresh', data: null };
     }
 
     // Scenario 2: Local data but no cloud data → Upload
     if (hasLocalData && !userHasCloudData) {
-      console.log('⬆️ Uploading local data to cloud...');
+      logger.log('⬆️ Uploading local data to cloud...');
 
       let codexEntries = [];
       let codexLinks = [];
@@ -572,14 +565,14 @@ export async function initializeSync(userId, datasetId = DEFAULT_DATASET_ID) {
         codexEntries = await getAllCodexEntries();
         codexLinks = await localDb.codexLinks.toArray();
       } catch (e) {
-        console.warn('Could not get codex entries/links:', e);
+        logger.warn('Could not get codex entries/links:', e);
       }
 
       try {
         heraldry = await localGetAllHeraldry(dsId);
         heraldryLinks = await localDb.heraldryLinks.toArray();
       } catch (e) {
-        console.warn('Could not get heraldry:', e);
+        logger.warn('Could not get heraldry:', e);
       }
 
       // Get dignities data
@@ -592,7 +585,7 @@ export async function initializeSync(userId, datasetId = DEFAULT_DATASET_ID) {
         dignityTenures = await localDb.dignityTenures.toArray();
         dignityLinks = await localDb.dignityLinks.toArray();
       } catch (e) {
-        console.warn('Could not get dignities:', e);
+        logger.warn('Could not get dignities:', e);
       }
 
       // Get household roles
@@ -600,7 +593,7 @@ export async function initializeSync(userId, datasetId = DEFAULT_DATASET_ID) {
       try {
         householdRoles = await localGetAllHouseholdRoles(dsId);
       } catch (e) {
-        console.warn('Could not get household roles:', e);
+        logger.warn('Could not get household roles:', e);
       }
 
       // Get writings data
@@ -612,7 +605,7 @@ export async function initializeSync(userId, datasetId = DEFAULT_DATASET_ID) {
         chapters = await localGetAllChapters(dsId);
         writingLinks = await localGetAllWritingLinks(dsId);
       } catch (e) {
-        console.warn('Could not get writings data:', e);
+        logger.warn('Could not get writings data:', e);
       }
 
       // Get planning data
@@ -622,17 +615,15 @@ export async function initializeSync(userId, datasetId = DEFAULT_DATASET_ID) {
       let scenePlans = [];
       let plotThreads = [];
       let characterArcs = [];
-      let arcMilestones = [];
-      try {
+        try {
         storyPlans = await localDb.storyPlans.toArray();
         storyArcs = await localDb.storyArcs.toArray();
         storyBeats = await localDb.storyBeats.toArray();
         scenePlans = await localDb.scenePlans.toArray();
         plotThreads = await localDb.plotThreads.toArray();
         characterArcs = await localDb.characterArcs.toArray();
-        arcMilestones = await localDb.arcMilestones.toArray();
       } catch (e) {
-        console.warn('Could not get planning data:', e);
+        logger.warn('Could not get planning data:', e);
       }
 
       await syncAllToCloud(userId, dsId, {
@@ -655,8 +646,7 @@ export async function initializeSync(userId, datasetId = DEFAULT_DATASET_ID) {
         storyBeats,
         scenePlans,
         plotThreads,
-        characterArcs,
-        arcMilestones
+        characterArcs
       });
 
       updateSyncStatus({ isSyncing: false, lastSyncTime: new Date() });
@@ -671,14 +661,14 @@ export async function initializeSync(userId, datasetId = DEFAULT_DATASET_ID) {
     }
 
     // Scenario 3 & 4: Cloud data exists → Download (cloud is source of truth)
-    console.log('⬇️ Downloading cloud data...');
+    logger.log('⬇️ Downloading cloud data...');
 
     // CRITICAL: Check for pending changes before wiping local data
     // This prevents data loss when local changes haven't synced yet
     const pendingCount = await getPendingChangeCount(dsId);
     if (pendingCount > 0) {
-      console.warn(`⚠️ BLOCKING SYNC: ${pendingCount} pending changes not yet synced to cloud`);
-      console.warn('⚠️ Local data will be preserved to prevent data loss');
+      logger.warn(`⚠️ BLOCKING SYNC: ${pendingCount} pending changes not yet synced to cloud`);
+      logger.warn('⚠️ Local data will be preserved to prevent data loss');
       updateSyncStatus({
         isSyncing: false,
         error: `${pendingCount} pending changes - sync blocked to prevent data loss`,
@@ -723,7 +713,7 @@ export async function initializeSync(userId, datasetId = DEFAULT_DATASET_ID) {
       try {
         await localRestoreCodexEntry({ ...entryData, id: parseInt(entry.id) || entry.id });
       } catch (e) {
-        console.warn('Could not restore codex entry:', e);
+        logger.warn('Could not restore codex entry:', e);
       }
     }
 
@@ -733,7 +723,7 @@ export async function initializeSync(userId, datasetId = DEFAULT_DATASET_ID) {
       try {
         await localDb.codexLinks.put({ ...linkData, id: parseInt(link.id) || link.id });
       } catch (e) {
-        console.warn('Could not restore codex link:', e);
+        logger.warn('Could not restore codex link:', e);
       }
     }
 
@@ -744,7 +734,7 @@ export async function initializeSync(userId, datasetId = DEFAULT_DATASET_ID) {
         // Use put to insert with specific ID
         await localDb.heraldry.put({ ...heraldryData, id: parseInt(h.id) || h.id });
       } catch (e) {
-        console.warn('Could not restore heraldry:', e);
+        logger.warn('Could not restore heraldry:', e);
       }
     }
 
@@ -754,7 +744,7 @@ export async function initializeSync(userId, datasetId = DEFAULT_DATASET_ID) {
       try {
         await localDb.heraldryLinks.put({ ...linkData, id: parseInt(link.id) || link.id });
       } catch (e) {
-        console.warn('Could not restore heraldry link:', e);
+        logger.warn('Could not restore heraldry link:', e);
       }
     }
 
@@ -764,7 +754,7 @@ export async function initializeSync(userId, datasetId = DEFAULT_DATASET_ID) {
       try {
         await localDb.dignities.put({ ...dignityData, id: parseInt(dignity.id) || dignity.id });
       } catch (e) {
-        console.warn('Could not restore dignity:', e);
+        logger.warn('Could not restore dignity:', e);
       }
     }
 
@@ -774,7 +764,7 @@ export async function initializeSync(userId, datasetId = DEFAULT_DATASET_ID) {
       try {
         await localDb.dignityTenures.put({ ...tenureData, id: parseInt(tenure.id) || tenure.id });
       } catch (e) {
-        console.warn('Could not restore dignity tenure:', e);
+        logger.warn('Could not restore dignity tenure:', e);
       }
     }
 
@@ -784,7 +774,7 @@ export async function initializeSync(userId, datasetId = DEFAULT_DATASET_ID) {
       try {
         await localDb.dignityLinks.put({ ...linkData, id: parseInt(link.id) || link.id });
       } catch (e) {
-        console.warn('Could not restore dignity link:', e);
+        logger.warn('Could not restore dignity link:', e);
       }
     }
 
@@ -794,7 +784,7 @@ export async function initializeSync(userId, datasetId = DEFAULT_DATASET_ID) {
       try {
         await localDb.householdRoles.put({ ...roleData, id: parseInt(role.id) || role.id });
       } catch (e) {
-        console.warn('Could not restore household role:', e);
+        logger.warn('Could not restore household role:', e);
       }
     }
 
@@ -804,7 +794,7 @@ export async function initializeSync(userId, datasetId = DEFAULT_DATASET_ID) {
       try {
         await localRestoreWriting({ ...writingData, id: parseInt(writing.id) || writing.id }, dsId);
       } catch (e) {
-        console.warn('Could not restore writing:', e);
+        logger.warn('Could not restore writing:', e);
       }
     }
 
@@ -814,7 +804,7 @@ export async function initializeSync(userId, datasetId = DEFAULT_DATASET_ID) {
       try {
         await localRestoreChapter({ ...chapterData, id: parseInt(chapter.id) || chapter.id }, dsId);
       } catch (e) {
-        console.warn('Could not restore chapter:', e);
+        logger.warn('Could not restore chapter:', e);
       }
     }
 
@@ -824,7 +814,7 @@ export async function initializeSync(userId, datasetId = DEFAULT_DATASET_ID) {
       try {
         await localRestoreWritingLink({ ...linkData, id: parseInt(link.id) || link.id }, dsId);
       } catch (e) {
-        console.warn('Could not restore writing link:', e);
+        logger.warn('Could not restore writing link:', e);
       }
     }
 
@@ -834,7 +824,7 @@ export async function initializeSync(userId, datasetId = DEFAULT_DATASET_ID) {
       try {
         await localRestoreStoryPlan({ ...planData, id: parseInt(plan.id) || plan.id }, dsId);
       } catch (e) {
-        console.warn('Could not restore story plan:', e);
+        logger.warn('Could not restore story plan:', e);
       }
     }
 
@@ -844,7 +834,7 @@ export async function initializeSync(userId, datasetId = DEFAULT_DATASET_ID) {
       try {
         await localRestoreStoryArc({ ...arcData, id: parseInt(arc.id) || arc.id }, dsId);
       } catch (e) {
-        console.warn('Could not restore story arc:', e);
+        logger.warn('Could not restore story arc:', e);
       }
     }
 
@@ -854,7 +844,7 @@ export async function initializeSync(userId, datasetId = DEFAULT_DATASET_ID) {
       try {
         await localRestoreStoryBeat({ ...beatData, id: parseInt(beat.id) || beat.id }, dsId);
       } catch (e) {
-        console.warn('Could not restore story beat:', e);
+        logger.warn('Could not restore story beat:', e);
       }
     }
 
@@ -864,7 +854,7 @@ export async function initializeSync(userId, datasetId = DEFAULT_DATASET_ID) {
       try {
         await localRestoreScenePlan({ ...sceneData, id: parseInt(scene.id) || scene.id }, dsId);
       } catch (e) {
-        console.warn('Could not restore scene plan:', e);
+        logger.warn('Could not restore scene plan:', e);
       }
     }
 
@@ -874,7 +864,7 @@ export async function initializeSync(userId, datasetId = DEFAULT_DATASET_ID) {
       try {
         await localRestorePlotThread({ ...threadData, id: parseInt(thread.id) || thread.id }, dsId);
       } catch (e) {
-        console.warn('Could not restore plot thread:', e);
+        logger.warn('Could not restore plot thread:', e);
       }
     }
 
@@ -884,19 +874,10 @@ export async function initializeSync(userId, datasetId = DEFAULT_DATASET_ID) {
       try {
         await localRestoreCharacterArc({ ...arcData, id: parseInt(arc.id) || arc.id }, dsId);
       } catch (e) {
-        console.warn('Could not restore character arc:', e);
+        logger.warn('Could not restore character arc:', e);
       }
     }
 
-    // Handle arc milestones if they exist
-    for (const milestone of cloudData.arcMilestones || []) {
-      const { createdAt, updatedAt, syncedAt, localId, ...milestoneData } = milestone;
-      try {
-        await localDb.arcMilestones.put({ ...milestoneData, id: parseInt(milestone.id) || milestone.id });
-      } catch (e) {
-        console.warn('Could not restore arc milestone:', e);
-      }
-    }
 
     updateSyncStatus({ isSyncing: false, lastSyncTime: new Date() });
 
@@ -906,7 +887,7 @@ export async function initializeSync(userId, datasetId = DEFAULT_DATASET_ID) {
     };
 
   } catch (error) {
-    console.error('❌ Sync initialization failed:', error);
+    logger.error('❌ Sync initialization failed:', error);
     updateSyncStatus({ isSyncing: false, error: error.message });
 
     // Don't throw - return error status so app can continue with local data
@@ -939,7 +920,7 @@ export async function syncAddPerson(userId, datasetId, personId, personData) {
     // Mark as synced on success
     await markEntitySynced('person', personId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync person add after retries:', error);
+    logger.error('☁️ Failed to sync person add after retries:', error);
     // Don't throw - local operation already succeeded
     // Entry remains in queue as pending for next periodic sync
   }
@@ -960,7 +941,7 @@ export async function syncUpdatePerson(userId, datasetId, personId, updates) {
     );
     await markEntitySynced('person', personId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync person update after retries:', error);
+    logger.error('☁️ Failed to sync person update after retries:', error);
   }
 }
 
@@ -980,7 +961,7 @@ export async function syncDeletePerson(userId, datasetId, personId, relationship
   // The relationship IDs are passed in because local DB cascade already happened
   for (const relId of relationshipIds) {
     await addToSyncQueue({ entityType: 'relationship', entityId: relId, operation: 'delete' }, datasetId);
-    console.log(`☁️ Queued cascade delete for relationship ${relId} (person ${personId})`);
+    logger.log(`☁️ Queued cascade delete for relationship ${relId} (person ${personId})`);
   }
 
   if (!userId || !isOnline) return;
@@ -991,9 +972,9 @@ export async function syncDeletePerson(userId, datasetId, personId, relationship
       try {
         await deleteRelationshipCloud(userId, datasetId, relId);
         await markEntitySynced('relationship', relId, datasetId);
-        console.log(`☁️ Cascade deleted relationship ${relId} from cloud`);
+        logger.log(`☁️ Cascade deleted relationship ${relId} from cloud`);
       } catch (relError) {
-        console.warn(`☁️ Could not cascade delete relationship ${relId}:`, relError);
+        logger.warn(`☁️ Could not cascade delete relationship ${relId}:`, relError);
       }
     }
 
@@ -1001,7 +982,7 @@ export async function syncDeletePerson(userId, datasetId, personId, relationship
     await deletePersonCloud(userId, datasetId, personId);
     await markEntitySynced('person', personId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync person delete:', error);
+    logger.error('☁️ Failed to sync person delete:', error);
   }
 }
 
@@ -1020,7 +1001,7 @@ export async function syncAddHouse(userId, datasetId, houseId, houseData) {
     );
     await markEntitySynced('house', houseId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync house add after retries:', error);
+    logger.error('☁️ Failed to sync house add after retries:', error);
   }
 }
 
@@ -1039,7 +1020,7 @@ export async function syncUpdateHouse(userId, datasetId, houseId, updates) {
     );
     await markEntitySynced('house', houseId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync house update after retries:', error);
+    logger.error('☁️ Failed to sync house update after retries:', error);
   }
 }
 
@@ -1055,7 +1036,7 @@ export async function syncDeleteHouse(userId, datasetId, houseId) {
     await deleteHouseCloud(userId, datasetId, houseId);
     await markEntitySynced('house', houseId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync house delete:', error);
+    logger.error('☁️ Failed to sync house delete:', error);
   }
 }
 
@@ -1074,7 +1055,7 @@ export async function syncAddRelationship(userId, datasetId, relationshipId, rel
     );
     await markEntitySynced('relationship', relationshipId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync relationship add after retries:', error);
+    logger.error('☁️ Failed to sync relationship add after retries:', error);
   }
 }
 
@@ -1090,7 +1071,7 @@ export async function syncUpdateRelationship(userId, datasetId, relationshipId, 
     await updateRelationshipCloud(userId, datasetId, relationshipId, updates);
     await markEntitySynced('relationship', relationshipId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync relationship update:', error);
+    logger.error('☁️ Failed to sync relationship update:', error);
   }
 }
 
@@ -1106,7 +1087,7 @@ export async function syncDeleteRelationship(userId, datasetId, relationshipId) 
     await deleteRelationshipCloud(userId, datasetId, relationshipId);
     await markEntitySynced('relationship', relationshipId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync relationship delete:', error);
+    logger.error('☁️ Failed to sync relationship delete:', error);
   }
 }
 
@@ -1122,7 +1103,7 @@ export async function syncAddCodexEntry(userId, datasetId, entryId, entryData) {
     await addCodexEntryCloud(userId, datasetId, { ...entryData, id: entryId });
     await markEntitySynced('codexEntry', entryId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync codex entry add:', error);
+    logger.error('☁️ Failed to sync codex entry add:', error);
   }
 }
 
@@ -1138,7 +1119,7 @@ export async function syncUpdateCodexEntry(userId, datasetId, entryId, updates) 
     await updateCodexEntryCloud(userId, datasetId, entryId, updates);
     await markEntitySynced('codexEntry', entryId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync codex entry update:', error);
+    logger.error('☁️ Failed to sync codex entry update:', error);
   }
 }
 
@@ -1154,7 +1135,7 @@ export async function syncDeleteCodexEntry(userId, datasetId, entryId) {
     await deleteCodexEntryCloud(userId, datasetId, entryId);
     await markEntitySynced('codexEntry', entryId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync codex entry delete:', error);
+    logger.error('☁️ Failed to sync codex entry delete:', error);
   }
 }
 
@@ -1176,7 +1157,7 @@ export async function syncAddCodexLink(userId, datasetId, linkId, linkData) {
     await addCodexLinkCloud(userId, datasetId, { ...linkData, id: linkId });
     await markEntitySynced('codexLink', linkId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync codex link add:', error);
+    logger.error('☁️ Failed to sync codex link add:', error);
   }
 }
 
@@ -1192,7 +1173,7 @@ export async function syncDeleteCodexLink(userId, datasetId, linkId) {
     await deleteCodexLinkCloud(userId, datasetId, linkId);
     await markEntitySynced('codexLink', linkId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync codex link delete:', error);
+    logger.error('☁️ Failed to sync codex link delete:', error);
   }
 }
 
@@ -1214,7 +1195,7 @@ export async function syncAddHeraldry(userId, datasetId, heraldryId, heraldryDat
     await addHeraldryCloud(userId, datasetId, { ...heraldryData, id: heraldryId });
     await markEntitySynced('heraldry', heraldryId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync heraldry add:', error);
+    logger.error('☁️ Failed to sync heraldry add:', error);
   }
 }
 
@@ -1230,7 +1211,7 @@ export async function syncUpdateHeraldry(userId, datasetId, heraldryId, updates)
     await updateHeraldryCloud(userId, datasetId, heraldryId, updates);
     await markEntitySynced('heraldry', heraldryId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync heraldry update:', error);
+    logger.error('☁️ Failed to sync heraldry update:', error);
   }
 }
 
@@ -1246,7 +1227,7 @@ export async function syncDeleteHeraldry(userId, datasetId, heraldryId) {
     await deleteHeraldryCloud(userId, datasetId, heraldryId);
     await markEntitySynced('heraldry', heraldryId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync heraldry delete:', error);
+    logger.error('☁️ Failed to sync heraldry delete:', error);
   }
 }
 
@@ -1262,7 +1243,7 @@ export async function syncAddHeraldryLink(userId, datasetId, linkId, linkData) {
     await addHeraldryLinkCloud(userId, datasetId, { ...linkData, id: linkId });
     await markEntitySynced('heraldryLink', linkId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync heraldry link add:', error);
+    logger.error('☁️ Failed to sync heraldry link add:', error);
   }
 }
 
@@ -1278,7 +1259,7 @@ export async function syncDeleteHeraldryLink(userId, datasetId, linkId) {
     await deleteHeraldryLinkCloud(userId, datasetId, linkId);
     await markEntitySynced('heraldryLink', linkId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync heraldry link delete:', error);
+    logger.error('☁️ Failed to sync heraldry link delete:', error);
   }
 }
 
@@ -1300,7 +1281,7 @@ export async function syncAddDignity(userId, datasetId, dignityId, dignityData) 
     await addDignityCloud(userId, datasetId, { ...dignityData, id: dignityId });
     await markEntitySynced('dignity', dignityId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync dignity add:', error);
+    logger.error('☁️ Failed to sync dignity add:', error);
   }
 }
 
@@ -1316,7 +1297,7 @@ export async function syncUpdateDignity(userId, datasetId, dignityId, updates) {
     await updateDignityCloud(userId, datasetId, dignityId, updates);
     await markEntitySynced('dignity', dignityId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync dignity update:', error);
+    logger.error('☁️ Failed to sync dignity update:', error);
   }
 }
 
@@ -1332,7 +1313,7 @@ export async function syncDeleteDignity(userId, datasetId, dignityId) {
     await deleteDignityCloud(userId, datasetId, dignityId);
     await markEntitySynced('dignity', dignityId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync dignity delete:', error);
+    logger.error('☁️ Failed to sync dignity delete:', error);
   }
 }
 
@@ -1348,7 +1329,7 @@ export async function syncAddDignityTenure(userId, datasetId, tenureId, tenureDa
     await addDignityTenureCloud(userId, datasetId, { ...tenureData, id: tenureId });
     await markEntitySynced('dignityTenure', tenureId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync dignity tenure add:', error);
+    logger.error('☁️ Failed to sync dignity tenure add:', error);
   }
 }
 
@@ -1364,7 +1345,7 @@ export async function syncUpdateDignityTenure(userId, datasetId, tenureId, updat
     await updateDignityTenureCloud(userId, datasetId, tenureId, updates);
     await markEntitySynced('dignityTenure', tenureId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync dignity tenure update:', error);
+    logger.error('☁️ Failed to sync dignity tenure update:', error);
   }
 }
 
@@ -1380,7 +1361,7 @@ export async function syncDeleteDignityTenure(userId, datasetId, tenureId) {
     await deleteDignityTenureCloud(userId, datasetId, tenureId);
     await markEntitySynced('dignityTenure', tenureId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync dignity tenure delete:', error);
+    logger.error('☁️ Failed to sync dignity tenure delete:', error);
   }
 }
 
@@ -1396,7 +1377,7 @@ export async function syncAddDignityLink(userId, datasetId, linkId, linkData) {
     await addDignityLinkCloud(userId, datasetId, { ...linkData, id: linkId });
     await markEntitySynced('dignityLink', linkId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync dignity link add:', error);
+    logger.error('☁️ Failed to sync dignity link add:', error);
   }
 }
 
@@ -1412,7 +1393,7 @@ export async function syncDeleteDignityLink(userId, datasetId, linkId) {
     await deleteDignityLinkCloud(userId, datasetId, linkId);
     await markEntitySynced('dignityLink', linkId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync dignity link delete:', error);
+    logger.error('☁️ Failed to sync dignity link delete:', error);
   }
 }
 
@@ -1434,7 +1415,7 @@ export async function syncAddHouseholdRole(userId, datasetId, roleId, roleData) 
     await addHouseholdRoleCloud(userId, datasetId, { ...roleData, id: roleId });
     await markEntitySynced('householdRole', roleId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync household role add:', error);
+    logger.error('☁️ Failed to sync household role add:', error);
   }
 }
 
@@ -1450,7 +1431,7 @@ export async function syncUpdateHouseholdRole(userId, datasetId, roleId, updates
     await updateHouseholdRoleCloud(userId, datasetId, roleId, updates);
     await markEntitySynced('householdRole', roleId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync household role update:', error);
+    logger.error('☁️ Failed to sync household role update:', error);
   }
 }
 
@@ -1466,7 +1447,7 @@ export async function syncDeleteHouseholdRole(userId, datasetId, roleId) {
     await deleteHouseholdRoleCloud(userId, datasetId, roleId);
     await markEntitySynced('householdRole', roleId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync household role delete:', error);
+    logger.error('☁️ Failed to sync household role delete:', error);
   }
 }
 
@@ -1488,7 +1469,7 @@ export async function syncAddWriting(userId, datasetId, writingId, writingData) 
     await addWritingCloud(userId, datasetId, { ...writingData, id: writingId });
     await markEntitySynced('writing', writingId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync writing add:', error);
+    logger.error('☁️ Failed to sync writing add:', error);
   }
 }
 
@@ -1504,7 +1485,7 @@ export async function syncUpdateWriting(userId, datasetId, writingId, updates) {
     await updateWritingCloud(userId, datasetId, writingId, updates);
     await markEntitySynced('writing', writingId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync writing update:', error);
+    logger.error('☁️ Failed to sync writing update:', error);
   }
 }
 
@@ -1520,7 +1501,7 @@ export async function syncDeleteWriting(userId, datasetId, writingId) {
     await deleteWritingCloud(userId, datasetId, writingId);
     await markEntitySynced('writing', writingId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync writing delete:', error);
+    logger.error('☁️ Failed to sync writing delete:', error);
   }
 }
 
@@ -1542,7 +1523,7 @@ export async function syncAddChapter(userId, datasetId, chapterId, chapterData) 
     await addChapterCloud(userId, datasetId, { ...chapterData, id: chapterId });
     await markEntitySynced('chapter', chapterId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync chapter add:', error);
+    logger.error('☁️ Failed to sync chapter add:', error);
   }
 }
 
@@ -1558,7 +1539,7 @@ export async function syncUpdateChapter(userId, datasetId, chapterId, updates) {
     await updateChapterCloud(userId, datasetId, chapterId, updates);
     await markEntitySynced('chapter', chapterId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync chapter update:', error);
+    logger.error('☁️ Failed to sync chapter update:', error);
   }
 }
 
@@ -1574,7 +1555,7 @@ export async function syncDeleteChapter(userId, datasetId, chapterId) {
     await deleteChapterCloud(userId, datasetId, chapterId);
     await markEntitySynced('chapter', chapterId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync chapter delete:', error);
+    logger.error('☁️ Failed to sync chapter delete:', error);
   }
 }
 
@@ -1592,7 +1573,7 @@ export async function syncAddWritingLink(userId, datasetId, linkId, linkData) {
     await addWritingLinkCloud(userId, datasetId, { ...linkData, id: linkId });
     await markEntitySynced('writingLink', linkId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync writing link add:', error);
+    logger.error('☁️ Failed to sync writing link add:', error);
   }
 }
 
@@ -1608,7 +1589,7 @@ export async function syncDeleteWritingLink(userId, datasetId, linkId) {
     await deleteWritingLinkCloud(userId, datasetId, linkId);
     await markEntitySynced('writingLink', linkId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync writing link delete:', error);
+    logger.error('☁️ Failed to sync writing link delete:', error);
   }
 }
 
@@ -1626,7 +1607,7 @@ export async function syncAddStoryPlan(userId, datasetId, planId, planData) {
     await addStoryPlanCloud(userId, datasetId, { ...planData, id: planId });
     await markEntitySynced('storyPlan', planId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync story plan add:', error);
+    logger.error('☁️ Failed to sync story plan add:', error);
   }
 }
 
@@ -1642,7 +1623,7 @@ export async function syncUpdateStoryPlan(userId, datasetId, planId, updates) {
     await updateStoryPlanCloud(userId, datasetId, planId, updates);
     await markEntitySynced('storyPlan', planId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync story plan update:', error);
+    logger.error('☁️ Failed to sync story plan update:', error);
   }
 }
 
@@ -1658,7 +1639,7 @@ export async function syncDeleteStoryPlan(userId, datasetId, planId) {
     await deleteStoryPlanCloud(userId, datasetId, planId);
     await markEntitySynced('storyPlan', planId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync story plan delete:', error);
+    logger.error('☁️ Failed to sync story plan delete:', error);
   }
 }
 
@@ -1676,7 +1657,7 @@ export async function syncAddStoryArc(userId, datasetId, arcId, arcData) {
     await addStoryArcCloud(userId, datasetId, { ...arcData, id: arcId });
     await markEntitySynced('storyArc', arcId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync story arc add:', error);
+    logger.error('☁️ Failed to sync story arc add:', error);
   }
 }
 
@@ -1692,7 +1673,7 @@ export async function syncUpdateStoryArc(userId, datasetId, arcId, updates) {
     await updateStoryArcCloud(userId, datasetId, arcId, updates);
     await markEntitySynced('storyArc', arcId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync story arc update:', error);
+    logger.error('☁️ Failed to sync story arc update:', error);
   }
 }
 
@@ -1708,7 +1689,7 @@ export async function syncDeleteStoryArc(userId, datasetId, arcId) {
     await deleteStoryArcCloud(userId, datasetId, arcId);
     await markEntitySynced('storyArc', arcId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync story arc delete:', error);
+    logger.error('☁️ Failed to sync story arc delete:', error);
   }
 }
 
@@ -1726,7 +1707,7 @@ export async function syncAddStoryBeat(userId, datasetId, beatId, beatData) {
     await addStoryBeatCloud(userId, datasetId, { ...beatData, id: beatId });
     await markEntitySynced('storyBeat', beatId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync story beat add:', error);
+    logger.error('☁️ Failed to sync story beat add:', error);
   }
 }
 
@@ -1742,7 +1723,7 @@ export async function syncUpdateStoryBeat(userId, datasetId, beatId, updates) {
     await updateStoryBeatCloud(userId, datasetId, beatId, updates);
     await markEntitySynced('storyBeat', beatId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync story beat update:', error);
+    logger.error('☁️ Failed to sync story beat update:', error);
   }
 }
 
@@ -1758,7 +1739,7 @@ export async function syncDeleteStoryBeat(userId, datasetId, beatId) {
     await deleteStoryBeatCloud(userId, datasetId, beatId);
     await markEntitySynced('storyBeat', beatId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync story beat delete:', error);
+    logger.error('☁️ Failed to sync story beat delete:', error);
   }
 }
 
@@ -1776,7 +1757,7 @@ export async function syncAddScenePlan(userId, datasetId, sceneId, sceneData) {
     await addScenePlanCloud(userId, datasetId, { ...sceneData, id: sceneId });
     await markEntitySynced('scenePlan', sceneId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync scene plan add:', error);
+    logger.error('☁️ Failed to sync scene plan add:', error);
   }
 }
 
@@ -1792,7 +1773,7 @@ export async function syncUpdateScenePlan(userId, datasetId, sceneId, updates) {
     await updateScenePlanCloud(userId, datasetId, sceneId, updates);
     await markEntitySynced('scenePlan', sceneId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync scene plan update:', error);
+    logger.error('☁️ Failed to sync scene plan update:', error);
   }
 }
 
@@ -1808,7 +1789,7 @@ export async function syncDeleteScenePlan(userId, datasetId, sceneId) {
     await deleteScenePlanCloud(userId, datasetId, sceneId);
     await markEntitySynced('scenePlan', sceneId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync scene plan delete:', error);
+    logger.error('☁️ Failed to sync scene plan delete:', error);
   }
 }
 
@@ -1826,7 +1807,7 @@ export async function syncAddPlotThread(userId, datasetId, threadId, threadData)
     await addPlotThreadCloud(userId, datasetId, { ...threadData, id: threadId });
     await markEntitySynced('plotThread', threadId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync plot thread add:', error);
+    logger.error('☁️ Failed to sync plot thread add:', error);
   }
 }
 
@@ -1842,7 +1823,7 @@ export async function syncUpdatePlotThread(userId, datasetId, threadId, updates)
     await updatePlotThreadCloud(userId, datasetId, threadId, updates);
     await markEntitySynced('plotThread', threadId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync plot thread update:', error);
+    logger.error('☁️ Failed to sync plot thread update:', error);
   }
 }
 
@@ -1858,7 +1839,7 @@ export async function syncDeletePlotThread(userId, datasetId, threadId) {
     await deletePlotThreadCloud(userId, datasetId, threadId);
     await markEntitySynced('plotThread', threadId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync plot thread delete:', error);
+    logger.error('☁️ Failed to sync plot thread delete:', error);
   }
 }
 
@@ -1876,7 +1857,7 @@ export async function syncAddCharacterArc(userId, datasetId, arcId, arcData) {
     await addCharacterArcCloud(userId, datasetId, { ...arcData, id: arcId });
     await markEntitySynced('characterArc', arcId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync character arc add:', error);
+    logger.error('☁️ Failed to sync character arc add:', error);
   }
 }
 
@@ -1892,7 +1873,7 @@ export async function syncUpdateCharacterArc(userId, datasetId, arcId, updates) 
     await updateCharacterArcCloud(userId, datasetId, arcId, updates);
     await markEntitySynced('characterArc', arcId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync character arc update:', error);
+    logger.error('☁️ Failed to sync character arc update:', error);
   }
 }
 
@@ -1908,59 +1889,14 @@ export async function syncDeleteCharacterArc(userId, datasetId, arcId) {
     await deleteCharacterArcCloud(userId, datasetId, arcId);
     await markEntitySynced('characterArc', arcId, datasetId);
   } catch (error) {
-    console.error('☁️ Failed to sync character arc delete:', error);
+    logger.error('☁️ Failed to sync character arc delete:', error);
   }
 }
 
 // ==================== PLANNING: ARC MILESTONES SYNC ====================
 
-/**
- * Add arc milestone (local + cloud)
- */
-export async function syncAddArcMilestone(userId, datasetId, milestoneId, milestoneData) {
-  await addToSyncQueue({ entityType: 'arcMilestone', entityId: milestoneId, operation: 'add', data: milestoneData }, datasetId);
 
-  if (!userId || !isOnline) return;
 
-  try {
-    await addArcMilestoneCloud(userId, datasetId, { ...milestoneData, id: milestoneId });
-    await markEntitySynced('arcMilestone', milestoneId, datasetId);
-  } catch (error) {
-    console.error('☁️ Failed to sync arc milestone add:', error);
-  }
-}
-
-/**
- * Update arc milestone (local + cloud)
- */
-export async function syncUpdateArcMilestone(userId, datasetId, milestoneId, updates) {
-  await addToSyncQueue({ entityType: 'arcMilestone', entityId: milestoneId, operation: 'update', data: updates }, datasetId);
-
-  if (!userId || !isOnline) return;
-
-  try {
-    await updateArcMilestoneCloud(userId, datasetId, milestoneId, updates);
-    await markEntitySynced('arcMilestone', milestoneId, datasetId);
-  } catch (error) {
-    console.error('☁️ Failed to sync arc milestone update:', error);
-  }
-}
-
-/**
- * Delete arc milestone (local + cloud)
- */
-export async function syncDeleteArcMilestone(userId, datasetId, milestoneId) {
-  await addToSyncQueue({ entityType: 'arcMilestone', entityId: milestoneId, operation: 'delete' }, datasetId);
-
-  if (!userId || !isOnline) return;
-
-  try {
-    await deleteArcMilestoneCloud(userId, datasetId, milestoneId);
-    await markEntitySynced('arcMilestone', milestoneId, datasetId);
-  } catch (error) {
-    console.error('☁️ Failed to sync arc milestone delete:', error);
-  }
-}
 
 // ==================== UTILITY ====================
 
@@ -1992,7 +1928,7 @@ export async function forceCloudSync(userId, datasetId = DEFAULT_DATASET_ID, opt
     if (!options.forceClear) {
       const pendingCount = await getPendingChangeCount(dsId);
       if (pendingCount > 0) {
-        console.warn(`⚠️ BLOCKING FORCE SYNC: ${pendingCount} pending changes not synced`);
+        logger.warn(`⚠️ BLOCKING FORCE SYNC: ${pendingCount} pending changes not synced`);
         updateSyncStatus({
           isSyncing: false,
           error: `${pendingCount} pending changes - use forceClear option to override`,
@@ -2006,7 +1942,7 @@ export async function forceCloudSync(userId, datasetId = DEFAULT_DATASET_ID, opt
         };
       }
     } else {
-      console.warn('⚠️ Force clear requested - pending changes will be lost');
+      logger.warn('⚠️ Force clear requested - pending changes will be lost');
     }
 
     // Clear ALL local data (including Codex and sync queue)
@@ -2038,7 +1974,7 @@ export async function forceCloudSync(userId, datasetId = DEFAULT_DATASET_ID, opt
       try {
         await localRestoreCodexEntry({ ...entryData, id: parseInt(entry.id) || entry.id });
       } catch (e) {
-        console.warn('Could not restore codex entry during force sync:', e);
+        logger.warn('Could not restore codex entry during force sync:', e);
       }
     }
 
@@ -2048,7 +1984,7 @@ export async function forceCloudSync(userId, datasetId = DEFAULT_DATASET_ID, opt
       try {
         await localDb.codexLinks.put({ ...linkData, id: parseInt(link.id) || link.id });
       } catch (e) {
-        console.warn('Could not restore codex link during force sync:', e);
+        logger.warn('Could not restore codex link during force sync:', e);
       }
     }
 
@@ -2058,7 +1994,7 @@ export async function forceCloudSync(userId, datasetId = DEFAULT_DATASET_ID, opt
       try {
         await localDb.heraldry.put({ ...heraldryData, id: parseInt(h.id) || h.id });
       } catch (e) {
-        console.warn('Could not restore heraldry during force sync:', e);
+        logger.warn('Could not restore heraldry during force sync:', e);
       }
     }
 
@@ -2068,7 +2004,7 @@ export async function forceCloudSync(userId, datasetId = DEFAULT_DATASET_ID, opt
       try {
         await localDb.heraldryLinks.put({ ...linkData, id: parseInt(link.id) || link.id });
       } catch (e) {
-        console.warn('Could not restore heraldry link during force sync:', e);
+        logger.warn('Could not restore heraldry link during force sync:', e);
       }
     }
 
@@ -2078,7 +2014,7 @@ export async function forceCloudSync(userId, datasetId = DEFAULT_DATASET_ID, opt
       try {
         await localDb.dignities.put({ ...dignityData, id: parseInt(dignity.id) || dignity.id });
       } catch (e) {
-        console.warn('Could not restore dignity during force sync:', e);
+        logger.warn('Could not restore dignity during force sync:', e);
       }
     }
 
@@ -2088,7 +2024,7 @@ export async function forceCloudSync(userId, datasetId = DEFAULT_DATASET_ID, opt
       try {
         await localDb.dignityTenures.put({ ...tenureData, id: parseInt(tenure.id) || tenure.id });
       } catch (e) {
-        console.warn('Could not restore dignity tenure during force sync:', e);
+        logger.warn('Could not restore dignity tenure during force sync:', e);
       }
     }
 
@@ -2098,7 +2034,7 @@ export async function forceCloudSync(userId, datasetId = DEFAULT_DATASET_ID, opt
       try {
         await localDb.dignityLinks.put({ ...linkData, id: parseInt(link.id) || link.id });
       } catch (e) {
-        console.warn('Could not restore dignity link during force sync:', e);
+        logger.warn('Could not restore dignity link during force sync:', e);
       }
     }
 
@@ -2108,7 +2044,7 @@ export async function forceCloudSync(userId, datasetId = DEFAULT_DATASET_ID, opt
       try {
         await localDb.householdRoles.put({ ...roleData, id: parseInt(role.id) || role.id });
       } catch (e) {
-        console.warn('Could not restore household role during force sync:', e);
+        logger.warn('Could not restore household role during force sync:', e);
       }
     }
 
@@ -2118,7 +2054,7 @@ export async function forceCloudSync(userId, datasetId = DEFAULT_DATASET_ID, opt
       try {
         await localRestoreWriting({ ...writingData, id: parseInt(writing.id) || writing.id }, dsId);
       } catch (e) {
-        console.warn('Could not restore writing during force sync:', e);
+        logger.warn('Could not restore writing during force sync:', e);
       }
     }
 
@@ -2128,7 +2064,7 @@ export async function forceCloudSync(userId, datasetId = DEFAULT_DATASET_ID, opt
       try {
         await localRestoreChapter({ ...chapterData, id: parseInt(chapter.id) || chapter.id }, dsId);
       } catch (e) {
-        console.warn('Could not restore chapter during force sync:', e);
+        logger.warn('Could not restore chapter during force sync:', e);
       }
     }
 
@@ -2138,7 +2074,7 @@ export async function forceCloudSync(userId, datasetId = DEFAULT_DATASET_ID, opt
       try {
         await localRestoreWritingLink({ ...linkData, id: parseInt(link.id) || link.id }, dsId);
       } catch (e) {
-        console.warn('Could not restore writing link during force sync:', e);
+        logger.warn('Could not restore writing link during force sync:', e);
       }
     }
 
@@ -2148,7 +2084,7 @@ export async function forceCloudSync(userId, datasetId = DEFAULT_DATASET_ID, opt
       try {
         await localRestoreStoryPlan({ ...planData, id: parseInt(plan.id) || plan.id }, dsId);
       } catch (e) {
-        console.warn('Could not restore story plan during force sync:', e);
+        logger.warn('Could not restore story plan during force sync:', e);
       }
     }
 
@@ -2158,7 +2094,7 @@ export async function forceCloudSync(userId, datasetId = DEFAULT_DATASET_ID, opt
       try {
         await localRestoreStoryArc({ ...arcData, id: parseInt(arc.id) || arc.id }, dsId);
       } catch (e) {
-        console.warn('Could not restore story arc during force sync:', e);
+        logger.warn('Could not restore story arc during force sync:', e);
       }
     }
 
@@ -2168,7 +2104,7 @@ export async function forceCloudSync(userId, datasetId = DEFAULT_DATASET_ID, opt
       try {
         await localRestoreStoryBeat({ ...beatData, id: parseInt(beat.id) || beat.id }, dsId);
       } catch (e) {
-        console.warn('Could not restore story beat during force sync:', e);
+        logger.warn('Could not restore story beat during force sync:', e);
       }
     }
 
@@ -2178,7 +2114,7 @@ export async function forceCloudSync(userId, datasetId = DEFAULT_DATASET_ID, opt
       try {
         await localRestoreScenePlan({ ...sceneData, id: parseInt(scene.id) || scene.id }, dsId);
       } catch (e) {
-        console.warn('Could not restore scene plan during force sync:', e);
+        logger.warn('Could not restore scene plan during force sync:', e);
       }
     }
 
@@ -2188,7 +2124,7 @@ export async function forceCloudSync(userId, datasetId = DEFAULT_DATASET_ID, opt
       try {
         await localRestorePlotThread({ ...threadData, id: parseInt(thread.id) || thread.id }, dsId);
       } catch (e) {
-        console.warn('Could not restore plot thread during force sync:', e);
+        logger.warn('Could not restore plot thread during force sync:', e);
       }
     }
 
@@ -2198,19 +2134,10 @@ export async function forceCloudSync(userId, datasetId = DEFAULT_DATASET_ID, opt
       try {
         await localRestoreCharacterArc({ ...arcData, id: parseInt(arc.id) || arc.id }, dsId);
       } catch (e) {
-        console.warn('Could not restore character arc during force sync:', e);
+        logger.warn('Could not restore character arc during force sync:', e);
       }
     }
 
-    // Restore arc milestones
-    for (const milestone of cloudData.arcMilestones || []) {
-      const { createdAt, updatedAt, syncedAt, localId, ...milestoneData } = milestone;
-      try {
-        await localDb.arcMilestones.put({ ...milestoneData, id: parseInt(milestone.id) || milestone.id });
-      } catch (e) {
-        console.warn('Could not restore arc milestone during force sync:', e);
-      }
-    }
 
     updateSyncStatus({ isSyncing: false, lastSyncTime: new Date() });
     return { status: 'success', data: cloudData };
@@ -2240,7 +2167,7 @@ export async function forceUploadToCloud(userId, datasetId = DEFAULT_DATASET_ID)
   updateSyncStatus({ isSyncing: true, error: null });
 
   try {
-    console.log('⬆️ Force uploading all local data to cloud...');
+    logger.log('⬆️ Force uploading all local data to cloud...');
 
     // Gather all local data
     const localPeople = await getAllPeople(dsId);
@@ -2260,14 +2187,14 @@ export async function forceUploadToCloud(userId, datasetId = DEFAULT_DATASET_ID)
       codexEntries = await getAllCodexEntries();
       codexLinks = await localDb.codexLinks.toArray();
     } catch (e) {
-      console.warn('Could not get codex data for upload:', e);
+      logger.warn('Could not get codex data for upload:', e);
     }
 
     try {
       heraldry = await localGetAllHeraldry(dsId);
       heraldryLinks = await localDb.heraldryLinks.toArray();
     } catch (e) {
-      console.warn('Could not get heraldry data for upload:', e);
+      logger.warn('Could not get heraldry data for upload:', e);
     }
 
     try {
@@ -2275,13 +2202,13 @@ export async function forceUploadToCloud(userId, datasetId = DEFAULT_DATASET_ID)
       dignityTenures = await localDb.dignityTenures.toArray();
       dignityLinks = await localDb.dignityLinks.toArray();
     } catch (e) {
-      console.warn('Could not get dignities data for upload:', e);
+      logger.warn('Could not get dignities data for upload:', e);
     }
 
     try {
       householdRoles = await localGetAllHouseholdRoles(dsId);
     } catch (e) {
-      console.warn('Could not get household roles for upload:', e);
+      logger.warn('Could not get household roles for upload:', e);
     }
 
     // Get writings data
@@ -2293,7 +2220,7 @@ export async function forceUploadToCloud(userId, datasetId = DEFAULT_DATASET_ID)
       chapters = await localGetAllChapters(dsId);
       writingLinks = await localGetAllWritingLinks(dsId);
     } catch (e) {
-      console.warn('Could not get writings data for upload:', e);
+      logger.warn('Could not get writings data for upload:', e);
     }
 
     // Get planning data
@@ -2303,7 +2230,6 @@ export async function forceUploadToCloud(userId, datasetId = DEFAULT_DATASET_ID)
     let scenePlans = [];
     let plotThreads = [];
     let characterArcs = [];
-    let arcMilestones = [];
     try {
       storyPlans = await localDb.storyPlans.toArray();
       storyArcs = await localDb.storyArcs.toArray();
@@ -2311,9 +2237,8 @@ export async function forceUploadToCloud(userId, datasetId = DEFAULT_DATASET_ID)
       scenePlans = await localDb.scenePlans.toArray();
       plotThreads = await localDb.plotThreads.toArray();
       characterArcs = await localDb.characterArcs.toArray();
-      arcMilestones = await localDb.arcMilestones.toArray();
     } catch (e) {
-      console.warn('Could not get planning data for upload:', e);
+      logger.warn('Could not get planning data for upload:', e);
     }
 
     // Upload everything to cloud
@@ -2337,14 +2262,13 @@ export async function forceUploadToCloud(userId, datasetId = DEFAULT_DATASET_ID)
       storyBeats,
       scenePlans,
       plotThreads,
-      characterArcs,
-      arcMilestones
+      characterArcs
     });
 
     // Clear the sync queue since everything is now synced
     await clearSyncQueue(dsId);
 
-    console.log('✅ Force upload complete:', {
+    logger.log('✅ Force upload complete:', {
       people: localPeople.length,
       houses: localHouses.length,
       relationships: localRelationships.length,
@@ -2363,7 +2287,7 @@ export async function forceUploadToCloud(userId, datasetId = DEFAULT_DATASET_ID)
       }
     };
   } catch (error) {
-    console.error('❌ Force upload failed:', error);
+    logger.error('❌ Force upload failed:', error);
     updateSyncStatus({ isSyncing: false, error: error.message });
     return { status: 'error', error: error.message };
   }
@@ -2457,10 +2381,5 @@ export default {
   // Sync wrappers - Planning: Character Arcs
   syncAddCharacterArc,
   syncUpdateCharacterArc,
-  syncDeleteCharacterArc,
-
-  // Sync wrappers - Planning: Arc Milestones
-  syncAddArcMilestone,
-  syncUpdateArcMilestone,
-  syncDeleteArcMilestone
+  syncDeleteCharacterArc
 };

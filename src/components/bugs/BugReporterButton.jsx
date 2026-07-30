@@ -23,6 +23,8 @@ import { useLocation } from 'react-router-dom';
 import { useBugTracker } from '../../contexts/BugContext';
 import { useTheme } from '../ThemeContext';
 import './BugReporterButton.css';
+import { logger } from '../../utils/logger';
+import Icon from '../icons';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // HELPER FUNCTIONS
@@ -227,7 +229,7 @@ function BugReporterButton() {
       }, 1500);
       
     } catch (err) {
-      console.error('Error submitting bug:', err);
+      logger.error('Error submitting bug:', err);
       alert('Failed to submit bug report. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -245,7 +247,7 @@ function BugReporterButton() {
         title="Report a Bug"
         aria-label="Report a Bug"
       >
-        <span className="bug-reporter-fab-icon">🐛</span>
+        <span className="bug-reporter-fab-icon"><Icon name="alert-circle" /></span>
         {/* Badge showing open bug count */}
         {statistics.open > 0 && (
           <span className="bug-reporter-fab-badge">
@@ -276,7 +278,7 @@ function BugReporterButton() {
             {/* Success Message */}
             {showSuccess ? (
               <div className="bug-reporter-success">
-                <span className="bug-reporter-success-icon">✓</span>
+                <span className="bug-reporter-success-icon"><Icon name="check" /></span>
                 <p>Bug reported successfully!</p>
               </div>
             ) : (

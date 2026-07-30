@@ -30,6 +30,7 @@ import {
   syncAddDignityLink,
   syncDeleteDignityLink
 } from './dataSyncService';
+import { logger } from '../utils/logger';
 
 // ==================== REFERENCE DATA ====================
 
@@ -42,33 +43,47 @@ export const DIGNITY_CLASSES = {
     id: 'driht',
     name: 'Driht',
     description: 'Lordship by right - Article I of the Charter',
-    icon: '👑'
+    icon: '👑',
+    iconName: 'castle'
   },
   ward: {
     id: 'ward',
     name: 'Ward',
     description: 'Custodial authority in trust - Article II of the Charter',
-    icon: '🏰'
+    icon: '🏰',
+    iconName: 'shield-check'
   },
   sir: {
     id: 'sir',
     name: 'Sir',
     description: 'Knightly honour of service - Article III of the Charter',
-    icon: '⚔️'
+    icon: '⚔️',
+    iconName: 'sword'
   },
   crown: {
     id: 'crown',
     name: 'Crown',
     description: 'Sovereign authority',
-    icon: '♛'
+    icon: '♛',
+    iconName: 'crown'
   },
   other: {
     id: 'other',
     name: 'Other',
     description: 'Non-Charter dignities (religious, guild, foreign)',
-    icon: '📜'
+    icon: '📜',
+    iconName: 'scroll-text'
   }
 };
+
+/**
+ * Lucide icon name per dignity class, for the shared <Icon> component.
+ * DignitiesLanding, DignityCrisisDashboard and DignityView each carried an
+ * identical private copy of this map.
+ */
+export const CLASS_ICONS = Object.fromEntries(
+  Object.entries(DIGNITY_CLASSES).map(([key, meta]) => [key, meta.iconName])
+);
 
 /**
  * Dignity Ranks by Class
@@ -632,7 +647,7 @@ export async function createDignity(dignityData, userId = null, datasetId = null
     };
     
     const id = await db.dignities.add(record);
-    console.log('📜 Dignity created with ID:', id, '-', record.name);
+    logger.log('📜 Dignity created with ID:', id, '-', record.name);
 
     // Auto-create Codex entry for the dignity (unless explicitly skipped)
     if (!record.codexEntryId) {
@@ -653,10 +668,10 @@ export async function createDignity(dignityData, userId = null, datasetId = null
 
         // Update the dignity with the codexEntryId
         await db.dignities.update(id, { codexEntryId });
-        console.log('📚 Auto-created Codex entry for dignity:', codexEntryId);
+        logger.log('📚 Auto-created Codex entry for dignity:', codexEntryId);
       } catch (codexError) {
         // Log but don't fail the dignity creation if Codex creation fails
-        console.warn('⚠️ Could not auto-create Codex entry for dignity:', codexError);
+        logger.warn('⚠️ Could not auto-create Codex entry for dignity:', codexError);
       }
     }
 
@@ -667,7 +682,7 @@ export async function createDignity(dignityData, userId = null, datasetId = null
 
     return id;
   } catch (error) {
-    console.error('❌ Error creating dignity:', error);
+    logger.error('❌ Error creating dignity:', error);
     throw error;
   }
 }
@@ -684,7 +699,7 @@ export async function getDignity(id, datasetId = null) {
     const dignity = await db.dignities.get(id);
     return dignity;
   } catch (error) {
-    console.error('❌ Error getting dignity:', error);
+    logger.error('❌ Error getting dignity:', error);
     throw error;
   }
 }
@@ -700,7 +715,7 @@ export async function getAllDignities(datasetId = null) {
     const dignities = await db.dignities.toArray();
     return dignities;
   } catch (error) {
-    console.error('❌ Error getting all dignities:', error);
+    logger.error('❌ Error getting all dignities:', error);
     throw error;
   }
 }
@@ -720,7 +735,7 @@ export async function updateDignity(id, updates, userId = null, datasetId = null
       ...updates,
       updated: new Date().toISOString()
     });
-    console.log('📜 Dignity updated:', id);
+    logger.log('📜 Dignity updated:', id);
 
     // Sync to cloud if userId provided
     if (userId) {
@@ -729,7 +744,7 @@ export async function updateDignity(id, updates, userId = null, datasetId = null
 
     return result;
   } catch (error) {
-    console.error('❌ Error updating dignity:', error);
+    logger.error('❌ Error updating dignity:', error);
     throw error;
   }
 }
@@ -754,11 +769,11 @@ export async function deleteDignity(id, userId = null, datasetId = null) {
       const codexEntry = await getEntryByDignityId(id, datasetId);
       if (codexEntry) {
         await deleteEntry(codexEntry.id, datasetId);
-        console.log('📚 Cascade deleted Codex entry for dignity:', codexEntry.id);
+        logger.log('📚 Cascade deleted Codex entry for dignity:', codexEntry.id);
       }
     } catch (codexError) {
       // Log but don't fail the dignity deletion if Codex deletion fails
-      console.warn('⚠️ Could not cascade delete Codex entry for dignity:', codexError);
+      logger.warn('⚠️ Could not cascade delete Codex entry for dignity:', codexError);
     }
 
     // Remove all tenure records for this dignity
@@ -781,14 +796,14 @@ export async function deleteDignity(id, userId = null, datasetId = null) {
 
     // Delete the dignity itself
     await db.dignities.delete(id);
-    console.log('📜 Dignity deleted:', id);
+    logger.log('📜 Dignity deleted:', id);
 
     // Sync to cloud if userId provided
     if (userId) {
       syncDeleteDignity(userId, datasetId, id);
     }
   } catch (error) {
-    console.error('❌ Error deleting dignity:', error);
+    logger.error('❌ Error deleting dignity:', error);
     throw error;
   }
 }
@@ -829,7 +844,7 @@ export async function createDignityTenure(tenureData, userId = null, datasetId =
     };
     
     const id = await db.dignityTenures.add(record);
-    console.log('📜 Dignity tenure created:', id);
+    logger.log('📜 Dignity tenure created:', id);
 
     // Sync to cloud if userId provided
     if (userId) {
@@ -838,7 +853,7 @@ export async function createDignityTenure(tenureData, userId = null, datasetId =
 
     return id;
   } catch (error) {
-    console.error('❌ Error creating dignity tenure:', error);
+    logger.error('❌ Error creating dignity tenure:', error);
     throw error;
   }
 }
@@ -866,7 +881,7 @@ export async function getTenuresForDignity(dignityId, datasetId = null) {
       return new Date(a.dateStarted) - new Date(b.dateStarted);
     });
   } catch (error) {
-    console.error('❌ Error getting tenures for dignity:', error);
+    logger.error('❌ Error getting tenures for dignity:', error);
     throw error;
   }
 }
@@ -898,7 +913,7 @@ export async function getTenuresForPerson(personId, datasetId = null) {
     
     return enrichedTenures;
   } catch (error) {
-    console.error('❌ Error getting tenures for person:', error);
+    logger.error('❌ Error getting tenures for person:', error);
     throw error;
   }
 }
@@ -914,7 +929,7 @@ export async function getCurrentTenure(dignityId, datasetId = null) {
     const tenures = await getTenuresForDignity(dignityId, datasetId);
     return tenures.find(t => !t.dateEnded) || null;
   } catch (error) {
-    console.error('❌ Error getting current tenure:', error);
+    logger.error('❌ Error getting current tenure:', error);
     throw error;
   }
 }
@@ -931,7 +946,7 @@ export async function updateDignityTenure(id, updates, userId = null, datasetId 
   try {
     const db = getDatabase(datasetId);
     const result = await db.dignityTenures.update(id, updates);
-    console.log('📜 Dignity tenure updated:', id);
+    logger.log('📜 Dignity tenure updated:', id);
 
     // Sync to cloud if userId provided
     if (userId) {
@@ -940,7 +955,7 @@ export async function updateDignityTenure(id, updates, userId = null, datasetId 
 
     return result;
   } catch (error) {
-    console.error('❌ Error updating dignity tenure:', error);
+    logger.error('❌ Error updating dignity tenure:', error);
     throw error;
   }
 }
@@ -956,14 +971,14 @@ export async function deleteDignityTenure(id, userId = null, datasetId = null) {
   try {
     const db = getDatabase(datasetId);
     await db.dignityTenures.delete(id);
-    console.log('📜 Dignity tenure deleted:', id);
+    logger.log('📜 Dignity tenure deleted:', id);
 
     // Sync to cloud if userId provided
     if (userId) {
       syncDeleteDignityTenure(userId, datasetId, id);
     }
   } catch (error) {
-    console.error('❌ Error deleting dignity tenure:', error);
+    logger.error('❌ Error deleting dignity tenure:', error);
     throw error;
   }
 }
@@ -990,7 +1005,7 @@ export async function linkDignityToEntity(linkData, userId = null, datasetId = n
     };
 
     const id = await db.dignityLinks.add(link);
-    console.log('🔗 Dignity linked to', linkData.entityType, linkData.entityId);
+    logger.log('🔗 Dignity linked to', linkData.entityType, linkData.entityId);
 
     // Sync to cloud if userId provided
     if (userId) {
@@ -999,7 +1014,7 @@ export async function linkDignityToEntity(linkData, userId = null, datasetId = n
 
     return id;
   } catch (error) {
-    console.error('❌ Error linking dignity:', error);
+    logger.error('❌ Error linking dignity:', error);
     throw error;
   }
 }
@@ -1019,7 +1034,7 @@ export async function getDignityLinks(dignityId, datasetId = null) {
       .toArray();
     return links;
   } catch (error) {
-    console.error('❌ Error getting dignity links:', error);
+    logger.error('❌ Error getting dignity links:', error);
     throw error;
   }
 }
@@ -1055,7 +1070,7 @@ export async function getDignitiesForEntity(entityType, entityId, datasetId = nu
       };
     });
   } catch (error) {
-    console.error('❌ Error getting dignities for entity:', error);
+    logger.error('❌ Error getting dignities for entity:', error);
     throw error;
   }
 }
@@ -1071,14 +1086,14 @@ export async function unlinkDignity(linkId, userId = null, datasetId = null) {
   try {
     const db = getDatabase(datasetId);
     await db.dignityLinks.delete(linkId);
-    console.log('🔗 Dignity link removed:', linkId);
+    logger.log('🔗 Dignity link removed:', linkId);
 
     // Sync to cloud if userId provided
     if (userId) {
       syncDeleteDignityLink(userId, datasetId, linkId);
     }
   } catch (error) {
-    console.error('❌ Error unlinking dignity:', error);
+    logger.error('❌ Error unlinking dignity:', error);
     throw error;
   }
 }
@@ -1097,7 +1112,7 @@ export async function getDignitiesByClass(dignityClass, datasetId = null) {
     const all = await db.dignities.toArray();
     return all.filter(d => d.dignityClass === dignityClass);
   } catch (error) {
-    console.error('❌ Error getting dignities by class:', error);
+    logger.error('❌ Error getting dignities by class:', error);
     throw error;
   }
 }
@@ -1114,7 +1129,7 @@ export async function getDignitiesByRank(dignityRank, datasetId = null) {
     const all = await db.dignities.toArray();
     return all.filter(d => d.dignityRank === dignityRank);
   } catch (error) {
-    console.error('❌ Error getting dignities by rank:', error);
+    logger.error('❌ Error getting dignities by rank:', error);
     throw error;
   }
 }
@@ -1131,7 +1146,7 @@ export async function getDignitiesForHouse(houseId, datasetId = null) {
     const all = await db.dignities.toArray();
     return all.filter(d => d.currentHouseId === houseId);
   } catch (error) {
-    console.error('❌ Error getting dignities for house:', error);
+    logger.error('❌ Error getting dignities for house:', error);
     throw error;
   }
 }
@@ -1148,7 +1163,7 @@ export async function getDignitiesForPerson(personId, datasetId = null) {
     const all = await db.dignities.toArray();
     return all.filter(d => d.currentHolderId === personId);
   } catch (error) {
-    console.error('❌ Error getting dignities for person:', error);
+    logger.error('❌ Error getting dignities for person:', error);
     throw error;
   }
 }
@@ -1165,7 +1180,7 @@ export async function getSubordinateDignities(dignityId, datasetId = null) {
     const all = await db.dignities.toArray();
     return all.filter(d => d.swornToId === dignityId);
   } catch (error) {
-    console.error('❌ Error getting subordinate dignities:', error);
+    logger.error('❌ Error getting subordinate dignities:', error);
     throw error;
   }
 }
@@ -1196,7 +1211,7 @@ export async function getFeudalChain(dignityId, datasetId = null) {
     
     return chain;
   } catch (error) {
-    console.error('❌ Error getting feudal chain:', error);
+    logger.error('❌ Error getting feudal chain:', error);
     throw error;
   }
 }
@@ -1222,7 +1237,7 @@ export async function searchDignities(searchTerm, datasetId = null) {
       return false;
     });
   } catch (error) {
-    console.error('❌ Error searching dignities:', error);
+    logger.error('❌ Error searching dignities:', error);
     throw error;
   }
 }
@@ -1286,7 +1301,7 @@ export async function getDignityStatistics(datasetId = null) {
       withCodexEntry: all.filter(d => d.codexEntryId).length
     };
   } catch (error) {
-    console.error('❌ Error getting dignity statistics:', error);
+    logger.error('❌ Error getting dignity statistics:', error);
     throw error;
   }
 }
@@ -1305,7 +1320,7 @@ export async function getRecentDignities(limit = 5, datasetId = null) {
       .sort((a, b) => new Date(b.updated) - new Date(a.updated))
       .slice(0, limit);
   } catch (error) {
-    console.error('❌ Error getting recent dignities:', error);
+    logger.error('❌ Error getting recent dignities:', error);
     throw error;
   }
 }
@@ -1423,14 +1438,14 @@ export async function calculateSuccessionLine(
   try {
     const dignity = await getDignity(dignityId, datasetId);
     if (!dignity) {
-      console.warn('Dignity not found for succession calculation');
+      logger.warn('Dignity not found for succession calculation');
       return [];
     }
     
     // If succession type doesn't support auto-calculation, return empty
     const successionType = SUCCESSION_TYPES[dignity.successionType];
     if (!successionType?.autoCalculate) {
-      console.log(`👑 Succession type '${dignity.successionType}' does not support auto-calculation`);
+      logger.log(`👑 Succession type '${dignity.successionType}' does not support auto-calculation`);
       
       // If there's a designated heir, return just them
       if (dignity.designatedHeirId) {
@@ -1453,13 +1468,13 @@ export async function calculateSuccessionLine(
     // Get current holder
     const currentHolderId = dignity.currentHolderId;
     if (!currentHolderId) {
-      console.log('👑 No current holder - cannot calculate succession');
+      logger.log('👑 No current holder - cannot calculate succession');
       return [];
     }
     
     const currentHolder = allPeople.find(p => p.id === currentHolderId);
     if (!currentHolder) {
-      console.warn('Current holder not found in people list');
+      logger.warn('Current holder not found in people list');
       return [];
     }
     
@@ -1720,11 +1735,11 @@ export async function calculateSuccessionLine(
       delete candidate.lowerPriority;
     }
     
-    console.log(`👑 Calculated succession for ${dignity.name}: ${candidates.length} candidates`);
+    logger.log(`👑 Calculated succession for ${dignity.name}: ${candidates.length} candidates`);
     return candidates;
     
   } catch (error) {
-    console.error('❌ Error calculating succession line:', error);
+    logger.error('❌ Error calculating succession line:', error);
     throw error;
   }
 }
@@ -1795,11 +1810,11 @@ export async function addDispute(dignityId, disputeData, userId = null, datasetI
     
     await updateDignity(dignityId, { disputes, successionStatus }, userId, datasetId);
 
-    console.log(`⚔️ Dispute added to ${dignity.name}:`, dispute.id);
+    logger.log(`⚔️ Dispute added to ${dignity.name}:`, dispute.id);
     return { ...dignity, disputes, successionStatus };
     
   } catch (error) {
-    console.error('❌ Error adding dispute:', error);
+    logger.error('❌ Error adding dispute:', error);
     throw error;
   }
 }
@@ -1836,11 +1851,11 @@ export async function updateDispute(dignityId, disputeId, updates, userId = null
     
     await updateDignity(dignityId, { disputes, successionStatus }, userId, datasetId);
 
-    console.log(`⚔️ Dispute updated: ${disputeId}`);
+    logger.log(`⚔️ Dispute updated: ${disputeId}`);
     return { ...dignity, disputes, successionStatus };
     
   } catch (error) {
-    console.error('❌ Error updating dispute:', error);
+    logger.error('❌ Error updating dispute:', error);
     throw error;
   }
 }
@@ -1888,11 +1903,11 @@ export async function removeDispute(dignityId, disputeId, userId = null, dataset
     
     await updateDignity(dignityId, { disputes, successionStatus }, userId, datasetId);
 
-    console.log(`⚔️ Dispute removed: ${disputeId}`);
+    logger.log(`⚔️ Dispute removed: ${disputeId}`);
     return { ...dignity, disputes, successionStatus };
     
   } catch (error) {
-    console.error('❌ Error removing dispute:', error);
+    logger.error('❌ Error removing dispute:', error);
     throw error;
   }
 }
@@ -1910,7 +1925,7 @@ export async function getActiveDisputes(dignityId, datasetId = null) {
     
     return (dignity.disputes || []).filter(d => d.resolution === 'ongoing');
   } catch (error) {
-    console.error('❌ Error getting active disputes:', error);
+    logger.error('❌ Error getting active disputes:', error);
     return [];
   }
 }
@@ -1939,7 +1954,7 @@ export async function getAllDisputes(datasetId = null) {
     
     return allDisputes;
   } catch (error) {
-    console.error('❌ Error getting all disputes:', error);
+    logger.error('❌ Error getting all disputes:', error);
     return [];
   }
 }
@@ -1977,11 +1992,11 @@ export async function setInterregnum(dignityId, interregnumData, userId = null, 
       successionStatus: 'interregnum'
     }, userId, datasetId);
 
-    console.log(`⏳ Interregnum set for dignity ${dignityId}`);
+    logger.log(`⏳ Interregnum set for dignity ${dignityId}`);
     return await getDignity(dignityId, datasetId);
     
   } catch (error) {
-    console.error('❌ Error setting interregnum:', error);
+    logger.error('❌ Error setting interregnum:', error);
     throw error;
   }
 }
@@ -2003,11 +2018,11 @@ export async function endInterregnum(dignityId, newHolderId, userId = null, data
       isVacant: false
     }, userId, datasetId);
 
-    console.log(`⏳ Interregnum ended for dignity ${dignityId}, new holder: ${newHolderId}`);
+    logger.log(`⏳ Interregnum ended for dignity ${dignityId}, new holder: ${newHolderId}`);
     return await getDignity(dignityId, datasetId);
     
   } catch (error) {
-    console.error('❌ Error ending interregnum:', error);
+    logger.error('❌ Error ending interregnum:', error);
     throw error;
   }
 }
@@ -2022,7 +2037,7 @@ export async function getDignitiesInInterregnum(datasetId = null) {
     const all = await getAllDignities(datasetId);
     return all.filter(d => d.successionStatus === 'interregnum' || d.interregnum);
   } catch (error) {
-    console.error('❌ Error getting dignities in interregnum:', error);
+    logger.error('❌ Error getting dignities in interregnum:', error);
     return [];
   }
 }
@@ -2041,7 +2056,7 @@ export async function getDignitiesInCrisis(datasetId = null) {
       (d.disputes && d.disputes.some(dispute => dispute.resolution === 'ongoing'))
     );
   } catch (error) {
-    console.error('❌ Error getting dignities in crisis:', error);
+    logger.error('❌ Error getting dignities in crisis:', error);
     return [];
   }
 }

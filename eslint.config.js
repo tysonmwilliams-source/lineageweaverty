@@ -5,7 +5,22 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  // Archived/unreferenced trees are not part of the app. Linting them added 18
+  // problems to the count with nothing actionable behind them.
+  globalIgnores([
+    'dist',
+    'old-build-archive',
+    'archived-components',
+    'extras',
+  ]),
+  {
+    // Build/test files run in Node, not the browser. Without this they report
+    // spurious no-undef on `process` and `global`.
+    files: ['*.config.js', 'src/test/**/*.{js,jsx}'],
+    languageOptions: {
+      globals: { ...globals.browser, ...globals.node },
+    },
+  },
   {
     files: ['**/*.{js,jsx}'],
     extends: [

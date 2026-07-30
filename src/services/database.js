@@ -1,4 +1,5 @@
 import Dexie from 'dexie';
+import { logger } from '../utils/logger';
 
 // Context notification - lazy loaded to avoid circular deps
 let contextNotify = null;
@@ -48,7 +49,7 @@ function createDatabaseInstance(datasetId) {
   // Handle blocked database upgrades (multi-tab scenarios)
   // This fires when a database upgrade is needed but another tab has the DB open
   db.on('blocked', () => {
-    console.warn('⚠️ Database upgrade blocked by another tab');
+    logger.warn('⚠️ Database upgrade blocked by another tab');
     // Notify the user to close other tabs
     // This uses a custom event that the UI can listen for
     window.dispatchEvent(new CustomEvent('lineageweaver:db-blocked', {
@@ -61,7 +62,7 @@ function createDatabaseInstance(datasetId) {
 
   // Handle when this tab is blocking another tab's upgrade
   db.on('versionchange', (event) => {
-    console.log('📦 Database version change detected, closing connection...');
+    logger.log('📦 Database version change detected, closing connection...');
     db.close();
     // Notify the user that a reload is needed
     window.dispatchEvent(new CustomEvent('lineageweaver:db-versionchange', {
@@ -91,7 +92,7 @@ export function getDatabase(datasetId = DEFAULT_DATASET_ID) {
   if (!dbInstances.has(id)) {
     const instance = createDatabaseInstance(id);
     dbInstances.set(id, instance);
-    console.log('📦 Created database instance for dataset:', id);
+    logger.log('📦 Created database instance for dataset:', id);
   }
 
   return dbInstances.get(id);
@@ -108,7 +109,7 @@ export async function closeDatabaseInstance(datasetId) {
   if (instance) {
     await instance.close();
     dbInstances.delete(id);
-    console.log('📦 Closed database instance for dataset:', id);
+    logger.log('📦 Closed database instance for dataset:', id);
   }
 }
 
@@ -128,7 +129,7 @@ export async function deleteDatabaseForDataset(datasetId) {
 
   // Delete the database
   await Dexie.delete(dbName);
-  console.log('📦 Deleted database for dataset:', id);
+  logger.log('📦 Deleted database for dataset:', id);
 }
 
 // Legacy export for backward compatibility
@@ -586,14 +587,14 @@ export async function addPerson(personData, datasetId) {
   try {
     const database = getDatabase(datasetId);
     const id = await database.people.add(personData);
-    console.log('Person added with ID:', id);
+    logger.log('Person added with ID:', id);
 
     // Notify context system
     notifyContextChange('person', 'create', { ...personData, id }, datasetId);
 
     return id;
   } catch (error) {
-    console.error('Error adding person:', error);
+    logger.error('Error adding person:', error);
     throw error;
   }
 }
@@ -604,7 +605,7 @@ export async function getPerson(id, datasetId) {
     const person = await database.people.get(id);
     return person;
   } catch (error) {
-    console.error('Error getting person:', error);
+    logger.error('Error getting person:', error);
     throw error;
   }
 }
@@ -615,7 +616,7 @@ export async function getAllPeople(datasetId) {
     const people = await database.people.toArray();
     return people;
   } catch (error) {
-    console.error('Error getting all people:', error);
+    logger.error('Error getting all people:', error);
     throw error;
   }
 }
@@ -629,7 +630,7 @@ export async function getPeopleCount(datasetId) {
     const database = getDatabase(datasetId);
     return await database.people.count();
   } catch (error) {
-    console.error('Error getting people count:', error);
+    logger.error('Error getting people count:', error);
     return 0;
   }
 }
@@ -640,7 +641,7 @@ export async function getPeopleByHouse(houseId, datasetId) {
     const people = await database.people.where('houseId').equals(houseId).toArray();
     return people;
   } catch (error) {
-    console.error('Error getting people by house:', error);
+    logger.error('Error getting people by house:', error);
     throw error;
   }
 }
@@ -649,7 +650,7 @@ export async function updatePerson(id, updates, datasetId) {
   try {
     const database = getDatabase(datasetId);
     const result = await database.people.update(id, updates);
-    console.log('Person updated:', result);
+    logger.log('Person updated:', result);
 
     // Notify context system
     const person = await database.people.get(id);
@@ -657,7 +658,7 @@ export async function updatePerson(id, updates, datasetId) {
 
     return result;
   } catch (error) {
-    console.error('Error updating person:', error);
+    logger.error('Error updating person:', error);
     throw error;
   }
 }
@@ -678,12 +679,12 @@ export async function deletePerson(id, datasetId) {
     if (relationshipsToDelete.length > 0) {
       const relationshipIds = relationshipsToDelete.map(r => r.id);
       await database.relationships.bulkDelete(relationshipIds);
-      console.log(`Cascade deleted ${relationshipIds.length} relationships for person ${id}`);
+      logger.log(`Cascade deleted ${relationshipIds.length} relationships for person ${id}`);
     }
 
     // Now delete the person
     await database.people.delete(id);
-    console.log('Person deleted:', id);
+    logger.log('Person deleted:', id);
 
     // Notify context system
     if (person) {
@@ -692,7 +693,7 @@ export async function deletePerson(id, datasetId) {
 
     return { deletedRelationships: relationshipsToDelete.length };
   } catch (error) {
-    console.error('Error deleting person:', error);
+    logger.error('Error deleting person:', error);
     throw error;
   }
 }
@@ -712,7 +713,7 @@ export async function addHouse(houseData, options = {}) {
   try {
     const database = getDatabase(options.datasetId);
     const id = await database.houses.add(houseData);
-    console.log('House added with ID:', id);
+    logger.log('House added with ID:', id);
 
     // Auto-create Codex entry for the house (unless explicitly skipped)
     // This is skipped during cloud sync restore to prevent duplicates
@@ -734,10 +735,10 @@ export async function addHouse(houseData, options = {}) {
 
         // Update the house with the codexEntryId
         await database.houses.update(id, { codexEntryId });
-        console.log('📚 Auto-created Codex entry for house:', codexEntryId);
+        logger.log('📚 Auto-created Codex entry for house:', codexEntryId);
       } catch (codexError) {
         // Log but don't fail the house creation if Codex creation fails
-        console.warn('⚠️ Could not auto-create Codex entry for house:', codexError);
+        logger.warn('⚠️ Could not auto-create Codex entry for house:', codexError);
       }
     }
 
@@ -747,7 +748,7 @@ export async function addHouse(houseData, options = {}) {
 
     return id;
   } catch (error) {
-    console.error('Error adding house:', error);
+    logger.error('Error adding house:', error);
     throw error;
   }
 }
@@ -758,7 +759,7 @@ export async function getHouse(id, datasetId) {
     const house = await database.houses.get(id);
     return house;
   } catch (error) {
-    console.error('Error getting house:', error);
+    logger.error('Error getting house:', error);
     throw error;
   }
 }
@@ -769,7 +770,7 @@ export async function getAllHouses(datasetId) {
     const houses = await database.houses.toArray();
     return houses;
   } catch (error) {
-    console.error('Error getting all houses:', error);
+    logger.error('Error getting all houses:', error);
     throw error;
   }
 }
@@ -783,7 +784,7 @@ export async function getHousesCount(datasetId) {
     const database = getDatabase(datasetId);
     return await database.houses.count();
   } catch (error) {
-    console.error('Error getting houses count:', error);
+    logger.error('Error getting houses count:', error);
     return 0;
   }
 }
@@ -797,7 +798,7 @@ export async function getCadetHouses(parentHouseId, datasetId) {
       .toArray();
     return cadetHouses;
   } catch (error) {
-    console.error('Error getting cadet houses:', error);
+    logger.error('Error getting cadet houses:', error);
     throw error;
   }
 }
@@ -814,7 +815,7 @@ export async function getPeopleSwornToHouse(houseId, datasetId) {
       .equals(houseId)
       .toArray();
   } catch (error) {
-    console.error('Error getting people sworn to house:', error);
+    logger.error('Error getting people sworn to house:', error);
     throw error;
   }
 }
@@ -835,7 +836,7 @@ export async function updateHouse(id, updates, datasetId) {
   try {
     const database = getDatabase(datasetId);
     const result = await database.houses.update(id, updates);
-    console.log('House updated:', result);
+    logger.log('House updated:', result);
 
     // Notify context system
     const house = await database.houses.get(id);
@@ -843,7 +844,7 @@ export async function updateHouse(id, updates, datasetId) {
 
     return result;
   } catch (error) {
-    console.error('Error updating house:', error);
+    logger.error('Error updating house:', error);
     throw error;
   }
 }
@@ -878,7 +879,7 @@ export async function deleteHouse(id, options = {}) {
     if (peopleInHouse.length > 0) {
       await database.people.where('houseId').equals(id).modify({ houseId: null });
       clearedPeopleCount = peopleInHouse.length;
-      console.log(`Cleared houseId for ${clearedPeopleCount} people from house ${id}`);
+      logger.log(`Cleared houseId for ${clearedPeopleCount} people from house ${id}`);
     }
 
     // Cascade delete Codex entry if it exists (unless explicitly skipped)
@@ -893,16 +894,16 @@ export async function deleteHouse(id, options = {}) {
         if (codexEntry) {
           await deleteEntry(codexEntry.id, options.datasetId, options.userId);
           deletedCodexEntryId = codexEntry.id;
-          console.log('📚 Cascade deleted Codex entry for house:', codexEntry.id);
+          logger.log('📚 Cascade deleted Codex entry for house:', codexEntry.id);
         }
       } catch (codexError) {
         // Log but don't fail the house deletion if Codex deletion fails
-        console.warn('⚠️ Could not cascade delete Codex entry for house:', codexError);
+        logger.warn('⚠️ Could not cascade delete Codex entry for house:', codexError);
       }
     }
 
     await database.houses.delete(id);
-    console.log('House deleted:', id);
+    logger.log('House deleted:', id);
 
     // Notify context system
     if (house) {
@@ -914,7 +915,7 @@ export async function deleteHouse(id, options = {}) {
     // member's houseId and the orphaned Codex entry.
     return { clearedPeopleCount, clearedPersonIds, deletedCodexEntryId };
   } catch (error) {
-    console.error('Error deleting house:', error);
+    logger.error('Error deleting house:', error);
     throw error;
   }
 }
@@ -968,14 +969,14 @@ export async function addRelationship(relationshipData, datasetId) {
     }
 
     const id = await database.relationships.add(relationshipData);
-    console.log('Relationship added with ID:', id);
+    logger.log('Relationship added with ID:', id);
 
     // Notify context system
     notifyContextChange('relationship', 'create', { ...relationshipData, id }, datasetId);
 
     return id;
   } catch (error) {
-    console.error('Error adding relationship:', error);
+    logger.error('Error adding relationship:', error);
     throw error;
   }
 }
@@ -989,7 +990,7 @@ export async function getRelationshipsForPerson(personId, datasetId) {
       .toArray();
     return relationships;
   } catch (error) {
-    console.error('Error getting relationships:', error);
+    logger.error('Error getting relationships:', error);
     throw error;
   }
 }
@@ -1000,7 +1001,7 @@ export async function getAllRelationships(datasetId) {
     const relationships = await database.relationships.toArray();
     return relationships;
   } catch (error) {
-    console.error('Error getting all relationships:', error);
+    logger.error('Error getting all relationships:', error);
     throw error;
   }
 }
@@ -1014,7 +1015,7 @@ export async function getRelationshipsCount(datasetId) {
     const database = getDatabase(datasetId);
     return await database.relationships.count();
   } catch (error) {
-    console.error('Error getting relationships count:', error);
+    logger.error('Error getting relationships count:', error);
     return 0;
   }
 }
@@ -1023,10 +1024,10 @@ export async function updateRelationship(id, updates, datasetId) {
   try {
     const database = getDatabase(datasetId);
     const result = await database.relationships.update(id, updates);
-    console.log('Relationship updated:', result);
+    logger.log('Relationship updated:', result);
     return result;
   } catch (error) {
-    console.error('Error updating relationship:', error);
+    logger.error('Error updating relationship:', error);
     throw error;
   }
 }
@@ -1039,14 +1040,14 @@ export async function deleteRelationship(id, datasetId) {
     const relationship = await database.relationships.get(id);
 
     await database.relationships.delete(id);
-    console.log('Relationship deleted:', id);
+    logger.log('Relationship deleted:', id);
 
     // Notify context system
     if (relationship) {
       notifyContextChange('relationship', 'delete', relationship, datasetId);
     }
   } catch (error) {
-    console.error('Error deleting relationship:', error);
+    logger.error('Error deleting relationship:', error);
     throw error;
   }
 }
@@ -1221,14 +1222,14 @@ export async function foundCadetHouse(ceremonyData, datasetId) {
     const newHouse = await getHouse(newHouseId, datasetId);
     const updatedFounder = await getPerson(founderId, datasetId);
 
-    console.log(`🏰 Founded ${actualTier === 2 ? 'Tier 2 (Bastard Elevation)' : 'Tier 1 (Noble Cadet)'} house: ${houseName}`);
+    logger.log(`🏰 Founded ${actualTier === 2 ? 'Tier 2 (Bastard Elevation)' : 'Tier 1 (Noble Cadet)'} house: ${houseName}`);
 
     return {
       house: newHouse,
       founder: updatedFounder
     };
   } catch (error) {
-    console.error('Error founding cadet house:', error);
+    logger.error('Error founding cadet house:', error);
     throw error;
   }
 }
@@ -1327,9 +1328,9 @@ export async function importFullDatabase(backup, datasetId, options = {}) {
     }
   });
 
-  console.log('📦 Full backup restored:', restored);
+  logger.log('📦 Full backup restored:', restored);
   if (skipped.length > 0) {
-    console.warn('📦 Skipped unknown tables in backup:', skipped);
+    logger.warn('📦 Skipped unknown tables in backup:', skipped);
   }
 
   return { restored, skipped };
@@ -1401,14 +1402,14 @@ export async function deleteAllData(datasetId, options = {}) {
     // Only clear syncQueue if explicitly requested (after successful full sync)
     if (options.clearSyncQueue && database.syncQueue) {
       await database.syncQueue.clear();
-      console.log('✅ All data deleted including sync queue');
+      logger.log('✅ All data deleted including sync queue');
     } else {
-      console.log('✅ All data deleted successfully (sync queue preserved)');
+      logger.log('✅ All data deleted successfully (sync queue preserved)');
     }
 
     return true;
   } catch (error) {
-    console.error('❌ Error deleting all data:', error);
+    logger.error('❌ Error deleting all data:', error);
     throw error;
   }
 }
@@ -1427,10 +1428,10 @@ export async function deleteGenealogyData(datasetId) {
     await database.relationships.clear();
     await database.acknowledgedDuplicates.clear();
 
-    console.log('✅ Genealogy data deleted (Codex preserved)');
+    logger.log('✅ Genealogy data deleted (Codex preserved)');
     return true;
   } catch (error) {
-    console.error('❌ Error deleting genealogy data:', error);
+    logger.error('❌ Error deleting genealogy data:', error);
     throw error;
   }
 }
@@ -1463,7 +1464,7 @@ export async function isAcknowledgedDuplicate(person1Id, person2Id, datasetId) {
 
     return !!foundReverse;
   } catch (error) {
-    console.error('Error checking acknowledged duplicate:', error);
+    logger.error('Error checking acknowledged duplicate:', error);
     return false;
   }
 }
@@ -1478,7 +1479,7 @@ export async function getAllAcknowledgedDuplicates(datasetId) {
     const database = getDatabase(datasetId);
     return await database.acknowledgedDuplicates.toArray();
   } catch (error) {
-    console.error('Error getting acknowledged duplicates:', error);
+    logger.error('Error getting acknowledged duplicates:', error);
     return [];
   }
 }
@@ -1498,7 +1499,7 @@ export async function acknowledgeDuplicate(person1Id, person2Id, datasetId) {
     // Check if already acknowledged
     const exists = await isAcknowledgedDuplicate(person1Id, person2Id, datasetId);
     if (exists) {
-      console.log('Duplicate already acknowledged');
+      logger.log('Duplicate already acknowledged');
       return null;
     }
 
@@ -1508,10 +1509,10 @@ export async function acknowledgeDuplicate(person1Id, person2Id, datasetId) {
       acknowledgedAt: new Date().toISOString()
     });
 
-    console.log('Duplicate acknowledged with ID:', id);
+    logger.log('Duplicate acknowledged with ID:', id);
     return id;
   } catch (error) {
-    console.error('Error acknowledging duplicate:', error);
+    logger.error('Error acknowledging duplicate:', error);
     throw error;
   }
 }
@@ -1538,10 +1539,10 @@ export async function removeAcknowledgedDuplicate(person1Id, person2Id, datasetI
       .and(item => item.person2Id === person1Id)
       .delete();
 
-    console.log('Acknowledged duplicate removed');
+    logger.log('Acknowledged duplicate removed');
     return true;
   } catch (error) {
-    console.error('Error removing acknowledged duplicate:', error);
+    logger.error('Error removing acknowledged duplicate:', error);
     throw error;
   }
 }
@@ -1572,7 +1573,7 @@ export async function getNamedAfterRelationships(personId, datasetId) {
       namesakes: reverseRelationships  // People named after this person
     };
   } catch (error) {
-    console.error('Error getting named-after relationships:', error);
+    logger.error('Error getting named-after relationships:', error);
     return { namedAfter: [], namesakes: [] };
   }
 }
@@ -1603,10 +1604,10 @@ export async function addToSyncQueue(change, datasetId) {
       synced: 0 // 0 = pending, 1 = synced
     };
     const id = await database.syncQueue.add(entry);
-    console.log(`📝 Queued ${change.operation} for ${change.entityType}:${change.entityId}`);
+    logger.log(`📝 Queued ${change.operation} for ${change.entityType}:${change.entityId}`);
     return id;
   } catch (error) {
-    console.error('Error adding to sync queue:', error);
+    logger.error('Error adding to sync queue:', error);
     throw error;
   }
 }
@@ -1621,9 +1622,9 @@ export async function markSynced(queueId, datasetId) {
   try {
     const database = getDatabase(datasetId);
     await database.syncQueue.update(queueId, { synced: 1 });
-    console.log(`✓ Marked queue entry ${queueId} as synced`);
+    logger.log(`✓ Marked queue entry ${queueId} as synced`);
   } catch (error) {
-    console.error('Error marking as synced:', error);
+    logger.error('Error marking as synced:', error);
   }
 }
 
@@ -1641,9 +1642,9 @@ export async function markEntitySynced(entityType, entityId, datasetId) {
       .where('entityType').equals(entityType)
       .and(item => item.entityId === String(entityId) && item.synced === 0)
       .modify({ synced: 1 });
-    console.log(`✓ Marked ${entityType}:${entityId} as synced`);
+    logger.log(`✓ Marked ${entityType}:${entityId} as synced`);
   } catch (error) {
-    console.error('Error marking entity as synced:', error);
+    logger.error('Error marking entity as synced:', error);
   }
 }
 
@@ -1661,7 +1662,7 @@ export async function getPendingChanges(datasetId) {
       .toArray();
     return pending;
   } catch (error) {
-    console.error('Error getting pending changes:', error);
+    logger.error('Error getting pending changes:', error);
     return [];
   }
 }
@@ -1681,7 +1682,7 @@ export async function hasPendingChanges(datasetId) {
       .count();
     return count > 0;
   } catch (error) {
-    console.error('Error checking pending changes:', error);
+    logger.error('Error checking pending changes:', error);
     return false; // Fail open to avoid blocking users
   }
 }
@@ -1700,7 +1701,7 @@ export async function getPendingChangeCount(datasetId) {
       .count();
     return count;
   } catch (error) {
-    console.error('Error getting pending change count:', error);
+    logger.error('Error getting pending change count:', error);
     return 0;
   }
 }
@@ -1717,10 +1718,10 @@ export async function clearSyncedItems(datasetId) {
     const deleted = await database.syncQueue
       .where('synced').equals(1)
       .delete();
-    console.log(`🧹 Cleared ${deleted} synced items from queue`);
+    logger.log(`🧹 Cleared ${deleted} synced items from queue`);
     return deleted;
   } catch (error) {
-    console.error('Error clearing synced items:', error);
+    logger.error('Error clearing synced items:', error);
   }
 }
 
@@ -1733,9 +1734,9 @@ export async function clearSyncQueue(datasetId) {
   try {
     const database = getDatabase(datasetId);
     await database.syncQueue.clear();
-    console.log('🧹 Sync queue cleared');
+    logger.log('🧹 Sync queue cleared');
   } catch (error) {
-    console.error('Error clearing sync queue:', error);
+    logger.error('Error clearing sync queue:', error);
   }
 }
 
@@ -1757,7 +1758,7 @@ export async function getPendingChangesByType(datasetId) {
     }
     return grouped;
   } catch (error) {
-    console.error('Error grouping pending changes:', error);
+    logger.error('Error grouping pending changes:', error);
     return {};
   }
 }
@@ -1808,18 +1809,18 @@ export async function cleanupStaleSyncOperations(datasetId, maxAgeMs = STALE_THR
       age: Math.round((Date.now() - op.timestamp) / 1000 / 60 / 60) + ' hours'
     }));
 
-    console.warn(`⚠️ Found ${staleOperations.length} stale sync operations (older than ${maxAgeMs / 1000 / 60 / 60} hours)`);
-    console.warn('Archived operations:', archived);
+    logger.warn(`⚠️ Found ${staleOperations.length} stale sync operations (older than ${maxAgeMs / 1000 / 60 / 60} hours)`);
+    logger.warn('Archived operations:', archived);
 
     // Delete stale operations
     const staleIds = staleOperations.map(op => op.id);
     await database.syncQueue.bulkDelete(staleIds);
 
-    console.log(`🧹 Cleaned up ${staleIds.length} stale sync operations`);
+    logger.log(`🧹 Cleaned up ${staleIds.length} stale sync operations`);
 
     return { deleted: staleIds.length, archived };
   } catch (error) {
-    console.error('Error cleaning up stale sync operations:', error);
+    logger.error('Error cleaning up stale sync operations:', error);
     return { deleted: 0, archived: [], error: error.message };
   }
 }
@@ -1871,7 +1872,7 @@ export async function getSyncQueueStats(datasetId) {
       healthy: staleCount === 0 && totalPending < 100
     };
   } catch (error) {
-    console.error('Error getting sync queue stats:', error);
+    logger.error('Error getting sync queue stats:', error);
     return {
       totalPending: 0,
       totalSynced: 0,
@@ -1898,7 +1899,7 @@ export async function getSyncQueueStats(datasetId) {
  */
 export async function performSyncQueueMaintenance(datasetId) {
   try {
-    console.log('🔧 Running sync queue maintenance...');
+    logger.log('🔧 Running sync queue maintenance...');
 
     // 1. Clear synced items
     const clearedSynced = await clearSyncedItems(datasetId);
@@ -1909,7 +1910,7 @@ export async function performSyncQueueMaintenance(datasetId) {
     // 3. Get current stats
     const stats = await getSyncQueueStats(datasetId);
 
-    console.log('✅ Sync queue maintenance complete:', {
+    logger.log('✅ Sync queue maintenance complete:', {
       clearedSynced,
       clearedStale: staleCleanup.deleted,
       currentStats: stats
@@ -1922,7 +1923,7 @@ export async function performSyncQueueMaintenance(datasetId) {
       stats
     };
   } catch (error) {
-    console.error('Error during sync queue maintenance:', error);
+    logger.error('Error during sync queue maintenance:', error);
     return { error: error.message };
   }
 }

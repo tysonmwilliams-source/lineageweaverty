@@ -38,6 +38,8 @@ import {
   syncAddCodexEntry
 } from '../services/dataSyncService';
 import './HeraldryCreator.css';
+import { logger } from '../utils/logger';
+import Icon from '../components/icons';
 
 /**
  * HeraldryCreator - Layered Architecture Edition
@@ -1014,7 +1016,7 @@ function ChargeCard({
   return (
     <div className={`element-card ${!isVisible ? 'hidden-layer' : ''}`}>
       <div className="element-card-header" onClick={() => setExpanded(!expanded)}>
-        <span className="element-card-icon">⚜</span>
+        <span className="element-card-icon"><Icon name="crown" /></span>
         <span className="element-card-summary">{summaryText}</span>
         
         {/* Layer Controls */}
@@ -1458,7 +1460,7 @@ function HeraldryCreator() {
                 setLinkedCodexEntry(codexEntry);
               }
             } catch (codexError) {
-              console.error('Error loading linked codex entry:', codexError);
+              logger.error('Error loading linked codex entry:', codexError);
             }
           }
 
@@ -1470,7 +1472,7 @@ function HeraldryCreator() {
               setLinkedHouseId(String(houseLink.entityId));
             }
           } catch (linkError) {
-            console.error('Error loading linked house:', linkError);
+            logger.error('Error loading linked house:', linkError);
           }
         }
       }
@@ -1483,7 +1485,7 @@ function HeraldryCreator() {
         }
       }
     } catch (error) {
-      console.error('Error loading data:', error);
+      logger.error('Error loading data:', error);
     }
     setLoading(false);
   }
@@ -1570,7 +1572,7 @@ function HeraldryCreator() {
       setBlazon(newBlazon);
       
     } catch (error) {
-      console.error('Error generating preview:', error);
+      logger.error('Error generating preview:', error);
     }
     setGenerating(false);
   }, [field, ordinaries, charges, shieldType]);
@@ -1660,10 +1662,10 @@ function HeraldryCreator() {
             syncAddCodexEntry(user.uid, datasetId, codexEntryId, { ...codexEntryData, id: codexEntryId });
           }
           
-          console.log(`✅ Auto-created Codex entry ${codexEntryId} for heraldry "${name.trim()}"`);
+          logger.log(`✅ Auto-created Codex entry ${codexEntryId} for heraldry "${name.trim()}"`);
         } catch (codexError) {
           // Non-blocking: heraldry still saved successfully even if Codex creation fails
-          console.error('⚠️ Failed to auto-create Codex entry:', codexError);
+          logger.error('⚠️ Failed to auto-create Codex entry:', codexError);
         }
       }
       
@@ -1699,7 +1701,7 @@ function HeraldryCreator() {
       
       navigate(`/heraldry`);
     } catch (error) {
-      console.error('Error saving heraldry:', error);
+      logger.error('Error saving heraldry:', error);
       alert('Failed to save heraldry. Please try again.');
     }
     
@@ -1746,7 +1748,7 @@ function HeraldryCreator() {
               <div className="shield-preview">
                 {generating ? (
                   <div className="generating-indicator">
-                    <span>⚙️</span>
+                    <Icon name="settings" />
                     <p>Generating...</p>
                   </div>
                 ) : previewSVG ? (
@@ -1758,7 +1760,7 @@ function HeraldryCreator() {
                   />
                 ) : (
                   <div className="preview-placeholder">
-                    <span>🛡️</span>
+                    <Icon name="shield" />
                     <p>Your design will appear here</p>
                   </div>
                 )}
@@ -1773,7 +1775,7 @@ function HeraldryCreator() {
               
               {showRuleWarning && (
                 <div className="rule-warning">
-                  <span className="warning-icon">⚠️</span>
+                  <span className="warning-icon"><Icon name="alert-triangle" /></span>
                   <p>
                     <strong>Rule of Tincture:</strong> Metal on metal or colour on colour 
                     is traditionally avoided. This design may violate convention.

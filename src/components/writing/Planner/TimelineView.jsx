@@ -28,6 +28,7 @@ import {
   PLANNING_FRAMEWORKS
 } from '../../../services/planningService';
 import './TimelineView.css';
+import { logger } from '../../../utils/logger';
 
 // Constants for timeline layout
 const TIMELINE_CONFIG = {
@@ -87,7 +88,7 @@ function TimelineView({
         const data = await getStoryPlanComplete(storyPlanId, datasetId);
         setPlanData(data);
       } catch (err) {
-        console.error('Error loading timeline data:', err);
+        logger.error('Error loading timeline data:', err);
         setError('Failed to load timeline data');
       } finally {
         setLoading(false);
@@ -218,7 +219,7 @@ function TimelineView({
           const data = await getStoryPlanComplete(storyPlanId, datasetId);
           setPlanData(data);
         } catch (err) {
-          console.error('Error updating scene position:', err);
+          logger.error('Error updating scene position:', err);
         }
       }
     }

@@ -44,6 +44,7 @@ import MysteriaMigrationTool from '../components/MysteriaMigrationTool';
 import DataMigrationTool from '../components/DataMigrationTool';
 import DignityEducationPanel from '../components/DignityEducationPanel';
 import './ManageData.css';
+import { logger } from '../utils/logger';
 
 // Animation variants
 const TAB_CONTENT_VARIANTS = {
@@ -689,7 +690,7 @@ function ManageData() {
               try {
                 await addRelationship(suggestion.action.data);
               } catch (error) {
-                console.error('Error applying suggestion:', error);
+                logger.error('Error applying suggestion:', error);
               }
             }
           }}

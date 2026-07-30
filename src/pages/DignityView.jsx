@@ -37,7 +37,8 @@ import {
   INTERREGNUM_REASONS,
   natureHasSuccession,
   natureHasGrantTracking,
-  natureHasTenureHistory
+  natureHasTenureHistory,
+  CLASS_ICONS
 } from '../services/dignityService';
 import { getAllHouses, getAllPeople, getAllRelationships } from '../services/database';
 import { getLinksByTarget, LINK_TARGET_TYPES } from '../services/writingLinkService';
@@ -52,6 +53,8 @@ import DignityTerm, { LearningModeToggle } from '../components/DignityTerm';
 import { RankPips, ChainOfCommand, HierarchyPosition, ClassBadge } from '../components/DignityVisuals';
 import { useDignityAnalysis } from '../hooks';
 import './DignityView.css';
+import { logger } from '../utils/logger';
+import { formatLongDate as formatDate } from '../utils/formatDate';
 
 /**
  * DignityView - Comprehensive Dignity Detail Page
@@ -91,15 +94,6 @@ const CARD_VARIANTS = {
     scale: 1,
     transition: { duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }
   }
-};
-
-// Class icons mapping
-const CLASS_ICONS = {
-  crown: 'crown',
-  driht: 'castle',
-  ward: 'shield-check',
-  sir: 'sword',
-  other: 'scroll-text'
 };
 
 function DignityView() {
@@ -224,17 +218,6 @@ function DignityView() {
     return classRanks[dignityRank] || null;
   }, []);
 
-  const formatDate = useCallback((dateStr) => {
-    if (!dateStr) return 'Unknown';
-    if (dateStr.length === 4) return dateStr;
-    const date = new Date(dateStr);
-    if (isNaN(date)) return dateStr;
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  }, []);
 
   const formatTimestamp = useCallback((isoString) => {
     if (!isoString) return 'Unknown';
@@ -279,7 +262,7 @@ function DignityView() {
 
       setSuccessionLine(line);
     } catch (err) {
-      console.error('Error calculating succession:', err);
+      logger.error('Error calculating succession:', err);
       setSuccessionLine([]);
     } finally {
       setLoadingSuccession(false);
@@ -332,7 +315,7 @@ function DignityView() {
         calculateSuccession(dignityData, peopleData, relationshipsData);
       }
     } catch (err) {
-      console.error('Error loading dignity:', err);
+      logger.error('Error loading dignity:', err);
       setError('Failed to load dignity');
       setLoading(false);
     }
@@ -368,13 +351,13 @@ function DignityView() {
             });
           }
         } catch (e) {
-          console.warn('Could not load writing for backlink:', e);
+          logger.warn('Could not load writing for backlink:', e);
         }
       }
 
       setWritingBacklinks(backlinksWithDetails);
     } catch (error) {
-      console.warn('Could not load writing backlinks:', error);
+      logger.warn('Could not load writing backlinks:', error);
       setWritingBacklinks([]);
     } finally {
       setLoadingBacklinks(false);
@@ -395,7 +378,7 @@ function DignityView() {
       const links = await getDignityLinks(parseInt(id), datasetId);
       setEntityLinks(links);
     } catch (error) {
-      console.warn('Could not load entity links:', error);
+      logger.warn('Could not load entity links:', error);
       setEntityLinks([]);
     } finally {
       setLoadingEntityLinks(false);
@@ -420,7 +403,7 @@ function DignityView() {
       await deleteDignity(parseInt(id), user?.uid, activeDataset?.id);
       navigate('/dignities');
     } catch (err) {
-      console.error('Error deleting dignity:', err);
+      logger.error('Error deleting dignity:', err);
       alert('Failed to delete dignity');
     }
   }, [dignity?.name, id, navigate, user?.uid, activeDataset]);
@@ -522,7 +505,7 @@ function DignityView() {
       await loadData();
       handleCloseTenureModal();
     } catch (err) {
-      console.error('Error saving tenure:', err);
+      logger.error('Error saving tenure:', err);
       alert('Failed to save tenure record');
     } finally {
       setSavingTenure(false);
@@ -538,7 +521,7 @@ function DignityView() {
       await deleteDignityTenure(tenureId, user?.uid, activeDataset?.id);
       await loadData();
     } catch (err) {
-      console.error('Error deleting tenure:', err);
+      logger.error('Error deleting tenure:', err);
       alert('Failed to delete tenure record');
     }
   }, [user?.uid, loadData, activeDataset]);
@@ -583,7 +566,7 @@ function DignityView() {
       await loadData();
       handleCloseSuccessionRulesModal();
     } catch (err) {
-      console.error('Error saving succession rules:', err);
+      logger.error('Error saving succession rules:', err);
       alert('Failed to save succession rules');
     } finally {
       setSavingRules(false);
@@ -661,7 +644,7 @@ function DignityView() {
       await loadData();
       handleCloseDisputeModal();
     } catch (err) {
-      console.error('Error saving dispute:', err);
+      logger.error('Error saving dispute:', err);
       alert('Failed to save dispute');
     } finally {
       setSavingDispute(false);
@@ -677,7 +660,7 @@ function DignityView() {
       await removeDispute(parseInt(id), disputeId, user?.uid, activeDataset?.id);
       await loadData();
     } catch (err) {
-      console.error('Error removing dispute:', err);
+      logger.error('Error removing dispute:', err);
       alert('Failed to remove dispute');
     }
   }, [id, user?.uid, loadData, activeDataset]);
@@ -716,7 +699,7 @@ function DignityView() {
       await loadData();
       handleCloseInterregnumModal();
     } catch (err) {
-      console.error('Error setting interregnum:', err);
+      logger.error('Error setting interregnum:', err);
       alert('Failed to set interregnum');
     } finally {
       setSavingInterregnum(false);
@@ -738,7 +721,7 @@ function DignityView() {
       await endInterregnum(parseInt(id), heir.personId, user?.uid, activeDataset?.id);
       await loadData();
     } catch (err) {
-      console.error('Error ending interregnum:', err);
+      logger.error('Error ending interregnum:', err);
       alert('Failed to end interregnum');
     }
   }, [successionLine, getPersonName, id, user?.uid, loadData, activeDataset]);

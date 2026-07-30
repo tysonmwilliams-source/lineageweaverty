@@ -33,6 +33,7 @@ import Icon from '../components/icons/Icon';
 import ActionButton from '../components/shared/ActionButton';
 import LoadingState from '../components/shared/LoadingState';
 import './DignityForm.css';
+import { logger } from '../utils/logger';
 
 const CONTAINER_VARIANTS = {
   hidden: { opacity: 0 },
@@ -177,7 +178,7 @@ function DignityForm() {
 
       setLoading(false);
     } catch (err) {
-      console.error('Error loading data:', err);
+      logger.error('Error loading data:', err);
       setError('Failed to load data');
       setLoading(false);
     }
@@ -396,7 +397,7 @@ function DignityForm() {
         navigate(`/dignities/view/${newId}`);
       }
     } catch (err) {
-      console.error('Error saving dignity:', err);
+      logger.error('Error saving dignity:', err);
       setError('Failed to save dignity');
       setSaving(false);
     }

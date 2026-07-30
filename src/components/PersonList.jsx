@@ -167,11 +167,6 @@ function PersonList({ people, houses, onEdit, onDelete }) {
   /**
    * Format date for display
    */
-  const formatDate = (dateStr) => {
-    if (!dateStr) return null;
-    return dateStr;
-  };
-
   // ==================== HOUSE OPTIONS FOR FILTER ====================
   const houseOptions = useMemo(() => {
     return houses
@@ -460,11 +455,6 @@ function PersonList({ people, houses, onEdit, onDelete }) {
 
 // ==================== PERSON ITEM SUBCOMPONENT ====================
 function PersonItem({ person, onEdit, onDelete, showHouse = true }) {
-  const formatDate = (dateStr) => {
-    if (!dateStr) return null;
-    return dateStr;
-  };
-
   return (
     <motion.div
       className="person-list__item"
@@ -509,9 +499,9 @@ function PersonItem({ person, onEdit, onDelete, showHouse = true }) {
             <p className="person-list__dates">
               <Icon name="calendar" size={14} />
               <span>
-                {person.dateOfBirth && `b. ${formatDate(person.dateOfBirth)}`}
+                {person.dateOfBirth && `b. ${person.dateOfBirth}`}
                 {person.dateOfBirth && person.dateOfDeath && ' - '}
-                {person.dateOfDeath && `d. ${formatDate(person.dateOfDeath)}`}
+                {person.dateOfDeath && `d. ${person.dateOfDeath}`}
               </span>
             </p>
           )}

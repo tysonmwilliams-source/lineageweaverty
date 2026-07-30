@@ -24,6 +24,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import { logger } from '../utils/logger';
 
 // ==================== CONFIGURATION ====================
 // These values come from your Firebase Console → Project Settings → Your Apps
@@ -55,7 +56,7 @@ const missingConfigs = requiredConfigs.filter(
 );
 
 if (missingConfigs.length > 0) {
-  console.error(
+  logger.error(
     '🔥 Firebase Configuration Error!\n\n' +
     'Missing environment variables:\n' +
     missingConfigs.map(key => `  - ${key}`).join('\n') + '\n\n' +
@@ -100,14 +101,14 @@ try {
     prompt: 'select_account'
   });
   
-  console.log('🔥 Firebase initialized successfully');
+  logger.log('🔥 Firebase initialized successfully');
   
 } catch (error) {
-  console.error('🔥 Firebase initialization failed:', error);
+  logger.error('🔥 Firebase initialization failed:', error);
   
   // Provide helpful error context
   if (error.code === 'app/duplicate-app') {
-    console.log('Firebase app already initialized - this is fine in development');
+    logger.log('Firebase app already initialized - this is fine in development');
   }
 }
 

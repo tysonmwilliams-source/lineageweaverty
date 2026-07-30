@@ -28,6 +28,7 @@ import {
   syncAddCharacterArc, syncUpdateCharacterArc, syncDeleteCharacterArc,
   syncAddPlotThread, syncUpdatePlotThread, syncDeletePlotThread
 } from './dataSyncService.js';
+import { logger } from '../utils/logger';
 
 /**
  * Mirror a planning mutation to the cloud.
@@ -45,7 +46,7 @@ async function syncPlanning(syncFn, userId, datasetId, ...args) {
   try {
     await syncFn(userId, datasetId, ...args);
   } catch (error) {
-    console.error(`☁️ Planning sync failed (${syncFn.name}):`, error);
+    logger.error(`☁️ Planning sync failed (${syncFn.name}):`, error);
   }
 }
 
@@ -234,7 +235,7 @@ export async function createStoryPlan(planData, datasetId, userId = null) {
     };
 
     const id = await database.storyPlans.add(plan);
-    console.log('📖 Story plan created with ID:', id);
+    logger.log('📖 Story plan created with ID:', id);
     await syncPlanning(syncAddStoryPlan, userId, datasetId, id, { ...plan, id });
 
     // Auto-create beats for the selected framework
@@ -244,7 +245,7 @@ export async function createStoryPlan(planData, datasetId, userId = null) {
 
     return id;
   } catch (error) {
-    console.error('Error creating story plan:', error);
+    logger.error('Error creating story plan:', error);
     throw error;
   }
 }
@@ -257,7 +258,7 @@ export async function getStoryPlan(id, datasetId) {
     const database = getDatabase(datasetId);
     return await database.storyPlans.get(id);
   } catch (error) {
-    console.error('Error getting story plan:', error);
+    logger.error('Error getting story plan:', error);
     throw error;
   }
 }
@@ -273,7 +274,7 @@ export async function getStoryPlanByWriting(writingId, datasetId) {
       .equals(writingId)
       .first();
   } catch (error) {
-    console.error('Error getting story plan by writing:', error);
+    logger.error('Error getting story plan by writing:', error);
     throw error;
   }
 }
@@ -286,7 +287,7 @@ export async function getAllStoryPlans(datasetId) {
     const database = getDatabase(datasetId);
     return await database.storyPlans.toArray();
   } catch (error) {
-    console.error('Error getting all story plans:', error);
+    logger.error('Error getting all story plans:', error);
     throw error;
   }
 }
@@ -300,11 +301,11 @@ export async function updateStoryPlan(id, updates, datasetId, userId = null) {
     // Don't mutate the caller's object — components pass state slices in here.
     const patch = { ...updates, updatedAt: new Date().toISOString() };
     await database.storyPlans.update(id, patch);
-    console.log('📖 Story plan updated:', id);
+    logger.log('📖 Story plan updated:', id);
     await syncPlanning(syncUpdateStoryPlan, userId, datasetId, id, patch);
     return await database.storyPlans.get(id);
   } catch (error) {
-    console.error('Error updating story plan:', error);
+    logger.error('Error updating story plan:', error);
     throw error;
   }
 }
@@ -335,7 +336,7 @@ export async function deleteStoryPlan(id, datasetId, userId = null) {
 
     // Delete the plan itself
     await database.storyPlans.delete(id);
-    console.log('📖 Story plan deleted:', id);
+    logger.log('📖 Story plan deleted:', id);
 
     if (userId) {
       for (const a of arcs) await syncPlanning(syncDeleteStoryArc, userId, datasetId, a.id);
@@ -348,7 +349,7 @@ export async function deleteStoryPlan(id, datasetId, userId = null) {
 
     return true;
   } catch (error) {
-    console.error('Error deleting story plan:', error);
+    logger.error('Error deleting story plan:', error);
     throw error;
   }
 }
@@ -380,7 +381,7 @@ export async function getStoryPlanComplete(id, datasetId) {
       threads
     };
   } catch (error) {
-    console.error('Error getting complete story plan:', error);
+    logger.error('Error getting complete story plan:', error);
     throw error;
   }
 }
@@ -419,11 +420,11 @@ export async function createStoryArc(arcData, datasetId, userId = null) {
     };
 
     const id = await database.storyArcs.add(arc);
-    console.log('📊 Story arc created:', id);
+    logger.log('📊 Story arc created:', id);
     await syncPlanning(syncAddStoryArc, userId, datasetId, id, { ...arc, id });
     return id;
   } catch (error) {
-    console.error('Error creating story arc:', error);
+    logger.error('Error creating story arc:', error);
     throw error;
   }
 }
@@ -439,7 +440,7 @@ export async function getStoryArcs(storyPlanId, datasetId) {
       .equals(storyPlanId)
       .sortBy('order');
   } catch (error) {
-    console.error('Error getting story arcs:', error);
+    logger.error('Error getting story arcs:', error);
     throw error;
   }
 }
@@ -455,7 +456,7 @@ export async function updateStoryArc(id, updates, datasetId, userId = null) {
     await syncPlanning(syncUpdateStoryArc, userId, datasetId, id, patch);
     return await database.storyArcs.get(id);
   } catch (error) {
-    console.error('Error updating story arc:', error);
+    logger.error('Error updating story arc:', error);
     throw error;
   }
 }
@@ -467,11 +468,11 @@ export async function deleteStoryArc(id, datasetId, userId = null) {
   try {
     const database = getDatabase(datasetId);
     await database.storyArcs.delete(id);
-    console.log('📊 Story arc deleted:', id);
+    logger.log('📊 Story arc deleted:', id);
     await syncPlanning(syncDeleteStoryArc, userId, datasetId, id);
     return true;
   } catch (error) {
-    console.error('Error deleting story arc:', error);
+    logger.error('Error deleting story arc:', error);
     throw error;
   }
 }
@@ -506,7 +507,7 @@ async function createBeatsForFramework(storyPlanId, frameworkId, datasetId, user
   }));
 
   const ids = await database.storyBeats.bulkAdd(beats, { allKeys: true });
-  console.log(`📍 Created ${beats.length} beats for framework: ${frameworkId}`);
+  logger.log(`📍 Created ${beats.length} beats for framework: ${frameworkId}`);
 
   if (userId) {
     for (let i = 0; i < ids.length; i++) {
@@ -548,11 +549,11 @@ export async function createStoryBeat(beatData, datasetId, userId = null) {
     };
 
     const id = await database.storyBeats.add(beat);
-    console.log('📍 Story beat created:', id);
+    logger.log('📍 Story beat created:', id);
     await syncPlanning(syncAddStoryBeat, userId, datasetId, id, { ...beat, id });
     return id;
   } catch (error) {
-    console.error('Error creating story beat:', error);
+    logger.error('Error creating story beat:', error);
     throw error;
   }
 }
@@ -568,7 +569,7 @@ export async function getStoryBeats(storyPlanId, datasetId) {
       .equals(storyPlanId)
       .sortBy('order');
   } catch (error) {
-    console.error('Error getting story beats:', error);
+    logger.error('Error getting story beats:', error);
     throw error;
   }
 }
@@ -584,7 +585,7 @@ export async function updateStoryBeat(id, updates, datasetId, userId = null) {
     await syncPlanning(syncUpdateStoryBeat, userId, datasetId, id, patch);
     return await database.storyBeats.get(id);
   } catch (error) {
-    console.error('Error updating story beat:', error);
+    logger.error('Error updating story beat:', error);
     throw error;
   }
 }
@@ -596,11 +597,11 @@ export async function deleteStoryBeat(id, datasetId, userId = null) {
   try {
     const database = getDatabase(datasetId);
     await database.storyBeats.delete(id);
-    console.log('📍 Story beat deleted:', id);
+    logger.log('📍 Story beat deleted:', id);
     await syncPlanning(syncDeleteStoryBeat, userId, datasetId, id);
     return true;
   } catch (error) {
-    console.error('Error deleting story beat:', error);
+    logger.error('Error deleting story beat:', error);
     throw error;
   }
 }
@@ -619,10 +620,10 @@ export async function reorderStoryBeats(storyPlanId, beatIds, datasetId, userId 
       await syncPlanning(syncUpdateStoryBeat, userId, datasetId, beatIds[i], patch);
     }
 
-    console.log('📍 Story beats reordered');
+    logger.log('📍 Story beats reordered');
     return true;
   } catch (error) {
-    console.error('Error reordering story beats:', error);
+    logger.error('Error reordering story beats:', error);
     throw error;
   }
 }
@@ -685,11 +686,11 @@ export async function createScenePlan(sceneData, datasetId, userId = null) {
     };
 
     const id = await database.scenePlans.add(scene);
-    console.log('🎬 Scene plan created:', id);
+    logger.log('🎬 Scene plan created:', id);
     await syncPlanning(syncAddScenePlan, userId, datasetId, id, { ...scene, id });
     return id;
   } catch (error) {
-    console.error('Error creating scene plan:', error);
+    logger.error('Error creating scene plan:', error);
     throw error;
   }
 }
@@ -705,7 +706,7 @@ export async function getScenePlans(storyPlanId, datasetId) {
       .equals(storyPlanId)
       .sortBy('order');
   } catch (error) {
-    console.error('Error getting scene plans:', error);
+    logger.error('Error getting scene plans:', error);
     throw error;
   }
 }
@@ -721,7 +722,7 @@ export async function getScenePlansByChapter(chapterId, datasetId) {
       .equals(chapterId)
       .sortBy('order');
   } catch (error) {
-    console.error('Error getting scene plans by chapter:', error);
+    logger.error('Error getting scene plans by chapter:', error);
     throw error;
   }
 }
@@ -737,7 +738,7 @@ export async function updateScenePlan(id, updates, datasetId, userId = null) {
     await syncPlanning(syncUpdateScenePlan, userId, datasetId, id, patch);
     return await database.scenePlans.get(id);
   } catch (error) {
-    console.error('Error updating scene plan:', error);
+    logger.error('Error updating scene plan:', error);
     throw error;
   }
 }
@@ -749,11 +750,11 @@ export async function deleteScenePlan(id, datasetId, userId = null) {
   try {
     const database = getDatabase(datasetId);
     await database.scenePlans.delete(id);
-    console.log('🎬 Scene plan deleted:', id);
+    logger.log('🎬 Scene plan deleted:', id);
     await syncPlanning(syncDeleteScenePlan, userId, datasetId, id);
     return true;
   } catch (error) {
-    console.error('Error deleting scene plan:', error);
+    logger.error('Error deleting scene plan:', error);
     throw error;
   }
 }
@@ -772,10 +773,10 @@ export async function reorderScenePlans(storyPlanId, sceneIds, datasetId, userId
       await syncPlanning(syncUpdateScenePlan, userId, datasetId, sceneIds[i], patch);
     }
 
-    console.log('🎬 Scene plans reordered');
+    logger.log('🎬 Scene plans reordered');
     return true;
   } catch (error) {
-    console.error('Error reordering scene plans:', error);
+    logger.error('Error reordering scene plans:', error);
     throw error;
   }
 }
@@ -815,11 +816,11 @@ export async function createCharacterArc(arcData, datasetId, userId = null) {
     };
 
     const id = await database.characterArcs.add(arc);
-    console.log('👤 Character arc created:', id);
+    logger.log('👤 Character arc created:', id);
     await syncPlanning(syncAddCharacterArc, userId, datasetId, id, { ...arc, id });
     return id;
   } catch (error) {
-    console.error('Error creating character arc:', error);
+    logger.error('Error creating character arc:', error);
     throw error;
   }
 }
@@ -835,7 +836,7 @@ export async function getCharacterArcs(storyPlanId, datasetId) {
       .equals(storyPlanId)
       .toArray();
   } catch (error) {
-    console.error('Error getting character arcs:', error);
+    logger.error('Error getting character arcs:', error);
     throw error;
   }
 }
@@ -852,7 +853,7 @@ export async function getCharacterArcByCharacter(storyPlanId, characterId, datas
       .and(arc => arc.characterId === characterId)
       .first();
   } catch (error) {
-    console.error('Error getting character arc:', error);
+    logger.error('Error getting character arc:', error);
     throw error;
   }
 }
@@ -868,7 +869,7 @@ export async function updateCharacterArc(id, updates, datasetId, userId = null) 
     await syncPlanning(syncUpdateCharacterArc, userId, datasetId, id, patch);
     return await database.characterArcs.get(id);
   } catch (error) {
-    console.error('Error updating character arc:', error);
+    logger.error('Error updating character arc:', error);
     throw error;
   }
 }
@@ -892,10 +893,10 @@ export async function addCharacterMilestone(arcId, milestone, datasetId, userId 
     await database.characterArcs.update(arcId, patch);
     await syncPlanning(syncUpdateCharacterArc, userId, datasetId, arcId, patch);
 
-    console.log('👤 Milestone added to character arc:', arcId);
+    logger.log('👤 Milestone added to character arc:', arcId);
     return milestones;
   } catch (error) {
-    console.error('Error adding character milestone:', error);
+    logger.error('Error adding character milestone:', error);
     throw error;
   }
 }
@@ -907,11 +908,11 @@ export async function deleteCharacterArc(id, datasetId, userId = null) {
   try {
     const database = getDatabase(datasetId);
     await database.characterArcs.delete(id);
-    console.log('👤 Character arc deleted:', id);
+    logger.log('👤 Character arc deleted:', id);
     await syncPlanning(syncDeleteCharacterArc, userId, datasetId, id);
     return true;
   } catch (error) {
-    console.error('Error deleting character arc:', error);
+    logger.error('Error deleting character arc:', error);
     throw error;
   }
 }
@@ -951,11 +952,11 @@ export async function createPlotThread(threadData, datasetId, userId = null) {
     };
 
     const id = await database.plotThreads.add(thread);
-    console.log('🧵 Plot thread created:', id);
+    logger.log('🧵 Plot thread created:', id);
     await syncPlanning(syncAddPlotThread, userId, datasetId, id, { ...thread, id });
     return id;
   } catch (error) {
-    console.error('Error creating plot thread:', error);
+    logger.error('Error creating plot thread:', error);
     throw error;
   }
 }
@@ -971,7 +972,7 @@ export async function getPlotThreads(storyPlanId, datasetId) {
       .equals(storyPlanId)
       .toArray();
   } catch (error) {
-    console.error('Error getting plot threads:', error);
+    logger.error('Error getting plot threads:', error);
     throw error;
   }
 }
@@ -987,7 +988,7 @@ export async function updatePlotThread(id, updates, datasetId, userId = null) {
     await syncPlanning(syncUpdatePlotThread, userId, datasetId, id, patch);
     return await database.plotThreads.get(id);
   } catch (error) {
-    console.error('Error updating plot thread:', error);
+    logger.error('Error updating plot thread:', error);
     throw error;
   }
 }
@@ -1011,10 +1012,10 @@ export async function addThreadPlant(threadId, plant, datasetId, userId = null) 
     await database.plotThreads.update(threadId, patch);
     await syncPlanning(syncUpdatePlotThread, userId, datasetId, threadId, patch);
 
-    console.log('🧵 Plant added to thread:', threadId);
+    logger.log('🧵 Plant added to thread:', threadId);
     return plants;
   } catch (error) {
-    console.error('Error adding thread plant:', error);
+    logger.error('Error adding thread plant:', error);
     throw error;
   }
 }
@@ -1026,11 +1027,11 @@ export async function deletePlotThread(id, datasetId, userId = null) {
   try {
     const database = getDatabase(datasetId);
     await database.plotThreads.delete(id);
-    console.log('🧵 Plot thread deleted:', id);
+    logger.log('🧵 Plot thread deleted:', id);
     await syncPlanning(syncDeletePlotThread, userId, datasetId, id);
     return true;
   } catch (error) {
-    console.error('Error deleting plot thread:', error);
+    logger.error('Error deleting plot thread:', error);
     throw error;
   }
 }
@@ -1076,7 +1077,7 @@ export async function getPlanProgress(storyPlanId, datasetId) {
       }
     };
   } catch (error) {
-    console.error('Error getting plan progress:', error);
+    logger.error('Error getting plan progress:', error);
     throw error;
   }
 }
@@ -1094,7 +1095,7 @@ export async function getUnresolvedThreads(storyPlanId, datasetId) {
 
     return threads.filter(t => t.status !== 'resolved' && t.status !== 'dropped');
   } catch (error) {
-    console.error('Error getting unresolved threads:', error);
+    logger.error('Error getting unresolved threads:', error);
     throw error;
   }
 }
@@ -1151,7 +1152,7 @@ export async function getPacingAnalysis(storyPlanId, datasetId) {
       issues
     };
   } catch (error) {
-    console.error('Error analyzing pacing:', error);
+    logger.error('Error analyzing pacing:', error);
     throw error;
   }
 }
@@ -1165,10 +1166,10 @@ export async function restoreStoryPlan(planData, datasetId) {
   try {
     const database = getDatabase(datasetId);
     await database.storyPlans.put(planData);
-    console.log('📖 Story plan restored:', planData.id);
+    logger.log('📖 Story plan restored:', planData.id);
     return planData.id;
   } catch (error) {
-    console.error('Error restoring story plan:', error);
+    logger.error('Error restoring story plan:', error);
     throw error;
   }
 }
@@ -1182,7 +1183,7 @@ export async function restoreStoryArc(arcData, datasetId) {
     await database.storyArcs.put(arcData);
     return arcData.id;
   } catch (error) {
-    console.error('Error restoring story arc:', error);
+    logger.error('Error restoring story arc:', error);
     throw error;
   }
 }
@@ -1196,7 +1197,7 @@ export async function restoreStoryBeat(beatData, datasetId) {
     await database.storyBeats.put(beatData);
     return beatData.id;
   } catch (error) {
-    console.error('Error restoring story beat:', error);
+    logger.error('Error restoring story beat:', error);
     throw error;
   }
 }
@@ -1210,7 +1211,7 @@ export async function restoreScenePlan(sceneData, datasetId) {
     await database.scenePlans.put(sceneData);
     return sceneData.id;
   } catch (error) {
-    console.error('Error restoring scene plan:', error);
+    logger.error('Error restoring scene plan:', error);
     throw error;
   }
 }
@@ -1224,7 +1225,7 @@ export async function restoreCharacterArc(arcData, datasetId) {
     await database.characterArcs.put(arcData);
     return arcData.id;
   } catch (error) {
-    console.error('Error restoring character arc:', error);
+    logger.error('Error restoring character arc:', error);
     throw error;
   }
 }
@@ -1238,7 +1239,7 @@ export async function restorePlotThread(threadData, datasetId) {
     await database.plotThreads.put(threadData);
     return threadData.id;
   } catch (error) {
-    console.error('Error restoring plot thread:', error);
+    logger.error('Error restoring plot thread:', error);
     throw error;
   }
 }

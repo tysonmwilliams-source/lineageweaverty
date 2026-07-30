@@ -39,6 +39,7 @@ import {
 import { useDataset } from '../../../contexts/DatasetContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import './StoryPlannerDashboard.css';
+import { logger } from '../../../utils/logger';
 
 // Animation variants
 const CARD_VARIANTS = {
@@ -121,7 +122,7 @@ function StoryPlannerDashboard({
         setUnresolvedThreads(threadsData);
       }
     } catch (error) {
-      console.error('Error loading plan:', error);
+      logger.error('Error loading plan:', error);
     } finally {
       setIsLoading(false);
     }
@@ -140,7 +141,7 @@ function StoryPlannerDashboard({
       await loadPlanData();
       setShowFrameworkPicker(false);
     } catch (error) {
-      console.error('Error creating plan:', error);
+      logger.error('Error creating plan:', error);
     } finally {
       setIsCreating(false);
     }
@@ -154,7 +155,7 @@ function StoryPlannerDashboard({
       setPlan(prev => ({ ...prev, premise: premiseText }));
       setEditingPremise(false);
     } catch (error) {
-      console.error('Error saving premise:', error);
+      logger.error('Error saving premise:', error);
     }
   };
 
@@ -172,7 +173,7 @@ function StoryPlannerDashboard({
       setUnresolvedThreads([]);
       setShowDeleteConfirm(false);
     } catch (error) {
-      console.error('Error deleting plan:', error);
+      logger.error('Error deleting plan:', error);
     } finally {
       setIsDeleting(false);
     }
@@ -212,7 +213,7 @@ function StoryPlannerDashboard({
       }
       setAiResult(result);
     } catch (error) {
-      console.error('AI analysis error:', error);
+      logger.error('AI analysis error:', error);
       setAiError(error.message || 'AI analysis failed. Please try again.');
     } finally {
       setAiLoading(false);

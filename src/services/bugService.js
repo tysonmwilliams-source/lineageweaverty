@@ -21,6 +21,7 @@
  */
 
 import { db } from './database';
+import { logger } from '../utils/logger';
 
 // ==================== BUG CRUD OPERATIONS ====================
 
@@ -80,10 +81,10 @@ export async function createBug(bugData) {
     };
     
     const id = await db.bugs.add(record);
-    console.log('🐛 Bug created with ID:', id);
+    logger.log('🐛 Bug created with ID:', id);
     return id;
   } catch (error) {
-    console.error('❌ Error creating bug:', error);
+    logger.error('❌ Error creating bug:', error);
     throw error;
   }
 }
@@ -99,7 +100,7 @@ export async function getBug(id) {
     const bug = await db.bugs.get(id);
     return bug;
   } catch (error) {
-    console.error('❌ Error getting bug:', error);
+    logger.error('❌ Error getting bug:', error);
     throw error;
   }
 }
@@ -114,7 +115,7 @@ export async function getAllBugs() {
     const bugs = await db.bugs.toArray();
     return bugs;
   } catch (error) {
-    console.error('❌ Error getting all bugs:', error);
+    logger.error('❌ Error getting all bugs:', error);
     throw error;
   }
 }
@@ -139,10 +140,10 @@ export async function updateBug(id, updates) {
     }
     
     const result = await db.bugs.update(id, updateData);
-    console.log('🐛 Bug updated:', id);
+    logger.log('🐛 Bug updated:', id);
     return result;
   } catch (error) {
-    console.error('❌ Error updating bug:', error);
+    logger.error('❌ Error updating bug:', error);
     throw error;
   }
 }
@@ -156,9 +157,9 @@ export async function updateBug(id, updates) {
 export async function deleteBug(id) {
   try {
     await db.bugs.delete(id);
-    console.log('🐛 Bug deleted:', id);
+    logger.log('🐛 Bug deleted:', id);
   } catch (error) {
-    console.error('❌ Error deleting bug:', error);
+    logger.error('❌ Error deleting bug:', error);
     throw error;
   }
 }
@@ -176,7 +177,7 @@ export async function getBugsByStatus(status) {
     const bugs = await db.bugs.where('status').equals(status).toArray();
     return bugs;
   } catch (error) {
-    console.error('❌ Error getting bugs by status:', error);
+    logger.error('❌ Error getting bugs by status:', error);
     throw error;
   }
 }
@@ -192,7 +193,7 @@ export async function getBugsByPriority(priority) {
     const bugs = await db.bugs.where('priority').equals(priority).toArray();
     return bugs;
   } catch (error) {
-    console.error('❌ Error getting bugs by priority:', error);
+    logger.error('❌ Error getting bugs by priority:', error);
     throw error;
   }
 }
@@ -208,7 +209,7 @@ export async function getBugsBySystem(system) {
     const all = await db.bugs.toArray();
     return all.filter(b => b.system === system);
   } catch (error) {
-    console.error('❌ Error getting bugs by system:', error);
+    logger.error('❌ Error getting bugs by system:', error);
     throw error;
   }
 }
@@ -230,7 +231,7 @@ export async function searchBugs(searchTerm) {
       return false;
     });
   } catch (error) {
-    console.error('❌ Error searching bugs:', error);
+    logger.error('❌ Error searching bugs:', error);
     throw error;
   }
 }
@@ -275,7 +276,7 @@ export async function getBugStatistics() {
       unresolvedCritical: all.filter(b => b.priority === 'critical' && b.status !== 'resolved').length
     };
   } catch (error) {
-    console.error('❌ Error getting bug statistics:', error);
+    logger.error('❌ Error getting bug statistics:', error);
     throw error;
   }
 }
@@ -293,7 +294,7 @@ export async function getRecentBugs(limit = 10) {
       .sort((a, b) => new Date(b.created) - new Date(a.created))
       .slice(0, limit);
   } catch (error) {
-    console.error('❌ Error getting recent bugs:', error);
+    logger.error('❌ Error getting recent bugs:', error);
     throw error;
   }
 }
@@ -488,7 +489,7 @@ ${[...new Set(filtered.map(b => b.system || 'general'))].map(s => `- ${s}`).join
 
     return markdown;
   } catch (error) {
-    console.error('❌ Error exporting bugs:', error);
+    logger.error('❌ Error exporting bugs:', error);
     throw error;
   }
 }
@@ -531,10 +532,10 @@ export async function bulkResolveBugs(ids) {
       count++;
     }
     
-    console.log(`🐛 Bulk resolved ${count} bugs`);
+    logger.log(`🐛 Bulk resolved ${count} bugs`);
     return count;
   } catch (error) {
-    console.error('❌ Error bulk resolving bugs:', error);
+    logger.error('❌ Error bulk resolving bugs:', error);
     throw error;
   }
 }
@@ -551,10 +552,10 @@ export async function clearResolvedBugs() {
     const ids = resolved.map(b => b.id);
     
     await db.bugs.bulkDelete(ids);
-    console.log(`🐛 Cleared ${ids.length} resolved bugs`);
+    logger.log(`🐛 Cleared ${ids.length} resolved bugs`);
     return ids.length;
   } catch (error) {
-    console.error('❌ Error clearing resolved bugs:', error);
+    logger.error('❌ Error clearing resolved bugs:', error);
     throw error;
   }
 }

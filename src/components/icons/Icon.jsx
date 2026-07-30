@@ -167,6 +167,7 @@ import {
   Link as LinkIcon,
   Unlink
 } from 'lucide-react';
+import { logger } from '../../utils/logger';
 
 /**
  * Map of icon names to Lucide components
@@ -477,7 +478,7 @@ const Icon = forwardRef(function Icon(
     
     if (!LucideIcon) {
       if (import.meta.env.DEV) {
-        console.warn(`Icon "${name}" not found in Lucide icon map`);
+        logger.warn(`Icon "${name}" not found in Lucide icon map`);
       }
       return null;
     }

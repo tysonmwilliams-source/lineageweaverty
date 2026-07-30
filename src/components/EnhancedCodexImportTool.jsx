@@ -14,6 +14,7 @@ import { importCodexData } from '../utils/enhanced-codex-import';
 import { forceUploadToCloud } from '../services/dataSyncService';
 import NORTHERN_SEATS_CODEX_DATA from '../data/northern-seats-codex-data';
 import './EnhancedCodexImportTool.css';
+import { logger } from '../utils/logger';
 
 export default function EnhancedCodexImportTool() {
   const { user } = useAuth();
@@ -48,13 +49,13 @@ export default function EnhancedCodexImportTool() {
         try {
           await forceUploadToCloud(user.uid, datasetId);
         } catch (syncErr) {
-          console.warn('Cloud sync after import failed:', syncErr);
+          logger.warn('Cloud sync after import failed:', syncErr);
         }
       }
 
       setResults(result);
     } catch (err) {
-      console.error('Northern seats import failed:', err);
+      logger.error('Northern seats import failed:', err);
       setError(err.message);
     } finally {
       setImporting(false);

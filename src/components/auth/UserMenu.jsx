@@ -14,6 +14,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useDataset } from '../../contexts/DatasetContext';
 import Icon from '../icons';
 import './UserMenu.css';
+import { logger } from '../../utils/logger';
 
 // ==================== ANIMATION VARIANTS ====================
 const DROPDOWN_VARIANTS = {
@@ -84,7 +85,7 @@ export default function UserMenu({ onOpenDatasetManager }) {
       setIsSigningOut(true);
       await signOut();
     } catch (error) {
-      console.error('Sign out failed:', error);
+      logger.error('Sign out failed:', error);
     } finally {
       setIsSigningOut(false);
       setIsOpen(false);
@@ -101,7 +102,7 @@ export default function UserMenu({ onOpenDatasetManager }) {
       // Reload page to refresh all data with new dataset
       window.location.reload();
     } catch (error) {
-      console.error('Dataset switch failed:', error);
+      logger.error('Dataset switch failed:', error);
     } finally {
       setIsSwitching(false);
     }

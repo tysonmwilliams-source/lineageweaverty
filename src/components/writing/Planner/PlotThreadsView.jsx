@@ -31,6 +31,7 @@ import { getAllPeople } from '../../../services/database';
 import { suggestPlotThread } from '../../../services/planningAIService';
 import { useAuth } from '../../../contexts/AuthContext';
 import './PlotThreadsView.css';
+import { logger } from '../../../utils/logger';
 
 // Thread type colors
 const THREAD_TYPE_COLORS = {
@@ -141,7 +142,7 @@ function PlotThreadsView({
         setSelectedThread(threadsData[0].id);
       }
     } catch (error) {
-      console.error('Error loading plot threads:', error);
+      logger.error('Error loading plot threads:', error);
     } finally {
       setLoading(false);
     }
@@ -172,7 +173,7 @@ function PlotThreadsView({
       setShowAddThread(false);
       resetForm();
     } catch (error) {
-      console.error('Error creating thread:', error);
+      logger.error('Error creating thread:', error);
       alert('Failed to create thread. Please try again.');
     }
   };
@@ -186,7 +187,7 @@ function PlotThreadsView({
       await loadData();
       setShowEditThread(false);
     } catch (error) {
-      console.error('Error updating thread:', error);
+      logger.error('Error updating thread:', error);
       alert('Failed to update thread. Please try again.');
     }
   };
@@ -202,7 +203,7 @@ function PlotThreadsView({
       }
       await loadData();
     } catch (error) {
-      console.error('Error deleting thread:', error);
+      logger.error('Error deleting thread:', error);
       alert('Failed to delete thread. Please try again.');
     }
   };
@@ -215,7 +216,7 @@ function PlotThreadsView({
       await updatePlotThread(currentThread.id, { status: newStatus }, datasetId, userId);
       await loadData();
     } catch (error) {
-      console.error('Error updating status:', error);
+      logger.error('Error updating status:', error);
     }
   };
 
@@ -234,7 +235,7 @@ function PlotThreadsView({
       setShowAddPlant(false);
       setPlantForm({ description: '', sceneId: null, isPayoff: false });
     } catch (error) {
-      console.error('Error adding plant:', error);
+      logger.error('Error adding plant:', error);
       alert('Failed to add foreshadowing. Please try again.');
     }
   };
@@ -248,7 +249,7 @@ function PlotThreadsView({
       await updatePlotThread(currentThread.id, { plants: updatedPlants }, datasetId, userId);
       await loadData();
     } catch (error) {
-      console.error('Error removing plant:', error);
+      logger.error('Error removing plant:', error);
     }
   };
 
@@ -265,7 +266,7 @@ function PlotThreadsView({
       await updatePlotThread(currentThread.id, { linkedScenes: newLinkedScenes }, datasetId, userId);
       await loadData();
     } catch (error) {
-      console.error('Error linking scene:', error);
+      logger.error('Error linking scene:', error);
     }
   };
 
@@ -282,7 +283,7 @@ function PlotThreadsView({
       await updatePlotThread(currentThread.id, { involvedCharacters: newInvolved }, datasetId, userId);
       await loadData();
     } catch (error) {
-      console.error('Error updating character involvement:', error);
+      logger.error('Error updating character involvement:', error);
     }
   };
 
@@ -297,7 +298,7 @@ function PlotThreadsView({
       await updatePlotThread(currentThread.id, update, datasetId, userId);
       await loadData();
     } catch (error) {
-      console.error('Error setting key scene:', error);
+      logger.error('Error setting key scene:', error);
     }
   };
 
@@ -335,7 +336,7 @@ function PlotThreadsView({
         await loadData();
       }
     } catch (error) {
-      console.error('Error getting AI suggestion:', error);
+      logger.error('Error getting AI suggestion:', error);
       alert('Failed to get AI suggestion. Please try again.');
     } finally {
       setAiLoading(false);

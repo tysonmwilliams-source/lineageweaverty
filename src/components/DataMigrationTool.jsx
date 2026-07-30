@@ -27,6 +27,7 @@ import {
   fixHouseHousePrefixes
 } from '../services/migrationService';
 import './DataMigrationTool.css';
+import { logger } from '../utils/logger';
 
 /**
  * DataMigrationTool Component
@@ -58,7 +59,7 @@ function DataMigrationTool({ syncContext, defaultCollapsed = true, onMigrationCo
       const migrationStatus = await getMigrationStatus();
       setStatus(migrationStatus);
     } catch (error) {
-      console.error('Error loading migration status:', error);
+      logger.error('Error loading migration status:', error);
     } finally {
       setLoading(false);
     }

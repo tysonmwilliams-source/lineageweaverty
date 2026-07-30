@@ -32,6 +32,7 @@ import { getAllRelationships } from './database.js';
 import { getAllEntries } from './codexService.js';
 import { getAllDignities, getTenuresForDignity, DIGNITY_CLASSES, DIGNITY_RANKS } from './dignityService.js';
 import { getAllHeraldry } from './heraldryService.js';
+import { logger } from '../utils/logger';
 
 // ==================== CONFIGURATION ====================
 
@@ -79,7 +80,7 @@ export async function getContextRegistry(datasetId) {
     const db = getDatabase(datasetId);
     return await db.contextRegistry.toArray();
   } catch (error) {
-    console.error('Error getting context registry:', error);
+    logger.error('Error getting context registry:', error);
     return [];
   }
 }
@@ -95,7 +96,7 @@ export async function getContext(contextId, datasetId) {
     const db = getDatabase(datasetId);
     return await db.contextRegistry.where('contextId').equals(contextId).first();
   } catch (error) {
-    console.error('Error getting context:', error);
+    logger.error('Error getting context:', error);
     return null;
   }
 }
@@ -111,7 +112,7 @@ export async function getContextFiles(contextId, datasetId) {
     const db = getDatabase(datasetId);
     return await db.contextFiles.where('contextId').equals(contextId).toArray();
   } catch (error) {
-    console.error('Error getting context files:', error);
+    logger.error('Error getting context files:', error);
     return [];
   }
 }
@@ -131,7 +132,7 @@ export async function getContextFile(contextId, filePath, datasetId) {
       .and(f => f.filePath === filePath)
       .first();
   } catch (error) {
-    console.error('Error getting context file:', error);
+    logger.error('Error getting context file:', error);
     return null;
   }
 }
@@ -154,7 +155,7 @@ export async function getContextLog(contextId, limit = 50, datasetId) {
 
     return await query.limit(limit).toArray();
   } catch (error) {
-    console.error('Error getting context log:', error);
+    logger.error('Error getting context log:', error);
     return [];
   }
 }
@@ -266,7 +267,7 @@ export async function discoverContexts(datasetId) {
       thresholds: CONTEXT_THRESHOLDS
     };
   } catch (error) {
-    console.error('Error discovering contexts:', error);
+    logger.error('Error discovering contexts:', error);
     throw error;
   }
 }
@@ -325,7 +326,7 @@ export async function getHouseStats(houseId, datasetId) {
       thresholds: CONTEXT_THRESHOLDS
     };
   } catch (error) {
-    console.error('Error getting house stats:', error);
+    logger.error('Error getting house stats:', error);
     return null;
   }
 }
@@ -348,7 +349,7 @@ export async function generateAllContexts(datasetId, options = {}) {
   };
 
   try {
-    console.log('📚 Starting full context generation...');
+    logger.log('📚 Starting full context generation...');
 
     // Discover which contexts should exist
     const discovery = await discoverContexts(datasetId);
@@ -394,10 +395,10 @@ export async function generateAllContexts(datasetId, options = {}) {
     }
 
     results.duration = Date.now() - startTime;
-    console.log(`✅ Context generation complete in ${results.duration}ms`);
-    console.log(`   Generated: ${results.generated.length} contexts`);
+    logger.log(`✅ Context generation complete in ${results.duration}ms`);
+    logger.log(`   Generated: ${results.generated.length} contexts`);
     if (results.errors.length > 0) {
-      console.warn(`   Errors: ${results.errors.length}`);
+      logger.warn(`   Errors: ${results.errors.length}`);
     }
 
     // Notify subscribers
@@ -408,16 +409,16 @@ export async function generateAllContexts(datasetId, options = {}) {
       try {
         const diskResults = await exportContextToDisk(datasetId);
         results.diskExport = diskResults;
-        console.log(`📁 Context files exported to disk (${diskResults.files?.length || 0} files)`);
+        logger.log(`📁 Context files exported to disk (${diskResults.files?.length || 0} files)`);
       } catch (diskError) {
-        console.warn('Could not export context to disk:', diskError);
+        logger.warn('Could not export context to disk:', diskError);
         results.diskExport = { success: false, error: diskError.message };
       }
     }
 
     return results;
   } catch (error) {
-    console.error('Error in generateAllContexts:', error);
+    logger.error('Error in generateAllContexts:', error);
     throw error;
   }
 }
@@ -804,7 +805,7 @@ export function notifyChange(entityType, operation, entity, datasetId) {
     processChanges(datasetId);
   }, DEBOUNCE_DELAY);
 
-  console.log(`📝 Context change queued: ${entityType}:${operation} (${pendingChanges.length} pending)`);
+  logger.log(`📝 Context change queued: ${entityType}:${operation} (${pendingChanges.length} pending)`);
 }
 
 /**
@@ -818,7 +819,7 @@ async function processChanges(datasetId) {
   const changes = [...pendingChanges];
   pendingChanges = [];
 
-  console.log(`🔄 Processing ${changes.length} pending changes...`);
+  logger.log(`🔄 Processing ${changes.length} pending changes...`);
 
   try {
     // Determine which contexts are affected
@@ -865,7 +866,7 @@ async function processChanges(datasetId) {
           changeCount: changes.length
         });
       } catch (error) {
-        console.error(`Error regenerating context ${contextId}:`, error);
+        logger.error(`Error regenerating context ${contextId}:`, error);
       }
     }
 
@@ -880,13 +881,13 @@ async function processChanges(datasetId) {
       try {
         await exportContextToDisk(datasetId);
       } catch (diskError) {
-        console.warn('Could not export context to disk:', diskError);
+        logger.warn('Could not export context to disk:', diskError);
       }
     }
 
-    console.log(`✅ Regenerated ${affectedContexts.size} contexts`);
+    logger.log(`✅ Regenerated ${affectedContexts.size} contexts`);
   } catch (error) {
-    console.error('Error processing changes:', error);
+    logger.error('Error processing changes:', error);
   } finally {
     isProcessing = false;
   }
@@ -926,7 +927,7 @@ function notifySubscribers(event, data) {
     try {
       callback(event, data);
     } catch (error) {
-      console.error('Error in context subscriber:', error);
+      logger.error('Error in context subscriber:', error);
     }
   }
 }
@@ -1020,7 +1021,7 @@ function isDiskExportAvailable() {
  */
 async function writeContextToDisk(filename, content) {
   if (!isDiskExportAvailable()) {
-    console.log('📝 Disk export only available in dev mode');
+    logger.log('📝 Disk export only available in dev mode');
     return false;
   }
 
@@ -1034,7 +1035,7 @@ async function writeContextToDisk(filename, content) {
     const result = await response.json();
     return result.success;
   } catch (error) {
-    console.error('Failed to write context to disk:', error);
+    logger.error('Failed to write context to disk:', error);
     return false;
   }
 }
@@ -1220,11 +1221,11 @@ export async function exportContextToDisk(datasetId) {
       results.files.push('_README.json');
     }
 
-    console.log(`📁 Exported ${results.files.length} context files to disk`);
+    logger.log(`📁 Exported ${results.files.length} context files to disk`);
     results.success = true;
 
   } catch (error) {
-    console.error('Error exporting context to disk:', error);
+    logger.error('Error exporting context to disk:', error);
     results.errors.push(error.message);
     results.success = false;
   }
@@ -1240,7 +1241,7 @@ let autoDiskExportEnabled = true;
 
 export function setAutoDiskExport(enabled) {
   autoDiskExportEnabled = enabled;
-  console.log(`📁 Auto disk export: ${enabled ? 'enabled' : 'disabled'}`);
+  logger.log(`📁 Auto disk export: ${enabled ? 'enabled' : 'disabled'}`);
 }
 
 export function isAutoDiskExportEnabled() {

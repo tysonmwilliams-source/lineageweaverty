@@ -14,6 +14,7 @@
  */
 
 import { searchEntriesByTitle, updateEntry, getAllEntries } from '../services/codexService.js';
+import { logger } from './logger';
 
 /**
  * Enhancement data structure
@@ -245,7 +246,7 @@ export async function enhanceCodexEntries(enhancements = WILFREY_VOICE_ENHANCEME
     skipped: []
   };
 
-  console.log(`📝 Starting codex enhancement (${dryRun ? 'DRY RUN' : 'LIVE'})...`);
+  logger.log(`📝 Starting codex enhancement (${dryRun ? 'DRY RUN' : 'LIVE'})...`);
 
   for (let i = 0; i < enhancements.length; i++) {
     const enhancement = enhancements[i];
@@ -263,7 +264,7 @@ export async function enhanceCodexEntries(enhancements = WILFREY_VOICE_ENHANCEME
       const existingEntry = await findEntryByTitle(enhancement.targetTitle, datasetId);
 
       if (!existingEntry) {
-        console.warn(`⚠️ Entry not found: "${enhancement.targetTitle}"`);
+        logger.warn(`⚠️ Entry not found: "${enhancement.targetTitle}"`);
         results.notFound.push(enhancement.targetTitle);
         continue;
       }
@@ -271,7 +272,7 @@ export async function enhanceCodexEntries(enhancements = WILFREY_VOICE_ENHANCEME
       // Check if enhancement already applied (look for the heading in content)
       const sectionHeading = enhancement.appendSection?.heading || enhancement.prependSection?.heading;
       if (sectionHeading && existingEntry.content.includes(`## ${sectionHeading}`)) {
-        console.log(`⏭️ Already enhanced: "${enhancement.targetTitle}"`);
+        logger.log(`⏭️ Already enhanced: "${enhancement.targetTitle}"`);
         results.skipped.push({
           title: enhancement.targetTitle,
           reason: `Section "${sectionHeading}" already exists`
@@ -325,9 +326,9 @@ export async function enhanceCodexEntries(enhancements = WILFREY_VOICE_ENHANCEME
       };
 
       if (dryRun) {
-        console.log(`🔍 Would enhance: "${enhancement.targetTitle}"`);
-        console.log(`   - Adding section: ${sectionHeading}`);
-        console.log(`   - New tags: ${enhancement.addTags?.join(', ') || 'none'}`);
+        logger.log(`🔍 Would enhance: "${enhancement.targetTitle}"`);
+        logger.log(`   - Adding section: ${sectionHeading}`);
+        logger.log(`   - New tags: ${enhancement.addTags?.join(', ') || 'none'}`);
         results.enhanced.push({
           title: enhancement.targetTitle,
           id: existingEntry.id,
@@ -336,7 +337,7 @@ export async function enhanceCodexEntries(enhancements = WILFREY_VOICE_ENHANCEME
       } else {
         // Apply the update
         await updateEntry(existingEntry.id, updates, datasetId);
-        console.log(`✅ Enhanced: "${enhancement.targetTitle}"`);
+        logger.log(`✅ Enhanced: "${enhancement.targetTitle}"`);
         results.enhanced.push({
           title: enhancement.targetTitle,
           id: existingEntry.id,
@@ -345,7 +346,7 @@ export async function enhanceCodexEntries(enhancements = WILFREY_VOICE_ENHANCEME
       }
 
     } catch (error) {
-      console.error(`❌ Error enhancing "${enhancement.targetTitle}":`, error);
+      logger.error(`❌ Error enhancing "${enhancement.targetTitle}":`, error);
       results.errors.push({
         title: enhancement.targetTitle,
         error: error.message
@@ -353,11 +354,11 @@ export async function enhanceCodexEntries(enhancements = WILFREY_VOICE_ENHANCEME
     }
   }
 
-  console.log(`\n📊 Enhancement complete:`);
-  console.log(`   ✅ Enhanced: ${results.enhanced.length}`);
-  console.log(`   ⏭️ Skipped: ${results.skipped.length}`);
-  console.log(`   ⚠️ Not found: ${results.notFound.length}`);
-  console.log(`   ❌ Errors: ${results.errors.length}`);
+  logger.log(`\n📊 Enhancement complete:`);
+  logger.log(`   ✅ Enhanced: ${results.enhanced.length}`);
+  logger.log(`   ⏭️ Skipped: ${results.skipped.length}`);
+  logger.log(`   ⚠️ Not found: ${results.notFound.length}`);
+  logger.log(`   ❌ Errors: ${results.errors.length}`);
 
   return results;
 }

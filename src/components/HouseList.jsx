@@ -29,6 +29,7 @@ import FilterDropdown from './shared/FilterDropdown';
 import Pagination from './shared/Pagination';
 import { sanitizeSVG } from '../utils/sanitize';
 import './HouseList.css';
+import { logger } from '../utils/logger';
 
 // ==================== PAGINATION CONFIG ====================
 const ITEMS_PER_PAGE = 25;
@@ -224,7 +225,7 @@ function HouseList({
         setHeraldryCache(prev => ({ ...prev, [heraldryId]: heraldry }));
       }
     } catch (error) {
-      console.error('Error loading heraldry:', error);
+      logger.error('Error loading heraldry:', error);
     } finally {
       setLoadingHeraldry(prev => ({ ...prev, [heraldryId]: false }));
     }

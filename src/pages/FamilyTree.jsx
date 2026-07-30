@@ -30,6 +30,7 @@ import {
   getLineageGapConnections,
   detectGenerations
 } from '../utils/treeHelpers';
+import { logger } from '../utils/logger';
 
 function FamilyTree() {
   // ==================== URL PARAMETERS ====================
@@ -168,12 +169,12 @@ function FamilyTree() {
     const lineageGaps = getLineageGapConnections(fragments, relationships, peopleById);
     
     if (fragments.length > 1) {
-      console.log(`🧩 Detected ${fragments.length} fragments in ${houses.find(h => h.id === selectedHouseId)?.houseName}:`);
+      logger.log(`🧩 Detected ${fragments.length} fragments in ${houses.find(h => h.id === selectedHouseId)?.houseName}:`);
       fragments.forEach((frag, i) => {
-        console.log(`   Fragment ${i + 1}: ${frag.memberCount} members, root: ${frag.rootPerson.firstName} ${frag.rootPerson.lastName} (b. ${frag.rootPerson.dateOfBirth})`);
+        logger.log(`   Fragment ${i + 1}: ${frag.memberCount} members, root: ${frag.rootPerson.firstName} ${frag.rootPerson.lastName} (b. ${frag.rootPerson.dateOfBirth})`);
       });
       if (lineageGaps.length > 0) {
-        console.log(`   🔗 ${lineageGaps.length} lineage-gap connection(s) found`);
+        logger.log(`   🔗 ${lineageGaps.length} lineage-gap connection(s) found`);
       }
     }
     
@@ -257,7 +258,7 @@ function FamilyTree() {
 
   useEffect(() => {
     if (!urlPersonId || people.length === 0 || houses.length === 0) {
-      console.log(`🎯 URL nav effect skipped: urlPersonId=${urlPersonId}, people=${people.length}, houses=${houses.length}`);
+      logger.log(`🎯 URL nav effect skipped: urlPersonId=${urlPersonId}, people=${people.length}, houses=${houses.length}`);
       return;
     }
 
@@ -265,11 +266,11 @@ function FamilyTree() {
     const person = people.find(p => p.id === personId);
 
     if (!person) {
-      console.warn(`🎯 Person with ID ${personId} not found`);
+      logger.warn(`🎯 Person with ID ${personId} not found`);
       return;
     }
 
-    console.log(`🎯 Navigating to ${person.firstName} ${person.lastName} (ID: ${personId}, houseId: ${person.houseId})`);
+    logger.log(`🎯 Navigating to ${person.firstName} ${person.lastName} (ID: ${personId}, houseId: ${person.houseId})`);
 
     // Mark that we're doing URL navigation so the reset effect doesn't clear centreOnPersonId
     isUrlNavigationRef.current = true;
@@ -279,12 +280,12 @@ function FamilyTree() {
 
     // Always set the house to ensure correct tree is shown
     if (person.houseId) {
-      console.log(`🎯 Setting house to ${person.houseId}`);
+      logger.log(`🎯 Setting house to ${person.houseId}`);
       setSelectedHouseId(person.houseId);
     }
 
     // Set centreOnPersonId to this person so the tree roots on them
-    console.log(`🎯 Setting centreOnPersonId to ${personId}`);
+    logger.log(`🎯 Setting centreOnPersonId to ${personId}`);
     setCentreOnPersonId(personId);
     setHighlightedPersonId(personId);
 
@@ -329,9 +330,9 @@ function FamilyTree() {
         });
         
         setDignitiesByPerson(byPerson);
-        console.log(`👑 Loaded ${allDignities.length} dignities, ${byPerson.size} people have titles`);
+        logger.log(`👑 Loaded ${allDignities.length} dignities, ${byPerson.size} people have titles`);
       } catch (error) {
-        console.error('Error loading dignities:', error);
+        logger.error('Error loading dignities:', error);
       }
     }
     
@@ -348,11 +349,11 @@ function FamilyTree() {
     if (urlPersonId) {
       const targetPerson = people.find(p => p.id === parseInt(urlPersonId));
       if (targetPerson && targetPerson.houseId !== selectedHouseId) {
-        console.log(`🎯 Waiting for house update: URL person ${targetPerson.firstName} (house ${targetPerson.houseId}) !== current ${selectedHouseId}`);
+        logger.log(`🎯 Waiting for house update: URL person ${targetPerson.firstName} (house ${targetPerson.houseId}) !== current ${selectedHouseId}`);
         return; // Skip this render, wait for selectedHouseId to update
       }
       if (targetPerson && targetPerson.houseId === selectedHouseId) {
-        console.log(`🎯 House matched for URL navigation, proceeding to draw ${targetPerson.firstName} in house ${selectedHouseId}`);
+        logger.log(`🎯 House matched for URL navigation, proceeding to draw ${targetPerson.firstName} in house ${selectedHouseId}`);
         // Clear pending navigation ref now that we're drawing correctly
         pendingNavigationRef.current = null;
       }
@@ -1040,9 +1041,9 @@ function FamilyTree() {
         centreOnPersonId
       );
       
-      console.log(`🏠 House filter: ${houses.find(h => h.id === selectedHouseId)?.houseName}`);
-      console.log(`   Scoped people: ${scopedPeopleById.size} of ${peopleById.size}`);
-      console.log(`   Root person ID: ${overrideRootId}`);
+      logger.log(`🏠 House filter: ${houses.find(h => h.id === selectedHouseId)?.houseName}`);
+      logger.log(`   Scoped people: ${scopedPeopleById.size} of ${peopleById.size}`);
+      logger.log(`   Root person ID: ${overrideRootId}`);
     }
 
     const positionMap = new Map();
@@ -1074,7 +1075,7 @@ function FamilyTree() {
         // Add consistent 60px visible gap between fragments
         // (fragmentGap = CARD_HEIGHT + 60px to account for last gen not updating currentGenPos)
         currentGenPos += fragmentGap;
-        console.log(`📏 Fragment ${fragmentIndex + 1}: Added ${FRAGMENT_VISIBLE_GAP}px gap (offset: ${fragmentGap}px)`);
+        logger.log(`📏 Fragment ${fragmentIndex + 1}: Added ${FRAGMENT_VISIBLE_GAP}px gap (offset: ${fragmentGap}px)`);
       }
       
       const fragmentPeopleById = new Map();
@@ -1095,16 +1096,16 @@ function FamilyTree() {
       const generations = detectGenerations(fragmentPeopleById, parentMap, childrenMap, spouseMap, fragmentRootId);
       
       if (generations.length === 0) {
-        console.warn(`Fragment ${fragmentIndex + 1} has no generations`);
+        logger.warn(`Fragment ${fragmentIndex + 1} has no generations`);
         return;
       }
       
-      console.log(`🌳 Drawing fragment ${fragmentIndex + 1}/${fragmentsToDraw.length}: ${fragment.rootPerson?.firstName} ${fragment.rootPerson?.lastName} (${generations.length} generations)`);
+      logger.log(`🌳 Drawing fragment ${fragmentIndex + 1}/${fragmentsToDraw.length}: ${fragment.rootPerson?.firstName} ${fragment.rootPerson?.lastName} (${generations.length} generations)`);
 
       // 🧱 BLOCK LAYOUT: Pre-calculate positions if enabled
       let blockPositions = null;
       if (useBlockLayout) {
-        console.log('🧱 Using BLOCK LAYOUT mode');
+        logger.log('🧱 Using BLOCK LAYOUT mode');
         blockPositions = calculateBlockBasedLayout(
           generations,
           childrenMap,
@@ -1122,7 +1123,7 @@ function FamilyTree() {
             generationSpacing: GENERATION_SPACING
           }
         );
-        console.log('🧱 Block positions calculated for', blockPositions.size, 'people');
+        logger.log('🧱 Block positions calculated for', blockPositions.size, 'people');
       }
 
     generations.forEach((genIds, genIndex) => {
@@ -1130,12 +1131,12 @@ function FamilyTree() {
       // O(n^2) across a wide generation.
       const genIdSet = new Set(genIds);
       const isLastGeneration = genIndex === generations.length - 1;
-      console.log(`Drawing generation ${genIndex} with ${genIds.length} people`);
+      logger.log(`Drawing generation ${genIndex} with ${genIds.length} people`);
       
       if (genIndex === 0) {
         const rootPerson = fragmentPeopleById.get(genIds[0]);
         if (!rootPerson) {
-          console.error('Root person not found');
+          logger.error('Root person not found');
           return;
         }
 
@@ -1510,7 +1511,7 @@ function FamilyTree() {
           const parentPos = positionMap.get(group.parentId);
           
           if (!parentPos) {
-            console.warn(`Parent position not found for parentId: ${group.parentId}`);
+            logger.warn(`Parent position not found for parentId: ${group.parentId}`);
             if (groupIdx < groups.length - 1) {
               currentSibPos += GROUP_SPACING;
             }
@@ -1667,7 +1668,7 @@ function FamilyTree() {
         }
       }
       
-      console.log('🎨 Fragment visualization drawn:', fragmentSeparatorStyle);
+      logger.log('🎨 Fragment visualization drawn:', fragmentSeparatorStyle);
     }
     
     // Center view on content
@@ -1704,7 +1705,7 @@ function FamilyTree() {
         svg.call(zoom.transform, highlightTransform);
         setZoomLevel(targetScale);
         
-        console.log('🎯 Centered on highlighted person:', {
+        logger.log('🎯 Centered on highlighted person:', {
           personId: highlightedPersonId,
           position: { x: personCenterX, y: personCenterY },
           scale: targetScale
@@ -1728,7 +1729,7 @@ function FamilyTree() {
         svg.call(zoom.transform, initialTransform);
         setZoomLevel(finalScale);
         
-        console.log('🎯 Tree centered:', {
+        logger.log('🎯 Tree centered:', {
           contentCenter: { x: contentCenterX, y: contentCenterY },
           contentSize: { width: contentWidth, height: contentHeight },
           viewport: { width: viewportWidth, height: viewportHeight },

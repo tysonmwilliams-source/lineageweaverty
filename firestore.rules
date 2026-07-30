@@ -236,9 +236,6 @@ service cloud.firestore {
           allow read, write: if isOwner(userId);
         }
 
-        match /arcMilestones/{milestoneId} {
-          allow read, write: if isOwner(userId);
-        }
 
         // =====================================================
         // OTHER COLLECTIONS

@@ -10,6 +10,7 @@
 
 import { createEntry, getAllEntries } from '../services/codexService.js';
 import { syncAddCodexEntry } from '../services/dataSyncService.js';
+import { logger } from './logger';
 
 const CODEX_CATEGORIES = ['houses', 'locations', 'events', 'personages', 'mysteria', 'concepts'];
 
@@ -109,7 +110,7 @@ export async function processCodexEntries(entries, options = {}) {
       const existingEntries = await getAllEntries(datasetId);
       existingTitles = new Set(existingEntries.map(e => e.title));
     } catch (err) {
-      console.warn('Could not load existing entries for duplicate check:', err);
+      logger.warn('Could not load existing entries for duplicate check:', err);
     }
   }
 
@@ -161,7 +162,7 @@ export async function processCodexEntries(entries, options = {}) {
         try {
           await syncAddCodexEntry(userId, datasetId, id, { ...entryData, id });
         } catch (syncErr) {
-          console.warn(`Cloud sync failed for codex entry "${item.title}":`, syncErr.message);
+          logger.warn(`Cloud sync failed for codex entry "${item.title}":`, syncErr.message);
         }
       }
 

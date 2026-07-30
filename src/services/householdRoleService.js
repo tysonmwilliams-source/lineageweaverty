@@ -19,6 +19,7 @@ import {
   syncUpdateHouseholdRole,
   syncDeleteHouseholdRole
 } from './dataSyncService';
+import { logger } from '../utils/logger';
 
 // ==================== CRUD OPERATIONS ====================
 
@@ -54,7 +55,7 @@ export async function createHouseholdRole(roleData, userId = null, datasetId = n
   try {
     const id = await db.householdRoles.add(role);
     if (import.meta.env.DEV) {
-      console.log('Household role created:', id);
+      logger.log('Household role created:', id);
     }
 
     if (userId) {
@@ -63,7 +64,7 @@ export async function createHouseholdRole(roleData, userId = null, datasetId = n
 
     return id;
   } catch (error) {
-    console.error('Error creating household role:', error);
+    logger.error('Error creating household role:', error);
     throw error;
   }
 }
@@ -79,7 +80,7 @@ export async function getHouseholdRole(id, datasetId = null) {
   try {
     return await getDatabase(datasetId).householdRoles.get(id);
   } catch (error) {
-    console.error('Error getting household role:', error);
+    logger.error('Error getting household role:', error);
     throw error;
   }
 }
@@ -94,7 +95,7 @@ export async function getAllHouseholdRoles(datasetId = null) {
   try {
     return await getDatabase(datasetId).householdRoles.toArray();
   } catch (error) {
-    console.error('Error getting all household roles:', error);
+    logger.error('Error getting all household roles:', error);
     throw error;
   }
 }
@@ -120,7 +121,7 @@ export async function getRolesForHouse(houseId, datasetId = null) {
       return (typeA?.order || 99) - (typeB?.order || 99);
     });
   } catch (error) {
-    console.error('Error getting roles for house:', error);
+    logger.error('Error getting roles for house:', error);
     throw error;
   }
 }
@@ -139,7 +140,7 @@ export async function getRolesForPerson(personId, datasetId = null) {
       .equals(personId)
       .toArray();
   } catch (error) {
-    console.error('Error getting roles for person:', error);
+    logger.error('Error getting roles for person:', error);
     throw error;
   }
 }
@@ -162,7 +163,7 @@ export async function updateHouseholdRole(id, updates, userId = null, datasetId 
 
     const count = await getDatabase(datasetId).householdRoles.update(id, updateData);
     if (import.meta.env.DEV) {
-      console.log('Household role updated:', id);
+      logger.log('Household role updated:', id);
     }
 
     if (userId) {
@@ -171,7 +172,7 @@ export async function updateHouseholdRole(id, updates, userId = null, datasetId 
 
     return count;
   } catch (error) {
-    console.error('Error updating household role:', error);
+    logger.error('Error updating household role:', error);
     throw error;
   }
 }
@@ -188,14 +189,14 @@ export async function deleteHouseholdRole(id, userId = null, datasetId = null) {
   try {
     await getDatabase(datasetId).householdRoles.delete(id);
     if (import.meta.env.DEV) {
-      console.log('Household role deleted:', id);
+      logger.log('Household role deleted:', id);
     }
 
     if (userId) {
       await syncDeleteHouseholdRole(userId, datasetId, id);
     }
   } catch (error) {
-    console.error('Error deleting household role:', error);
+    logger.error('Error deleting household role:', error);
     throw error;
   }
 }
@@ -323,11 +324,11 @@ export async function deleteRolesForHouse(houseId, userId = null, datasetId = nu
       await deleteHouseholdRole(role.id, userId, datasetId);
     }
     if (import.meta.env.DEV) {
-      console.log(`Deleted ${roles.length} roles for house ${houseId}`);
+      logger.log(`Deleted ${roles.length} roles for house ${houseId}`);
     }
     return roles.length;
   } catch (error) {
-    console.error('Error deleting roles for house:', error);
+    logger.error('Error deleting roles for house:', error);
     throw error;
   }
 }
@@ -351,11 +352,11 @@ export async function clearHolderFromAllRoles(personId, userId = null, datasetId
     }
 
     if (import.meta.env.DEV) {
-      console.log(`Cleared ${count} roles for person ${personId}`);
+      logger.log(`Cleared ${count} roles for person ${personId}`);
     }
     return count;
   } catch (error) {
-    console.error('Error clearing holder from roles:', error);
+    logger.error('Error clearing holder from roles:', error);
     throw error;
   }
 }

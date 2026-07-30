@@ -11,6 +11,7 @@
  */
 
 import { collectFullDataContext } from './aiDataService';
+import { logger } from '../utils/logger';
 
 // ==================== PROPOSAL STRUCTURE ====================
 
@@ -139,7 +140,7 @@ export function parseProposalsFromResponse(responseText) {
         proposals.push(enrichedProposal);
       }
     } catch (err) {
-      console.warn('Failed to parse proposal block:', err.message);
+      logger.warn('Failed to parse proposal block:', err.message);
     }
   }
 
@@ -155,25 +156,25 @@ export function parseProposalsFromResponse(responseText) {
 function enrichProposal(rawProposal) {
   // Validate required fields
   if (!rawProposal.type || !rawProposal.entityType) {
-    console.warn('Proposal missing required fields:', rawProposal);
+    logger.warn('Proposal missing required fields:', rawProposal);
     return null;
   }
 
   // Validate type
   if (!PROPOSAL_TYPES[rawProposal.type]) {
-    console.warn('Unknown proposal type:', rawProposal.type);
+    logger.warn('Unknown proposal type:', rawProposal.type);
     return null;
   }
 
   // Validate entity type
   if (!ENTITY_TYPES[rawProposal.entityType]) {
-    console.warn('Unknown entity type:', rawProposal.entityType);
+    logger.warn('Unknown entity type:', rawProposal.entityType);
     return null;
   }
 
   // For update/delete, entityId is required
   if ((rawProposal.type === 'update' || rawProposal.type === 'delete') && !rawProposal.entityId) {
-    console.warn('Update/delete proposal missing entityId');
+    logger.warn('Update/delete proposal missing entityId');
     return null;
   }
 

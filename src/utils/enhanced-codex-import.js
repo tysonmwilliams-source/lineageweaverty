@@ -37,6 +37,7 @@ import { syncAddCodexEntry } from '../services/dataSyncService.js';
 
 // Import data sources
 import CODEX_SEED_DATA from '../data/codex-seed-data.js';
+import { logger } from './logger';
 
 /**
  * Import codex data from various sources
@@ -55,7 +56,7 @@ export async function importCodexData(source, options = {}) {
     datasetId = null // Which world to import into; defaults to the default DB
   } = options;
   
-  console.log('📚 Starting enhanced codex import...');
+  logger.log('📚 Starting enhanced codex import...');
   
   // Parse source and get data
   const dataToImport = parseDataSource(source);
@@ -118,14 +119,14 @@ export async function importCodexData(source, options = {}) {
       
       if (items.length === 0) continue;
       
-      console.log(`\n${category.icon} Importing ${category.name}...`);
+      logger.log(`\n${category.icon} Importing ${category.name}...`);
       
       for (const item of items) {
         processed++;
         
         // Check for duplicates
         if (skipDuplicates && existingTitles.has(item.title)) {
-          console.log(`  ⊘ Skipped (duplicate): ${item.title}`);
+          logger.log(`  ⊘ Skipped (duplicate): ${item.title}`);
           results.skipped.push({
             type: category.key,
             title: item.title,
@@ -142,15 +143,15 @@ export async function importCodexData(source, options = {}) {
         try {
           const id = await createEntry(item, datasetId);
           results[category.key].push({ title: item.title, id });
-          console.log(`  ✓ Created: ${item.title} (ID: ${id})`);
+          logger.log(`  ✓ Created: ${item.title} (ID: ${id})`);
 
           // ☁️ CLOUD SYNC: Push to Firestore so entries persist across sessions
           if (userId) {
             try {
               await syncAddCodexEntry(userId, datasetId, id, { ...item, id });
-              console.log(`  ☁️ Synced to cloud: ${item.title}`);
+              logger.log(`  ☁️ Synced to cloud: ${item.title}`);
             } catch (syncErr) {
-              console.warn(`  ⚠️ Cloud sync failed for ${item.title}:`, syncErr.message);
+              logger.warn(`  ⚠️ Cloud sync failed for ${item.title}:`, syncErr.message);
               // Don't fail the import - local entry is still saved
             }
           }
@@ -164,7 +165,7 @@ export async function importCodexData(source, options = {}) {
             title: item.title,
             error: error.message
           });
-          console.error(`  ✗ Failed: ${item.title}`, error);
+          logger.error(`  ✗ Failed: ${item.title}`, error);
           
           if (onProgress) {
             onProgress({ processed, total, current: item.title, error: true });
@@ -183,7 +184,7 @@ export async function importCodexData(source, options = {}) {
     return results;
     
   } catch (error) {
-    console.error('❌ Critical error during import:', error);
+    logger.error('❌ Critical error during import:', error);
     throw error;
   }
 }
@@ -323,35 +324,35 @@ function printImportSummary(results) {
     results.mysteria.length +
     (results.concepts?.length || 0);
   
-  console.log('\n📊 IMPORT SUMMARY');
-  console.log('═'.repeat(50));
-  console.log(`Houses imported:     ${results.houses.length}`);
-  console.log(`Locations imported:  ${results.locations.length}`);
-  console.log(`Events imported:     ${results.events.length}`);
-  console.log(`Personages imported: ${results.personages.length}`);
-  console.log(`Mysteria imported:   ${results.mysteria.length}`);
-  console.log(`Concepts imported:   ${results.concepts?.length || 0}`);
-  console.log(`─`.repeat(50));
-  console.log(`Total imported:      ${totalImported}`);
-  console.log(`Skipped (duplicates):${results.skipped.length}`);
-  console.log(`Errors:              ${results.errors.length}`);
-  console.log(`Duration:            ${results.timing.duration}ms`);
-  console.log('═'.repeat(50));
+  logger.log('\n📊 IMPORT SUMMARY');
+  logger.log('═'.repeat(50));
+  logger.log(`Houses imported:     ${results.houses.length}`);
+  logger.log(`Locations imported:  ${results.locations.length}`);
+  logger.log(`Events imported:     ${results.events.length}`);
+  logger.log(`Personages imported: ${results.personages.length}`);
+  logger.log(`Mysteria imported:   ${results.mysteria.length}`);
+  logger.log(`Concepts imported:   ${results.concepts?.length || 0}`);
+  logger.log(`─`.repeat(50));
+  logger.log(`Total imported:      ${totalImported}`);
+  logger.log(`Skipped (duplicates):${results.skipped.length}`);
+  logger.log(`Errors:              ${results.errors.length}`);
+  logger.log(`Duration:            ${results.timing.duration}ms`);
+  logger.log('═'.repeat(50));
   
   if (results.skipped.length > 0) {
-    console.log('\n⊘ SKIPPED ENTRIES:');
+    logger.log('\n⊘ SKIPPED ENTRIES:');
     results.skipped.forEach(item => {
-      console.log(`  ${item.type}: ${item.title} - ${item.reason}`);
+      logger.log(`  ${item.type}: ${item.title} - ${item.reason}`);
     });
   }
   
   if (results.errors.length > 0) {
-    console.log('\n❌ ERRORS:');
+    logger.log('\n❌ ERRORS:');
     results.errors.forEach(err => {
-      console.log(`  ${err.type}: ${err.title} - ${err.error}`);
+      logger.log(`  ${err.type}: ${err.title} - ${err.error}`);
     });
   } else if (totalImported > 0) {
-    console.log('\n✅ All entries imported successfully!');
+    logger.log('\n✅ All entries imported successfully!');
   }
 }
 
@@ -366,22 +367,22 @@ export async function clearCodex() {
   );
   
   if (!confirm) {
-    console.log('Codex clear cancelled by user');
+    logger.log('Codex clear cancelled by user');
     return false;
   }
   
   try {
     const allEntries = await getAllEntries();
-    console.log(`🗑️ Clearing ${allEntries.length} Codex entries...`);
+    logger.log(`🗑️ Clearing ${allEntries.length} Codex entries...`);
     
     const { db } = await import('../services/database.js');
     await db.codexEntries.clear();
     await db.codexLinks.clear();
     
-    console.log('✅ Codex cleared successfully');
+    logger.log('✅ Codex cleared successfully');
     return true;
   } catch (error) {
-    console.error('❌ Error clearing Codex:', error);
+    logger.error('❌ Error clearing Codex:', error);
     throw error;
   }
 }

@@ -18,6 +18,8 @@ import { useState, useEffect } from 'react';
 import { useDataset } from '../contexts/DatasetContext';
 import { useAuth } from '../contexts/AuthContext';
 import { getAllEntries, deleteEntry } from '../services/codexService';
+import { logger } from '../utils/logger';
+import { formatShortDateTime as formatDate } from '../utils/formatDate';
 
 function CodexCleanupTool({ onCleanupComplete }) {
   const { activeDataset } = useDataset();
@@ -91,7 +93,7 @@ function CodexCleanupTool({ onCleanupComplete }) {
       setSelectedForDeletion(toDelete);
 
     } catch (error) {
-      console.error('Error analyzing entries:', error);
+      logger.error('Error analyzing entries:', error);
     } finally {
       setLoading(false);
     }
@@ -170,17 +172,6 @@ function CodexCleanupTool({ onCleanupComplete }) {
     }
   }
 
-  function formatDate(isoString) {
-    if (!isoString) return 'Unknown';
-    const date = new Date(isoString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  }
 
   function getTypeIcon(type) {
     const icons = {

@@ -41,6 +41,7 @@ import {
 } from '../services/contextService';
 import Icon from './icons';
 import './ImportExportManager.css';
+import { logger } from '../utils/logger';
 
 // ==================== ANIMATION VARIANTS ====================
 const SECTION_VARIANTS = {
@@ -154,7 +155,7 @@ function ImportExportManager() {
       setContextRegistry(registry);
       setContextError(null);
     } catch (error) {
-      console.error('Error loading context status:', error);
+      logger.error('Error loading context status:', error);
       setContextError(error.message);
     }
   }, [activeDataset?.id]);
@@ -177,7 +178,7 @@ function ImportExportManager() {
       await generateAllContexts(datasetId);
       await loadContextStatus();
     } catch (error) {
-      console.error('Error generating contexts:', error);
+      logger.error('Error generating contexts:', error);
       setContextError(error.message);
     } finally {
       setGeneratingContexts(false);
@@ -201,7 +202,7 @@ function ImportExportManager() {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Error downloading contexts:', error);
+      logger.error('Error downloading contexts:', error);
       setContextError(error.message);
     }
   };
@@ -253,7 +254,7 @@ function ImportExportManager() {
       }, 3000);
 
     } catch (error) {
-      console.error('Export error:', error);
+      logger.error('Export error:', error);
       setExportError(error.message);
     } finally {
       setExporting(false);
@@ -358,7 +359,7 @@ function ImportExportManager() {
         const { restored, skipped } = await importFullDatabase(data, datasetId, { replace: true });
 
         if (skipped.length > 0) {
-          console.warn('Backup contained unknown tables, skipped:', skipped);
+          logger.warn('Backup contained unknown tables, skipped:', skipped);
         }
 
         // Push the restored world up as the new cloud truth. Without this the
@@ -370,7 +371,7 @@ function ImportExportManager() {
           try {
             await forceUploadToCloud(user.uid, datasetId || 'default');
           } catch (syncError) {
-            console.error('Cloud upload after restore failed:', syncError);
+            logger.error('Cloud upload after restore failed:', syncError);
             setImportErrors(
               'Data restored locally, but the cloud upload failed. ' +
               'Run a manual sync before closing the app, or the next sync may overwrite it.'
@@ -473,7 +474,7 @@ function ImportExportManager() {
         try {
           await forceUploadToCloud(user.uid, datasetId || 'default');
         } catch (syncError) {
-          console.error('Cloud upload after import failed:', syncError);
+          logger.error('Cloud upload after import failed:', syncError);
           setImportErrors(
             'Data imported locally, but the cloud upload failed. ' +
             'Run a manual sync before closing the app, or the next sync may overwrite it.'
@@ -498,7 +499,7 @@ function ImportExportManager() {
       }, 3000);
 
     } catch (error) {
-      console.error('Import error:', error);
+      logger.error('Import error:', error);
       setImportErrors([error.message]);
     } finally {
       setImporting(false);

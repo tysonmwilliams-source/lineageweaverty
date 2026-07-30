@@ -25,6 +25,7 @@ import {
   getOutgoingLinks,
   getEntry
 } from '../services/codexService';
+import { logger } from './logger';
 
 /**
  * Parse markdown content with wiki-link processing
@@ -125,13 +126,13 @@ export async function parseWikiLinks(markdown, sourceEntryId = null) {
       await Promise.all(
         linksToCreate.map(linkData => createLink(linkData))
       );
-      console.log(`Auto-created ${linksToCreate.length} wiki-links from entry ${sourceEntryId}`);
+      logger.log(`Auto-created ${linksToCreate.length} wiki-links from entry ${sourceEntryId}`);
     }
     
     return processedHtml;
     
   } catch (error) {
-    console.error('Error parsing wiki-links:', error);
+    logger.error('Error parsing wiki-links:', error);
     // Fallback: just parse markdown without wiki-links
     return marked.parse(markdown);
   }
@@ -217,7 +218,7 @@ export function getContextSnippet(content, targetTitle) {
     return sentence;
     
   } catch (error) {
-    console.error('Error extracting context snippet:', error);
+    logger.error('Error extracting context snippet:', error);
     return '';
   }
 }

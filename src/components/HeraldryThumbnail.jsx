@@ -29,6 +29,7 @@
 import React, { useState, useEffect } from 'react';
 import { useDataset } from '../contexts/DatasetContext';
 import { getHeraldry } from '../services/heraldryService';
+import { logger } from '../utils/logger';
 
 // Shield aspect ratio - most heraldic shields are taller than wide
 // Common ratios: heater ~5:6, french ~4:5, etc.
@@ -105,7 +106,7 @@ function HeraldryThumbnail({
       const data = await getHeraldry(heraldryId, datasetId);
       setFetchedHeraldry(data);
     } catch (error) {
-      console.error('❌ Failed to fetch heraldry:', error);
+      logger.error('❌ Failed to fetch heraldry:', error);
       setFetchError(true);
       setFetchedHeraldry(null);
     } finally {

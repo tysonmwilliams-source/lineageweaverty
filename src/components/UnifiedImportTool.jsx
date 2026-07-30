@@ -24,6 +24,7 @@ import {
 } from '../utils/unifiedImport';
 import Icon from './icons';
 import './UnifiedImportTool.css';
+import { logger } from '../utils/logger';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // ANIMATION VARIANTS
@@ -157,7 +158,7 @@ function UnifiedImportTool() {
 
       if (result.success) {
         await refreshData();
-        console.log(generateUnifiedReport(result));
+        logger.log(generateUnifiedReport(result));
       }
     } catch (err) {
       setImportResult({

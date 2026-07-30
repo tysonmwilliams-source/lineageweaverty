@@ -17,6 +17,7 @@ import {
   SEVERITY_LEVELS
 } from '../services/aiProposalService';
 import './AIProposalCard.css';
+import Icon from './icons';
 
 export default function AIProposalCard({
   proposal,
@@ -155,7 +156,7 @@ export default function AIProposalCard({
           {/* Delete Warning */}
           {type === 'delete' && (
             <div className="delete-warning">
-              <span className="warning-icon">⚠️</span>
+              <span className="warning-icon"><Icon name="alert-triangle" /></span>
               <span className="warning-text">
                 This action will permanently delete this {entityConfig.name.toLowerCase()}.
                 Related data may also be affected.
@@ -166,7 +167,7 @@ export default function AIProposalCard({
           {/* Error Message */}
           {proposal.error && (
             <div className="proposal-error">
-              <span className="error-icon">❌</span>
+              <span className="error-icon"><Icon name="x-circle" /></span>
               <span className="error-text">{proposal.error}</span>
             </div>
           )}

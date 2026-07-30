@@ -41,6 +41,7 @@ import {
   getRedirectResult
 } from 'firebase/auth';
 import { auth, googleProvider } from '../config/firebase';
+import { logger } from '../utils/logger';
 
 // Create the context
 const AuthContext = createContext(null);
@@ -87,18 +88,18 @@ export function AuthProvider({ children }) {
           photoURL: firebaseUser.photoURL,
           // You can add more fields as needed
         });
-        console.log('🔐 User signed in:', firebaseUser.displayName);
+        logger.log('🔐 User signed in:', firebaseUser.displayName);
       } else {
         // User is signed out
         setUser(null);
-        console.log('🔓 User signed out');
+        logger.log('🔓 User signed out');
       }
       
       // Done checking initial state
       setLoading(false);
     }, (error) => {
       // Auth state listener error (rare)
-      console.error('🔥 Auth state error:', error);
+      logger.error('🔥 Auth state error:', error);
       setError(error.message);
       setLoading(false);
     });
@@ -106,7 +107,7 @@ export function AuthProvider({ children }) {
     // Check for redirect result (in case signInWithRedirect was used)
     getRedirectResult(auth).catch((error) => {
       if (error.code !== 'auth/no-current-user') {
-        console.error('🔥 Redirect result error:', error);
+        logger.error('🔥 Redirect result error:', error);
       }
     });
 
@@ -133,12 +134,12 @@ export function AuthProvider({ children }) {
       const result = await signInWithPopup(auth, googleProvider);
       
       // The signed-in user info
-      console.log('✅ Sign in successful:', result.user.displayName);
+      logger.log('✅ Sign in successful:', result.user.displayName);
       
       return result.user;
     } catch (error) {
       // Handle specific error cases
-      console.error('❌ Sign in failed:', error);
+      logger.error('❌ Sign in failed:', error);
       
       // User closed the popup without signing in
       if (error.code === 'auth/popup-closed-by-user') {
@@ -153,7 +154,7 @@ export function AuthProvider({ children }) {
         try {
           await signInWithRedirect(auth, googleProvider);
         } catch (redirectError) {
-          console.error('Redirect also failed:', redirectError);
+          logger.error('Redirect also failed:', redirectError);
         }
         return null;
       }
@@ -182,9 +183,9 @@ export function AuthProvider({ children }) {
     try {
       setError(null);
       await firebaseSignOut(auth);
-      console.log('✅ Sign out successful');
+      logger.log('✅ Sign out successful');
     } catch (error) {
-      console.error('❌ Sign out failed:', error);
+      logger.error('❌ Sign out failed:', error);
       setError(error.message);
       throw error;
     }

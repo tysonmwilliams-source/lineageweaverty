@@ -45,6 +45,7 @@ import {
   serverTimestamp 
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import { logger } from '../utils/logger';
 
 // ==================== CONSTANTS ====================
 
@@ -113,10 +114,10 @@ export async function addPersonCloud(userId, datasetId, personData) {
       updatedAt: serverTimestamp()
     });
 
-    console.log('☁️ Person added to cloud:', personData.firstName);
+    logger.log('☁️ Person added to cloud:', personData.firstName);
     return docRef.id;
   } catch (error) {
-    console.error('☁️ Error adding person to cloud:', error);
+    logger.error('☁️ Error adding person to cloud:', error);
     throw error;
   }
 }
@@ -134,7 +135,7 @@ export async function getPersonCloud(userId, datasetId, personId) {
     const docSnap = await getDoc(docRef);
     return docToObject(docSnap);
   } catch (error) {
-    console.error('☁️ Error getting person from cloud:', error);
+    logger.error('☁️ Error getting person from cloud:', error);
     throw error;
   }
 }
@@ -151,7 +152,7 @@ export async function getAllPeopleCloud(userId, datasetId) {
     const snapshot = await getDocs(peopleRef);
     return snapshot.docs.map(docToObject);
   } catch (error) {
-    console.error('☁️ Error getting all people from cloud:', error);
+    logger.error('☁️ Error getting all people from cloud:', error);
     throw error;
   }
 }
@@ -170,9 +171,9 @@ export async function updatePersonCloud(userId, datasetId, personId, updates) {
       ...updates,
       updatedAt: serverTimestamp()
     });
-    console.log('☁️ Person updated in cloud:', personId);
+    logger.log('☁️ Person updated in cloud:', personId);
   } catch (error) {
-    console.error('☁️ Error updating person in cloud:', error);
+    logger.error('☁️ Error updating person in cloud:', error);
     throw error;
   }
 }
@@ -187,9 +188,9 @@ export async function deletePersonCloud(userId, datasetId, personId) {
   try {
     const docRef = getUserDoc(userId, datasetId, 'people', String(personId));
     await deleteDoc(docRef);
-    console.log('☁️ Person deleted from cloud:', personId);
+    logger.log('☁️ Person deleted from cloud:', personId);
   } catch (error) {
-    console.error('☁️ Error deleting person from cloud:', error);
+    logger.error('☁️ Error deleting person from cloud:', error);
     throw error;
   }
 }
@@ -214,10 +215,10 @@ export async function addHouseCloud(userId, datasetId, houseData) {
       updatedAt: serverTimestamp()
     });
 
-    console.log('☁️ House added to cloud:', houseData.houseName);
+    logger.log('☁️ House added to cloud:', houseData.houseName);
     return docRef.id;
   } catch (error) {
-    console.error('☁️ Error adding house to cloud:', error);
+    logger.error('☁️ Error adding house to cloud:', error);
     throw error;
   }
 }
@@ -234,7 +235,7 @@ export async function getHouseCloud(userId, datasetId, houseId) {
     const docSnap = await getDoc(docRef);
     return docToObject(docSnap);
   } catch (error) {
-    console.error('☁️ Error getting house from cloud:', error);
+    logger.error('☁️ Error getting house from cloud:', error);
     throw error;
   }
 }
@@ -250,7 +251,7 @@ export async function getAllHousesCloud(userId, datasetId) {
     const snapshot = await getDocs(housesRef);
     return snapshot.docs.map(docToObject);
   } catch (error) {
-    console.error('☁️ Error getting all houses from cloud:', error);
+    logger.error('☁️ Error getting all houses from cloud:', error);
     throw error;
   }
 }
@@ -269,9 +270,9 @@ export async function updateHouseCloud(userId, datasetId, houseId, updates) {
       ...updates,
       updatedAt: serverTimestamp()
     });
-    console.log('☁️ House updated in cloud:', houseId);
+    logger.log('☁️ House updated in cloud:', houseId);
   } catch (error) {
-    console.error('☁️ Error updating house in cloud:', error);
+    logger.error('☁️ Error updating house in cloud:', error);
     throw error;
   }
 }
@@ -286,9 +287,9 @@ export async function deleteHouseCloud(userId, datasetId, houseId) {
   try {
     const docRef = getUserDoc(userId, datasetId, 'houses', String(houseId));
     await deleteDoc(docRef);
-    console.log('☁️ House deleted from cloud:', houseId);
+    logger.log('☁️ House deleted from cloud:', houseId);
   } catch (error) {
-    console.error('☁️ Error deleting house from cloud:', error);
+    logger.error('☁️ Error deleting house from cloud:', error);
     throw error;
   }
 }
@@ -313,10 +314,10 @@ export async function addRelationshipCloud(userId, datasetId, relationshipData) 
       updatedAt: serverTimestamp()
     });
 
-    console.log('☁️ Relationship added to cloud:', relationshipData.relationshipType);
+    logger.log('☁️ Relationship added to cloud:', relationshipData.relationshipType);
     return docRef.id;
   } catch (error) {
-    console.error('☁️ Error adding relationship to cloud:', error);
+    logger.error('☁️ Error adding relationship to cloud:', error);
     throw error;
   }
 }
@@ -332,7 +333,7 @@ export async function getAllRelationshipsCloud(userId, datasetId) {
     const snapshot = await getDocs(relsRef);
     return snapshot.docs.map(docToObject);
   } catch (error) {
-    console.error('☁️ Error getting all relationships from cloud:', error);
+    logger.error('☁️ Error getting all relationships from cloud:', error);
     throw error;
   }
 }
@@ -351,9 +352,9 @@ export async function updateRelationshipCloud(userId, datasetId, relationshipId,
       ...updates,
       updatedAt: serverTimestamp()
     });
-    console.log('☁️ Relationship updated in cloud:', relationshipId);
+    logger.log('☁️ Relationship updated in cloud:', relationshipId);
   } catch (error) {
-    console.error('☁️ Error updating relationship in cloud:', error);
+    logger.error('☁️ Error updating relationship in cloud:', error);
     throw error;
   }
 }
@@ -368,9 +369,9 @@ export async function deleteRelationshipCloud(userId, datasetId, relationshipId)
   try {
     const docRef = getUserDoc(userId, datasetId, 'relationships', String(relationshipId));
     await deleteDoc(docRef);
-    console.log('☁️ Relationship deleted from cloud:', relationshipId);
+    logger.log('☁️ Relationship deleted from cloud:', relationshipId);
   } catch (error) {
-    console.error('☁️ Error deleting relationship from cloud:', error);
+    logger.error('☁️ Error deleting relationship from cloud:', error);
     throw error;
   }
 }
@@ -395,10 +396,10 @@ export async function addCodexEntryCloud(userId, datasetId, entryData) {
       updatedAt: serverTimestamp()
     });
 
-    console.log('☁️ Codex entry added to cloud:', entryData.title);
+    logger.log('☁️ Codex entry added to cloud:', entryData.title);
     return docRef.id;
   } catch (error) {
-    console.error('☁️ Error adding codex entry to cloud:', error);
+    logger.error('☁️ Error adding codex entry to cloud:', error);
     throw error;
   }
 }
@@ -414,7 +415,7 @@ export async function getAllCodexEntriesCloud(userId, datasetId) {
     const snapshot = await getDocs(codexRef);
     return snapshot.docs.map(docToObject);
   } catch (error) {
-    console.error('☁️ Error getting all codex entries from cloud:', error);
+    logger.error('☁️ Error getting all codex entries from cloud:', error);
     throw error;
   }
 }
@@ -433,9 +434,9 @@ export async function updateCodexEntryCloud(userId, datasetId, entryId, updates)
       ...updates,
       updatedAt: serverTimestamp()
     });
-    console.log('☁️ Codex entry updated in cloud:', entryId);
+    logger.log('☁️ Codex entry updated in cloud:', entryId);
   } catch (error) {
-    console.error('☁️ Error updating codex entry in cloud:', error);
+    logger.error('☁️ Error updating codex entry in cloud:', error);
     throw error;
   }
 }
@@ -450,9 +451,9 @@ export async function deleteCodexEntryCloud(userId, datasetId, entryId) {
   try {
     const docRef = getUserDoc(userId, datasetId, 'codexEntries', String(entryId));
     await deleteDoc(docRef);
-    console.log('☁️ Codex entry deleted from cloud:', entryId);
+    logger.log('☁️ Codex entry deleted from cloud:', entryId);
   } catch (error) {
-    console.error('☁️ Error deleting codex entry from cloud:', error);
+    logger.error('☁️ Error deleting codex entry from cloud:', error);
     throw error;
   }
 }
@@ -473,9 +474,9 @@ export async function addCodexLinkCloud(userId, datasetId, linkData) {
       localId: linkData.id,
       syncedAt: serverTimestamp()
     });
-    console.log('☁️ Codex link synced to cloud:', linkData.id);
+    logger.log('☁️ Codex link synced to cloud:', linkData.id);
   } catch (error) {
-    console.error('☁️ Error adding codex link to cloud:', error);
+    logger.error('☁️ Error adding codex link to cloud:', error);
     throw error;
   }
 }
@@ -490,9 +491,9 @@ export async function deleteCodexLinkCloud(userId, datasetId, linkId) {
   try {
     const docRef = getUserDoc(userId, datasetId, 'codexLinks', String(linkId));
     await deleteDoc(docRef);
-    console.log('☁️ Codex link deleted from cloud:', linkId);
+    logger.log('☁️ Codex link deleted from cloud:', linkId);
   } catch (error) {
-    console.error('☁️ Error deleting codex link from cloud:', error);
+    logger.error('☁️ Error deleting codex link from cloud:', error);
     throw error;
   }
 }
@@ -509,7 +510,7 @@ export async function getAllCodexLinksCloud(userId, datasetId) {
     const snapshot = await getDocs(linksRef);
     return snapshot.docs.map(docToObject);
   } catch (error) {
-    console.error('☁️ Error getting codex links from cloud:', error);
+    logger.error('☁️ Error getting codex links from cloud:', error);
     throw error;
   }
 }
@@ -529,10 +530,10 @@ export async function addStoryPlanCloud(userId, datasetId, planData) {
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     });
-    console.log('☁️ Story plan added to cloud:', planData.title);
+    logger.log('☁️ Story plan added to cloud:', planData.title);
     return docRef.id;
   } catch (error) {
-    console.error('☁️ Error adding story plan to cloud:', error);
+    logger.error('☁️ Error adding story plan to cloud:', error);
     throw error;
   }
 }
@@ -546,7 +547,7 @@ export async function getAllStoryPlansCloud(userId, datasetId) {
     const snapshot = await getDocs(plansRef);
     return snapshot.docs.map(docToObject);
   } catch (error) {
-    console.error('☁️ Error getting story plans from cloud:', error);
+    logger.error('☁️ Error getting story plans from cloud:', error);
     throw error;
   }
 }
@@ -561,9 +562,9 @@ export async function updateStoryPlanCloud(userId, datasetId, planId, updates) {
       ...updates,
       updatedAt: serverTimestamp()
     });
-    console.log('☁️ Story plan updated in cloud:', planId);
+    logger.log('☁️ Story plan updated in cloud:', planId);
   } catch (error) {
-    console.error('☁️ Error updating story plan in cloud:', error);
+    logger.error('☁️ Error updating story plan in cloud:', error);
     throw error;
   }
 }
@@ -575,9 +576,9 @@ export async function deleteStoryPlanCloud(userId, datasetId, planId) {
   try {
     const docRef = getUserDoc(userId, datasetId, 'storyPlans', String(planId));
     await deleteDoc(docRef);
-    console.log('☁️ Story plan deleted from cloud:', planId);
+    logger.log('☁️ Story plan deleted from cloud:', planId);
   } catch (error) {
-    console.error('☁️ Error deleting story plan from cloud:', error);
+    logger.error('☁️ Error deleting story plan from cloud:', error);
     throw error;
   }
 }
@@ -597,10 +598,10 @@ export async function addStoryArcCloud(userId, datasetId, arcData) {
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     });
-    console.log('☁️ Story arc added to cloud:', arcData.name);
+    logger.log('☁️ Story arc added to cloud:', arcData.name);
     return docRef.id;
   } catch (error) {
-    console.error('☁️ Error adding story arc to cloud:', error);
+    logger.error('☁️ Error adding story arc to cloud:', error);
     throw error;
   }
 }
@@ -614,7 +615,7 @@ export async function getAllStoryArcsCloud(userId, datasetId) {
     const snapshot = await getDocs(arcsRef);
     return snapshot.docs.map(docToObject);
   } catch (error) {
-    console.error('☁️ Error getting story arcs from cloud:', error);
+    logger.error('☁️ Error getting story arcs from cloud:', error);
     throw error;
   }
 }
@@ -629,9 +630,9 @@ export async function updateStoryArcCloud(userId, datasetId, arcId, updates) {
       ...updates,
       updatedAt: serverTimestamp()
     });
-    console.log('☁️ Story arc updated in cloud:', arcId);
+    logger.log('☁️ Story arc updated in cloud:', arcId);
   } catch (error) {
-    console.error('☁️ Error updating story arc in cloud:', error);
+    logger.error('☁️ Error updating story arc in cloud:', error);
     throw error;
   }
 }
@@ -643,9 +644,9 @@ export async function deleteStoryArcCloud(userId, datasetId, arcId) {
   try {
     const docRef = getUserDoc(userId, datasetId, 'storyArcs', String(arcId));
     await deleteDoc(docRef);
-    console.log('☁️ Story arc deleted from cloud:', arcId);
+    logger.log('☁️ Story arc deleted from cloud:', arcId);
   } catch (error) {
-    console.error('☁️ Error deleting story arc from cloud:', error);
+    logger.error('☁️ Error deleting story arc from cloud:', error);
     throw error;
   }
 }
@@ -665,10 +666,10 @@ export async function addStoryBeatCloud(userId, datasetId, beatData) {
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     });
-    console.log('☁️ Story beat added to cloud:', beatData.name);
+    logger.log('☁️ Story beat added to cloud:', beatData.name);
     return docRef.id;
   } catch (error) {
-    console.error('☁️ Error adding story beat to cloud:', error);
+    logger.error('☁️ Error adding story beat to cloud:', error);
     throw error;
   }
 }
@@ -682,7 +683,7 @@ export async function getAllStoryBeatsCloud(userId, datasetId) {
     const snapshot = await getDocs(beatsRef);
     return snapshot.docs.map(docToObject);
   } catch (error) {
-    console.error('☁️ Error getting story beats from cloud:', error);
+    logger.error('☁️ Error getting story beats from cloud:', error);
     throw error;
   }
 }
@@ -697,9 +698,9 @@ export async function updateStoryBeatCloud(userId, datasetId, beatId, updates) {
       ...updates,
       updatedAt: serverTimestamp()
     });
-    console.log('☁️ Story beat updated in cloud:', beatId);
+    logger.log('☁️ Story beat updated in cloud:', beatId);
   } catch (error) {
-    console.error('☁️ Error updating story beat in cloud:', error);
+    logger.error('☁️ Error updating story beat in cloud:', error);
     throw error;
   }
 }
@@ -711,9 +712,9 @@ export async function deleteStoryBeatCloud(userId, datasetId, beatId) {
   try {
     const docRef = getUserDoc(userId, datasetId, 'storyBeats', String(beatId));
     await deleteDoc(docRef);
-    console.log('☁️ Story beat deleted from cloud:', beatId);
+    logger.log('☁️ Story beat deleted from cloud:', beatId);
   } catch (error) {
-    console.error('☁️ Error deleting story beat from cloud:', error);
+    logger.error('☁️ Error deleting story beat from cloud:', error);
     throw error;
   }
 }
@@ -733,10 +734,10 @@ export async function addScenePlanCloud(userId, datasetId, sceneData) {
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     });
-    console.log('☁️ Scene plan added to cloud:', sceneData.title);
+    logger.log('☁️ Scene plan added to cloud:', sceneData.title);
     return docRef.id;
   } catch (error) {
-    console.error('☁️ Error adding scene plan to cloud:', error);
+    logger.error('☁️ Error adding scene plan to cloud:', error);
     throw error;
   }
 }
@@ -750,7 +751,7 @@ export async function getAllScenePlansCloud(userId, datasetId) {
     const snapshot = await getDocs(scenesRef);
     return snapshot.docs.map(docToObject);
   } catch (error) {
-    console.error('☁️ Error getting scene plans from cloud:', error);
+    logger.error('☁️ Error getting scene plans from cloud:', error);
     throw error;
   }
 }
@@ -765,9 +766,9 @@ export async function updateScenePlanCloud(userId, datasetId, sceneId, updates) 
       ...updates,
       updatedAt: serverTimestamp()
     });
-    console.log('☁️ Scene plan updated in cloud:', sceneId);
+    logger.log('☁️ Scene plan updated in cloud:', sceneId);
   } catch (error) {
-    console.error('☁️ Error updating scene plan in cloud:', error);
+    logger.error('☁️ Error updating scene plan in cloud:', error);
     throw error;
   }
 }
@@ -779,9 +780,9 @@ export async function deleteScenePlanCloud(userId, datasetId, sceneId) {
   try {
     const docRef = getUserDoc(userId, datasetId, 'scenePlans', String(sceneId));
     await deleteDoc(docRef);
-    console.log('☁️ Scene plan deleted from cloud:', sceneId);
+    logger.log('☁️ Scene plan deleted from cloud:', sceneId);
   } catch (error) {
-    console.error('☁️ Error deleting scene plan from cloud:', error);
+    logger.error('☁️ Error deleting scene plan from cloud:', error);
     throw error;
   }
 }
@@ -801,10 +802,10 @@ export async function addPlotThreadCloud(userId, datasetId, threadData) {
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     });
-    console.log('☁️ Plot thread added to cloud:', threadData.name);
+    logger.log('☁️ Plot thread added to cloud:', threadData.name);
     return docRef.id;
   } catch (error) {
-    console.error('☁️ Error adding plot thread to cloud:', error);
+    logger.error('☁️ Error adding plot thread to cloud:', error);
     throw error;
   }
 }
@@ -818,7 +819,7 @@ export async function getAllPlotThreadsCloud(userId, datasetId) {
     const snapshot = await getDocs(threadsRef);
     return snapshot.docs.map(docToObject);
   } catch (error) {
-    console.error('☁️ Error getting plot threads from cloud:', error);
+    logger.error('☁️ Error getting plot threads from cloud:', error);
     throw error;
   }
 }
@@ -833,9 +834,9 @@ export async function updatePlotThreadCloud(userId, datasetId, threadId, updates
       ...updates,
       updatedAt: serverTimestamp()
     });
-    console.log('☁️ Plot thread updated in cloud:', threadId);
+    logger.log('☁️ Plot thread updated in cloud:', threadId);
   } catch (error) {
-    console.error('☁️ Error updating plot thread in cloud:', error);
+    logger.error('☁️ Error updating plot thread in cloud:', error);
     throw error;
   }
 }
@@ -847,9 +848,9 @@ export async function deletePlotThreadCloud(userId, datasetId, threadId) {
   try {
     const docRef = getUserDoc(userId, datasetId, 'plotThreads', String(threadId));
     await deleteDoc(docRef);
-    console.log('☁️ Plot thread deleted from cloud:', threadId);
+    logger.log('☁️ Plot thread deleted from cloud:', threadId);
   } catch (error) {
-    console.error('☁️ Error deleting plot thread from cloud:', error);
+    logger.error('☁️ Error deleting plot thread from cloud:', error);
     throw error;
   }
 }
@@ -869,10 +870,10 @@ export async function addCharacterArcCloud(userId, datasetId, arcData) {
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     });
-    console.log('☁️ Character arc added to cloud:', arcData.name);
+    logger.log('☁️ Character arc added to cloud:', arcData.name);
     return docRef.id;
   } catch (error) {
-    console.error('☁️ Error adding character arc to cloud:', error);
+    logger.error('☁️ Error adding character arc to cloud:', error);
     throw error;
   }
 }
@@ -886,7 +887,7 @@ export async function getAllCharacterArcsCloud(userId, datasetId) {
     const snapshot = await getDocs(arcsRef);
     return snapshot.docs.map(docToObject);
   } catch (error) {
-    console.error('☁️ Error getting character arcs from cloud:', error);
+    logger.error('☁️ Error getting character arcs from cloud:', error);
     throw error;
   }
 }
@@ -901,9 +902,9 @@ export async function updateCharacterArcCloud(userId, datasetId, arcId, updates)
       ...updates,
       updatedAt: serverTimestamp()
     });
-    console.log('☁️ Character arc updated in cloud:', arcId);
+    logger.log('☁️ Character arc updated in cloud:', arcId);
   } catch (error) {
-    console.error('☁️ Error updating character arc in cloud:', error);
+    logger.error('☁️ Error updating character arc in cloud:', error);
     throw error;
   }
 }
@@ -915,77 +916,9 @@ export async function deleteCharacterArcCloud(userId, datasetId, arcId) {
   try {
     const docRef = getUserDoc(userId, datasetId, 'characterArcs', String(arcId));
     await deleteDoc(docRef);
-    console.log('☁️ Character arc deleted from cloud:', arcId);
+    logger.log('☁️ Character arc deleted from cloud:', arcId);
   } catch (error) {
-    console.error('☁️ Error deleting character arc from cloud:', error);
-    throw error;
-  }
-}
-
-// ==================== PLANNING: ARC MILESTONES ====================
-
-/**
- * Add arc milestone to Firestore
- */
-export async function addArcMilestoneCloud(userId, datasetId, milestoneData) {
-  try {
-    const milestonesRef = getUserCollection(userId, datasetId, 'arcMilestones');
-    const docRef = doc(milestonesRef, String(milestoneData.id));
-    await setDoc(docRef, {
-      ...milestoneData,
-      localId: milestoneData.id,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
-    });
-    console.log('☁️ Arc milestone added to cloud:', milestoneData.name);
-    return docRef.id;
-  } catch (error) {
-    console.error('☁️ Error adding arc milestone to cloud:', error);
-    throw error;
-  }
-}
-
-/**
- * Get all arc milestones from Firestore
- */
-export async function getAllArcMilestonesCloud(userId, datasetId) {
-  try {
-    const milestonesRef = getUserCollection(userId, datasetId, 'arcMilestones');
-    const snapshot = await getDocs(milestonesRef);
-    return snapshot.docs.map(docToObject);
-  } catch (error) {
-    console.error('☁️ Error getting arc milestones from cloud:', error);
-    throw error;
-  }
-}
-
-/**
- * Update arc milestone in Firestore
- */
-export async function updateArcMilestoneCloud(userId, datasetId, milestoneId, updates) {
-  try {
-    const docRef = getUserDoc(userId, datasetId, 'arcMilestones', String(milestoneId));
-    await updateDoc(docRef, {
-      ...updates,
-      updatedAt: serverTimestamp()
-    });
-    console.log('☁️ Arc milestone updated in cloud:', milestoneId);
-  } catch (error) {
-    console.error('☁️ Error updating arc milestone in cloud:', error);
-    throw error;
-  }
-}
-
-/**
- * Delete arc milestone from Firestore
- */
-export async function deleteArcMilestoneCloud(userId, datasetId, milestoneId) {
-  try {
-    const docRef = getUserDoc(userId, datasetId, 'arcMilestones', String(milestoneId));
-    await deleteDoc(docRef);
-    console.log('☁️ Arc milestone deleted from cloud:', milestoneId);
-  } catch (error) {
-    console.error('☁️ Error deleting arc milestone from cloud:', error);
+    logger.error('☁️ Error deleting character arc from cloud:', error);
     throw error;
   }
 }
@@ -1002,9 +935,9 @@ export async function deleteArcMilestoneCloud(userId, datasetId, milestoneId) {
  */
 export async function syncAllToCloud(userId, datasetId, localData) {
   try {
-    console.log('☁️ Starting full sync to cloud for dataset:', datasetId);
+    logger.log('☁️ Starting full sync to cloud for dataset:', datasetId);
 
-    const { people, houses, relationships, codexEntries, codexLinks, heraldry, heraldryLinks, dignities, dignityTenures, dignityLinks, householdRoles, writings, chapters, writingLinks, storyPlans, storyArcs, storyBeats, scenePlans, plotThreads, characterArcs, arcMilestones } = localData;
+    const { people, houses, relationships, codexEntries, codexLinks, heraldry, heraldryLinks, dignities, dignityTenures, dignityLinks, householdRoles, writings, chapters, writingLinks, storyPlans, storyArcs, storyBeats, scenePlans, plotThreads, characterArcs } = localData;
 
     // Use batched writes for efficiency (max 500 operations per batch)
     // We'll create multiple batches if needed
@@ -1019,7 +952,7 @@ export async function syncAllToCloud(userId, datasetId, localData) {
         await batch.commit();
         batch = writeBatch(db);
         operationCount = 0;
-        console.log('☁️ Committed batch, starting new one...');
+        logger.log('☁️ Committed batch, starting new one...');
       }
     };
 
@@ -1243,23 +1176,13 @@ export async function syncAllToCloud(userId, datasetId, localData) {
       await checkBatch();
     }
 
-    // Sync arc milestones
-    for (const milestone of arcMilestones || []) {
-      const docRef = getUserDoc(userId, datasetId, 'arcMilestones', String(milestone.id));
-      batch.set(docRef, {
-        ...milestone,
-        localId: milestone.id,
-        syncedAt: serverTimestamp()
-      });
-      await checkBatch();
-    }
 
     // Commit remaining operations
     if (operationCount > 0) {
       await batch.commit();
     }
 
-    console.log('☁️ Full sync to cloud complete!', {
+    logger.log('☁️ Full sync to cloud complete!', {
       dataset: datasetId,
       houses: houses?.length || 0,
       people: people?.length || 0,
@@ -1280,13 +1203,12 @@ export async function syncAllToCloud(userId, datasetId, localData) {
       storyBeats: storyBeats?.length || 0,
       scenePlans: scenePlans?.length || 0,
       plotThreads: plotThreads?.length || 0,
-      characterArcs: characterArcs?.length || 0,
-      arcMilestones: arcMilestones?.length || 0
+      characterArcs: characterArcs?.length || 0
     });
 
     return true;
   } catch (error) {
-    console.error('☁️ Error syncing to cloud:', error);
+    logger.error('☁️ Error syncing to cloud:', error);
     throw error;
   }
 }
@@ -1301,9 +1223,9 @@ export async function syncAllToCloud(userId, datasetId, localData) {
  */
 export async function downloadAllFromCloud(userId, datasetId) {
   try {
-    console.log('☁️ Downloading all data from cloud for dataset:', datasetId);
+    logger.log('☁️ Downloading all data from cloud for dataset:', datasetId);
 
-    const [people, houses, relationships, codexEntries, codexLinks, heraldry, heraldryLinks, dignities, dignityTenures, dignityLinks, householdRoles, writings, chapters, writingLinks, storyPlans, storyArcs, storyBeats, scenePlans, plotThreads, characterArcs, arcMilestones] = await Promise.all([
+    const [people, houses, relationships, codexEntries, codexLinks, heraldry, heraldryLinks, dignities, dignityTenures, dignityLinks, householdRoles, writings, chapters, writingLinks, storyPlans, storyArcs, storyBeats, scenePlans, plotThreads, characterArcs] = await Promise.all([
       getAllPeopleCloud(userId, datasetId),
       getAllHousesCloud(userId, datasetId),
       getAllRelationshipsCloud(userId, datasetId),
@@ -1323,11 +1245,10 @@ export async function downloadAllFromCloud(userId, datasetId) {
       getAllStoryBeatsCloud(userId, datasetId),
       getAllScenePlansCloud(userId, datasetId),
       getAllPlotThreadsCloud(userId, datasetId),
-      getAllCharacterArcsCloud(userId, datasetId),
-      getAllArcMilestonesCloud(userId, datasetId)
+      getAllCharacterArcsCloud(userId, datasetId)
     ]);
 
-    console.log('☁️ Download complete!', {
+    logger.log('☁️ Download complete!', {
       dataset: datasetId,
       houses: houses.length,
       people: people.length,
@@ -1348,13 +1269,12 @@ export async function downloadAllFromCloud(userId, datasetId) {
       storyBeats: storyBeats.length,
       scenePlans: scenePlans.length,
       plotThreads: plotThreads.length,
-      characterArcs: characterArcs.length,
-      arcMilestones: arcMilestones.length
+      characterArcs: characterArcs.length
     });
 
-    return { people, houses, relationships, codexEntries, codexLinks, heraldry, heraldryLinks, dignities, dignityTenures, dignityLinks, householdRoles, writings, chapters, writingLinks, storyPlans, storyArcs, storyBeats, scenePlans, plotThreads, characterArcs, arcMilestones };
+    return { people, houses, relationships, codexEntries, codexLinks, heraldry, heraldryLinks, dignities, dignityTenures, dignityLinks, householdRoles, writings, chapters, writingLinks, storyPlans, storyArcs, storyBeats, scenePlans, plotThreads, characterArcs };
   } catch (error) {
-    console.error('☁️ Error downloading from cloud:', error);
+    logger.error('☁️ Error downloading from cloud:', error);
     throw error;
   }
 }
@@ -1372,7 +1292,7 @@ export async function hasCloudData(userId, datasetId) {
     const snapshot = await getDocs(query(housesRef));
     return !snapshot.empty;
   } catch (error) {
-    console.error('☁️ Error checking cloud data:', error);
+    logger.error('☁️ Error checking cloud data:', error);
     return false;
   }
 }
@@ -1397,10 +1317,10 @@ export async function addHeraldryCloud(userId, datasetId, heraldryData) {
       updatedAt: serverTimestamp()
     });
 
-    console.log('☁️ Heraldry added to cloud:', heraldryData.name);
+    logger.log('☁️ Heraldry added to cloud:', heraldryData.name);
     return docRef.id;
   } catch (error) {
-    console.error('☁️ Error adding heraldry to cloud:', error);
+    logger.error('☁️ Error adding heraldry to cloud:', error);
     throw error;
   }
 }
@@ -1417,7 +1337,7 @@ export async function getHeraldryCloud(userId, datasetId, heraldryId) {
     const docSnap = await getDoc(docRef);
     return docToObject(docSnap);
   } catch (error) {
-    console.error('☁️ Error getting heraldry from cloud:', error);
+    logger.error('☁️ Error getting heraldry from cloud:', error);
     throw error;
   }
 }
@@ -1433,7 +1353,7 @@ export async function getAllHeraldryCloud(userId, datasetId) {
     const snapshot = await getDocs(heraldryRef);
     return snapshot.docs.map(docToObject);
   } catch (error) {
-    console.error('☁️ Error getting all heraldry from cloud:', error);
+    logger.error('☁️ Error getting all heraldry from cloud:', error);
     throw error;
   }
 }
@@ -1452,9 +1372,9 @@ export async function updateHeraldryCloud(userId, datasetId, heraldryId, updates
       ...updates,
       updatedAt: serverTimestamp()
     });
-    console.log('☁️ Heraldry updated in cloud:', heraldryId);
+    logger.log('☁️ Heraldry updated in cloud:', heraldryId);
   } catch (error) {
-    console.error('☁️ Error updating heraldry in cloud:', error);
+    logger.error('☁️ Error updating heraldry in cloud:', error);
     throw error;
   }
 }
@@ -1469,9 +1389,9 @@ export async function deleteHeraldryCloud(userId, datasetId, heraldryId) {
   try {
     const docRef = getUserDoc(userId, datasetId, 'heraldry', String(heraldryId));
     await deleteDoc(docRef);
-    console.log('☁️ Heraldry deleted from cloud:', heraldryId);
+    logger.log('☁️ Heraldry deleted from cloud:', heraldryId);
   } catch (error) {
-    console.error('☁️ Error deleting heraldry from cloud:', error);
+    logger.error('☁️ Error deleting heraldry from cloud:', error);
     throw error;
   }
 }
@@ -1496,10 +1416,10 @@ export async function addDignityCloud(userId, datasetId, dignityData) {
       updatedAt: serverTimestamp()
     });
 
-    console.log('☁️ Dignity added to cloud:', dignityData.name);
+    logger.log('☁️ Dignity added to cloud:', dignityData.name);
     return docRef.id;
   } catch (error) {
-    console.error('☁️ Error adding dignity to cloud:', error);
+    logger.error('☁️ Error adding dignity to cloud:', error);
     throw error;
   }
 }
@@ -1515,7 +1435,7 @@ export async function getAllDignitiesCloud(userId, datasetId) {
     const snapshot = await getDocs(dignitiesRef);
     return snapshot.docs.map(docToObject);
   } catch (error) {
-    console.error('☁️ Error getting all dignities from cloud:', error);
+    logger.error('☁️ Error getting all dignities from cloud:', error);
     throw error;
   }
 }
@@ -1534,9 +1454,9 @@ export async function updateDignityCloud(userId, datasetId, dignityId, updates) 
       ...updates,
       updatedAt: serverTimestamp()
     });
-    console.log('☁️ Dignity updated in cloud:', dignityId);
+    logger.log('☁️ Dignity updated in cloud:', dignityId);
   } catch (error) {
-    console.error('☁️ Error updating dignity in cloud:', error);
+    logger.error('☁️ Error updating dignity in cloud:', error);
     throw error;
   }
 }
@@ -1551,9 +1471,9 @@ export async function deleteDignityCloud(userId, datasetId, dignityId) {
   try {
     const docRef = getUserDoc(userId, datasetId, 'dignities', String(dignityId));
     await deleteDoc(docRef);
-    console.log('☁️ Dignity deleted from cloud:', dignityId);
+    logger.log('☁️ Dignity deleted from cloud:', dignityId);
   } catch (error) {
-    console.error('☁️ Error deleting dignity from cloud:', error);
+    logger.error('☁️ Error deleting dignity from cloud:', error);
     throw error;
   }
 }
@@ -1577,10 +1497,10 @@ export async function addDignityTenureCloud(userId, datasetId, tenureData) {
       createdAt: serverTimestamp()
     });
 
-    console.log('☁️ Dignity tenure added to cloud');
+    logger.log('☁️ Dignity tenure added to cloud');
     return docRef.id;
   } catch (error) {
-    console.error('☁️ Error adding dignity tenure to cloud:', error);
+    logger.error('☁️ Error adding dignity tenure to cloud:', error);
     throw error;
   }
 }
@@ -1596,7 +1516,7 @@ export async function getAllDignityTenuresCloud(userId, datasetId) {
     const snapshot = await getDocs(tenuresRef);
     return snapshot.docs.map(docToObject);
   } catch (error) {
-    console.error('☁️ Error getting all dignity tenures from cloud:', error);
+    logger.error('☁️ Error getting all dignity tenures from cloud:', error);
     throw error;
   }
 }
@@ -1612,9 +1532,9 @@ export async function updateDignityTenureCloud(userId, datasetId, tenureId, upda
   try {
     const docRef = getUserDoc(userId, datasetId, 'dignityTenures', String(tenureId));
     await updateDoc(docRef, updates);
-    console.log('☁️ Dignity tenure updated in cloud:', tenureId);
+    logger.log('☁️ Dignity tenure updated in cloud:', tenureId);
   } catch (error) {
-    console.error('☁️ Error updating dignity tenure in cloud:', error);
+    logger.error('☁️ Error updating dignity tenure in cloud:', error);
     throw error;
   }
 }
@@ -1629,9 +1549,9 @@ export async function deleteDignityTenureCloud(userId, datasetId, tenureId) {
   try {
     const docRef = getUserDoc(userId, datasetId, 'dignityTenures', String(tenureId));
     await deleteDoc(docRef);
-    console.log('☁️ Dignity tenure deleted from cloud:', tenureId);
+    logger.log('☁️ Dignity tenure deleted from cloud:', tenureId);
   } catch (error) {
-    console.error('☁️ Error deleting dignity tenure from cloud:', error);
+    logger.error('☁️ Error deleting dignity tenure from cloud:', error);
     throw error;
   }
 }
@@ -1655,10 +1575,10 @@ export async function addDignityLinkCloud(userId, datasetId, linkData) {
       createdAt: serverTimestamp()
     });
 
-    console.log('☁️ Dignity link added to cloud');
+    logger.log('☁️ Dignity link added to cloud');
     return docRef.id;
   } catch (error) {
-    console.error('☁️ Error adding dignity link to cloud:', error);
+    logger.error('☁️ Error adding dignity link to cloud:', error);
     throw error;
   }
 }
@@ -1674,7 +1594,7 @@ export async function getAllDignityLinksCloud(userId, datasetId) {
     const snapshot = await getDocs(linksRef);
     return snapshot.docs.map(docToObject);
   } catch (error) {
-    console.error('☁️ Error getting all dignity links from cloud:', error);
+    logger.error('☁️ Error getting all dignity links from cloud:', error);
     throw error;
   }
 }
@@ -1689,9 +1609,9 @@ export async function deleteDignityLinkCloud(userId, datasetId, linkId) {
   try {
     const docRef = getUserDoc(userId, datasetId, 'dignityLinks', String(linkId));
     await deleteDoc(docRef);
-    console.log('☁️ Dignity link deleted from cloud:', linkId);
+    logger.log('☁️ Dignity link deleted from cloud:', linkId);
   } catch (error) {
-    console.error('☁️ Error deleting dignity link from cloud:', error);
+    logger.error('☁️ Error deleting dignity link from cloud:', error);
     throw error;
   }
 }
@@ -1715,10 +1635,10 @@ export async function addHeraldryLinkCloud(userId, datasetId, linkData) {
       createdAt: serverTimestamp()
     });
 
-    console.log('☁️ Heraldry link added to cloud');
+    logger.log('☁️ Heraldry link added to cloud');
     return docRef.id;
   } catch (error) {
-    console.error('☁️ Error adding heraldry link to cloud:', error);
+    logger.error('☁️ Error adding heraldry link to cloud:', error);
     throw error;
   }
 }
@@ -1734,7 +1654,7 @@ export async function getAllHeraldryLinksCloud(userId, datasetId) {
     const snapshot = await getDocs(linksRef);
     return snapshot.docs.map(docToObject);
   } catch (error) {
-    console.error('☁️ Error getting all heraldry links from cloud:', error);
+    logger.error('☁️ Error getting all heraldry links from cloud:', error);
     throw error;
   }
 }
@@ -1749,9 +1669,9 @@ export async function deleteHeraldryLinkCloud(userId, datasetId, linkId) {
   try {
     const docRef = getUserDoc(userId, datasetId, 'heraldryLinks', String(linkId));
     await deleteDoc(docRef);
-    console.log('☁️ Heraldry link deleted from cloud:', linkId);
+    logger.log('☁️ Heraldry link deleted from cloud:', linkId);
   } catch (error) {
-    console.error('☁️ Error deleting heraldry link from cloud:', error);
+    logger.error('☁️ Error deleting heraldry link from cloud:', error);
     throw error;
   }
 }
@@ -1775,10 +1695,10 @@ export async function addHouseholdRoleCloud(userId, datasetId, roleData) {
       createdAt: serverTimestamp()
     });
 
-    console.log('☁️ Household role added to cloud');
+    logger.log('☁️ Household role added to cloud');
     return docRef.id;
   } catch (error) {
-    console.error('☁️ Error adding household role to cloud:', error);
+    logger.error('☁️ Error adding household role to cloud:', error);
     throw error;
   }
 }
@@ -1794,7 +1714,7 @@ export async function getAllHouseholdRolesCloud(userId, datasetId) {
     const snapshot = await getDocs(rolesRef);
     return snapshot.docs.map(docToObject);
   } catch (error) {
-    console.error('☁️ Error getting all household roles from cloud:', error);
+    logger.error('☁️ Error getting all household roles from cloud:', error);
     throw error;
   }
 }
@@ -1813,9 +1733,9 @@ export async function updateHouseholdRoleCloud(userId, datasetId, roleId, update
       ...updates,
       updatedAt: serverTimestamp()
     });
-    console.log('☁️ Household role updated in cloud:', roleId);
+    logger.log('☁️ Household role updated in cloud:', roleId);
   } catch (error) {
-    console.error('☁️ Error updating household role in cloud:', error);
+    logger.error('☁️ Error updating household role in cloud:', error);
     throw error;
   }
 }
@@ -1830,9 +1750,9 @@ export async function deleteHouseholdRoleCloud(userId, datasetId, roleId) {
   try {
     const docRef = getUserDoc(userId, datasetId, 'householdRoles', String(roleId));
     await deleteDoc(docRef);
-    console.log('☁️ Household role deleted from cloud:', roleId);
+    logger.log('☁️ Household role deleted from cloud:', roleId);
   } catch (error) {
-    console.error('☁️ Error deleting household role from cloud:', error);
+    logger.error('☁️ Error deleting household role from cloud:', error);
     throw error;
   }
 }
@@ -1857,10 +1777,10 @@ export async function addWritingCloud(userId, datasetId, writingData) {
       updatedAt: serverTimestamp()
     });
 
-    console.log('Writing added to cloud:', writingData.title);
+    logger.log('Writing added to cloud:', writingData.title);
     return docRef.id;
   } catch (error) {
-    console.error('Error adding writing to cloud:', error);
+    logger.error('Error adding writing to cloud:', error);
     throw error;
   }
 }
@@ -1876,7 +1796,7 @@ export async function getAllWritingsCloud(userId, datasetId) {
     const snapshot = await getDocs(writingsRef);
     return snapshot.docs.map(docToObject);
   } catch (error) {
-    console.error('Error getting all writings from cloud:', error);
+    logger.error('Error getting all writings from cloud:', error);
     throw error;
   }
 }
@@ -1899,9 +1819,9 @@ export async function updateWritingCloud(userId, datasetId, writingId, updates) 
       localId: writingId,
       updatedAt: serverTimestamp()
     }, { merge: true });
-    console.log('Writing updated in cloud:', writingId);
+    logger.log('Writing updated in cloud:', writingId);
   } catch (error) {
-    console.error('Error updating writing in cloud:', error);
+    logger.error('Error updating writing in cloud:', error);
     throw error;
   }
 }
@@ -1916,9 +1836,9 @@ export async function deleteWritingCloud(userId, datasetId, writingId) {
   try {
     const docRef = getUserDoc(userId, datasetId, 'writings', String(writingId));
     await deleteDoc(docRef);
-    console.log('Writing deleted from cloud:', writingId);
+    logger.log('Writing deleted from cloud:', writingId);
   } catch (error) {
-    console.error('Error deleting writing from cloud:', error);
+    logger.error('Error deleting writing from cloud:', error);
     throw error;
   }
 }
@@ -1943,10 +1863,10 @@ export async function addChapterCloud(userId, datasetId, chapterData) {
       updatedAt: serverTimestamp()
     });
 
-    console.log('Chapter added to cloud:', chapterData.title);
+    logger.log('Chapter added to cloud:', chapterData.title);
     return docRef.id;
   } catch (error) {
-    console.error('Error adding chapter to cloud:', error);
+    logger.error('Error adding chapter to cloud:', error);
     throw error;
   }
 }
@@ -1962,7 +1882,7 @@ export async function getAllChaptersCloud(userId, datasetId) {
     const snapshot = await getDocs(chaptersRef);
     return snapshot.docs.map(docToObject);
   } catch (error) {
-    console.error('Error getting all chapters from cloud:', error);
+    logger.error('Error getting all chapters from cloud:', error);
     throw error;
   }
 }
@@ -1985,9 +1905,9 @@ export async function updateChapterCloud(userId, datasetId, chapterId, updates) 
       localId: chapterId,
       updatedAt: serverTimestamp()
     }, { merge: true });
-    console.log('Chapter updated in cloud:', chapterId);
+    logger.log('Chapter updated in cloud:', chapterId);
   } catch (error) {
-    console.error('Error updating chapter in cloud:', error);
+    logger.error('Error updating chapter in cloud:', error);
     throw error;
   }
 }
@@ -2002,9 +1922,9 @@ export async function deleteChapterCloud(userId, datasetId, chapterId) {
   try {
     const docRef = getUserDoc(userId, datasetId, 'chapters', String(chapterId));
     await deleteDoc(docRef);
-    console.log('Chapter deleted from cloud:', chapterId);
+    logger.log('Chapter deleted from cloud:', chapterId);
   } catch (error) {
-    console.error('Error deleting chapter from cloud:', error);
+    logger.error('Error deleting chapter from cloud:', error);
     throw error;
   }
 }
@@ -2028,10 +1948,10 @@ export async function addWritingLinkCloud(userId, datasetId, linkData) {
       createdAt: serverTimestamp()
     });
 
-    console.log('Writing link added to cloud');
+    logger.log('Writing link added to cloud');
     return docRef.id;
   } catch (error) {
-    console.error('Error adding writing link to cloud:', error);
+    logger.error('Error adding writing link to cloud:', error);
     throw error;
   }
 }
@@ -2047,7 +1967,7 @@ export async function getAllWritingLinksCloud(userId, datasetId) {
     const snapshot = await getDocs(linksRef);
     return snapshot.docs.map(docToObject);
   } catch (error) {
-    console.error('Error getting all writing links from cloud:', error);
+    logger.error('Error getting all writing links from cloud:', error);
     throw error;
   }
 }
@@ -2062,9 +1982,9 @@ export async function deleteWritingLinkCloud(userId, datasetId, linkId) {
   try {
     const docRef = getUserDoc(userId, datasetId, 'writingLinks', String(linkId));
     await deleteDoc(docRef);
-    console.log('Writing link deleted from cloud:', linkId);
+    logger.log('Writing link deleted from cloud:', linkId);
   } catch (error) {
-    console.error('Error deleting writing link from cloud:', error);
+    logger.error('Error deleting writing link from cloud:', error);
     throw error;
   }
 }
@@ -2078,9 +1998,9 @@ export async function deleteWritingLinkCloud(userId, datasetId, linkId) {
  */
 export async function deleteAllCloudData(userId, datasetId) {
   try {
-    console.log('☁️ Deleting all cloud data for dataset:', datasetId);
+    logger.log('☁️ Deleting all cloud data for dataset:', datasetId);
 
-    const collections = ['people', 'houses', 'relationships', 'codexEntries', 'codexLinks', 'acknowledgedDuplicates', 'heraldry', 'heraldryLinks', 'dignities', 'dignityTenures', 'dignityLinks', 'bugs', 'householdRoles', 'writings', 'chapters', 'writingLinks', 'storyPlans', 'storyArcs', 'storyBeats', 'scenePlans', 'plotThreads', 'characterArcs', 'arcMilestones'];
+    const collections = ['people', 'houses', 'relationships', 'codexEntries', 'codexLinks', 'acknowledgedDuplicates', 'heraldry', 'heraldryLinks', 'dignities', 'dignityTenures', 'dignityLinks', 'bugs', 'householdRoles', 'writings', 'chapters', 'writingLinks', 'storyPlans', 'storyArcs', 'storyBeats', 'scenePlans', 'plotThreads', 'characterArcs'];
 
     for (const collName of collections) {
       const collRef = getUserCollection(userId, datasetId, collName);
@@ -2096,10 +2016,10 @@ export async function deleteAllCloudData(userId, datasetId) {
       }
     }
 
-    console.log('☁️ All cloud data deleted for dataset:', datasetId);
+    logger.log('☁️ All cloud data deleted for dataset:', datasetId);
     return true;
   } catch (error) {
-    console.error('☁️ Error deleting cloud data:', error);
+    logger.error('☁️ Error deleting cloud data:', error);
     throw error;
   }
 }
@@ -2225,10 +2145,6 @@ export default {
   deleteCharacterArcCloud,
 
   // Arc Milestones
-  addArcMilestoneCloud,
-  getAllArcMilestonesCloud,
-  updateArcMilestoneCloud,
-  deleteArcMilestoneCloud,
 
   // Bulk operations
   syncAllToCloud,

@@ -45,6 +45,7 @@ import {
 
 import { validateProposal } from './aiProposalService';
 import { collectFullDataContext } from './aiDataService';
+import { logger } from '../utils/logger';
 
 // ==================== EXECUTION CONTEXT ====================
 
@@ -85,7 +86,7 @@ export async function createExecutionContext(options = {}) {
 export async function executeProposal(proposal, context) {
   const { type, entityType, entityId, data } = proposal;
 
-  console.log(`🤖 Executing proposal: ${type} ${entityType}`, { entityId, data });
+  logger.log(`🤖 Executing proposal: ${type} ${entityType}`, { entityId, data });
 
   // Callers must pass a context built by createExecutionContext(). A bare
   // object used to slip through: validateProposal then read `.lookupMaps` off
@@ -105,10 +106,14 @@ export async function executeProposal(proposal, context) {
   }
 
   let rollbackData;
+  // `validation` is declared out here because the success and failure returns
+  // below both read `validation.warnings`. Declaring it with `const` inside the
+  // try block made both of those a ReferenceError — including the success path.
+  let validation;
   try {
     // Validation and rollback capture belong inside the try — a throw from
     // either used to escape to the caller instead of being reported.
-    const validation = validateProposal(proposal, context.currentData);
+    validation = validateProposal(proposal, context.currentData);
     if (!validation.valid) {
       return {
         success: false,
@@ -120,7 +125,7 @@ export async function executeProposal(proposal, context) {
 
     rollbackData = await captureRollbackData(proposal, context);
   } catch (error) {
-    console.error('❌ Proposal validation failed:', error);
+    logger.error('❌ Proposal validation failed:', error);
     return {
       success: false,
       proposal,
@@ -163,7 +168,7 @@ export async function executeProposal(proposal, context) {
     // Store rollback data on success
     context.rollbackStack.push(rollbackData);
 
-    console.log(`✅ Proposal executed successfully:`, result);
+    logger.log(`✅ Proposal executed successfully:`, result);
 
     return {
       success: true,
@@ -174,7 +179,7 @@ export async function executeProposal(proposal, context) {
     };
 
   } catch (error) {
-    console.error(`❌ Proposal execution failed:`, error);
+    logger.error(`❌ Proposal execution failed:`, error);
 
     return {
       success: false,
@@ -499,7 +504,7 @@ export async function executeRollback(rollbackData, options = {}) {
   const context = await createExecutionContext(options);
   const { type, entityType, entityId, originalData } = rollbackData;
 
-  console.log(`🔄 Rolling back: ${type} ${entityType}`, { entityId });
+  logger.log(`🔄 Rolling back: ${type} ${entityType}`, { entityId });
 
   try {
     switch (type) {
@@ -540,14 +545,14 @@ export async function executeRollback(rollbackData, options = {}) {
       case 'link':
         // Undo link = unlink (delete relationship or remove reference)
         // This is more complex and depends on the link type
-        console.warn('Link rollback not fully implemented');
+        logger.warn('Link rollback not fully implemented');
         break;
     }
 
     return { success: true, rollbackData };
 
   } catch (error) {
-    console.error('❌ Rollback failed:', error);
+    logger.error('❌ Rollback failed:', error);
     return { success: false, error: error.message, rollbackData };
   }
 }

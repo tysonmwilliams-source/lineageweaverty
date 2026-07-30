@@ -34,6 +34,8 @@ import {
   createPersonalArmsSVG,
   addCadencyToSVG
 } from '../utils/personalArmsRenderer';
+import { logger } from '../utils/logger';
+import Icon from './icons';
 
 /**
  * PersonalArmsSection Component
@@ -145,7 +147,7 @@ function PersonalArmsSection({
         }
       }
     } catch (error) {
-      console.error('Error loading arms data:', error);
+      logger.error('Error loading arms data:', error);
     } finally {
       setLoading(false);
     }
@@ -190,7 +192,7 @@ function PersonalArmsSection({
           className="font-semibold mb-2 text-xs uppercase tracking-wider flex items-center gap-2" 
           style={{ color: theme.textSecondary }}
         >
-          <span>🛡️</span> Personal Arms
+          <Icon name="shield" /> Personal Arms
         </h3>
         <div 
           className="p-3 rounded border text-center text-sm"
@@ -208,7 +210,7 @@ function PersonalArmsSection({
         className="font-semibold mb-2 text-xs uppercase tracking-wider flex items-center gap-2" 
         style={{ color: theme.textSecondary }}
       >
-        <span>🛡️</span> Personal Arms
+        <Icon name="shield" /> Personal Arms
       </h3>
       
       {/* Case 1: Person has personal arms */}
@@ -239,7 +241,7 @@ function PersonalArmsSection({
                     className="max-w-full max-h-full object-contain"
                   />
                 ) : (
-                  <span className="text-2xl">🛡️</span>
+                  <span className="text-2xl"><Icon name="shield" size={24} /></span>
                 )}
               </div>
               
@@ -281,7 +283,7 @@ function PersonalArmsSection({
               borderColor: theme.accent
             }}
           >
-            <span>✏️</span>
+            <Icon name="pencil" />
             <span>Edit Personal Arms</span>
           </button>
         </div>
@@ -301,7 +303,7 @@ function PersonalArmsSection({
                 }}
               >
                 <div className="flex items-start gap-2">
-                  <span className="text-lg">✓</span>
+                  <span className="text-lg"><Icon name="check" /></span>
                   <div className="flex-1">
                     <div className="text-sm font-medium" style={{ color: theme.success }}>
                       Eligible for Personal Arms
@@ -354,7 +356,7 @@ function PersonalArmsSection({
                     borderColor: theme.accent
                   }}
                 >
-                  <span>🛡️</span>
+                  <Icon name="shield" />
                   <span>Create Personal Arms</span>
                 </button>
               ) : (
@@ -390,7 +392,7 @@ function PersonalArmsSection({
               }}
             >
               <div className="flex items-start gap-2">
-                <span className="text-lg opacity-50">🛡️</span>
+                <span className="text-lg opacity-50"><Icon name="shield" /></span>
                 <div className="flex-1">
                   <div className="text-sm" style={{ color: theme.textSecondary }}>
                     No Personal Arms
@@ -422,7 +424,7 @@ function PersonalArmsSection({
                 borderColor: theme.border
               }}
             >
-              <span>🏰</span>
+              <Icon name="castle" />
               <span>View House Arms</span>
             </button>
           )}

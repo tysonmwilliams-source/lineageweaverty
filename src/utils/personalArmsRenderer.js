@@ -19,6 +19,7 @@
  */
 
 import { generateCadencyTriangles, generateCadencySVG } from './birthOrderUtils';
+import { logger } from './logger';
 
 /**
  * Add cadency marks to an existing heraldry SVG
@@ -47,7 +48,7 @@ export function addCadencyToSVG(baseSVG, birthPosition, options = {}) {
   // Parse the SVG to find its dimensions
   const viewBoxMatch = baseSVG.match(/viewBox="([^"]+)"/);
   if (!viewBoxMatch) {
-    console.warn('Could not find viewBox in base SVG, returning unchanged');
+    logger.warn('Could not find viewBox in base SVG, returning unchanged');
     return baseSVG;
   }
   

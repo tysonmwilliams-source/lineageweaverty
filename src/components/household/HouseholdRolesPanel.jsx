@@ -32,6 +32,7 @@ import {
   ROLE_CATEGORIES
 } from '../../data/householdRoleTypes';
 import './HouseholdRolesPanel.css';
+import { logger } from '../../utils/logger';
 
 // Animation variants
 const PANEL_VARIANTS = {
@@ -95,7 +96,7 @@ function HouseholdRolesPanel({
       setRoles(houseRoles);
     } catch (error) {
       if (import.meta.env.DEV) {
-        console.error('Error loading roles:', error);
+        logger.error('Error loading roles:', error);
       }
     } finally {
       setLoading(false);
@@ -165,7 +166,7 @@ function HouseholdRolesPanel({
       onRoleChange?.();
     } catch (error) {
       if (import.meta.env.DEV) {
-        console.error('Error deleting role:', error);
+        logger.error('Error deleting role:', error);
       }
     }
   }, [loadRoles, onRoleChange, user, datasetId]);
@@ -177,7 +178,7 @@ function HouseholdRolesPanel({
       onRoleChange?.();
     } catch (error) {
       if (import.meta.env.DEV) {
-        console.error('Error vacating role:', error);
+        logger.error('Error vacating role:', error);
       }
     }
   }, [loadRoles, onRoleChange, user, datasetId]);

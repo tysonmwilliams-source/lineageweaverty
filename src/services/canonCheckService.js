@@ -12,6 +12,7 @@ import { getLinksByWriting } from './writingLinkService';
 import { getEntityById, ENTITY_TYPES } from './entitySearchService';
 import { askGemini } from './aiAssistantService';
 import { parseYear } from '../utils/parseYear';
+import { logger } from '../utils/logger';
 
 // ==================== ISSUE TYPES ====================
 
@@ -67,7 +68,7 @@ export async function runRuleBasedChecks(writingId, content, plainText, datasetI
     issues.push(...dignityIssues);
 
   } catch (error) {
-    console.error('Rule-based check failed:', error);
+    logger.error('Rule-based check failed:', error);
     issues.push({
       id: `error-${Date.now()}`,
       type: ISSUE_TYPES.WARNING,
@@ -415,7 +416,7 @@ export async function runAICanonCheck(writingId, content, plainText, datasetId) 
     const prompt = buildCanonCheckPrompt(context);
 
     // Call Gemini API
-    console.log('🤖 Running AI canon check...');
+    logger.log('🤖 Running AI canon check...');
     const response = await askGemini(prompt, {}, {
       temperature: 0.3, // Lower temperature for more focused analysis
       maxOutputTokens: 2048
@@ -425,10 +426,10 @@ export async function runAICanonCheck(writingId, content, plainText, datasetId) 
     const parsedIssues = parseAIResponse(response);
     issues.push(...parsedIssues);
 
-    console.log(`🤖 AI canon check complete: ${issues.length} issues found`);
+    logger.log(`🤖 AI canon check complete: ${issues.length} issues found`);
 
   } catch (error) {
-    console.error('AI canon check failed:', error);
+    logger.error('AI canon check failed:', error);
     issues.push({
       id: `ai-error-${Date.now()}`,
       type: ISSUE_TYPES.WARNING,
@@ -496,7 +497,7 @@ function parseAIResponse(response) {
     }
 
   } catch (parseError) {
-    console.warn('Could not parse AI response as JSON, extracting text...');
+    logger.warn('Could not parse AI response as JSON, extracting text...');
 
     // If JSON parsing fails, create a single info issue with the response
     if (response && response.length > 0) {

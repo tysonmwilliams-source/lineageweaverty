@@ -29,6 +29,7 @@ import {
 } from '../services/heraldryService';
 import { sanitizeSVG } from '../utils/sanitize';
 import './HouseForm.css';
+import { logger } from '../utils/logger';
 
 // House type options
 const HOUSE_TYPE_OPTIONS = [
@@ -122,7 +123,7 @@ function HouseForm({
         setHeraldryLinkId(houseLink?.id || null);
       }
     } catch (error) {
-      console.error('Error loading heraldry:', error);
+      logger.error('Error loading heraldry:', error);
     } finally {
       setLoadingHeraldry(false);
     }
@@ -197,7 +198,7 @@ function HouseForm({
       setFormData(prev => ({ ...prev, heraldryId: selectedHeraldry.id }));
       setShowHeraldryPicker(false);
     }).catch(error => {
-      console.error('Error linking heraldry:', error);
+      logger.error('Error linking heraldry:', error);
       alert('Failed to link heraldry. Please try again.');
     });
   };
@@ -229,7 +230,7 @@ function HouseForm({
       setHeraldryLinkId(null);
       setFormData(prev => ({ ...prev, heraldryId: null }));
     } catch (error) {
-      console.error('Error removing heraldry link:', error);
+      logger.error('Error removing heraldry link:', error);
       alert('Failed to remove heraldry link. Please try again.');
     }
   };

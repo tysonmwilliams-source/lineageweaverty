@@ -15,6 +15,8 @@ import LoadingState from '../components/shared/LoadingState';
 import EmptyState from '../components/shared/EmptyState';
 import ActionButton from '../components/shared/ActionButton';
 import './CodexEntryView.css';
+import { logger } from '../utils/logger';
+import { formatLongDate as formatDate } from '../utils/formatDate';
 
 /**
  * CodexEntryView - Detail View for Codex Entries
@@ -98,7 +100,7 @@ function CodexEntryView() {
       const heraldryData = await getHeraldry(heraldryId, activeDataset?.id);
       setLinkedHeraldry(heraldryData);
     } catch (err) {
-      console.error('Error loading linked heraldry:', err);
+      logger.error('Error loading linked heraldry:', err);
       setLinkedHeraldry(null);
     } finally {
       setLoadingHeraldry(false);
@@ -149,7 +151,7 @@ function CodexEntryView() {
 
       setLoadingBacklinks(false);
     } catch (err) {
-      console.error('Error loading backlinks:', err);
+      logger.error('Error loading backlinks:', err);
       setLoadingBacklinks(false);
     }
   }, [activeDataset]);
@@ -173,15 +175,15 @@ function CodexEntryView() {
       setEntry(entryData);
 
       // DEBUG: Log raw content to see what's stored
-      console.log('📝 RAW CONTENT for', entryData.title, ':', entryData.content?.substring(0, 200));
-      console.log('📝 Content starts with spaces?', entryData.content?.match(/^[ \t]+/));
-      console.log('📝 Content has code fence?', entryData.content?.includes('```'));
+      logger.log('📝 RAW CONTENT for', entryData.title, ':', entryData.content?.substring(0, 200));
+      logger.log('📝 Content starts with spaces?', entryData.content?.match(/^[ \t]+/));
+      logger.log('📝 Content has code fence?', entryData.content?.includes('```'));
 
       // Parse markdown and process wiki-links
       const html = await parseWikiLinks(entryData.content, entryData.id, datasetId);
 
       // DEBUG: Log parsed HTML
-      console.log('📝 PARSED HTML:', html?.substring(0, 300));
+      logger.log('📝 PARSED HTML:', html?.substring(0, 300));
 
       setRenderedContent(html);
 
@@ -213,13 +215,13 @@ function CodexEntryView() {
             });
 
             if (personData) {
-              console.log(`🔗 Auto-matched codex entry "${entryData.title}" to person ID ${personData.id}`);
+              logger.log(`🔗 Auto-matched codex entry "${entryData.title}" to person ID ${personData.id}`);
             }
           }
 
           setLinkedPerson(personData || null);
         } catch (err) {
-          console.error('Error loading linked person:', err);
+          logger.error('Error loading linked person:', err);
           setLinkedPerson(null);
         }
       } else {
@@ -228,7 +230,7 @@ function CodexEntryView() {
 
       setLoading(false);
     } catch (err) {
-      console.error('Error loading entry:', err);
+      logger.error('Error loading entry:', err);
       setError('Failed to load entry');
       setLoading(false);
     }
@@ -273,7 +275,7 @@ function CodexEntryView() {
       await deleteEntry(parseInt(id), activeDataset?.id, user?.uid);
       navigate('/codex');
     } catch (err) {
-      console.error('Error deleting entry:', err);
+      logger.error('Error deleting entry:', err);
       alert('Failed to delete entry: ' + err.message);
     }
   }, [entry, id, activeDataset?.id, user, navigate]);
@@ -301,7 +303,7 @@ function CodexEntryView() {
 
       alert('Entry moved to Dignities & Titles successfully!');
     } catch (err) {
-      console.error('Error moving entry:', err);
+      logger.error('Error moving entry:', err);
       alert('Failed to move entry: ' + err.message);
     }
   }, [entry, id, activeDataset?.id]);
@@ -318,15 +320,6 @@ function CodexEntryView() {
   }, []);
 
   // Format date for display
-  const formatDate = useCallback((isoString) => {
-    if (!isoString) return '';
-    const date = new Date(isoString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  }, []);
 
   // Get type configuration
   const getTypeConfig = useCallback((type) => {

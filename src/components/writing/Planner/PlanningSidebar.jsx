@@ -29,6 +29,7 @@ import {
 import { getQuickSuggestion } from '../../../services/planningAIService';
 import { useDataset } from '../../../contexts/DatasetContext';
 import './PlanningSidebar.css';
+import { logger } from '../../../utils/logger';
 
 // Animation variants
 const SECTION_VARIANTS = {
@@ -90,7 +91,7 @@ function PlanningSidebar({
         setThreads([]);
       }
     } catch (error) {
-      console.error('Error loading planning data:', error);
+      logger.error('Error loading planning data:', error);
     } finally {
       setIsLoading(false);
     }
@@ -134,7 +135,7 @@ function PlanningSidebar({
       const suggestion = await getQuickSuggestion(type, context);
       setAiSuggestion({ type, text: suggestion });
     } catch (error) {
-      console.error('Error getting suggestion:', error);
+      logger.error('Error getting suggestion:', error);
       setAiSuggestion({ type: 'error', text: 'Could not generate suggestion.' });
     } finally {
       setAiLoading(false);

@@ -34,6 +34,7 @@ import {
   orderBy
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import { logger } from '../utils/logger';
 
 // Local storage key for active dataset
 const ACTIVE_DATASET_KEY = 'lineageweaver_activeDatasetId';
@@ -75,7 +76,7 @@ export function getActiveDatasetId() {
 export function setActiveDatasetId(datasetId) {
   if (typeof localStorage === 'undefined') return;
   localStorage.setItem(ACTIVE_DATASET_KEY, datasetId);
-  console.log('📂 Active dataset set to:', datasetId);
+  logger.log('📂 Active dataset set to:', datasetId);
 }
 
 /**
@@ -110,11 +111,11 @@ export async function createDataset(userId, datasetData) {
     };
 
     await setDoc(docRef, dataset);
-    console.log('📂 Dataset created:', dataset.name);
+    logger.log('📂 Dataset created:', dataset.name);
 
     return { ...dataset, id: datasetId };
   } catch (error) {
-    console.error('❌ Error creating dataset:', error);
+    logger.error('❌ Error creating dataset:', error);
     throw error;
   }
 }
@@ -135,10 +136,10 @@ export async function getAllDatasets(userId) {
       ...doc.data()
     }));
 
-    console.log('📂 Fetched datasets:', datasets.length);
+    logger.log('📂 Fetched datasets:', datasets.length);
     return datasets;
   } catch (error) {
-    console.error('❌ Error getting datasets:', error);
+    logger.error('❌ Error getting datasets:', error);
     throw error;
   }
 }
@@ -161,7 +162,7 @@ export async function getDataset(userId, datasetId) {
       ...docSnap.data()
     };
   } catch (error) {
-    console.error('❌ Error getting dataset:', error);
+    logger.error('❌ Error getting dataset:', error);
     throw error;
   }
 }
@@ -179,9 +180,9 @@ export async function updateDataset(userId, datasetId, updates) {
       ...updates,
       updatedAt: serverTimestamp()
     });
-    console.log('📂 Dataset updated:', datasetId);
+    logger.log('📂 Dataset updated:', datasetId);
   } catch (error) {
-    console.error('❌ Error updating dataset:', error);
+    logger.error('❌ Error updating dataset:', error);
     throw error;
   }
 }
@@ -218,8 +219,7 @@ export async function deleteDataset(userId, datasetId) {
       'storyBeats',
       'scenePlans',
       'plotThreads',
-      'characterArcs',
-      'arcMilestones'
+      'characterArcs'
     ];
 
     // Delete documents in each collection
@@ -240,10 +240,10 @@ export async function deleteDataset(userId, datasetId) {
     const metadataRef = getDatasetMetadataDoc(userId, datasetId);
     await deleteDoc(metadataRef);
 
-    console.log('📂 Dataset deleted:', datasetId);
+    logger.log('📂 Dataset deleted:', datasetId);
     return true;
   } catch (error) {
-    console.error('❌ Error deleting dataset:', error);
+    logger.error('❌ Error deleting dataset:', error);
     throw error;
   }
 }
@@ -259,7 +259,7 @@ export async function hasDatasets(userId) {
     const snapshot = await getDocs(datasetsRef);
     return !snapshot.empty;
   } catch (error) {
-    console.error('❌ Error checking datasets:', error);
+    logger.error('❌ Error checking datasets:', error);
     return false;
   }
 }
@@ -288,7 +288,7 @@ export async function ensureDefaultDataset(userId) {
 
     return defaultDataset;
   } catch (error) {
-    console.error('❌ Error ensuring default dataset:', error);
+    logger.error('❌ Error ensuring default dataset:', error);
     throw error;
   }
 }

@@ -19,6 +19,8 @@
 /**
  * Default configuration for retry behavior
  */
+import { logger } from './logger';
+
 const DEFAULT_CONFIG = {
   maxRetries: 3,
   initialDelay: 1000, // 1 second
@@ -206,7 +208,7 @@ export const SYNC_RETRY_CONFIG = {
   backoffFactor: 2,
   jitter: true,
   onRetry: (attempt, error, delay) => {
-    console.log(`☁️ Sync retry ${attempt}, waiting ${delay}ms: ${error.message}`);
+    logger.log(`☁️ Sync retry ${attempt}, waiting ${delay}ms: ${error.message}`);
   }
 };
 

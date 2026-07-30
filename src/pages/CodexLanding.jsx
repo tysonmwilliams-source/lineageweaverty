@@ -30,6 +30,8 @@ import Icon from '../components/icons';
 import { LoadingState, EmptyState, SectionHeader, Card, ActionButton } from '../components/shared';
 import CodexCleanupTool from '../components/CodexCleanupTool';
 import './CodexLanding.css';
+import { logger } from '../utils/logger';
+import { formatRelativeDate as formatDate } from '../utils/formatDate';
 
 // Animation variants
 const CONTAINER_VARIANTS = {
@@ -151,7 +153,7 @@ function CodexLanding() {
         setLoading(false);
       } catch (error) {
         if (!cancelled && import.meta.env.DEV) {
-          console.error('Error loading codex data:', error);
+          logger.error('Error loading codex data:', error);
         }
         if (!cancelled) setLoading(false);
       }
@@ -198,7 +200,7 @@ function CodexLanding() {
         `Imported ${results.houses.length + results.locations.length + results.events.length + results.personages.length + results.mysteria.length} entries`
       );
     } catch (error) {
-      console.error('Import failed:', error);
+      logger.error('Import failed:', error);
       alert(`Import failed: ${error.message}`);
     } finally {
       setImporting(false);
@@ -663,21 +665,5 @@ function CodexLanding() {
 }
 
 // Helper function to format dates
-function formatDate(isoString) {
-  const date = new Date(isoString);
-  const now = new Date();
-  const diffInHours = (now - date) / (1000 * 60 * 60);
-
-  if (diffInHours < 1) return 'Just now';
-  if (diffInHours < 24) return `${Math.floor(diffInHours)}h ago`;
-  if (diffInHours < 48) return 'Yesterday';
-  if (diffInHours < 168) return `${Math.floor(diffInHours / 24)}d ago`;
-
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
-  });
-}
 
 export default CodexLanding;

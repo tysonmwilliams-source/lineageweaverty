@@ -7,6 +7,7 @@
 
 import { getDatabase } from './database';
 import { syncAddWritingLink, syncDeleteWritingLink } from './dataSyncService';
+import { logger } from '../utils/logger';
 
 // ==================== CONSTANTS ====================
 
@@ -48,7 +49,7 @@ export async function createWritingLink(data, datasetId) {
   };
 
   const linkId = await db.writingLinks.add(link);
-  console.log('Writing link created:', linkId);
+  logger.log('Writing link created:', linkId);
   return linkId;
 }
 
@@ -120,7 +121,7 @@ export async function getAllWritingLinks(datasetId) {
 export async function deleteWritingLink(id, datasetId) {
   const db = getDatabase(datasetId);
   await db.writingLinks.delete(id);
-  console.log('Writing link deleted:', id);
+  logger.log('Writing link deleted:', id);
 }
 
 /**
@@ -132,7 +133,7 @@ export async function deleteWritingLink(id, datasetId) {
 export async function deleteLinksByChapter(chapterId, datasetId) {
   const db = getDatabase(datasetId);
   const deleted = await db.writingLinks.where('chapterId').equals(chapterId).delete();
-  console.log('Deleted', deleted, 'links for chapter', chapterId);
+  logger.log('Deleted', deleted, 'links for chapter', chapterId);
   return deleted;
 }
 
@@ -145,7 +146,7 @@ export async function deleteLinksByChapter(chapterId, datasetId) {
 export async function deleteLinksByWriting(writingId, datasetId) {
   const db = getDatabase(datasetId);
   const deleted = await db.writingLinks.where('writingId').equals(writingId).delete();
-  console.log('Deleted', deleted, 'links for writing', writingId);
+  logger.log('Deleted', deleted, 'links for writing', writingId);
   return deleted;
 }
 
@@ -161,7 +162,7 @@ export async function restoreWritingLink(data, datasetId) {
     ...data,
     id: parseInt(data.id) || data.id
   });
-  console.log('Writing link restored:', id);
+  logger.log('Writing link restored:', id);
   return id;
 }
 
@@ -227,7 +228,7 @@ export async function syncChapterLinks(chapterId, writingId, parsedLinks, datase
   }
 
   if (import.meta.env.DEV && (toAdd.length || toDelete.length)) {
-    console.log(`Chapter ${chapterId} links: +${toAdd.length} -${toDelete.length}`);
+    logger.log(`Chapter ${chapterId} links: +${toAdd.length} -${toDelete.length}`);
   }
 }
 

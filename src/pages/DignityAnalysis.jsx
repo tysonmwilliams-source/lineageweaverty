@@ -28,6 +28,7 @@ import { SuggestionCard, AnalysisSummary } from '../components/suggestions';
 import { useDignityAnalysis } from '../hooks';
 import { SUGGESTION_TYPES } from '../data/suggestionTypes';
 import './DignityAnalysis.css';
+import { logger } from '../utils/logger';
 
 // Animation variants
 const CONTAINER_VARIANTS = {
@@ -163,7 +164,7 @@ function DignityAnalysis() {
       await runAnalysis();
     } catch (err) {
       if (import.meta.env.DEV) {
-        console.error('Analysis failed:', err);
+        logger.error('Analysis failed:', err);
       }
     }
   }, [runAnalysis]);
@@ -173,7 +174,7 @@ function DignityAnalysis() {
       await applySuggestion(suggestionId);
     } catch (err) {
       if (import.meta.env.DEV) {
-        console.error('Failed to apply suggestion:', err);
+        logger.error('Failed to apply suggestion:', err);
       }
     }
   }, [applySuggestion]);

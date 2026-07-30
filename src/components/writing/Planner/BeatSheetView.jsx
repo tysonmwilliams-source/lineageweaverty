@@ -32,6 +32,7 @@ import { suggestBeatContent } from '../../../services/planningAIService';
 import { useDataset } from '../../../contexts/DatasetContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import './BeatSheetView.css';
+import { logger } from '../../../utils/logger';
 
 // Animation variants
 const CARD_VARIANTS = {
@@ -100,7 +101,7 @@ function BeatSheetView({
       setBeats(beatsData);
       setScenes(scenesData);
     } catch (error) {
-      console.error('Error loading beat sheet data:', error);
+      logger.error('Error loading beat sheet data:', error);
     } finally {
       setIsLoading(false);
     }
@@ -187,7 +188,7 @@ function BeatSheetView({
       setEditForm({});
       await loadData();
     } catch (error) {
-      console.error('Error updating beat:', error);
+      logger.error('Error updating beat:', error);
     }
   };
 
@@ -215,7 +216,7 @@ function BeatSheetView({
       setNewBeatForm({ name: '', description: '', actNumber: 2 });
       await loadData();
     } catch (error) {
-      console.error('Error creating beat:', error);
+      logger.error('Error creating beat:', error);
     }
   };
 
@@ -228,7 +229,7 @@ function BeatSheetView({
       await deleteStoryBeat(beatId, datasetId, userId);
       await loadData();
     } catch (error) {
-      console.error('Error deleting beat:', error);
+      logger.error('Error deleting beat:', error);
     }
   };
 
@@ -241,7 +242,7 @@ function BeatSheetView({
       }, datasetId, userId);
       await loadData();
     } catch (error) {
-      console.error('Error updating beat status:', error);
+      logger.error('Error updating beat status:', error);
     }
   };
 
@@ -267,7 +268,7 @@ function BeatSheetView({
         await loadData();
       }
     } catch (error) {
-      console.error('Error getting AI suggestion:', error);
+      logger.error('Error getting AI suggestion:', error);
       alert('Failed to get AI suggestion. Please try again.');
     } finally {
       setAiLoading(null);

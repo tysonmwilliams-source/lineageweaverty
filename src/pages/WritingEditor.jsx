@@ -45,6 +45,7 @@ import { runRuleBasedChecks, runAICanonCheck } from '../services/canonCheckServi
 import { askGemini } from '../services/aiAssistantService';
 import useDebouncedValue from '../hooks/useDebouncedValue';
 import './WritingEditor.css';
+import { logger } from '../utils/logger';
 
 /**
  * ChapterSidebar Component
@@ -230,7 +231,7 @@ export default function WritingEditor() {
 
         // If no chapters exist (e.g., from cloud sync without chapter), create one
         if (chaptersData.length === 0) {
-          console.log('No chapters found, creating default chapter...');
+          logger.log('No chapters found, creating default chapter...');
           const chapterId = await createChapter({
             writingId: parseInt(id),
             title: 'Chapter 1',
@@ -254,7 +255,7 @@ export default function WritingEditor() {
           setActiveChapter(chaptersData[0]);
         }
       } catch (error) {
-        console.error('Failed to load writing:', error);
+        logger.error('Failed to load writing:', error);
         navigate('/writing');
       } finally {
         setLoading(false);
@@ -358,12 +359,12 @@ export default function WritingEditor() {
     const currentEditor = editorRef.current?.getEditor?.();
 
     if (!currentEditor) {
-      console.warn('Editor not available from ref');
+      logger.warn('Editor not available from ref');
       return;
     }
 
     if (currentEditor.isDestroyed) {
-      console.warn('Editor is destroyed');
+      logger.warn('Editor is destroyed');
       return;
     }
 
@@ -385,7 +386,7 @@ export default function WritingEditor() {
         ])
         .run();
     } catch (error) {
-      console.error('Failed to insert entity:', error);
+      logger.error('Failed to insert entity:', error);
     }
   }, []);
 
@@ -395,11 +396,11 @@ export default function WritingEditor() {
     switch (type) {
       case 'person':
         // People don't have individual view pages yet, could open in sidebar
-        console.log('Wiki-link clicked: person', id);
+        logger.log('Wiki-link clicked: person', id);
         break;
       case 'house':
         // Houses don't have individual view pages yet
-        console.log('Wiki-link clicked: house', id);
+        logger.log('Wiki-link clicked: house', id);
         break;
       case 'codex':
         navigate(`/codex/entry/${id}`);
@@ -408,7 +409,7 @@ export default function WritingEditor() {
         navigate(`/dignities/view/${id}`);
         break;
       default:
-        console.log('Wiki-link clicked:', type, id);
+        logger.log('Wiki-link clicked:', type, id);
     }
   }, [navigate]);
 
@@ -434,7 +435,7 @@ export default function WritingEditor() {
       setCanonIssues(issues);
       setLastCanonCheck(new Date());
     } catch (error) {
-      console.error('Canon check failed:', error);
+      logger.error('Canon check failed:', error);
       setCanonIssues([{
         id: 'error-check',
         type: 'warning',
@@ -480,7 +481,7 @@ export default function WritingEditor() {
       setCanonIssues(allIssues);
       setLastCanonCheck(new Date());
     } catch (error) {
-      console.error('AI Canon check failed:', error);
+      logger.error('AI Canon check failed:', error);
       setCanonIssues([{
         id: 'error-ai-check',
         type: 'warning',
@@ -540,7 +541,7 @@ Be encouraging but honest. Give specific examples from the text when possible. K
 
       setAiAnalysisResult(response);
     } catch (error) {
-      console.error('AI analysis failed:', error);
+      logger.error('AI analysis failed:', error);
       setAiAnalysisResult('Analysis failed. Please try again.');
     } finally {
       setIsAIAnalyzing(false);

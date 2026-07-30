@@ -24,6 +24,8 @@ import {
   markMysteriaSkipMigration
 } from '../services/codexService';
 import './MysteriaMigrationTool.css';
+import { logger } from '../utils/logger';
+import { formatShortDate as formatDate } from '../utils/formatDate';
 
 /**
  * MysteriaMigrationTool Component
@@ -59,7 +61,7 @@ function MysteriaMigrationTool({ datasetId, onMigrationComplete, defaultCollapse
         return new Set([...prev].filter(id => validIds.has(id)));
       });
     } catch (error) {
-      console.error('Error loading mysteria entries:', error);
+      logger.error('Error loading mysteria entries:', error);
     } finally {
       setLoading(false);
     }
@@ -109,7 +111,7 @@ function MysteriaMigrationTool({ datasetId, onMigrationComplete, defaultCollapse
         onMigrationComplete?.();
       } else {
         alert(`Migration completed with ${result.errors.length} errors. Check console for details.`);
-        console.error('Migration errors:', result.errors);
+        logger.error('Migration errors:', result.errors);
       }
     } catch (error) {
       alert('Migration failed: ' + error.message);
@@ -148,12 +150,6 @@ function MysteriaMigrationTool({ datasetId, onMigrationComplete, defaultCollapse
     }
   }, [selectedIds, entries, datasetId, loadEntries]);
 
-  // Format date for display
-  const formatDate = (isoString) => {
-    if (!isoString) return '';
-    const date = new Date(isoString);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  };
 
   // Collapsible header
   const CollapsibleHeader = () => (

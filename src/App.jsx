@@ -74,6 +74,7 @@ import BugReporterButton from './components/bugs/BugReporterButton';
 import ErrorBoundary from './components/ErrorBoundary';
 import { DatasetManager } from './components/datasets';
 import { runDatasetMigration } from './services/migrationService';
+import { logger } from './utils/logger';
 
 // Context for opening the Dataset Manager modal from anywhere in the app
 export const DatasetManagerContext = createContext({ openDatasetManager: () => {} });
@@ -128,26 +129,26 @@ function AppContent() {
   useEffect(() => {
     async function setupDatabase() {
       try {
-        console.log('Initializing database...');
+        logger.log('Initializing database...');
 
         // Run dataset migration check for existing users
         // Uses version caching to skip expensive checks on subsequent loads
         if (user) {
-          console.log('📂 Checking dataset migration...');
+          logger.log('📂 Checking dataset migration...');
           const datasetId = activeDataset?.id || 'default';
           const migrationResult = await runDatasetMigration(user.uid, datasetId);
           if (migrationResult.skipped) {
-            console.log('📂 Migration check skipped (already up to date)');
+            logger.log('📂 Migration check skipped (already up to date)');
           } else if (migrationResult.firestore?.documentsMovedTotal > 0) {
-            console.log('📂 Dataset migration completed, moved', migrationResult.firestore.documentsMovedTotal, 'documents');
+            logger.log('📂 Dataset migration completed, moved', migrationResult.firestore.documentsMovedTotal, 'documents');
           }
         }
 
         await initializeSampleData();
         setDbInitialized(true);
-        console.log('Database ready!');
+        logger.log('Database ready!');
       } catch (error) {
-        console.error('Failed to initialize database:', error);
+        logger.error('Failed to initialize database:', error);
         setInitError(error.message);
       }
     }

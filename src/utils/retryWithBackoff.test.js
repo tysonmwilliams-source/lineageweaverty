@@ -84,16 +84,15 @@ describe('retryWithBackoff', () => {
       const originalError = { code: 'unavailable', message: 'Service unavailable' };
       const fn = vi.fn().mockRejectedValue(originalError);
 
-      const promise = retryWithBackoff(fn, { maxRetries: 2, jitter: false });
+      // The rejection handler MUST be attached before runAllTimersAsync flushes
+      // the retry delays — otherwise the promise rejects while nothing is
+      // listening and Node reports an unhandled rejection (which fails the run
+      // even though every assertion passes).
+      const settled = retryWithBackoff(fn, { maxRetries: 2, jitter: false })
+        .catch(e => e);
       await vi.runAllTimersAsync();
 
-      // Handle rejection explicitly
-      let thrownError;
-      try {
-        await promise;
-      } catch (e) {
-        thrownError = e;
-      }
+      const thrownError = await settled;
 
       expect(thrownError.message).toContain('3 attempts');
       expect(thrownError.originalError).toEqual(originalError);
@@ -189,19 +188,18 @@ describe('retryWithBackoff', () => {
         .mockRejectedValueOnce(new Error('First error'))
         .mockRejectedValueOnce(new Error('Second error'));
 
-      const promise = retryWithBackoff(fn, {
+      // Attach the handler before flushing timers (see note above), and assert
+      // on the captured error rather than inside a catch block — a catch-block
+      // assertion silently passes if the promise never rejects at all.
+      const settled = retryWithBackoff(fn, {
         retryOn: customRetryOn,
         jitter: false
-      });
+      }).catch(e => e);
 
-      // Run timers and handle the rejection
       await vi.runAllTimersAsync();
 
-      try {
-        await promise;
-      } catch (error) {
-        expect(error.message).toBe('Second error');
-      }
+      const error = await settled;
+      expect(error.message).toBe('Second error');
       expect(customRetryOn).toHaveBeenCalledTimes(2);
     });
   });
@@ -322,23 +320,15 @@ describe('createRetryWrapper', () => {
     const fn1 = vi.fn().mockRejectedValue({ code: 'unavailable' });
     const fn2 = vi.fn().mockRejectedValue({ code: 'unavailable' });
 
-    const promise1 = wrapper(fn1);
-    const promise2 = wrapper(fn2);
+    // Both handlers attached at creation, before timers are flushed (see note
+    // in 'should throw after max retries exhausted').
+    const settled1 = wrapper(fn1).catch(e => e);
+    const settled2 = wrapper(fn2).catch(e => e);
 
     await vi.runAllTimersAsync();
 
-    // Handle rejections explicitly to avoid unhandled promise warnings
-    let error1, error2;
-    try {
-      await promise1;
-    } catch (e) {
-      error1 = e;
-    }
-    try {
-      await promise2;
-    } catch (e) {
-      error2 = e;
-    }
+    const error1 = await settled1;
+    const error2 = await settled2;
 
     expect(error1.attempts).toBe(1);
     expect(error2.attempts).toBe(1);

@@ -32,6 +32,7 @@ import { suggestCharacterArc } from '../../../services/planningAIService';
 import { useDataset } from '../../../contexts/DatasetContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import './CharacterArcsView.css';
+import { logger } from '../../../utils/logger';
 
 // Animation variants
 const CARD_VARIANTS = {
@@ -102,7 +103,7 @@ function CharacterArcsView({
         setSelectedArc(arcsData[0].id);
       }
     } catch (error) {
-      console.error('Error loading character arcs:', error);
+      logger.error('Error loading character arcs:', error);
     } finally {
       setIsLoading(false);
     }
@@ -156,7 +157,7 @@ function CharacterArcsView({
       await loadData();
       setSelectedArc(arcId);
     } catch (error) {
-      console.error('Error creating character arc:', error);
+      logger.error('Error creating character arc:', error);
     }
   };
 
@@ -186,7 +187,7 @@ function CharacterArcsView({
       setEditForm({});
       await loadData();
     } catch (error) {
-      console.error('Error updating character arc:', error);
+      logger.error('Error updating character arc:', error);
     }
   };
 
@@ -200,7 +201,7 @@ function CharacterArcsView({
       setSelectedArc(null);
       await loadData();
     } catch (error) {
-      console.error('Error deleting character arc:', error);
+      logger.error('Error deleting character arc:', error);
     }
   };
 
@@ -220,7 +221,7 @@ function CharacterArcsView({
       setMilestoneForm({ description: '', internalShift: '', externalChange: '', sceneId: '' });
       await loadData();
     } catch (error) {
-      console.error('Error adding milestone:', error);
+      logger.error('Error adding milestone:', error);
     }
   };
 
@@ -233,7 +234,7 @@ function CharacterArcsView({
       await updateCharacterArc(currentArc.id, { milestones: updatedMilestones }, datasetId, userId);
       await loadData();
     } catch (error) {
-      console.error('Error removing milestone:', error);
+      logger.error('Error removing milestone:', error);
     }
   };
 
@@ -262,7 +263,7 @@ function CharacterArcsView({
         await loadData();
       }
     } catch (error) {
-      console.error('Error getting AI suggestion:', error);
+      logger.error('Error getting AI suggestion:', error);
       alert('Failed to get AI suggestion. Please try again.');
     } finally {
       setAiLoading(false);
@@ -277,7 +278,7 @@ function CharacterArcsView({
       await updateCharacterArc(currentArc.id, { status: newStatus }, datasetId, userId);
       await loadData();
     } catch (error) {
-      console.error('Error updating arc status:', error);
+      logger.error('Error updating arc status:', error);
     }
   };
 

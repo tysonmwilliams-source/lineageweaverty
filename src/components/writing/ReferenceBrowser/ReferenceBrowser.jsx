@@ -13,6 +13,7 @@ import { getAllEntries } from '../../../services/codexService';
 import { getAllDignities } from '../../../services/dignityService';
 import { getHeraldryForEntity } from '../../../services/heraldryService';
 import './ReferenceBrowser.css';
+import { logger } from '../../../utils/logger';
 
 /**
  * Tab definitions
@@ -401,7 +402,7 @@ export default function ReferenceBrowser({
         setCodexEntries(codexData || []);
         setDignities(dignitiesData || []);
       } catch (error) {
-        console.error('Failed to load reference data:', error);
+        logger.error('Failed to load reference data:', error);
       } finally {
         setLoading(false);
       }
@@ -425,7 +426,7 @@ export default function ReferenceBrowser({
           }));
         }
       } catch (error) {
-        console.error('Failed to load heraldry:', error);
+        logger.error('Failed to load heraldry:', error);
       }
     }
 

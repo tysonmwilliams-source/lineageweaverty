@@ -393,10 +393,6 @@
   margin-bottom: var(--space-4);
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
 .writing-studio__empty svg {
   color: var(--text-tertiary);
   margin-bottom: var(--space-4);

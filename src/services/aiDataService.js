@@ -37,6 +37,7 @@ import {
 } from './dignityService';
 
 import { getDatabase } from './database';
+import { logger } from '../utils/logger';
 
 // ==================== MAIN DATA COLLECTION ====================
 
@@ -48,7 +49,7 @@ import { getDatabase } from './database';
  */
 export async function collectFullDataContext(datasetId = 'default') {
   try {
-    console.log('🤖 AI Data Service: Collecting full data context...');
+    logger.log('🤖 AI Data Service: Collecting full data context...');
 
     // Collect all data in parallel for efficiency
     const [
@@ -104,7 +105,7 @@ export async function collectFullDataContext(datasetId = 'default') {
       collectedAt: new Date().toISOString()
     };
 
-    console.log('🤖 AI Data Service: Context collected', {
+    logger.log('🤖 AI Data Service: Context collected', {
       people: people.length,
       houses: houses.length,
       relationships: relationships.length,
@@ -115,7 +116,7 @@ export async function collectFullDataContext(datasetId = 'default') {
 
     return context;
   } catch (error) {
-    console.error('❌ AI Data Service: Error collecting data context:', error);
+    logger.error('❌ AI Data Service: Error collecting data context:', error);
     throw error;
   }
 }
@@ -131,7 +132,7 @@ async function getHouseholdRoles(datasetId) {
     }
     return [];
   } catch (error) {
-    console.warn('Could not fetch household roles:', error);
+    logger.warn('Could not fetch household roles:', error);
     return [];
   }
 }
@@ -890,7 +891,7 @@ export function analyzeDataForIssues(data) {
     }
   });
 
-  console.log(`🔍 AI Data Service: Found ${issues.length} potential issues`);
+  logger.log(`🔍 AI Data Service: Found ${issues.length} potential issues`);
   return issues;
 }
 

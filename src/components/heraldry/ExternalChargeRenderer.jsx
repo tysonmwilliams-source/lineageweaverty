@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { sanitizeSVG } from '../../utils/sanitize';
 // Support both old external library and new unified library for backwards compatibility
 import { getChargeUrl, getCharge } from '../../data/unifiedChargesLibrary';
+import { logger } from '../../utils/logger';
 
 // Backwards compatibility helpers - try unified library first, fall back to external
 function getExternalChargeUrl(chargeId) {
@@ -362,7 +363,7 @@ export async function generateExternalChargeSVGAsync(chargeId, tincture, x, y, s
       </g>
     `;
   } catch (err) {
-    console.error('Error generating external charge SVG:', err);
+    logger.error('Error generating external charge SVG:', err);
     return '';
   }
 }

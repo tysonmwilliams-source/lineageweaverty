@@ -78,6 +78,7 @@ import {
 
 import { useAuth } from './AuthContext';
 import { useDataset } from './DatasetContext';
+import { logger } from '../utils/logger';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CONTEXT OBJECTS
@@ -151,12 +152,12 @@ export function GenealogyProvider({ children }) {
       setError(null);
 
       const datasetId = activeDataset?.id || 'default';
-      console.log('🔄 Starting sync initialization for dataset:', datasetId);
+      logger.log('🔄 Starting sync initialization for dataset:', datasetId);
 
       // Initialize sync - this will either upload local data or download cloud data
       const syncResult = await initializeSync(user.uid, datasetId);
 
-      console.log('📊 Sync result:', syncResult.status);
+      logger.log('📊 Sync result:', syncResult.status);
 
       // Now load whatever data we have (local DB is now authoritative)
       await loadAllData();
@@ -168,7 +169,7 @@ export function GenealogyProvider({ children }) {
       startPeriodicSync(user.uid, datasetId);
 
     } catch (err) {
-      console.error('❌ Sync initialization failed:', err);
+      logger.error('❌ Sync initialization failed:', err);
       setSyncStatus('error');
       setError(err.message);
 
@@ -190,7 +191,7 @@ export function GenealogyProvider({ children }) {
       setError(null);
 
       const datasetId = activeDataset?.id || 'default';
-      console.log('📚 Loading data for dataset:', datasetId);
+      logger.log('📚 Loading data for dataset:', datasetId);
 
       const [allPeople, allHouses, allRelationships] = await Promise.all([
         getAllPeople(datasetId),
@@ -203,14 +204,14 @@ export function GenealogyProvider({ children }) {
       setRelationships(allRelationships);
       setDataVersion(v => v + 1);
 
-      console.log('📚 GenealogyContext: Data loaded', {
+      logger.log('📚 GenealogyContext: Data loaded', {
         dataset: datasetId,
         people: allPeople.length,
         houses: allHouses.length,
         relationships: allRelationships.length
       });
     } catch (err) {
-      console.error('❌ GenealogyContext: Failed to load data', err);
+      logger.error('❌ GenealogyContext: Failed to load data', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -275,7 +276,7 @@ export function GenealogyProvider({ children }) {
         }, datasetId);
 
         await dbUpdatePerson(newId, { codexEntryId: codexEntryId }, datasetId);
-        console.log('📖 Codex entry auto-created for:', fullName);
+        logger.log('📖 Codex entry auto-created for:', fullName);
         
         // ☁️ Sync codex entry to cloud
         if (user && activeDataset) {
@@ -287,7 +288,7 @@ export function GenealogyProvider({ children }) {
           });
         }
       } catch (codexErr) {
-        console.warn('⚠️ Failed to auto-create Codex entry:', codexErr.message);
+        logger.warn('⚠️ Failed to auto-create Codex entry:', codexErr.message);
       }
       
       // 3. Update local state
@@ -300,10 +301,10 @@ export function GenealogyProvider({ children }) {
         syncAddPerson(user.uid, activeDataset.id, newId, newPerson);
       }
 
-      console.log('✅ Person added:', newPerson.firstName, newPerson.lastName);
+      logger.log('✅ Person added:', newPerson.firstName, newPerson.lastName);
       return newId;
     } catch (err) {
-      console.error('❌ Failed to add person:', err);
+      logger.error('❌ Failed to add person:', err);
       throw err;
     }
   }, [user, activeDataset]);
@@ -326,9 +327,9 @@ export function GenealogyProvider({ children }) {
         syncUpdatePerson(user.uid, activeDataset.id, id, updates);
       }
 
-      console.log('✅ Person updated:', id);
+      logger.log('✅ Person updated:', id);
     } catch (err) {
-      console.error('❌ Failed to update person:', err);
+      logger.error('❌ Failed to update person:', err);
       throw err;
     }
   }, [user, activeDataset]);
@@ -357,9 +358,9 @@ export function GenealogyProvider({ children }) {
           // Without datasetId this deleted from the DEFAULT world's codex —
           // i.e. a stranger's entry — while leaving this world's orphaned.
           await deleteCodexEntry(codexEntryId, datasetId, user?.uid);
-          console.log('📖 Codex entry cascade-deleted:', codexEntryId);
+          logger.log('📖 Codex entry cascade-deleted:', codexEntryId);
         } catch (codexErr) {
-          console.warn('⚠️ Failed to cascade-delete Codex entry:', codexErr.message);
+          logger.warn('⚠️ Failed to cascade-delete Codex entry:', codexErr.message);
         }
       }
 
@@ -374,9 +375,9 @@ export function GenealogyProvider({ children }) {
         syncDeletePerson(user.uid, activeDataset.id, id, relationshipIds);
       }
 
-      console.log('✅ Person deleted:', id, `(cascade: ${relationshipIds.length} relationships)`);
+      logger.log('✅ Person deleted:', id, `(cascade: ${relationshipIds.length} relationships)`);
     } catch (err) {
-      console.error('❌ Failed to delete person:', err);
+      logger.error('❌ Failed to delete person:', err);
       throw err;
     }
   }, [people, relationships, user, activeDataset]);
@@ -396,10 +397,10 @@ export function GenealogyProvider({ children }) {
         syncAddHouse(user.uid, activeDataset.id, newId, newHouse);
       }
 
-      console.log('✅ House added:', newHouse.houseName);
+      logger.log('✅ House added:', newHouse.houseName);
       return newId;
     } catch (err) {
-      console.error('❌ Failed to add house:', err);
+      logger.error('❌ Failed to add house:', err);
       throw err;
     }
   }, [user, activeDataset]);
@@ -418,9 +419,9 @@ export function GenealogyProvider({ children }) {
         syncUpdateHouse(user.uid, activeDataset.id, id, updates);
       }
 
-      console.log('✅ House updated:', id);
+      logger.log('✅ House updated:', id);
     } catch (err) {
-      console.error('❌ Failed to update house:', err);
+      logger.error('❌ Failed to update house:', err);
       throw err;
     }
   }, [user, activeDataset]);
@@ -452,9 +453,9 @@ export function GenealogyProvider({ children }) {
         syncDeleteHouse(user.uid, activeDataset.id, id);
       }
 
-      console.log('✅ House deleted:', id);
+      logger.log('✅ House deleted:', id);
     } catch (err) {
-      console.error('❌ Failed to delete house:', err);
+      logger.error('❌ Failed to delete house:', err);
       throw err;
     }
   }, [user, activeDataset]);
@@ -474,10 +475,10 @@ export function GenealogyProvider({ children }) {
         syncAddRelationship(user.uid, activeDataset.id, newId, newRelationship);
       }
 
-      console.log('✅ Relationship added:', relationshipData.relationshipType);
+      logger.log('✅ Relationship added:', relationshipData.relationshipType);
       return newId;
     } catch (err) {
-      console.error('❌ Failed to add relationship:', err);
+      logger.error('❌ Failed to add relationship:', err);
       throw err;
     }
   }, [user, activeDataset]);
@@ -496,9 +497,9 @@ export function GenealogyProvider({ children }) {
         syncUpdateRelationship(user.uid, activeDataset.id, id, updates);
       }
 
-      console.log('✅ Relationship updated:', id);
+      logger.log('✅ Relationship updated:', id);
     } catch (err) {
-      console.error('❌ Failed to update relationship:', err);
+      logger.error('❌ Failed to update relationship:', err);
       throw err;
     }
   }, [user, activeDataset]);
@@ -515,9 +516,9 @@ export function GenealogyProvider({ children }) {
         syncDeleteRelationship(user.uid, activeDataset.id, id);
       }
 
-      console.log('✅ Relationship deleted:', id);
+      logger.log('✅ Relationship deleted:', id);
     } catch (err) {
-      console.error('❌ Failed to delete relationship:', err);
+      logger.error('❌ Failed to delete relationship:', err);
       throw err;
     }
   }, [user, activeDataset]);
@@ -536,10 +537,10 @@ export function GenealogyProvider({ children }) {
         syncUpdatePerson(user.uid, activeDataset.id, result.founder.id, result.founder);
       }
 
-      console.log('✅ Cadet house founded:', result.house.houseName);
+      logger.log('✅ Cadet house founded:', result.house.houseName);
       return result;
     } catch (err) {
-      console.error('❌ Failed to found cadet house:', err);
+      logger.error('❌ Failed to found cadet house:', err);
       throw err;
     }
   }, [loadAllData, user, activeDataset]);
@@ -558,9 +559,9 @@ export function GenealogyProvider({ children }) {
       // Note: We don't delete cloud data here - user might want to restore it
       // If you want to also clear cloud, add that logic here
 
-      console.log('✅ All local data deleted for dataset:', datasetId);
+      logger.log('✅ All local data deleted for dataset:', datasetId);
     } catch (err) {
-      console.error('❌ Failed to delete all data:', err);
+      logger.error('❌ Failed to delete all data:', err);
       throw err;
     }
   }, [activeDataset]);

@@ -36,6 +36,7 @@ import LoadingState from '../shared/LoadingState';
 import { sanitizeSVG } from '../../utils/sanitize';
 import EmptyState from '../shared/EmptyState';
 import './HeraldryPickerModal.css';
+import { logger } from '../../utils/logger';
 
 // ==================== ANIMATION VARIANTS ====================
 const OVERLAY_VARIANTS = {
@@ -172,7 +173,7 @@ function HeraldryPickerModal({
       setHouses(housesData);
 
     } catch (error) {
-      console.error('Error loading heraldry data:', error);
+      logger.error('Error loading heraldry data:', error);
     } finally {
       setLoading(false);
     }

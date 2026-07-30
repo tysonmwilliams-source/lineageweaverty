@@ -20,7 +20,8 @@ import {
   CLAIM_TYPES,
   CLAIM_STRENGTHS,
   INTERREGNUM_REASONS,
-  getDignityIcon
+  getDignityIcon,
+  CLASS_ICONS
 } from '../services/dignityService';
 import { getAllPeople } from '../services/database';
 import Navigation from '../components/Navigation';
@@ -29,6 +30,7 @@ import LoadingState from '../components/shared/LoadingState';
 import EmptyState from '../components/shared/EmptyState';
 import ActionButton from '../components/shared/ActionButton';
 import './DignityCrisisDashboard.css';
+import { logger } from '../utils/logger';
 
 // Animation variants
 const CONTAINER_VARIANTS = {
@@ -59,14 +61,6 @@ const CARD_VARIANTS = {
 };
 
 // Class icons mapping
-const CLASS_ICONS = {
-  crown: 'crown',
-  driht: 'castle',
-  ward: 'shield-check',
-  sir: 'sword',
-  other: 'scroll-text'
-};
-
 function DignityCrisisDashboard() {
   const navigate = useNavigate();
   const { activeDataset } = useDataset();
@@ -104,7 +98,7 @@ function DignityCrisisDashboard() {
       setPeople(peopleData);
       setLoading(false);
     } catch (error) {
-      console.error('Error loading crisis data:', error);
+      logger.error('Error loading crisis data:', error);
       setLoading(false);
     }
   }, [activeDataset]);

@@ -24,6 +24,7 @@ import {
   syncUpdateHouse,
   syncUpdatePerson
 } from './dataSyncService';
+import { logger } from '../utils/logger';
 
 // ==================== HERALDRY CRUD OPERATIONS ====================
 
@@ -97,7 +98,7 @@ export async function createHeraldry(heraldryData, userId = null, datasetId = nu
     };
 
     const id = await db.heraldry.add(record);
-    console.log('🛡️ Heraldry created with ID:', id);
+    logger.log('🛡️ Heraldry created with ID:', id);
 
     // Sync to cloud if userId provided
     if (userId && datasetId) {
@@ -106,7 +107,7 @@ export async function createHeraldry(heraldryData, userId = null, datasetId = nu
 
     return id;
   } catch (error) {
-    console.error('❌ Error creating heraldry:', error);
+    logger.error('❌ Error creating heraldry:', error);
     throw error;
   }
 }
@@ -123,7 +124,7 @@ export async function getHeraldry(id, datasetId = null) {
     const heraldry = await db.heraldry.get(id);
     return heraldry;
   } catch (error) {
-    console.error('❌ Error getting heraldry:', error);
+    logger.error('❌ Error getting heraldry:', error);
     throw error;
   }
 }
@@ -139,7 +140,7 @@ export async function getAllHeraldry(datasetId = null) {
     const heraldry = await db.heraldry.toArray();
     return heraldry;
   } catch (error) {
-    console.error('❌ Error getting all heraldry:', error);
+    logger.error('❌ Error getting all heraldry:', error);
     throw error;
   }
 }
@@ -155,7 +156,7 @@ export async function getHeraldryCount(datasetId = null) {
     const db = getDatabase(datasetId);
     return await db.heraldry.count();
   } catch (error) {
-    console.error('❌ Error getting heraldry count:', error);
+    logger.error('❌ Error getting heraldry count:', error);
     return 0;
   }
 }
@@ -177,7 +178,7 @@ export async function updateHeraldry(id, updates, userId = null, datasetId = nul
     };
     // Always update the 'updated' timestamp
     const result = await db.heraldry.update(id, updateData);
-    console.log('🛡️ Heraldry updated:', id);
+    logger.log('🛡️ Heraldry updated:', id);
 
     // Sync to cloud if userId and datasetId provided
     if (userId && datasetId) {
@@ -186,7 +187,7 @@ export async function updateHeraldry(id, updates, userId = null, datasetId = nul
 
     return result;
   } catch (error) {
-    console.error('❌ Error updating heraldry:', error);
+    logger.error('❌ Error updating heraldry:', error);
     throw error;
   }
 }
@@ -244,7 +245,7 @@ export async function deleteHeraldry(id, userId = null, datasetId = null) {
 
     // Then delete the heraldry record itself
     await db.heraldry.delete(id);
-    console.log('🛡️ Heraldry deleted:', id);
+    logger.log('🛡️ Heraldry deleted:', id);
 
     // Sync to cloud if userId and datasetId provided
     if (userId && datasetId) {
@@ -262,7 +263,7 @@ export async function deleteHeraldry(id, userId = null, datasetId = null) {
       await syncDeleteHeraldry(userId, datasetId, id);
     }
   } catch (error) {
-    console.error('❌ Error deleting heraldry:', error);
+    logger.error('❌ Error deleting heraldry:', error);
     throw error;
   }
 }
@@ -308,7 +309,7 @@ export async function linkHeraldryToEntity(linkData, userId = null, datasetId = 
       await db.people.update(linkData.entityId, { heraldryId: linkData.heraldryId });
     }
 
-    console.log('🔗 Heraldry linked to', linkData.entityType, linkData.entityId);
+    logger.log('🔗 Heraldry linked to', linkData.entityType, linkData.entityId);
 
     // Sync to cloud if userId and datasetId provided
     if (userId && datasetId) {
@@ -317,7 +318,7 @@ export async function linkHeraldryToEntity(linkData, userId = null, datasetId = 
 
     return id;
   } catch (error) {
-    console.error('❌ Error linking heraldry:', error);
+    logger.error('❌ Error linking heraldry:', error);
     throw error;
   }
 }
@@ -347,7 +348,7 @@ export async function unlinkHeraldry(linkId, userId = null, datasetId = null) {
       }
 
       await db.heraldryLinks.delete(linkId);
-      console.log('🔗 Heraldry link removed:', linkId);
+      logger.log('🔗 Heraldry link removed:', linkId);
 
       // Sync to cloud if userId and datasetId provided
       if (userId && datasetId) {
@@ -355,7 +356,7 @@ export async function unlinkHeraldry(linkId, userId = null, datasetId = null) {
       }
     }
   } catch (error) {
-    console.error('❌ Error unlinking heraldry:', error);
+    logger.error('❌ Error unlinking heraldry:', error);
     throw error;
   }
 }
@@ -372,7 +373,7 @@ export async function getHeraldryLinks(heraldryId, datasetId = null) {
     const links = await db.heraldryLinks.where('heraldryId').equals(heraldryId).toArray();
     return links;
   } catch (error) {
-    console.error('❌ Error getting heraldry links:', error);
+    logger.error('❌ Error getting heraldry links:', error);
     throw error;
   }
 }
@@ -408,7 +409,7 @@ export async function getHeraldryForEntity(entityType, entityId, datasetId = nul
       };
     });
   } catch (error) {
-    console.error('❌ Error getting heraldry for entity:', error);
+    logger.error('❌ Error getting heraldry for entity:', error);
     throw error;
   }
 }
@@ -427,7 +428,7 @@ export async function getHeraldryByCategory(category, datasetId = null) {
     const all = await db.heraldry.toArray();
     return all.filter(h => h.category === category);
   } catch (error) {
-    console.error('❌ Error getting heraldry by category:', error);
+    logger.error('❌ Error getting heraldry by category:', error);
     throw error;
   }
 }
@@ -460,7 +461,7 @@ export async function searchHeraldry(searchTerm, datasetId = null) {
       return false;
     });
   } catch (error) {
-    console.error('❌ Error searching heraldry:', error);
+    logger.error('❌ Error searching heraldry:', error);
     throw error;
   }
 }
@@ -504,7 +505,7 @@ export async function getHeraldryStatistics(datasetId = null) {
       withBlazon: all.filter(h => h.blazon).length
     };
   } catch (error) {
-    console.error('❌ Error getting heraldry statistics:', error);
+    logger.error('❌ Error getting heraldry statistics:', error);
     throw error;
   }
 }
@@ -523,7 +524,7 @@ export async function getRecentHeraldry(limit = 5, datasetId = null) {
       .sort((a, b) => new Date(b.updated) - new Date(a.updated))
       .slice(0, limit);
   } catch (error) {
-    console.error('❌ Error getting recent heraldry:', error);
+    logger.error('❌ Error getting recent heraldry:', error);
     throw error;
   }
 }
@@ -539,7 +540,7 @@ export async function getHeraldryTemplates(datasetId = null) {
     const all = await db.heraldry.toArray();
     return all.filter(h => h.isTemplate);
   } catch (error) {
-    console.error('❌ Error getting heraldry templates:', error);
+    logger.error('❌ Error getting heraldry templates:', error);
     throw error;
   }
 }
@@ -567,7 +568,7 @@ export async function getPersonalArms(personId, datasetId = null) {
     const primary = heraldryList.find(h => h.linkType === 'primary');
     return primary || null;
   } catch (error) {
-    console.error('❌ Error getting personal arms:', error);
+    logger.error('❌ Error getting personal arms:', error);
     return null;
   }
 }
@@ -651,10 +652,10 @@ export async function createPersonalArmsFromHouse(options, datasetId = null) {
       linkType: 'primary'
     }, null, datasetId);
     
-    console.log('�\udee1️ Personal arms created for', person.firstName, person.lastName, 'with ID:', heraldryId);
+    logger.log('�\udee1️ Personal arms created for', person.firstName, person.lastName, 'with ID:', heraldryId);
     return heraldryId;
   } catch (error) {
-    console.error('❌ Error creating personal arms:', error);
+    logger.error('❌ Error creating personal arms:', error);
     throw error;
   }
 }
@@ -679,7 +680,7 @@ export async function hasPersonalArms(personId, datasetId = null) {
     
     return !!links;
   } catch (error) {
-    console.error('❌ Error checking personal arms:', error);
+    logger.error('❌ Error checking personal arms:', error);
     return false;
   }
 }
@@ -711,7 +712,7 @@ export async function getPeopleWithPersonalArms(datasetId = null) {
     
     return results;
   } catch (error) {
-    console.error('❌ Error getting people with personal arms:', error);
+    logger.error('❌ Error getting people with personal arms:', error);
     return [];
   }
 }

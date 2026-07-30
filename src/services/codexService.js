@@ -6,6 +6,7 @@
  */
 
 import { getDatabase } from './database.js';
+import { logger } from '../utils/logger';
 
 // Context notification - lazy loaded to avoid circular deps
 let contextNotify = null;
@@ -66,14 +67,14 @@ export async function createEntry(entryData, datasetId) {
     };
 
     const id = await db.codexEntries.add(entry);
-    console.log('Codex entry created with ID:', id);
+    logger.log('Codex entry created with ID:', id);
 
     // Notify context system of change
     notifyContextChange('codex', 'create', { ...entry, id }, datasetId);
 
     return id;
   } catch (error) {
-    console.error('Error creating codex entry:', error);
+    logger.error('Error creating codex entry:', error);
     throw error;
   }
 }
@@ -130,10 +131,10 @@ export async function restoreEntry(entryData, datasetId) {
     // Use .put() which creates OR updates based on the key
     // This prevents duplicates by using the original ID
     const id = await db.codexEntries.put(entry);
-    console.log('Codex entry restored with ID:', id);
+    logger.log('Codex entry restored with ID:', id);
     return id;
   } catch (error) {
-    console.error('Error restoring codex entry:', error);
+    logger.error('Error restoring codex entry:', error);
     throw error;
   }
 }
@@ -147,7 +148,7 @@ export async function getEntry(id, datasetId) {
     const entry = await db.codexEntries.get(id);
     return entry;
   } catch (error) {
-    console.error('Error getting codex entry:', error);
+    logger.error('Error getting codex entry:', error);
     throw error;
   }
 }
@@ -172,7 +173,7 @@ export async function getEntryByPersonId(personId, datasetId) {
     const entry = await db.codexEntries.where('personId').equals(personId).first();
     return entry || null;
   } catch (error) {
-    console.error('Error getting codex entry by personId:', error);
+    logger.error('Error getting codex entry by personId:', error);
     throw error;
   }
 }
@@ -197,7 +198,7 @@ export async function getEntryByHouseId(houseId, datasetId) {
     const entry = await db.codexEntries.where('houseId').equals(houseId).first();
     return entry || null;
   } catch (error) {
-    console.error('Error getting codex entry by houseId:', error);
+    logger.error('Error getting codex entry by houseId:', error);
     throw error;
   }
 }
@@ -222,7 +223,7 @@ export async function getEntryByDignityId(dignityId, datasetId) {
     const entry = await db.codexEntries.where('dignityId').equals(dignityId).first();
     return entry || null;
   } catch (error) {
-    console.error('Error getting codex entry by dignityId:', error);
+    logger.error('Error getting codex entry by dignityId:', error);
     throw error;
   }
 }
@@ -247,7 +248,7 @@ export async function getEntryByHeraldryId(heraldryId, datasetId) {
     const entry = await db.codexEntries.where('heraldryId').equals(heraldryId).first();
     return entry || null;
   } catch (error) {
-    console.error('Error getting codex entry by heraldryId:', error);
+    logger.error('Error getting codex entry by heraldryId:', error);
     throw error;
   }
 }
@@ -261,7 +262,7 @@ export async function getAllEntries(datasetId) {
     const entries = await db.codexEntries.toArray();
     return entries;
   } catch (error) {
-    console.error('Error getting all codex entries:', error);
+    logger.error('Error getting all codex entries:', error);
     throw error;
   }
 }
@@ -277,7 +278,7 @@ export async function getEntriesCount(datasetId) {
     const db = getDatabase(datasetId);
     return await db.codexEntries.count();
   } catch (error) {
-    console.error('Error getting codex entries count:', error);
+    logger.error('Error getting codex entries count:', error);
     return 0;
   }
 }
@@ -297,7 +298,7 @@ export async function getEntriesByType(type, datasetId) {
     const entries = await db.codexEntries.where('type').equals(type).toArray();
     return entries;
   } catch (error) {
-    console.error('Error getting entries by type:', error);
+    logger.error('Error getting entries by type:', error);
     throw error;
   }
 }
@@ -311,7 +312,7 @@ export async function getEntriesByCategory(category, datasetId) {
     const entries = await db.codexEntries.where('category').equals(category).toArray();
     return entries;
   } catch (error) {
-    console.error('Error getting entries by category:', error);
+    logger.error('Error getting entries by category:', error);
     throw error;
   }
 }
@@ -325,7 +326,7 @@ export async function getEntriesByEra(era, datasetId) {
     const entries = await db.codexEntries.where('era').equals(era).toArray();
     return entries;
   } catch (error) {
-    console.error('Error getting entries by era:', error);
+    logger.error('Error getting entries by era:', error);
     throw error;
   }
 }
@@ -340,7 +341,7 @@ export async function getEntriesByTag(tag, datasetId) {
     const entries = await db.codexEntries.where('tags').equals(tag).toArray();
     return entries;
   } catch (error) {
-    console.error('Error getting entries by tag:', error);
+    logger.error('Error getting entries by tag:', error);
     throw error;
   }
 }
@@ -358,7 +359,7 @@ export async function searchEntriesByTitle(searchTerm, datasetId) {
       entry.title.toLowerCase().includes(searchLower)
     );
   } catch (error) {
-    console.error('Error searching entries:', error);
+    logger.error('Error searching entries:', error);
     throw error;
   }
 }
@@ -380,7 +381,7 @@ export async function searchEntriesFullText(searchTerm, datasetId) {
       return titleMatch || subtitleMatch || contentMatch;
     });
   } catch (error) {
-    console.error('Error in full-text search:', error);
+    logger.error('Error in full-text search:', error);
     throw error;
   }
 }
@@ -402,7 +403,7 @@ export async function updateEntry(id, updates, datasetId) {
     }
 
     const result = await db.codexEntries.update(id, modifiedUpdates);
-    console.log('Codex entry updated:', result);
+    logger.log('Codex entry updated:', result);
 
     // Notify context system of change
     const updatedEntry = await db.codexEntries.get(id);
@@ -410,7 +411,7 @@ export async function updateEntry(id, updates, datasetId) {
 
     return result;
   } catch (error) {
-    console.error('Error updating codex entry:', error);
+    logger.error('Error updating codex entry:', error);
     throw error;
   }
 }
@@ -431,7 +432,7 @@ export async function deleteEntry(id, datasetId, userId = null) {
     // Delete all links associated with this entry
     await deleteLinksForEntry(id, datasetId, userId);
 
-    console.log('Codex entry deleted:', id);
+    logger.log('Codex entry deleted:', id);
 
     // Propagate to the cloud. Without this the entry was restored on the next
     // download — which made the Codex cleanup tool actively counter-productive,
@@ -441,7 +442,7 @@ export async function deleteEntry(id, datasetId, userId = null) {
       try {
         await syncDeleteCodexEntry(userId, datasetId, id);
       } catch (syncError) {
-        console.error('☁️ Failed to sync codex entry delete:', syncError);
+        logger.error('☁️ Failed to sync codex entry delete:', syncError);
       }
     }
 
@@ -450,7 +451,7 @@ export async function deleteEntry(id, datasetId, userId = null) {
       notifyContextChange('codex', 'delete', entry, datasetId);
     }
   } catch (error) {
-    console.error('Error deleting codex entry:', error);
+    logger.error('Error deleting codex entry:', error);
     throw error;
   }
 }
@@ -474,10 +475,10 @@ export async function createLink(linkData, datasetId) {
     };
 
     const id = await db.codexLinks.add(link);
-    console.log('Codex link created with ID:', id);
+    logger.log('Codex link created with ID:', id);
     return id;
   } catch (error) {
-    console.error('Error creating codex link:', error);
+    logger.error('Error creating codex link:', error);
     throw error;
   }
 }
@@ -491,7 +492,7 @@ export async function getOutgoingLinks(entryId, datasetId) {
     const links = await db.codexLinks.where('sourceId').equals(entryId).toArray();
     return links;
   } catch (error) {
-    console.error('Error getting outgoing links:', error);
+    logger.error('Error getting outgoing links:', error);
     throw error;
   }
 }
@@ -559,7 +560,7 @@ export async function getIncomingLinks(entryId, datasetId) {
     
     return deduplicated;
   } catch (error) {
-    console.error('Error getting incoming links:', error);
+    logger.error('Error getting incoming links:', error);
     throw error;
   }
 }
@@ -579,7 +580,7 @@ export async function getAllLinksForEntry(entryId, datasetId) {
       incoming
     };
   } catch (error) {
-    console.error('Error getting all links for entry:', error);
+    logger.error('Error getting all links for entry:', error);
     throw error;
   }
 }
@@ -615,14 +616,14 @@ export async function deleteLinksForEntry(entryId, datasetId, userId = null) {
         try {
           await syncDeleteCodexLink(userId, datasetId, link.id);
         } catch (syncError) {
-          console.error('☁️ Failed to sync codex link delete:', syncError);
+          logger.error('☁️ Failed to sync codex link delete:', syncError);
         }
       }
     }
 
-    console.log('All links deleted for entry:', entryId);
+    logger.log('All links deleted for entry:', entryId);
   } catch (error) {
-    console.error('Error deleting links for entry:', error);
+    logger.error('Error deleting links for entry:', error);
     throw error;
   }
 }
@@ -634,9 +635,9 @@ export async function deleteLink(linkId, datasetId) {
   try {
     const db = getDatabase(datasetId);
     await db.codexLinks.delete(linkId);
-    console.log('Codex link deleted:', linkId);
+    logger.log('Codex link deleted:', linkId);
   } catch (error) {
-    console.error('Error deleting codex link:', error);
+    logger.error('Error deleting codex link:', error);
     throw error;
   }
 }
@@ -687,7 +688,7 @@ export async function getCodexStatistics(datasetId) {
 
     return stats;
   } catch (error) {
-    console.error('Error getting codex statistics:', error);
+    logger.error('Error getting codex statistics:', error);
     throw error;
   }
 }
@@ -727,7 +728,7 @@ export async function migrateMysteriaToDignities(datasetId) {
       }
     }
 
-    console.log(`Migrated ${migratedCount} mysteria entries to Dignities & Titles`);
+    logger.log(`Migrated ${migratedCount} mysteria entries to Dignities & Titles`);
 
     return {
       success: errors.length === 0,
@@ -736,7 +737,7 @@ export async function migrateMysteriaToDignities(datasetId) {
       errors
     };
   } catch (error) {
-    console.error('Error migrating mysteria entries:', error);
+    logger.error('Error migrating mysteria entries:', error);
     throw error;
   }
 }
@@ -755,7 +756,7 @@ export async function getMysteriaMigrationCount(datasetId) {
       .count();
     return count;
   } catch (error) {
-    console.error('Error getting mysteria count:', error);
+    logger.error('Error getting mysteria count:', error);
     return 0;
   }
 }
@@ -774,7 +775,7 @@ export async function getMysteriaMigrationEntries(datasetId) {
       .toArray();
     return entries;
   } catch (error) {
-    console.error('Error getting mysteria entries:', error);
+    logger.error('Error getting mysteria entries:', error);
     return [];
   }
 }
@@ -813,7 +814,7 @@ export async function migrateSelectedMysteria(entryIds, datasetId) {
       }
     }
 
-    console.log(`Migrated ${migratedCount} selected mysteria entries to Dignities & Titles`);
+    logger.log(`Migrated ${migratedCount} selected mysteria entries to Dignities & Titles`);
 
     return {
       success: errors.length === 0,
@@ -822,7 +823,7 @@ export async function migrateSelectedMysteria(entryIds, datasetId) {
       errors
     };
   } catch (error) {
-    console.error('Error migrating selected mysteria entries:', error);
+    logger.error('Error migrating selected mysteria entries:', error);
     throw error;
   }
 }
@@ -853,7 +854,7 @@ export async function markMysteriaSkipMigration(entryIds, datasetId) {
       }
     }
 
-    console.log(`Marked ${markedCount} entries to skip migration`);
+    logger.log(`Marked ${markedCount} entries to skip migration`);
 
     return {
       success: errors.length === 0,
@@ -862,7 +863,7 @@ export async function markMysteriaSkipMigration(entryIds, datasetId) {
       errors
     };
   } catch (error) {
-    console.error('Error marking entries to skip migration:', error);
+    logger.error('Error marking entries to skip migration:', error);
     throw error;
   }
 }

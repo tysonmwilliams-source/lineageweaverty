@@ -17,6 +17,11 @@ import * as d3 from 'd3';
 import { useTheme } from './ThemeContext';
 import { getAllThemeColors } from '../utils/themeColors';
 import { calculateBlockBasedLayout } from '../utils/familyBlockLayout';
+// Shared with FamilyTree.jsx. BranchView used to carry its own copy, commented
+// "matching FamilyTree.jsx" — but its light-theme branch lightened toward white
+// where this one darkens, so the same house rendered a different shade in the
+// two views side by side.
+import { harmonizeColor } from '../utils/treeHelpers';
 import Icon from './icons';
 import './BranchView.css';
 
@@ -29,40 +34,6 @@ const START_Y = 80;
 const VERTICAL_SPACING = 75;
 const GENERATION_SPACING = VERTICAL_SPACING + CARD_HEIGHT;
 const BRANCH_SPACING = 40;
-
-/**
- * Harmonize house colors with the theme (matching FamilyTree.jsx)
- */
-const harmonizeColor = (hexColor, isDark) => {
-  const hex = hexColor.replace('#', '');
-  let r = parseInt(hex.substr(0, 2), 16);
-  let g = parseInt(hex.substr(2, 2), 16);
-  let b = parseInt(hex.substr(4, 2), 16);
-
-  if (isDark) {
-    const warmBrown = { r: 120, g: 100, b: 80 };
-    const desaturationAmount = 0.5;
-    r = Math.round(r * (1 - desaturationAmount) + warmBrown.r * desaturationAmount);
-    g = Math.round(g * (1 - desaturationAmount) + warmBrown.g * desaturationAmount);
-    b = Math.round(b * (1 - desaturationAmount) + warmBrown.b * desaturationAmount);
-    const darkenAmount = 0.7;
-    r = Math.round(r * darkenAmount);
-    g = Math.round(g * darkenAmount);
-    b = Math.round(b * darkenAmount);
-  } else {
-    const warmCream = { r: 180, g: 160, b: 140 };
-    const desaturationAmount = 0.4;
-    r = Math.round(r * (1 - desaturationAmount) + warmCream.r * desaturationAmount);
-    g = Math.round(g * (1 - desaturationAmount) + warmCream.g * desaturationAmount);
-    b = Math.round(b * (1 - desaturationAmount) + warmCream.b * desaturationAmount);
-    const lightenAmount = 0.85;
-    r = Math.round(255 - (255 - r) * lightenAmount);
-    g = Math.round(255 - (255 - g) * lightenAmount);
-    b = Math.round(255 - (255 - b) * lightenAmount);
-  }
-
-  return `rgb(${r}, ${g}, ${b})`;
-};
 
 /**
  * Individual Branch Panel Component

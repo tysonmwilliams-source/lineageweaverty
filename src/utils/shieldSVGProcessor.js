@@ -15,6 +15,8 @@
 
 // The default shield shape used throughout the application
 // This is the French shield (embowed/arched style)
+import { logger } from './logger';
+
 export const DEFAULT_SHIELD_TYPE = 'default';
 
 // Shield SVG file paths (in /public/shields/)
@@ -64,7 +66,7 @@ function resolveShieldType(shieldType) {
   }
   
   // Fallback to default
-  console.warn(`Unknown shield type "${shieldType}", using default`);
+  logger.warn(`Unknown shield type "${shieldType}", using default`);
   return DEFAULT_SHIELD_TYPE;
 }
 
@@ -152,7 +154,7 @@ export async function loadShieldSVG(shieldType) {
     return svgCache[resolvedType];
     
   } catch (error) {
-    console.error(`Error loading shield SVG (${resolvedType}):`, error);
+    logger.error(`Error loading shield SVG (${resolvedType}):`, error);
     throw error;
   }
 }
@@ -186,7 +188,7 @@ function getPathBounds(pathElement) {
       height: bbox.height
     };
   } catch (error) {
-    console.error('Error getting path bounds:', error);
+    logger.error('Error getting path bounds:', error);
     // Fallback: parse from viewBox
     return null;
   }
@@ -251,7 +253,7 @@ export async function createSVGHeraldryWithMask(sourceImageSVG, shieldType, size
   <path d="${shield.pathData}" fill="none" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>`;
   
-  console.log(`🎯 Shield transform: translate(${translateX.toFixed(1)}, ${translateY.toFixed(1)}) scale(${scaleX.toFixed(2)}, ${scaleY.toFixed(2)})`);
+  logger.log(`🎯 Shield transform: translate(${translateX.toFixed(1)}, ${translateY.toFixed(1)}) scale(${scaleX.toFixed(2)}, ${scaleY.toFixed(2)})`);
   
   return maskedSVG;
 }
@@ -287,9 +289,9 @@ export async function preloadAllShields() {
   try {
     // Only preload the default shield now
     await loadShieldSVG(DEFAULT_SHIELD_TYPE);
-    console.log('✅ Default shield SVG preloaded successfully');
+    logger.log('✅ Default shield SVG preloaded successfully');
   } catch (error) {
-    console.error('❌ Error preloading shield:', error);
+    logger.error('❌ Error preloading shield:', error);
   }
 }
 

@@ -55,7 +55,7 @@ function setCachedMigrationVersion(userId, datasetId, version) {
     cache[key] = version;
     localStorage.setItem(MIGRATION_CACHE_KEY, JSON.stringify(cache));
   } catch (error) {
-    console.warn('Failed to cache migration version:', error);
+    logger.warn('Failed to cache migration version:', error);
   }
 }
 
@@ -97,6 +97,7 @@ import {
   writeBatch
 } from 'firebase/firestore';
 import { db as firestoreDb } from '../config/firebase';
+import { logger } from '../utils/logger';
 
 // ==================== HOUSE → CODEX MIGRATION ====================
 
@@ -109,7 +110,7 @@ import { db as firestoreDb } from '../config/firebase';
  * @returns {Promise<Object>} Migration results
  */
 export async function migrateHousesToCodex() {
-  console.log('📚 Starting House → Codex migration...');
+  logger.log('📚 Starting House → Codex migration...');
 
   const results = {
     total: 0,
@@ -136,7 +137,7 @@ export async function migrateHousesToCodex() {
           // Link the existing entry to the house
           await db.houses.update(house.id, { codexEntryId: existingEntry.id });
           results.skipped++;
-          console.log(`📚 House "${house.houseName}" already has Codex entry, linked.`);
+          logger.log(`📚 House "${house.houseName}" already has Codex entry, linked.`);
           continue;
         }
 
@@ -155,7 +156,7 @@ export async function migrateHousesToCodex() {
         await db.houses.update(house.id, { codexEntryId });
 
         results.migrated++;
-        console.log(`📚 Created Codex entry for House "${house.houseName}": ${codexEntryId}`);
+        logger.log(`📚 Created Codex entry for House "${house.houseName}": ${codexEntryId}`);
 
       } catch (error) {
         results.errors.push({
@@ -163,15 +164,15 @@ export async function migrateHousesToCodex() {
           houseName: house.houseName,
           error: error.message
         });
-        console.error(`❌ Error migrating house "${house.houseName}":`, error);
+        logger.error(`❌ Error migrating house "${house.houseName}":`, error);
       }
     }
 
-    console.log(`📚 House → Codex migration complete:`, results);
+    logger.log(`📚 House → Codex migration complete:`, results);
     return results;
 
   } catch (error) {
-    console.error('❌ House → Codex migration failed:', error);
+    logger.error('❌ House → Codex migration failed:', error);
     throw error;
   }
 }
@@ -187,7 +188,7 @@ export async function migrateHousesToCodex() {
  * @returns {Promise<Object>} Migration results
  */
 export async function migrateDignitiesToCodex() {
-  console.log('📚 Starting Dignity → Codex migration...');
+  logger.log('📚 Starting Dignity → Codex migration...');
 
   const results = {
     total: 0,
@@ -214,7 +215,7 @@ export async function migrateDignitiesToCodex() {
           // Link the existing entry to the dignity
           await updateDignity(dignity.id, { codexEntryId: existingEntry.id });
           results.skipped++;
-          console.log(`📚 Dignity "${dignity.name}" already has Codex entry, linked.`);
+          logger.log(`📚 Dignity "${dignity.name}" already has Codex entry, linked.`);
           continue;
         }
 
@@ -235,7 +236,7 @@ export async function migrateDignitiesToCodex() {
         await updateDignity(dignity.id, { codexEntryId });
 
         results.migrated++;
-        console.log(`📚 Created Codex entry for Dignity "${dignity.name}": ${codexEntryId}`);
+        logger.log(`📚 Created Codex entry for Dignity "${dignity.name}": ${codexEntryId}`);
 
       } catch (error) {
         results.errors.push({
@@ -243,15 +244,15 @@ export async function migrateDignitiesToCodex() {
           dignityName: dignity.name,
           error: error.message
         });
-        console.error(`❌ Error migrating dignity "${dignity.name}":`, error);
+        logger.error(`❌ Error migrating dignity "${dignity.name}":`, error);
       }
     }
 
-    console.log(`📚 Dignity → Codex migration complete:`, results);
+    logger.log(`📚 Dignity → Codex migration complete:`, results);
     return results;
 
   } catch (error) {
-    console.error('❌ Dignity → Codex migration failed:', error);
+    logger.error('❌ Dignity → Codex migration failed:', error);
     throw error;
   }
 }
@@ -396,7 +397,7 @@ async function createBidirectionalLink(entryId1, entryId2, type, label, syncCont
  * @returns {Promise<Object>} Migration results
  */
 export async function migrateDignityNatures(syncContext = null) {
-  console.log('📜 Starting Dignity Nature migration...');
+  logger.log('📜 Starting Dignity Nature migration...');
 
   const results = {
     total: 0,
@@ -450,10 +451,10 @@ export async function migrateDignityNatures(syncContext = null) {
 
         results.migrated++;
         results.byNature[nature] = (results.byNature[nature] || 0) + 1;
-        console.log(`📜 Migrated "${dignity.name}" → ${nature}`);
+        logger.log(`📜 Migrated "${dignity.name}" → ${nature}`);
 
       } catch (error) {
-        console.error(`❌ Error migrating dignity "${dignity.name}":`, error);
+        logger.error(`❌ Error migrating dignity "${dignity.name}":`, error);
         results.errors.push({
           dignityId: dignity.id,
           dignityName: dignity.name,
@@ -462,13 +463,13 @@ export async function migrateDignityNatures(syncContext = null) {
       }
     }
 
-    console.log(`📜 Dignity Nature migration complete: ${results.migrated} migrated, ${results.skipped} skipped`);
-    console.log('📜 By nature:', results.byNature);
+    logger.log(`📜 Dignity Nature migration complete: ${results.migrated} migrated, ${results.skipped} skipped`);
+    logger.log('📜 By nature:', results.byNature);
 
     return results;
 
   } catch (error) {
-    console.error('❌ Dignity Nature migration failed:', error);
+    logger.error('❌ Dignity Nature migration failed:', error);
     results.errors.push({ type: 'general', error: error.message });
     return results;
   }
@@ -485,7 +486,7 @@ export async function migrateDignityNatures(syncContext = null) {
  * @returns {Promise<Object>} Migration results
  */
 export async function migratePersonHouseLinks(syncContext = null) {
-  console.log('🔗 Starting Person ↔ House cross-linking...');
+  logger.log('🔗 Starting Person ↔ House cross-linking...');
 
   const results = {
     total: 0,
@@ -543,7 +544,7 @@ export async function migratePersonHouseLinks(syncContext = null) {
 
         if (created) {
           results.linked++;
-          console.log(`🔗 Linked ${person.firstName} ${person.lastName} ↔ House Codex entry`);
+          logger.log(`🔗 Linked ${person.firstName} ${person.lastName} ↔ House Codex entry`);
         } else {
           results.skipped++;
           results.skippedLinkExists++;
@@ -558,7 +559,7 @@ export async function migratePersonHouseLinks(syncContext = null) {
       }
     }
 
-    console.log('🔗 Person ↔ House cross-linking complete:', {
+    logger.log('🔗 Person ↔ House cross-linking complete:', {
       total: results.total,
       linked: results.linked,
       skipped: results.skipped,
@@ -567,7 +568,7 @@ export async function migratePersonHouseLinks(syncContext = null) {
     return results;
 
   } catch (error) {
-    console.error('❌ Person ↔ House cross-linking failed:', error);
+    logger.error('❌ Person ↔ House cross-linking failed:', error);
     throw error;
   }
 }
@@ -582,7 +583,7 @@ export async function migratePersonHouseLinks(syncContext = null) {
  * @returns {Promise<Object>} Migration results
  */
 export async function migratePersonDignityLinks(syncContext = null) {
-  console.log('🔗 Starting Person ↔ Dignity cross-linking...');
+  logger.log('🔗 Starting Person ↔ Dignity cross-linking...');
 
   const results = {
     total: 0,
@@ -633,7 +634,7 @@ export async function migratePersonDignityLinks(syncContext = null) {
 
         if (created) {
           results.linked++;
-          console.log(`🔗 Linked Person ↔ Dignity "${dignity.name}" Codex entries`);
+          logger.log(`🔗 Linked Person ↔ Dignity "${dignity.name}" Codex entries`);
         } else {
           results.skipped++;
         }
@@ -647,11 +648,11 @@ export async function migratePersonDignityLinks(syncContext = null) {
       }
     }
 
-    console.log('🔗 Person ↔ Dignity cross-linking complete:', results);
+    logger.log('🔗 Person ↔ Dignity cross-linking complete:', results);
     return results;
 
   } catch (error) {
-    console.error('❌ Person ↔ Dignity cross-linking failed:', error);
+    logger.error('❌ Person ↔ Dignity cross-linking failed:', error);
     throw error;
   }
 }
@@ -665,7 +666,7 @@ export async function migratePersonDignityLinks(syncContext = null) {
  * @returns {Promise<Object>} Migration results
  */
 export async function migrateHouseDignityLinks(syncContext = null) {
-  console.log('🔗 Starting House ↔ Dignity cross-linking...');
+  logger.log('🔗 Starting House ↔ Dignity cross-linking...');
 
   const results = {
     total: 0,
@@ -716,7 +717,7 @@ export async function migrateHouseDignityLinks(syncContext = null) {
 
         if (created) {
           results.linked++;
-          console.log(`🔗 Linked House ↔ Dignity "${dignity.name}" Codex entries`);
+          logger.log(`🔗 Linked House ↔ Dignity "${dignity.name}" Codex entries`);
         } else {
           results.skipped++;
         }
@@ -730,11 +731,11 @@ export async function migrateHouseDignityLinks(syncContext = null) {
       }
     }
 
-    console.log('🔗 House ↔ Dignity cross-linking complete:', results);
+    logger.log('🔗 House ↔ Dignity cross-linking complete:', results);
     return results;
 
   } catch (error) {
-    console.error('❌ House ↔ Dignity cross-linking failed:', error);
+    logger.error('❌ House ↔ Dignity cross-linking failed:', error);
     throw error;
   }
 }
@@ -746,7 +747,7 @@ export async function migrateHouseDignityLinks(syncContext = null) {
  * @returns {Promise<Object>} Combined results
  */
 export async function runCrossLinkingMigrations(syncContext = null) {
-  console.log('🔗 Running all cross-linking migrations...');
+  logger.log('🔗 Running all cross-linking migrations...');
 
   const results = {
     personHouse: null,
@@ -778,7 +779,7 @@ export async function runCrossLinkingMigrations(syncContext = null) {
 
     results.success = results.errors.length === 0;
 
-    console.log('🔗 All cross-linking migrations complete!', {
+    logger.log('🔗 All cross-linking migrations complete!', {
       personHouseLinked: results.personHouse?.linked || 0,
       personDignityLinked: results.personDignity?.linked || 0,
       houseDignityLinked: results.houseDignity?.linked || 0,
@@ -788,7 +789,7 @@ export async function runCrossLinkingMigrations(syncContext = null) {
     return results;
 
   } catch (error) {
-    console.error('❌ Cross-linking migrations failed:', error);
+    logger.error('❌ Cross-linking migrations failed:', error);
     results.success = false;
     results.errors.push({ type: 'fatal', error: error.message });
     return results;
@@ -807,7 +808,7 @@ export async function runCrossLinkingMigrations(syncContext = null) {
  * @returns {Promise<Object>} Combined migration results
  */
 export async function runAllMigrations(syncContext = null) {
-  console.log('🔄 Running all data migrations...');
+  logger.log('🔄 Running all data migrations...');
 
   const results = {
     houses: null,
@@ -845,7 +846,7 @@ export async function runAllMigrations(syncContext = null) {
 
     results.success = results.errors.length === 0;
 
-    console.log('🔄 All migrations complete!', {
+    logger.log('🔄 All migrations complete!', {
       housesMigrated: results.houses?.migrated || 0,
       dignitiesMigrated: results.dignities?.migrated || 0,
       dignityNaturesMigrated: results.dignityNatures?.migrated || 0,
@@ -856,7 +857,7 @@ export async function runAllMigrations(syncContext = null) {
     return results;
 
   } catch (error) {
-    console.error('❌ Migration process failed:', error);
+    logger.error('❌ Migration process failed:', error);
     results.success = false;
     results.errors.push({ type: 'fatal', error: error.message });
     return results;
@@ -1057,7 +1058,7 @@ export async function getMigrationStatus() {
       needsMigration: housesWithoutCodex > 0 || dignitiesWithoutCodex > 0 || dignitiesWithoutNature > 0 || crossLinksNeedMigration
     };
   } catch (error) {
-    console.error('❌ Error checking migration status:', error);
+    logger.error('❌ Error checking migration status:', error);
     throw error;
   }
 }
@@ -1103,7 +1104,7 @@ export async function needsDatasetMigration(userId) {
 
     // If user already has dataset metadata, no migration needed
     if (!metadataSnapshot.empty) {
-      console.log('📂 User already has dataset structure');
+      logger.log('📂 User already has dataset structure');
       return false;
     }
 
@@ -1113,16 +1114,16 @@ export async function needsDatasetMigration(userId) {
     const oldPeopleSnapshot = await getDocs(oldPeopleRef);
 
     if (!oldPeopleSnapshot.empty) {
-      console.log('📂 User has old structure data, migration needed');
+      logger.log('📂 User has old structure data, migration needed');
       return true;
     }
 
     // No old data and no new structure = new user, will be set up fresh
-    console.log('📂 New user, no migration needed');
+    logger.log('📂 New user, no migration needed');
     return false;
 
   } catch (error) {
-    console.error('❌ Error checking dataset migration:', error);
+    logger.error('❌ Error checking dataset migration:', error);
     return false;
   }
 }
@@ -1143,7 +1144,7 @@ export async function needsDatasetMigration(userId) {
  * @returns {Promise<Object>} Migration results
  */
 export async function migrateToDatasetStructure(userId) {
-  console.log('📂 Starting dataset structure migration for user:', userId);
+  logger.log('📂 Starting dataset structure migration for user:', userId);
 
   const results = {
     success: false,
@@ -1162,13 +1163,13 @@ export async function migrateToDatasetStructure(userId) {
     // Check if migration is actually needed
     const needsMigration = await needsDatasetMigration(userId);
     if (!needsMigration) {
-      console.log('📂 No migration needed, skipping');
+      logger.log('📂 No migration needed, skipping');
       results.success = true;
       return results;
     }
 
     // Step 1: Create Default dataset metadata
-    console.log('📂 Step 1: Creating Default dataset metadata...');
+    logger.log('📂 Step 1: Creating Default dataset metadata...');
     const existingDefault = await getDataset(userId, DATASET_DEFAULT_ID);
     if (!existingDefault) {
       await createDataset(userId, {
@@ -1176,13 +1177,13 @@ export async function migrateToDatasetStructure(userId) {
         name: 'Default',
         isDefault: true
       });
-      console.log('📂 Created Default dataset metadata');
+      logger.log('📂 Created Default dataset metadata');
     } else {
-      console.log('📂 Default dataset metadata already exists');
+      logger.log('📂 Default dataset metadata already exists');
     }
 
     // Step 2: Move data from old structure to new structure
-    console.log('📂 Step 2: Moving data to new structure...');
+    logger.log('📂 Step 2: Moving data to new structure...');
 
     for (const collectionName of ENTITY_COLLECTIONS) {
       try {
@@ -1191,13 +1192,13 @@ export async function migrateToDatasetStructure(userId) {
         const snapshot = await getDocs(oldCollRef);
 
         if (snapshot.empty) {
-          console.log(`📂 Collection "${collectionName}" is empty, skipping`);
+          logger.log(`📂 Collection "${collectionName}" is empty, skipping`);
           results.documentsByCollection[collectionName] = 0;
           continue;
         }
 
         const docCount = snapshot.docs.length;
-        console.log(`📂 Moving ${docCount} documents from "${collectionName}"...`);
+        logger.log(`📂 Moving ${docCount} documents from "${collectionName}"...`);
 
         // Use batched writes for efficiency (max 500 operations per batch)
         const batchSize = 250; // Each doc needs 2 ops: set + delete
@@ -1230,16 +1231,16 @@ export async function migrateToDatasetStructure(userId) {
 
           await batch.commit();
           processed += batchDocs.length;
-          console.log(`📂 Batch processed: ${processed}/${docCount} in "${collectionName}"`);
+          logger.log(`📂 Batch processed: ${processed}/${docCount} in "${collectionName}"`);
         }
 
         results.collectionsProcessed++;
         results.documentsMovedTotal += docCount;
         results.documentsByCollection[collectionName] = docCount;
-        console.log(`📂 Completed "${collectionName}": ${docCount} documents moved`);
+        logger.log(`📂 Completed "${collectionName}": ${docCount} documents moved`);
 
       } catch (collError) {
-        console.error(`❌ Error migrating collection "${collectionName}":`, collError);
+        logger.error(`❌ Error migrating collection "${collectionName}":`, collError);
         results.errors.push({
           type: 'collection',
           collection: collectionName,
@@ -1249,12 +1250,12 @@ export async function migrateToDatasetStructure(userId) {
     }
 
     // Step 3: Set active dataset in localStorage
-    console.log('📂 Step 3: Setting active dataset...');
+    logger.log('📂 Step 3: Setting active dataset...');
     setActiveDatasetId(DATASET_DEFAULT_ID);
 
     results.success = results.errors.length === 0;
 
-    console.log('📂 Dataset structure migration complete:', {
+    logger.log('📂 Dataset structure migration complete:', {
       collectionsProcessed: results.collectionsProcessed,
       documentsMovedTotal: results.documentsMovedTotal,
       errors: results.errors.length
@@ -1263,7 +1264,7 @@ export async function migrateToDatasetStructure(userId) {
     return results;
 
   } catch (error) {
-    console.error('❌ Dataset structure migration failed:', error);
+    logger.error('❌ Dataset structure migration failed:', error);
     results.errors.push({ type: 'fatal', error: error.message });
     return results;
   }
@@ -1279,7 +1280,7 @@ export async function migrateToDatasetStructure(userId) {
  * @returns {Promise<Object>} Migration results
  */
 export async function migrateLocalDatabase() {
-  console.log('📂 Checking local database migration...');
+  logger.log('📂 Checking local database migration...');
 
   const results = {
     success: false,
@@ -1294,14 +1295,14 @@ export async function migrateLocalDatabase() {
     const newDbExists = databases.some(db => db.name === `LineageweaverDB_${DEFAULT_DATASET_ID}`);
 
     if (!oldDbExists) {
-      console.log('📂 No old local database found');
+      logger.log('📂 No old local database found');
       results.success = true;
       results.action = 'none';
       return results;
     }
 
     if (newDbExists) {
-      console.log('📂 New database already exists, cleaning up old database');
+      logger.log('📂 New database already exists, cleaning up old database');
       // Delete old database
       await new Promise((resolve, reject) => {
         const request = indexedDB.deleteDatabase('LineageweaverDB');
@@ -1316,14 +1317,14 @@ export async function migrateLocalDatabase() {
     // Old database exists, new doesn't - we need to migrate
     // The simplest approach is to let the sync process repopulate from Firestore
     // since we've already migrated Firestore data
-    console.log('📂 Old database found, will be repopulated from cloud on next sync');
+    logger.log('📂 Old database found, will be repopulated from cloud on next sync');
     results.action = 'will_repopulate';
     results.success = true;
 
     return results;
 
   } catch (error) {
-    console.error('❌ Local database migration check failed:', error);
+    logger.error('❌ Local database migration check failed:', error);
     results.error = error.message;
     return results;
   }
@@ -1350,13 +1351,13 @@ export async function runDatasetMigration(userId, datasetId = 'default', forceMi
 
   // Check if we can skip based on cached version
   if (!forceMigration && !needsMigrationCheck(userId, datasetId)) {
-    console.log('📂 Migration check skipped (cached version is current)');
+    logger.log('📂 Migration check skipped (cached version is current)');
     results.success = true;
     results.skipped = true;
     return results;
   }
 
-  console.log('📂 Running full dataset migration...');
+  logger.log('📂 Running full dataset migration...');
 
   try {
     // Migrate Firestore structure
@@ -1372,7 +1373,7 @@ export async function runDatasetMigration(userId, datasetId = 'default', forceMi
       setCachedMigrationVersion(userId, datasetId, MIGRATION_VERSION);
     }
 
-    console.log('📂 Full dataset migration complete:', {
+    logger.log('📂 Full dataset migration complete:', {
       firestoreSuccess: results.firestore.success,
       localAction: results.local.action
     });
@@ -1380,7 +1381,7 @@ export async function runDatasetMigration(userId, datasetId = 'default', forceMi
     return results;
 
   } catch (error) {
-    console.error('❌ Full dataset migration failed:', error);
+    logger.error('❌ Full dataset migration failed:', error);
     results.success = false;
     return results;
   }

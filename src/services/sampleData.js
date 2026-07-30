@@ -5,6 +5,7 @@ import {
   getAllHouses,
   getAllPeople 
 } from './database';
+import { logger } from '../utils/logger';
 
 /**
  * Sample Data Initialization
@@ -18,11 +19,11 @@ export async function initializeSampleData() {
     // Check if we already have data
     const existingHouses = await getAllHouses();
     if (existingHouses.length > 0) {
-      console.log('Sample data already exists, skipping initialization');
+      logger.log('Sample data already exists, skipping initialization');
       return;
     }
 
-    console.log('Creating sample data...');
+    logger.log('Creating sample data...');
 
     // ==================== CREATE HOUSES ====================
     
@@ -188,8 +189,8 @@ export async function initializeSampleData() {
       marriageStatus: null
     });
 
-    console.log('Sample data created successfully!');
-    console.log('Created 2 houses and 5 people with relationships');
+    logger.log('Sample data created successfully!');
+    logger.log('Created 2 houses and 5 people with relationships');
     
     return {
       houses: 2,
@@ -198,7 +199,7 @@ export async function initializeSampleData() {
     };
 
   } catch (error) {
-    console.error('Error initializing sample data:', error);
+    logger.error('Error initializing sample data:', error);
     throw error;
   }
 }
@@ -209,9 +210,9 @@ export async function clearAllData() {
     await db.people.clear();
     await db.houses.clear();
     await db.relationships.clear();
-    console.log('All data cleared from database');
+    logger.log('All data cleared from database');
   } catch (error) {
-    console.error('Error clearing data:', error);
+    logger.error('Error clearing data:', error);
     throw error;
   }
 }

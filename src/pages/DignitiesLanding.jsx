@@ -27,7 +27,8 @@ import {
   DIGNITY_CLASSES,
   DIGNITY_RANKS,
   DIGNITY_NATURES,
-  getDignityIcon
+  getDignityIcon,
+  CLASS_ICONS
 } from '../services/dignityService';
 import { getAllHouses, getAllPeople } from '../services/database';
 import Navigation from '../components/Navigation';
@@ -40,6 +41,8 @@ import { RankPips } from '../components/DignityVisuals';
 import { useDignityAnalysis } from '../hooks';
 import useDebouncedValue from '../hooks/useDebouncedValue';
 import './DignitiesLanding.css';
+import { logger } from '../utils/logger';
+import { formatRelativeDate as formatDate } from '../utils/formatDate';
 
 // Animation variants
 const CONTAINER_VARIANTS = {
@@ -66,15 +69,6 @@ const CARD_VARIANTS = {
     scale: 1,
     transition: { duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }
   }
-};
-
-// Dignity class icons
-const CLASS_ICONS = {
-  crown: 'crown',
-  driht: 'castle',
-  ward: 'shield-check',
-  sir: 'sword',
-  other: 'scroll-text'
 };
 
 /**
@@ -139,7 +133,7 @@ function DignitiesLanding() {
         setLoading(false);
       } catch (error) {
         if (!cancelled && import.meta.env.DEV) {
-          console.error('Error loading dignities data:', error);
+          logger.error('Error loading dignities data:', error);
         }
         if (!cancelled) setLoading(false);
       }
@@ -289,7 +283,7 @@ function DignitiesLanding() {
     // those rather than silently dropping them.
     const unplaced = hierarchyDignities.filter(d => !visited.has(d.id));
     if (unplaced.length > 0) {
-      console.warn('Dignities unreachable from any root (cyclic fealty?):',
+      logger.warn('Dignities unreachable from any root (cyclic fealty?):',
         unplaced.map(d => `${d.id}:${d.name}`));
       tree.push(...unplaced.map(d => ({ dignity: d, subordinates: [], unplaced: true })));
     }
@@ -329,7 +323,7 @@ function DignitiesLanding() {
       setDignities(dignitiesData);
       setStatistics(stats);
     } catch (error) {
-      console.error('Error deleting dignity:', error);
+      logger.error('Error deleting dignity:', error);
       alert('Failed to delete dignity');
     }
   }, [user?.uid, activeDataset]);
@@ -353,23 +347,6 @@ function DignitiesLanding() {
     return rankInfo?.name || dignityRank || 'Unknown';
   }
 
-  function formatDate(isoString) {
-    if (!isoString) return 'Unknown';
-    const date = new Date(isoString);
-    const now = new Date();
-    const diffInHours = (now - date) / (1000 * 60 * 60);
-
-    if (diffInHours < 1) return 'Just now';
-    if (diffInHours < 24) return `${Math.floor(diffInHours)}h ago`;
-    if (diffInHours < 48) return 'Yesterday';
-    if (diffInHours < 168) return `${Math.floor(diffInHours / 24)}d ago`;
-
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
-    });
-  }
 
   // Render hierarchy node
   function renderHierarchyNode(node, depth = 0) {

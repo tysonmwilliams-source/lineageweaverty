@@ -31,6 +31,7 @@ import { getAllPeople } from '../../../services/database';
 import { suggestStoryArc } from '../../../services/planningAIService';
 import { useAuth } from '../../../contexts/AuthContext';
 import './StoryArcsView.css';
+import { logger } from '../../../utils/logger';
 
 // Arc type icons
 const ARC_TYPE_ICONS = {
@@ -147,7 +148,7 @@ function StoryArcsView({
         setSelectedArc(arcsData[0].id);
       }
     } catch (error) {
-      console.error('Error loading story arcs:', error);
+      logger.error('Error loading story arcs:', error);
     } finally {
       setLoading(false);
     }
@@ -172,7 +173,7 @@ function StoryArcsView({
       setShowAddArc(false);
       resetForm();
     } catch (error) {
-      console.error('Error creating arc:', error);
+      logger.error('Error creating arc:', error);
       alert('Failed to create arc. Please try again.');
     }
   };
@@ -186,7 +187,7 @@ function StoryArcsView({
       await loadData();
       setShowEditArc(false);
     } catch (error) {
-      console.error('Error updating arc:', error);
+      logger.error('Error updating arc:', error);
       alert('Failed to update arc. Please try again.');
     }
   };
@@ -202,7 +203,7 @@ function StoryArcsView({
       }
       await loadData();
     } catch (error) {
-      console.error('Error deleting arc:', error);
+      logger.error('Error deleting arc:', error);
       alert('Failed to delete arc. Please try again.');
     }
   };
@@ -215,7 +216,7 @@ function StoryArcsView({
       await updateStoryArc(currentArc.id, { status: newStatus }, datasetId, userId);
       await loadData();
     } catch (error) {
-      console.error('Error updating status:', error);
+      logger.error('Error updating status:', error);
     }
   };
 
@@ -232,7 +233,7 @@ function StoryArcsView({
       await updateStoryArc(currentArc.id, { linkedCharacters: newLinked }, datasetId, userId);
       await loadData();
     } catch (error) {
-      console.error('Error updating character link:', error);
+      logger.error('Error updating character link:', error);
     }
   };
 
@@ -252,7 +253,7 @@ function StoryArcsView({
       await updateStoryArc(arcs[newIndex].id, { order: currentOrder }, datasetId, userId);
       await loadData();
     } catch (error) {
-      console.error('Error reordering arcs:', error);
+      logger.error('Error reordering arcs:', error);
     }
   };
 
@@ -279,7 +280,7 @@ function StoryArcsView({
         await loadData();
       }
     } catch (error) {
-      console.error('Error getting AI suggestion:', error);
+      logger.error('Error getting AI suggestion:', error);
       alert('Failed to get AI suggestion. Please try again.');
     } finally {
       setAiLoading(false);

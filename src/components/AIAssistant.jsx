@@ -27,6 +27,7 @@ import { useDataset } from '../contexts/DatasetContext';
 import { AIProposalList } from './AIProposalCard';
 import GenealogyContext from '../contexts/GenealogyContext';
 import './AIAssistant.css';
+import { logger } from '../utils/logger';
 
 export default function AIAssistant({ context = {}, onClose }) {
   const genealogyContext = useContext(GenealogyContext);
@@ -90,7 +91,7 @@ export default function AIAssistant({ context = {}, onClose }) {
       const summary = await getDataSummary(datasetId);
       setDataSummary(summary);
     } catch (err) {
-      console.warn('Could not load data summary:', err);
+      logger.warn('Could not load data summary:', err);
     }
   };
 

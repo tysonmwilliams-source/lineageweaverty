@@ -13,6 +13,8 @@ import ActionButton from '../components/shared/ActionButton';
 import DignityEducationPanel from '../components/DignityEducationPanel';
 import useDebouncedValue from '../hooks/useDebouncedValue';
 import './CodexBrowse.css';
+import { logger } from '../utils/logger';
+import { formatRelativeDate as formatDate } from '../utils/formatDate';
 
 /**
  * CodexBrowse - Browse Codex Entries by Type
@@ -152,7 +154,7 @@ function CodexBrowse() {
       calculateStatistics(entries);
       setLoading(false);
     } catch (error) {
-      console.error('Error loading entries:', error);
+      logger.error('Error loading entries:', error);
       setLoading(false);
     }
   }, [type, calculateStatistics, activeDataset]);
@@ -175,7 +177,7 @@ function CodexBrowse() {
             setHeraldryCache(prev => ({ ...prev, [entry.heraldryId]: heraldry }));
           }
         } catch (error) {
-          console.error('Error loading heraldry:', error);
+          logger.error('Error loading heraldry:', error);
         }
       }
     };
@@ -303,28 +305,6 @@ function CodexBrowse() {
   }, [type, filteredEntries]);
 
   // Format date for display
-  const formatDate = useCallback((isoString) => {
-    const date = new Date(isoString);
-    const now = new Date();
-    const diffInHours = (now - date) / (1000 * 60 * 60);
-
-    if (diffInHours < 1) {
-      return 'Just now';
-    } else if (diffInHours < 24) {
-      const hours = Math.floor(diffInHours);
-      return `${hours}h ago`;
-    } else if (diffInHours < 48) {
-      return 'Yesterday';
-    } else if (diffInHours < 168) {
-      const days = Math.floor(diffInHours / 24);
-      return `${days}d ago`;
-    } else {
-      return date.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric'
-      });
-    }
-  }, []);
 
   const totalPages = Math.ceil(filteredEntries.length / entriesPerPage);
   const hasFilters = searchTerm || selectedTags.length > 0 || selectedEra || selectedCategory;

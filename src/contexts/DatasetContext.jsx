@@ -37,6 +37,7 @@ import {
   generateDatasetId,
   DEFAULT_DATASET_ID
 } from '../services/datasetService';
+import { logger } from '../utils/logger';
 
 // Create the context
 const DatasetContext = createContext(null);
@@ -109,9 +110,9 @@ export function DatasetProvider({ children }) {
       }
 
       setIsInitialized(true);
-      console.log('📂 Datasets loaded:', userDatasets.length, 'Active:', active?.name);
+      logger.log('📂 Datasets loaded:', userDatasets.length, 'Active:', active?.name);
     } catch (err) {
-      console.error('❌ Error loading datasets:', err);
+      logger.error('❌ Error loading datasets:', err);
       setError(err.message);
     } finally {
       setIsLoading(false);
@@ -136,7 +137,7 @@ export function DatasetProvider({ children }) {
     }
 
     if (activeDataset?.id === datasetId) {
-      console.log('📂 Already on this dataset:', datasetId);
+      logger.log('📂 Already on this dataset:', datasetId);
       return activeDataset;
     }
 
@@ -157,10 +158,10 @@ export function DatasetProvider({ children }) {
       setActiveDataset(dataset);
       setActiveDatasetId(datasetId);
 
-      console.log('📂 Switched to dataset:', dataset.name);
+      logger.log('📂 Switched to dataset:', dataset.name);
       return dataset;
     } catch (err) {
-      console.error('❌ Error switching dataset:', err);
+      logger.error('❌ Error switching dataset:', err);
       setError(err.message);
       throw err;
     }
@@ -189,10 +190,10 @@ export function DatasetProvider({ children }) {
       // Update local state
       setDatasets(prev => [...prev, newDataset]);
 
-      console.log('📂 Created dataset:', newDataset.name);
+      logger.log('📂 Created dataset:', newDataset.name);
       return newDataset;
     } catch (err) {
-      console.error('❌ Error creating dataset:', err);
+      logger.error('❌ Error creating dataset:', err);
       setError(err.message);
       throw err;
     }
@@ -223,9 +224,9 @@ export function DatasetProvider({ children }) {
         setActiveDataset(prev => ({ ...prev, name: newName }));
       }
 
-      console.log('📂 Renamed dataset:', datasetId, 'to', newName);
+      logger.log('📂 Renamed dataset:', datasetId, 'to', newName);
     } catch (err) {
-      console.error('❌ Error renaming dataset:', err);
+      logger.error('❌ Error renaming dataset:', err);
       setError(err.message);
       throw err;
     }
@@ -258,9 +259,9 @@ export function DatasetProvider({ children }) {
       // Update local state
       setDatasets(prev => prev.filter(d => d.id !== datasetId));
 
-      console.log('📂 Deleted dataset:', datasetId);
+      logger.log('📂 Deleted dataset:', datasetId);
     } catch (err) {
-      console.error('❌ Error deleting dataset:', err);
+      logger.error('❌ Error deleting dataset:', err);
       setError(err.message);
       throw err;
     }

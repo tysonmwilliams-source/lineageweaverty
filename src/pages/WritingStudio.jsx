@@ -28,6 +28,7 @@ import {
 } from '../services/dataSyncService';
 import { StoryPlannerModal } from '../components/writing/Planner';
 import './WritingStudio.css';
+import { logger } from '../utils/logger';
 
 // Animation variants
 const CONTAINER_VARIANTS = {
@@ -344,7 +345,7 @@ export default function WritingStudio() {
         const data = await getAllWritings(activeDataset?.id);
         setWritings(data);
       } catch (error) {
-        console.error('Failed to load writings:', error);
+        logger.error('Failed to load writings:', error);
       } finally {
         setLoading(false);
       }

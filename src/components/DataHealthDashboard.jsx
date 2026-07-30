@@ -18,6 +18,8 @@
 import { useState, useCallback } from 'react';
 import { useGenealogy } from '../contexts/GenealogyContext';
 import { runHealthCheck } from '../utils/SmartDataValidator';
+import { logger } from '../utils/logger';
+import Icon from './icons';
 
 function DataHealthDashboard({ isDarkTheme = true, onNavigateToPerson, onNavigateToRelationship }) {
   const { 
@@ -254,7 +256,7 @@ function DataHealthDashboard({ isDarkTheme = true, onNavigateToPerson, onNavigat
           await deleteRelationship(issue.relationshipId);
           deleted++;
         } catch (e) {
-          console.error('Failed to delete relationship:', issue.relationshipId, e);
+          logger.error('Failed to delete relationship:', issue.relationshipId, e);
         }
       }
       
@@ -299,7 +301,7 @@ function DataHealthDashboard({ isDarkTheme = true, onNavigateToPerson, onNavigat
           await deletePerson(person.id);
           deleted++;
         } catch (e) {
-          console.error('Failed to delete person:', person.id, e);
+          logger.error('Failed to delete person:', person.id, e);
         }
       }
       
@@ -385,7 +387,7 @@ function DataHealthDashboard({ isDarkTheme = true, onNavigateToPerson, onNavigat
         }}
       >
         <h3 className="font-semibold mb-3 flex items-center gap-2" style={{ color: theme.text }}>
-          <span>🧹</span> Cleanup Tools
+          <Icon name="wrench" /> Cleanup Tools
         </h3>
         <p className="text-sm mb-3" style={{ color: theme.textSecondary }}>
           Quick actions to fix common data problems:
@@ -403,7 +405,7 @@ function DataHealthDashboard({ isDarkTheme = true, onNavigateToPerson, onNavigat
                 opacity: isDeleting ? 0.6 : 1
               }}
             >
-              <span>🗑️</span>
+              <Icon name="trash-2" />
               Delete {orphanedCount} Orphaned Relationship{orphanedCount !== 1 ? 's' : ''}
             </button>
           )}
@@ -419,7 +421,7 @@ function DataHealthDashboard({ isDarkTheme = true, onNavigateToPerson, onNavigat
                 opacity: isDeleting ? 0.6 : 1
               }}
             >
-              <span>🗑️</span>
+              <Icon name="trash-2" />
               Delete {unknownCount} Unknown Person{unknownCount !== 1 ? 's' : ''}
             </button>
           )}
@@ -567,7 +569,7 @@ function DataHealthDashboard({ isDarkTheme = true, onNavigateToPerson, onNavigat
           onClick={(e) => e.stopPropagation()}
         >
           <h3 className="text-lg font-bold mb-4 flex items-center gap-2" style={{ color: theme.text }}>
-            <span>👤</span> Who was named after whom?
+            <Icon name="user" /> Who was named after whom?
           </h3>
           <p className="text-sm mb-4" style={{ color: theme.textSecondary }}>
             We couldn't determine the birth order. Please choose:
@@ -731,7 +733,7 @@ function DataHealthDashboard({ isDarkTheme = true, onNavigateToPerson, onNavigat
           className="p-8 text-center rounded-lg border"
           style={{ backgroundColor: theme.bgLight, borderColor: theme.border }}
         >
-          <span className="text-4xl mb-2 block">✨</span>
+          <span className="text-4xl mb-2 block"><Icon name="sparkles" size={36} /></span>
           <p style={{ color: theme.text }}>No issues found in this category!</p>
         </div>
       );
@@ -967,7 +969,7 @@ function DataHealthDashboard({ isDarkTheme = true, onNavigateToPerson, onNavigat
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-xl font-bold flex items-center gap-2" style={{ color: theme.text }}>
-            <span>🏥</span> Data Health Dashboard
+            <Icon name="heart-pulse" /> Data Health Dashboard
           </h2>
           <p className="text-sm mt-1" style={{ color: theme.textSecondary }}>
             Scan your genealogy database for issues and inconsistencies
@@ -994,7 +996,7 @@ function DataHealthDashboard({ isDarkTheme = true, onNavigateToPerson, onNavigat
             </>
           ) : (
             <>
-              <span>🔍</span>
+              <Icon name="search" />
               {report ? 'Rescan' : 'Run Health Check'}
             </>
           )}
@@ -1007,7 +1009,7 @@ function DataHealthDashboard({ isDarkTheme = true, onNavigateToPerson, onNavigat
           className="p-12 text-center rounded-lg border-2 border-dashed"
           style={{ borderColor: theme.border }}
         >
-          <span className="text-5xl mb-4 block">🔍</span>
+          <span className="text-5xl mb-4 block"><Icon name="search" size={48} /></span>
           <h3 className="text-lg font-semibold mb-2" style={{ color: theme.text }}>
             No scan results yet
           </h3>

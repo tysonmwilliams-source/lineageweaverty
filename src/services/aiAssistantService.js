@@ -17,6 +17,7 @@ import {
   formatDataForAI,
   analyzeDataForIssues
 } from './aiDataService';
+import { logger } from '../utils/logger';
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
@@ -103,7 +104,7 @@ async function callGemini({ prompt, generationConfig = {}, signal, retries = 2 }
 
         if (RETRYABLE_STATUS.has(response.status) && attempt < retries) {
           const backoff = 500 * Math.pow(2, attempt);
-          console.warn(`Gemini ${response.status}, retrying in ${backoff}ms…`);
+          logger.warn(`Gemini ${response.status}, retrying in ${backoff}ms…`);
           await sleep(backoff);
           continue;
         }
@@ -133,7 +134,7 @@ async function callGemini({ prompt, generationConfig = {}, signal, retries = 2 }
       }
 
       if (finishReason === 'MAX_TOKENS') {
-        console.warn('⚠️ Gemini response hit the token limit and was truncated.');
+        logger.warn('⚠️ Gemini response hit the token limit and was truncated.');
       }
 
       return { text, usage: data.usageMetadata || null, finishReason };
@@ -188,7 +189,7 @@ export async function askGemini(prompt, context = {}, options = {}) {
 
     return text;
   } catch (error) {
-    console.error('AI Assistant error:', error);
+    logger.error('AI Assistant error:', error);
     throw error;
   }
 }
@@ -371,7 +372,7 @@ export async function askGeminiWithFullContext(prompt, options = {}) {
   }
 
   try {
-    console.log('🤖 AI Assistant: Collecting full data context...');
+    logger.log('🤖 AI Assistant: Collecting full data context...');
 
     // Collect full data context
     const dataContext = await collectFullDataContext(datasetId);
@@ -428,7 +429,7 @@ export async function askGeminiWithFullContext(prompt, options = {}) {
     // Add user prompt
     fullPrompt += `\n\n=== USER REQUEST ===\n${prompt}`;
 
-    console.log('🤖 AI Assistant: Sending request to Gemini...');
+    logger.log('🤖 AI Assistant: Sending request to Gemini...');
 
     const { text, usage } = await callGemini({
       prompt: fullPrompt,
@@ -439,7 +440,7 @@ export async function askGeminiWithFullContext(prompt, options = {}) {
     // usageMetadata was previously discarded. With a ~40k-token payload per
     // turn this is the only visibility into what the feature costs.
     if (usage) {
-      console.log('🤖 Gemini tokens:', {
+      logger.log('🤖 Gemini tokens:', {
         prompt: usage.promptTokenCount,
         response: usage.candidatesTokenCount,
         total: usage.totalTokenCount
@@ -452,7 +453,7 @@ export async function askGeminiWithFullContext(prompt, options = {}) {
       proposals = parseProposalsFromResponse(text);
     }
 
-    console.log('🤖 AI Assistant: Response received', {
+    logger.log('🤖 AI Assistant: Response received', {
       textLength: text.length,
       proposalCount: proposals.length
     });
@@ -464,7 +465,7 @@ export async function askGeminiWithFullContext(prompt, options = {}) {
     };
 
   } catch (error) {
-    console.error('❌ AI Assistant error:', error);
+    logger.error('❌ AI Assistant error:', error);
     throw error;
   }
 }
@@ -529,7 +530,7 @@ function parseProposalsFromResponse(responseText) {
         proposals.push(proposal);
       }
     } catch (err) {
-      console.warn('Failed to parse proposal block:', err.message);
+      logger.warn('Failed to parse proposal block:', err.message);
     }
   }
 

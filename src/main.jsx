@@ -11,6 +11,9 @@ import './index.css'
 import './styles/themes/theme-base.css'
 import './styles/themes/theme-royal-parchment.css'
 
+// Shared keyframes, loaded before any component stylesheet.
+import './styles/animations.css'
+
 import App from './App.jsx'
 
 createRoot(document.getElementById('root')).render(

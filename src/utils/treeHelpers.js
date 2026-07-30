@@ -16,6 +16,8 @@
  * Estimate the pixel width of text based on character count and font size
  * Uses average character width ratios for proportional fonts
  */
+import { logger } from './logger';
+
 export function estimateTextWidth(text, fontSize, isBold = false) {
   const avgCharRatio = isBold ? 0.58 : 0.52;
   return text.length * fontSize * avgCharRatio;
@@ -461,23 +463,23 @@ export function detectGenerations(peopleById, parentMap, childrenMap, spouseMap,
 
   if (overrideRootId && peopleById.has(overrideRootId)) {
     rootPerson = peopleById.get(overrideRootId);
-    console.log(`Using override root: ${rootPerson.firstName} ${rootPerson.lastName}`);
+    logger.log(`Using override root: ${rootPerson.firstName} ${rootPerson.lastName}`);
   } else {
     const gen0People = Array.from(peopleById.values())
       .filter(p => !parentMap.has(p.id))
       .sort((a, b) => parseInt(a.dateOfBirth) - parseInt(b.dateOfBirth));
 
     if (gen0People.length === 0) {
-      console.warn('No root people found (everyone has parents)');
+      logger.warn('No root people found (everyone has parents)');
       return [];
     }
 
-    console.log('Root candidates (no parents):', gen0People.map(p => `${p.firstName} ${p.lastName} (b.${p.dateOfBirth})`));
+    logger.log('Root candidates (no parents):', gen0People.map(p => `${p.firstName} ${p.lastName} (b.${p.dateOfBirth})`));
 
     rootPerson = gen0People[0];
   }
 
-  console.log(`Root (Gen 0): ${rootPerson.firstName} ${rootPerson.lastName}`);
+  logger.log(`Root (Gen 0): ${rootPerson.firstName} ${rootPerson.lastName}`);
 
   const generations = [];
   const processedIds = new Set();
@@ -526,6 +528,6 @@ export function detectGenerations(peopleById, parentMap, childrenMap, spouseMap,
     currentGenIndex++;
   }
 
-  console.log('Generations detected:', generations.map((g, i) => `Gen ${i}: ${g.length} people`));
+  logger.log('Generations detected:', generations.map((g, i) => `Gen ${i}: ${g.length} people`));
   return generations;
 }

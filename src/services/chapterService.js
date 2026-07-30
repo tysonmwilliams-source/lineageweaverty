@@ -7,6 +7,7 @@
 
 import { getDatabase } from './database';
 import { updateWritingWordCount } from './writingService';
+import { logger } from '../utils/logger';
 
 // ==================== CONSTANTS ====================
 
@@ -68,7 +69,7 @@ export async function createChapter(data, datasetId) {
   };
 
   const chapterId = await db.chapters.add(chapter);
-  console.log('Chapter created:', chapterId);
+  logger.log('Chapter created:', chapterId);
   return chapterId;
 }
 
@@ -132,7 +133,7 @@ export async function updateChapter(id, updates, datasetId) {
     }
   }
 
-  console.log('Chapter updated:', id);
+  logger.log('Chapter updated:', id);
   return result;
 }
 
@@ -193,7 +194,7 @@ export async function deleteChapter(id, datasetId) {
   // Update writing word count
   await updateWritingWordCount(writingId, datasetId);
 
-  console.log('Chapter deleted:', id, { linksDeleted });
+  logger.log('Chapter deleted:', id, { linksDeleted });
   return { deleted: true, linksDeleted };
 }
 
@@ -209,7 +210,7 @@ export async function restoreChapter(data, datasetId) {
     ...data,
     id: parseInt(data.id) || data.id
   });
-  console.log('Chapter restored:', id);
+  logger.log('Chapter restored:', id);
   return id;
 }
 
@@ -226,7 +227,7 @@ export async function reorderChapters(writingId, chapterIds, datasetId) {
     await db.chapters.update(chapterIds[i], { order: i + 1 });
   }
 
-  console.log('Chapters reordered for writing:', writingId);
+  logger.log('Chapters reordered for writing:', writingId);
 }
 
 /**
@@ -272,7 +273,7 @@ export async function moveChapter(chapterId, newOrder, datasetId) {
   // Set the moved chapter's order
   await db.chapters.update(chapterId, { order: newOrder });
 
-  console.log('Chapter moved:', chapterId, 'to position', newOrder);
+  logger.log('Chapter moved:', chapterId, 'to position', newOrder);
 }
 
 /**

@@ -30,6 +30,7 @@ import { getPerson } from '../../../services/database';
 import { useDataset } from '../../../contexts/DatasetContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import './OutlineView.css';
+import { logger } from '../../../utils/logger';
 
 // Animation variants
 const ITEM_VARIANTS = {
@@ -92,7 +93,7 @@ function OutlineView({
             povData[id] = `${person.firstName} ${person.lastName || ''}`.trim();
           }
         } catch (e) {
-          console.error('Error loading POV character:', e);
+          logger.error('Error loading POV character:', e);
         }
       }
       setPovCharacters(povData);
@@ -106,7 +107,7 @@ function OutlineView({
       });
       setExpandedChapters(chaptersWithScenes);
     } catch (error) {
-      console.error('Error loading outline data:', error);
+      logger.error('Error loading outline data:', error);
     } finally {
       setIsLoading(false);
     }
@@ -179,7 +180,7 @@ function OutlineView({
       setAddingSceneTo(null);
       await loadData();
     } catch (error) {
-      console.error('Error creating scene:', error);
+      logger.error('Error creating scene:', error);
     }
   };
 
@@ -192,7 +193,7 @@ function OutlineView({
       await deleteScenePlan(sceneId, activeDataset?.id, userId);
       await loadData();
     } catch (error) {
-      console.error('Error deleting scene:', error);
+      logger.error('Error deleting scene:', error);
     }
   };
 

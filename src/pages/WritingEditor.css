@@ -30,10 +30,6 @@
   margin-bottom: var(--space-4);
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
 /* ==================== Header ==================== */
 
 .writing-editor__header {

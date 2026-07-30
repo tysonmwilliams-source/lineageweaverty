@@ -26,6 +26,7 @@ import {
   updateDignityTenure,
   getCurrentTenure
 } from '../services/dignityService';
+import { logger } from '../utils/logger';
 
 /**
  * Custom hook for dignity analysis
@@ -173,7 +174,7 @@ export function useDignityAnalysis(options = {}) {
 
       return result;
     } catch (err) {
-      console.error('Analysis failed:', err);
+      logger.error('Analysis failed:', err);
       setError(err.message || 'Analysis failed');
       throw err;
     } finally {
@@ -299,7 +300,7 @@ export function useDignityAnalysis(options = {}) {
           break;
 
         default:
-          console.warn('Unknown action type:', action.type);
+          logger.warn('Unknown action type:', action.type);
       }
 
       // Mark suggestion as applied
@@ -311,7 +312,7 @@ export function useDignityAnalysis(options = {}) {
 
       return true;
     } catch (err) {
-      console.error('Failed to apply suggestion:', err);
+      logger.error('Failed to apply suggestion:', err);
       throw err;
     }
   }, [suggestionMap, user?.uid, activeDataset]);
@@ -361,7 +362,7 @@ export function useDignityAnalysis(options = {}) {
           break;
 
         default:
-          console.warn('Unknown alternative action type:', altAction.type);
+          logger.warn('Unknown alternative action type:', altAction.type);
       }
 
       // Mark suggestion as applied
@@ -373,7 +374,7 @@ export function useDignityAnalysis(options = {}) {
 
       return true;
     } catch (err) {
-      console.error('Failed to apply alternative action:', err);
+      logger.error('Failed to apply alternative action:', err);
       throw err;
     }
   }, [suggestionMap, user?.uid, activeDataset]);

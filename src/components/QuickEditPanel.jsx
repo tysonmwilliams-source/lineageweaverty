@@ -34,6 +34,7 @@ import Icon from './icons/Icon';
 import ActionButton from './shared/ActionButton';
 import { isBastardCadet } from '../utils/treeHelpers';
 import './QuickEditPanel.css';
+import { logger } from '../utils/logger';
 
 const PANEL_VARIANTS = {
   hidden: { x: '100%', opacity: 0 },
@@ -190,7 +191,7 @@ function QuickEditPanel({
       if (token !== loadTokenRef.current) return;
       setCodexEntry(entry);
     } catch (error) {
-      console.warn('Could not load Codex entry:', error);
+      logger.warn('Could not load Codex entry:', error);
       if (token === loadTokenRef.current) setCodexEntry(null);
     } finally {
       if (token === loadTokenRef.current) setLoadingCodex(false);
@@ -211,7 +212,7 @@ function QuickEditPanel({
       if (token !== loadTokenRef.current) return;
       setPersonDignities(dignities);
     } catch (error) {
-      console.warn('Could not load dignities:', error);
+      logger.warn('Could not load dignities:', error);
       if (token === loadTokenRef.current) setPersonDignities([]);
     } finally {
       if (token === loadTokenRef.current) setLoadingDignities(false);
@@ -225,7 +226,7 @@ function QuickEditPanel({
       if (token !== loadTokenRef.current) return;
       setPersonHasArms(hasArms);
     } catch (error) {
-      console.warn('Could not check personal arms:', error);
+      logger.warn('Could not check personal arms:', error);
       setPersonHasArms(false);
     }
   };
@@ -257,7 +258,7 @@ function QuickEditPanel({
               displayTexts: [...new Set(linksForWriting.map(l => l.displayText).filter(Boolean))]
             };
           } catch (e) {
-            console.warn('Could not load writing for backlink:', e);
+            logger.warn('Could not load writing for backlink:', e);
             return null;
           }
         })
@@ -266,7 +267,7 @@ function QuickEditPanel({
       if (token !== loadTokenRef.current) return;
       setWritingBacklinks(settled.filter(Boolean));
     } catch (error) {
-      console.warn('Could not load writing backlinks:', error);
+      logger.warn('Could not load writing backlinks:', error);
       if (token === loadTokenRef.current) setWritingBacklinks([]);
     } finally {
       if (token === loadTokenRef.current) setLoadingBacklinks(false);
@@ -737,7 +738,7 @@ function QuickEditPanel({
       try {
         await deleteRelationship(relationshipId);
       } catch (error) {
-        console.error('Failed to delete relationship:', error);
+        logger.error('Failed to delete relationship:', error);
       }
     }
   };

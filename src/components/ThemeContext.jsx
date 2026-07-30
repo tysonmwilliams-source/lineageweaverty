@@ -9,6 +9,7 @@
  */
 
 import React, { createContext, useState, useContext, useEffect, useMemo, useCallback } from 'react';
+import { logger } from '../utils/logger';
 
 // Import theme CSS files using Vite's glob import with ?url to get bundled paths
 // This ensures the CSS files are properly processed and available in production
@@ -99,7 +100,7 @@ export const ThemeProvider = ({ children, defaultTheme = 'royal-parchment' }) =>
         return saved;
       }
     } catch (error) {
-      console.warn('Failed to load theme from localStorage:', error);
+      logger.warn('Failed to load theme from localStorage:', error);
     }
     return defaultTheme;
   });
@@ -113,7 +114,7 @@ export const ThemeProvider = ({ children, defaultTheme = 'royal-parchment' }) =>
 
     const cssPath = THEME_CSS_PATHS[themeId];
     if (!cssPath) {
-      console.warn(`No CSS path for theme: ${themeId}`);
+      logger.warn(`No CSS path for theme: ${themeId}`);
       return;
     }
 
@@ -139,9 +140,9 @@ export const ThemeProvider = ({ children, defaultTheme = 'royal-parchment' }) =>
       });
 
       loadedThemes.add(themeId);
-      console.log(`🎨 Theme CSS loaded: ${themeId}`);
+      logger.log(`🎨 Theme CSS loaded: ${themeId}`);
     } catch (error) {
-      console.error(`Failed to load theme CSS: ${themeId}`, error);
+      logger.error(`Failed to load theme CSS: ${themeId}`, error);
     }
   };
 
@@ -159,9 +160,9 @@ export const ThemeProvider = ({ children, defaultTheme = 'royal-parchment' }) =>
         localStorage.setItem('lineageweaver-theme', theme);
 
         // Log theme change (useful for debugging)
-        console.log(`Theme changed to: ${theme}`);
+        logger.log(`Theme changed to: ${theme}`);
       } catch (error) {
-        console.error('Failed to apply theme:', error);
+        logger.error('Failed to apply theme:', error);
       }
     };
 
@@ -176,7 +177,7 @@ export const ThemeProvider = ({ children, defaultTheme = 'royal-parchment' }) =>
     // Validate theme exists
     const themeConfig = AVAILABLE_THEMES.find(t => t.id === newTheme);
     if (!themeConfig) {
-      console.error(`Invalid theme: ${newTheme}`);
+      logger.error(`Invalid theme: ${newTheme}`);
       return;
     }
     setThemeState(newTheme);
@@ -205,7 +206,7 @@ export const ThemeProvider = ({ children, defaultTheme = 'royal-parchment' }) =>
         target = remembered;
       }
     } catch (error) {
-      console.warn('Could not read remembered theme:', error);
+      logger.warn('Could not read remembered theme:', error);
     }
 
     if (!target) {
@@ -216,7 +217,7 @@ export const ThemeProvider = ({ children, defaultTheme = 'royal-parchment' }) =>
       try {
         localStorage.setItem(`lineageweaver-last-${currentThemeConfig.category}`, theme);
       } catch (error) {
-        console.warn('Could not remember current theme:', error);
+        logger.warn('Could not remember current theme:', error);
       }
       setTheme(target);
     }
