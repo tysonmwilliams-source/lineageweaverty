@@ -29,15 +29,16 @@
   --text-primary: #1e2d1a;         /* Deep forest ink */
   --text-secondary: #3d4d38;       /* Woodland brown-green */
   --text-tertiary: #5d6d58;        /* Muted sage */
-  --text-disabled: #8d9d88;        /* Faded moss */
+  --text-disabled: #80917a;        /* Faded moss */
   --text-inverse: #e8f0e4;         /* Text on dark backgrounds */
 
   /* ============================================
      BORDERS & DIVIDERS
      ============================================ */
   
-  --border-primary: #c4d4b8;       /* Soft vine */
-  --border-secondary: #a8c49c;     /* Garden border */
+  --border-primary: #75975c;       /* Soft vine */
+  --border-subtle: #c4d4b8;   /* Decorative rules only — below 3:1, never structural */
+  --border-secondary: #6e995b;     /* Garden border */
   --border-heavy: #8cb480;         /* Strong leaf */
   --border-focus: #5a8a4c;         /* Focus emerald */
 
@@ -50,7 +51,7 @@
   --color-success-dark: #3a6c2c;
   --color-success-bg: #e4f4e0;
   
-  --color-warning: #b8943c;        /* Autumn gold */
+  --color-warning: #866c2c;        /* Autumn gold */
   --color-warning-light: #c8a44c;
   --color-warning-dark: #a8842c;
   --color-warning-bg: #f8f2e0;
@@ -78,7 +79,7 @@
      ACCENT COLORS
      ============================================ */
   
-  --accent-primary: #4a8a3c;       /* Emerald - primary actions */
+  --accent-primary: #427c36;       /* Emerald - primary actions */
   --accent-secondary: #3a7a2c;     /* Dark emerald - hover */
   --accent-tertiary: #6aaa5c;      /* Light emerald - highlights */
   --accent-muted: rgba(74, 138, 60, 0.15);

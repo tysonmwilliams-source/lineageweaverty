@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useEffect, useState, lazy, Suspense, createContext, useContext, useCallback } from 'react';
+import { MotionConfig } from 'framer-motion';
 import Home from './pages/Home';
 import { initializeSampleData } from './services/sampleData';
 import { hasPendingChanges, getPendingChangeCount } from './services/database';
@@ -24,6 +25,7 @@ const DignityCrisisDashboard = lazy(() => import('./pages/DignityCrisisDashboard
 const BugTracker = lazy(() => import('./pages/BugTracker'));
 const WritingStudio = lazy(() => import('./pages/WritingStudio'));
 const WritingEditor = lazy(() => import('./pages/WritingEditor'));
+const NotFound = lazy(() => import('./pages/NotFound'));
 
 // Loading fallback for lazy-loaded routes
 function PageLoader() {
@@ -160,10 +162,8 @@ function AppContent() {
   useEffect(() => {
     const datasetId = activeDataset?.id || 'default';
 
-    const handleBeforeUnload = async (e) => {
-      // Check synchronously using a cached value, since beforeunload is sync
-      // We'll set up an interval to check periodically
-    };
+    // (An empty `handleBeforeUnload` stub used to sit here. It was never
+    // registered and had no body — the live guard is beforeUnloadHandler below.)
 
     // Use a synchronous check via interval to maintain pending status
     let pendingCount = 0;
@@ -402,6 +402,9 @@ function AppContent() {
                 <Route path="/bugs" element={<BugTracker />} />
                 <Route path="/writing" element={<WritingStudio />} />
                 <Route path="/writing/:id" element={<WritingEditor />} />
+                {/* Catch-all. Without this a mistyped or stale URL rendered a
+                    blank page with no explanation and no way back. */}
+                <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
               {/* Floating bug reporter button - visible on all pages */}
@@ -433,17 +436,24 @@ function AppContent() {
  */
 function App() {
   return (
-    <AuthProvider>
-      <ThemeProvider defaultTheme="royal-parchment">
-        <LearningModeProvider>
-          <ProtectedRoute>
-            <DatasetProvider>
-              <AppContent />
-            </DatasetProvider>
-          </ProtectedRoute>
-        </LearningModeProvider>
-      </ThemeProvider>
-    </AuthProvider>
+    // reducedMotion="user" makes every Framer animation in the app honour the
+    // OS "reduce motion" setting. 80 of 122 components import framer-motion and
+    // there are 458 <motion.*> elements, none of which checked; the 41 CSS
+    // prefers-reduced-motion blocks only ever affected CSS transitions, not
+    // JS-driven transforms.
+    <MotionConfig reducedMotion="user">
+      <AuthProvider>
+        <ThemeProvider defaultTheme="royal-parchment">
+          <LearningModeProvider>
+            <ProtectedRoute>
+              <DatasetProvider>
+                <AppContent />
+              </DatasetProvider>
+            </ProtectedRoute>
+          </LearningModeProvider>
+        </ThemeProvider>
+      </AuthProvider>
+    </MotionConfig>
   );
 }
 

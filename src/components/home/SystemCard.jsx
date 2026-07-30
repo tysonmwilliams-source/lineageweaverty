@@ -15,11 +15,16 @@
  * - staggeredEntrance: Entrance animation
  */
 
-import { useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Icon from '../icons';
 import './SystemCard.css';
+
+// motion.create() wraps a custom component so it accepts motion props.
+// Defined at module scope: creating it inside the component would produce a new
+// component type on every render and remount the card each time.
+const MotionLink = motion.create(Link);
 
 // Base animation variants defined outside component
 const BASE_CARD_VARIANTS = {
@@ -58,13 +63,11 @@ export default function SystemCard({
   delay = 0,
   features 
 }) {
-  const navigate = useNavigate();
+
   const { cardAnimations, staggeredEntrance } = features;
   
   // Memoize click handler
-  const handleClick = useCallback(() => {
-    navigate(path);
-  }, [navigate, path]);
+
   
   // Memoize variants with delay
   const cardVariants = useMemo(() => ({
@@ -79,7 +82,12 @@ export default function SystemCard({
   }), [delay, staggeredEntrance]);
   
   return (
-    <motion.article
+    // Rendered as a Link, not an <article onClick>. These six cards are the
+    // app's primary navigation and were unreachable by keyboard, invisible to
+    // assistive tech as anything actionable, and impossible to middle-click or
+    // open in a new tab.
+    <MotionLink
+      to={path}
       className={`system-card ${accentColor || ''}`}
       variants={staggeredEntrance ? cardVariants : {}}
       initial={staggeredEntrance ? "hidden" : false}
@@ -89,7 +97,6 @@ export default function SystemCard({
         transition: { duration: 0.2, ease: 'easeOut' }
       } : {}}
       whileTap={cardAnimations ? { scale: 0.98 } : {}}
-      onClick={handleClick}
     >
       {/* Icon with animation */}
       <motion.div 
@@ -120,6 +127,6 @@ export default function SystemCard({
       <div className="system-arrow">
         <Icon name="arrow-right" size={20} strokeWidth={2} />
       </div>
-    </motion.article>
+    </MotionLink>
   );
 }

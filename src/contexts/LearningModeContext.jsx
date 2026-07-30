@@ -11,7 +11,7 @@
  * - 'modern': Modern equivalents only (High Lord, Lord, Warden)
  */
 
-import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect , useMemo} from 'react';
 
 // Storage key
 const STORAGE_KEY = 'lineageweaver-learning-mode';
@@ -98,14 +98,15 @@ export function LearningModeProvider({ children }) {
   // Check if showing modern terms
   const showModern = mode === 'modern' || mode === 'learning';
 
-  const value = {
+  // Memoized so consumers do not re-render on every provider render.
+  const value = useMemo(() => ({
     mode,
     setMode,
     cycleMode,
     showOriginal,
     showModern,
     modeInfo: LEARNING_MODES[mode]
-  };
+  }), [mode, setMode, cycleMode, showOriginal, showModern]);
 
   return (
     <LearningModeContext.Provider value={value}>

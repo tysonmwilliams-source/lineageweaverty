@@ -23,7 +23,7 @@
  * - refreshDatasets(): Reload datasets from Firestore
  */
 
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback , useMemo} from 'react';
 import { useAuth } from './AuthContext';
 import {
   getAllDatasets,
@@ -282,7 +282,8 @@ export function DatasetProvider({ children }) {
 
   // ==================== CONTEXT VALUE ====================
 
-  const contextValue = {
+  // Memoized so consumers do not re-render on every provider render.
+  const contextValue = useMemo(() => ({
     // State
     datasets,
     activeDataset,
@@ -297,7 +298,7 @@ export function DatasetProvider({ children }) {
     deleteDataset,
     refreshDatasets,
     clearError
-  };
+  }), [datasets, activeDataset, isLoading, isInitialized, error, switchDataset, createDataset, renameDataset, deleteDataset, refreshDatasets]);
 
   return (
     <DatasetContext.Provider value={contextValue}>

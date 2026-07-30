@@ -5,7 +5,40 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Lineageweaver</title>
-    
+    <meta name="description" content="A local-first genealogy and worldbuilding suite for novelists — family trees, heraldry, titles, a wiki codex, and a writing studio." />
+    <meta name="theme-color" content="#1a1410" />
+
+    <!--
+      Theme bootstrap. Runs before first paint.
+
+      theme-base.css defines no surface or text colours, and the real theme is
+      injected as a <link> from a useEffect — i.e. after the first frame. That
+      produced a full-screen white flash on every cold load, most visible on
+      the login page, which is the one page rendered before the app mounts.
+
+      Setting data-theme and a matching background here means the first frame
+      is already the right colour. Keep the fallback in sync with
+      ThemeProvider's defaultTheme.
+    -->
+    <script>
+      (function () {
+        var THEMES = {
+          'royal-parchment': '#1a1410',
+          'light-manuscript': '#f9f6f0',
+          'emerald-court': '#f4f7f2',
+          'sapphire-dynasty': '#f2f5f8',
+          'autumn-chronicle': '#faf6f0',
+          'rose-lineage': '#faf5f6',
+          'twilight-realm': '#12101a'
+        };
+        var saved;
+        try { saved = localStorage.getItem('lineageweaver-theme'); } catch (e) { /* private mode */ }
+        var theme = (saved && THEMES[saved]) ? saved : 'royal-parchment';
+        document.documentElement.setAttribute('data-theme', theme);
+        document.documentElement.style.backgroundColor = THEMES[theme];
+      })();
+    </script>
+
     <!-- Google Fonts for Medieval Typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

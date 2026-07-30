@@ -1,5 +1,15 @@
 # Lineageweaver — Full Audit
 
+> **Correction (Phase 3):** Part One item #35 said to import the 1,468 lines of
+> shared CSS in `src/styles/shared/` and `shared-forms.css`. That was wrong.
+> Measured during implementation: those files define 112 class names, of which
+> **zero** are referenced in any JSX (the one apparent match, `.form-group`, is
+> a collision — every page defines its own). `buttons.css` uses an `.lw-*`
+> prefix, `shared-forms.css` uses `.form-*`; they are two incompatible,
+> unadopted drafts. Importing them would ship 1,468 lines of dead CSS and risk
+> restyling two forms. They were left unimported — whether to delete them or
+> keep them as a seed is now folded into decision **B1/B3**.
+
 **Date:** 2026-07-30
 **Scope:** every file in the repository — 103,087 LOC JS/JSX, 46,738 lines CSS, 342 source files, 72 docs, 21 MB of assets
 **Method:** eight parallel deep-read passes (one per subsystem plus data layer, design system, repo hygiene, and cross-system integrity), plus scripted integrity checks against the real world snapshot in `docs/claude-context/`

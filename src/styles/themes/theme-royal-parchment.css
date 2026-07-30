@@ -29,15 +29,16 @@
   --text-primary: #e8d5b7;         /* Primary text - warm off-white (aged ink) */
   --text-secondary: #c4b5a0;       /* Secondary text - muted tan */
   --text-tertiary: #9d8d78;        /* Tertiary text - desaturated brown */
-  --text-disabled: #6d5d48;        /* Disabled state */
+  --text-disabled: #70604a;        /* Disabled state */
   --text-inverse: #2d2419;         /* Text on light backgrounds */
 
   /* ============================================
      BORDERS & DIVIDERS
      ============================================ */
   
-  --border-primary: #4a3d2e;       /* Primary borders (subtle) */
-  --border-secondary: #5a4d3e;     /* Secondary borders (moderate) */
+  --border-primary: #735f47;       /* Primary borders (subtle) */
+  --border-subtle: #4a3d2e;   /* Decorative rules only — below 3:1, never structural */
+  --border-secondary: #72624f;     /* Secondary borders (moderate) */
   --border-heavy: #6a5d4e;         /* Heavy dividers */
   --border-focus: #d4a574;         /* Focus state border */
 
@@ -55,12 +56,12 @@
   --color-warning-dark: #a7835f;
   --color-warning-bg: #453d2f;
   
-  --color-error: #b85f5f;          /* Muted crimson */
+  --color-error: #bb6666;          /* Muted crimson */
   --color-error-light: #c76f6f;
   --color-error-dark: #a74f4f;
   --color-error-bg: #4a3535;
   
-  --color-info: #5f7b9e;           /* Slate blue */
+  --color-info: #6883a4;           /* Slate blue */
   --color-info-light: #6e8aad;
   --color-info-dark: #4f6b8e;
   --color-info-bg: #353d4a;

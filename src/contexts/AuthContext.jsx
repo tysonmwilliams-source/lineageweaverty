@@ -32,7 +32,7 @@
  *                     └──────────────────────────────────────┘
  */
 
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect , useMemo} from 'react';
 import { 
   onAuthStateChanged, 
   signInWithPopup, 
@@ -209,7 +209,8 @@ export function AuthProvider({ children }) {
 
   // ==================== CONTEXT VALUE ====================
   
-  const contextValue = {
+  // Memoized so consumers do not re-render on every provider render.
+  const contextValue = useMemo(() => ({
     // User state
     user,
     loading,
@@ -222,7 +223,7 @@ export function AuthProvider({ children }) {
     // Helpers
     isAuthenticated,
     clearError
-  };
+  }), [user, loading, error]);
 
   return (
     <AuthContext.Provider value={contextValue}>

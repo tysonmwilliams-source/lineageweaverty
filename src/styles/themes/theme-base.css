@@ -34,7 +34,11 @@
 :root {
   /* Font families */
   --font-display: 'Cinzel', 'Times New Roman', serif;
-  --font-body: 'Cormorant Garamond', 'Georgia', serif;
+  /* Must name a font that index.html actually loads. This was
+     'Cormorant Garamond', which is not among the webfonts requested — the
+     themes override it to Crimson Text, so the wrong value only surfaced
+     during the first paint, before the theme stylesheet applied. */
+  --font-body: 'Crimson Text', 'Georgia', serif;
   --font-mono: 'Consolas', 'Monaco', monospace;
 
   /* Font sizes */
@@ -244,4 +248,68 @@ img {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* ===============================================
+   DERIVED TOKEN ALIASES
+
+   These names are referenced across the component stylesheets but were never
+   defined anywhere. Without a fallback, `var(--undefined)` makes the whole
+   declaration invalid at computed-value time — so `background: var(--bg-hover)`
+   silently dropped the hover state, and
+   `border-top: 3px solid var(--accent-codex)` rendered as currentColor.
+
+   They are defined once here as aliases rather than seven times per theme:
+   custom-property substitution happens at the point of use, so each alias
+   resolves against whatever the active theme sets for its target.
+   =============================================== */
+:root {
+  /* Interactive states */
+  --bg-hover: var(--bg-tertiary);
+  --bg-disabled: var(--interactive-disabled);
+  --border-hover: var(--border-secondary);
+  --accent-hover: var(--accent-secondary);
+  --accent-primary-hover: var(--accent-secondary);
+
+  /* Translucent accents — used for glows, focus haloes and tinted washes */
+  --accent-primary-rgb: 201, 162, 39;
+  --color-info-rgb: 95, 123, 158;
+  --accent-glow: color-mix(in srgb, var(--accent-primary) 40%, transparent);
+  --accent-primary-transparent: color-mix(in srgb, var(--accent-primary) 12%, transparent);
+  --accent-secondary-bg: color-mix(in srgb, var(--accent-secondary) 12%, transparent);
+  --color-error-transparent: color-mix(in srgb, var(--color-error) 12%, transparent);
+  --focus-ring-alpha: color-mix(in srgb, var(--focus-ring) 45%, transparent);
+
+  /* Text on accent surfaces */
+  --accent-primary-text: var(--accent-primary);
+  --color-warning-text: var(--color-warning);
+
+  /* Status aliases (older names still in use) */
+  --status-warning: var(--color-warning);
+  --status-deceased: var(--text-tertiary);
+
+  /* Per-subsystem accents. Distinct hues so the six systems stay
+     distinguishable; each still derives its contrast from the theme. */
+  --accent-codex: var(--color-info);
+  --accent-armory: var(--accent-primary);
+
+  /* Scale gaps */
+  --text-2xs: 10px;
+  --radius-xs: 2px;
+  --z-panel: var(--z-sticky, 100);
+}
+
+/* ===============================================
+   CONTAINER WIDTHS
+
+   The app currently uses seven different page max-widths (900, 1000, 1200,
+   1400, 1600 and the nav at 1400), so the optical left margin shifts on almost
+   every route change. These tokens are the target scale; pages migrate onto
+   them as they are touched.
+   =============================================== */
+:root {
+  --container-prose: 720px;    /* Reading column — Codex entries, chapters */
+  --container-narrow: 900px;   /* Focused single-column pages */
+  --container-default: 1200px; /* Standard content pages */
+  --container-wide: 1400px;    /* Dense data surfaces and the nav bar */
 }

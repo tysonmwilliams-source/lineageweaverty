@@ -36,8 +36,9 @@
      BORDERS & DIVIDERS
      ============================================ */
   
-  --border-primary: #d4c0a8;       /* Soft hay */
-  --border-secondary: #c4a888;     /* Harvest gold */
+  --border-primary: #ad8759;       /* Soft hay */
+  --border-subtle: #d4c0a8;   /* Decorative rules only — below 3:1, never structural */
+  --border-secondary: #ae885c;     /* Harvest gold */
   --border-heavy: #b49068;         /* Strong amber */
   --border-focus: #c87838;         /* Focus burnt orange */
 
@@ -45,17 +46,17 @@
      SEMANTIC COLORS
      ============================================ */
   
-  --color-success: #5c7c3c;        /* Harvest green */
+  --color-success: #59793a;        /* Harvest green */
   --color-success-light: #6c8c4c;
   --color-success-dark: #4c6c2c;
   --color-success-bg: #ecf4e0;
   
-  --color-warning: #c88434;        /* Rich amber */
+  --color-warning: #976427;        /* Rich amber */
   --color-warning-light: #d89444;
   --color-warning-dark: #b87424;
   --color-warning-bg: #fcf0dc;
   
-  --color-error: #b85444;          /* Autumn red */
+  --color-error: #b45243;          /* Autumn red */
   --color-error-light: #c86454;
   --color-error-dark: #a84434;
   --color-error-bg: #f8e8e4;
@@ -78,7 +79,7 @@
      ACCENT COLORS
      ============================================ */
   
-  --accent-primary: #c86828;       /* Burnt orange - primary actions */
+  --accent-primary: #ae5b23;       /* Burnt orange - primary actions */
   --accent-secondary: #b85818;     /* Dark rust - hover */
   --accent-tertiary: #e88848;      /* Light amber - highlights */
   --accent-muted: rgba(200, 104, 40, 0.15);

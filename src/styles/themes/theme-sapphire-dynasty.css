@@ -29,15 +29,16 @@
   --text-primary: #1a2434;         /* Deep midnight ink */
   --text-secondary: #384458;       /* Storm grey */
   --text-tertiary: #586478;        /* Muted slate */
-  --text-disabled: #8898a8;        /* Faded silver */
+  --text-disabled: #7c8e9f;        /* Faded silver */
   --text-inverse: #e4eaf4;         /* Text on dark backgrounds */
 
   /* ============================================
      BORDERS & DIVIDERS
      ============================================ */
   
-  --border-primary: #b8c8d8;       /* Soft silver */
-  --border-secondary: #98b0c4;     /* Cool steel */
+  --border-primary: #7090b0;       /* Soft silver */
+  --border-subtle: #b8c8d8;   /* Decorative rules only — below 3:1, never structural */
+  --border-secondary: #6e90ac;     /* Cool steel */
   --border-heavy: #7898b0;         /* Strong slate */
   --border-focus: #4878a8;         /* Focus sapphire */
 
@@ -50,7 +51,7 @@
   --color-success-dark: #2c6c4c;
   --color-success-bg: #e0f4ec;
   
-  --color-warning: #a8843c;        /* Amber gold */
+  --color-warning: #866930;        /* Amber gold */
   --color-warning-light: #b8944c;
   --color-warning-dark: #98742c;
   --color-warning-bg: #f4efe0;

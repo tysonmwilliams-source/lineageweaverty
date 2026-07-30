@@ -36,8 +36,9 @@
      BORDERS & DIVIDERS
      ============================================ */
   
-  --border-primary: #d4bcc4;       /* Soft blush */
-  --border-secondary: #c4a0ac;     /* Rose gold */
+  --border-primary: #ae8190;       /* Soft blush */
+  --border-subtle: #d4bcc4;   /* Decorative rules only — below 3:1, never structural */
+  --border-secondary: #b08191;     /* Rose gold */
   --border-heavy: #b48494;         /* Strong wine */
   --border-focus: #a85878;         /* Focus burgundy */
 
@@ -45,17 +46,17 @@
      SEMANTIC COLORS
      ============================================ */
   
-  --color-success: #5c7c5c;        /* Garden green */
+  --color-success: #5a795a;        /* Garden green */
   --color-success-light: #6c8c6c;
   --color-success-dark: #4c6c4c;
   --color-success-bg: #e8f4e8;
   
-  --color-warning: #b89848;        /* Honey gold */
+  --color-warning: #856e34;        /* Honey gold */
   --color-warning-light: #c8a858;
   --color-warning-dark: #a88838;
   --color-warning-bg: #f8f4e4;
   
-  --color-error: #b85454;          /* Rose red */
+  --color-error: #b75050;          /* Rose red */
   --color-error-light: #c86464;
   --color-error-dark: #a84444;
   --color-error-bg: #f8e8e8;

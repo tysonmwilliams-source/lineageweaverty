@@ -699,3 +699,16 @@
     flex-direction: column;
   }
 }
+
+/* ============================================
+   KEYBOARD FOCUS
+   Restores the focus ring for keyboard users. The :focus rules above
+   suppress the default outline for pointer users, which is intended —
+   but without these companions the ring was gone for everyone.
+   ============================================ */
+.beat-card__form-group input:focus-visible,
+.beat-card__form-group textarea:focus-visible,
+.beat-card__form-group select:focus-visible {
+  outline: var(--focus-ring-width, 2px) solid var(--focus-ring);
+  outline-offset: var(--focus-ring-offset, 2px);
+}

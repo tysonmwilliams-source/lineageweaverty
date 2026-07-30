@@ -1,0 +1,62 @@
+/**
+ * NotFound.css
+ *
+ * Uses the shared --lw scales and theme tokens only; no hardcoded colours.
+ */
+
+.not-found {
+  min-height: calc(100vh - var(--nav-height, 64px));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-8) var(--space-4);
+  background: var(--bg-primary);
+}
+
+.not-found__content {
+  max-width: 520px;
+  text-align: center;
+}
+
+.not-found__icon {
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-4);
+}
+
+.not-found__title {
+  font-family: var(--font-heading);
+  font-size: var(--text-2xl);
+  color: var(--text-primary);
+  margin: 0 0 var(--space-3);
+}
+
+.not-found__message {
+  font-size: var(--text-base);
+  color: var(--text-secondary);
+  margin: 0 0 var(--space-6);
+  line-height: var(--leading-normal);
+}
+
+.not-found__path {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  padding: 2px var(--space-2);
+  color: var(--text-primary);
+  word-break: break-all;
+}
+
+.not-found__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: center;
+}
+
+@media (max-width: 480px) {
+  .not-found__actions {
+    flex-direction: column;
+  }
+}

@@ -36,8 +36,9 @@
      BORDERS & DIVIDERS
      ============================================ */
   
-  --border-primary: #3a3450;       /* Soft shadow */
-  --border-secondary: #4a4460;     /* Moderate twilight */
+  --border-primary: #655a8b;       /* Soft shadow */
+  --border-subtle: #3a3450;   /* Decorative rules only — below 3:1, never structural */
+  --border-secondary: #665d84;     /* Moderate twilight */
   --border-heavy: #5a5470;         /* Strong dusk */
   --border-focus: #9878c8;         /* Focus violet */
 

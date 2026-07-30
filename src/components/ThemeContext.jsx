@@ -8,7 +8,7 @@
  * all themes being loaded at startup. This reduces initial CSS parsing.
  */
 
-import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
+import React, { createContext, useState, useContext, useEffect, useMemo, useCallback } from 'react';
 
 // Import theme CSS files using Vite's glob import with ?url to get bundled paths
 // This ensures the CSS files are properly processed and available in production
@@ -24,8 +24,11 @@ const THEME_CSS_PATHS = Object.entries(themeModules).reduce((acc, [path, url]) =
   return acc;
 }, {});
 
-// Cache for loaded theme stylesheets
-const loadedThemes = new Set();
+// Cache for loaded theme stylesheets.
+// The default theme is bundled statically by main.jsx so the first paint is
+// already themed, so it must never be re-injected as a <link>.
+const DEFAULT_THEME_ID = 'royal-parchment';
+const loadedThemes = new Set([DEFAULT_THEME_ID]);
 
 // Available themes configuration
 export const AVAILABLE_THEMES = [
@@ -169,7 +172,7 @@ export const ThemeProvider = ({ children, defaultTheme = 'royal-parchment' }) =>
    * Set theme with validation
    * @param {string} newTheme - Theme ID to set
    */
-  const setTheme = (newTheme) => {
+  const setTheme = useCallback((newTheme) => {
     // Validate theme exists
     const themeConfig = AVAILABLE_THEMES.find(t => t.id === newTheme);
     if (!themeConfig) {
@@ -177,51 +180,76 @@ export const ThemeProvider = ({ children, defaultTheme = 'royal-parchment' }) =>
       return;
     }
     setThemeState(newTheme);
-  };
+  }, []);
 
   /**
    * Toggle between light and dark themes
    * Finds the opposite category theme
    */
-  const toggleTheme = () => {
+  const toggleTheme = useCallback(() => {
     const currentThemeConfig = AVAILABLE_THEMES.find(t => t.id === theme);
     if (!currentThemeConfig) return;
 
-    // Find a theme in the opposite category
     const oppositeCategory = currentThemeConfig.category === 'dark' ? 'light' : 'dark';
-    const oppositeTheme = AVAILABLE_THEMES.find(t => t.category === oppositeCategory);
-    
-    if (oppositeTheme) {
-      setTheme(oppositeTheme.id);
+
+    // Remember which theme we came from, so toggling back returns to it.
+    //
+    // Previously this picked the FIRST theme of the opposite category, so
+    // toggling from Emerald Court landed on Royal Parchment and toggling back
+    // gave you Light Manuscript — your actual choice was discarded on the
+    // first press, and the toggle was not reversible.
+    let target = null;
+    try {
+      const remembered = localStorage.getItem(`lineageweaver-last-${oppositeCategory}`);
+      if (remembered && AVAILABLE_THEMES.some(t => t.id === remembered && t.category === oppositeCategory)) {
+        target = remembered;
+      }
+    } catch (error) {
+      console.warn('Could not read remembered theme:', error);
     }
-  };
+
+    if (!target) {
+      target = AVAILABLE_THEMES.find(t => t.category === oppositeCategory)?.id;
+    }
+
+    if (target) {
+      try {
+        localStorage.setItem(`lineageweaver-last-${currentThemeConfig.category}`, theme);
+      } catch (error) {
+        console.warn('Could not remember current theme:', error);
+      }
+      setTheme(target);
+    }
+  }, [theme, setTheme]);
 
   /**
    * Get current theme configuration
    * @returns {Object} Current theme config
    */
-  const getCurrentThemeConfig = () => {
+  const getCurrentThemeConfig = useCallback(() => {
     return AVAILABLE_THEMES.find(t => t.id === theme) || AVAILABLE_THEMES[0];
-  };
+  }, [theme]);
 
   /**
    * Check if current theme is dark
    * @returns {boolean}
    */
-  const isDarkTheme = () => {
+  const isDarkTheme = useCallback(() => {
     const config = getCurrentThemeConfig();
     return config.category === 'dark';
-  };
+  }, [getCurrentThemeConfig]);
 
   // Context value
-  const value = {
+  // Memoized: an unmemoized object is a new reference every render, so every
+  // consumer of this context re-rendered whenever the provider did.
+  const value = useMemo(() => ({
     theme,                      // Current theme ID
     setTheme,                   // Set theme by ID
     toggleTheme,                // Toggle between light/dark
     getCurrentThemeConfig,      // Get current theme config object
     isDarkTheme,                // Check if dark theme
     availableThemes: AVAILABLE_THEMES  // All available themes
-  };
+  }), [theme, setTheme, toggleTheme, getCurrentThemeConfig, isDarkTheme]);
 
   return (
     <ThemeContext.Provider value={value}>
@@ -253,29 +281,6 @@ export const useTheme = () => {
   }
   
   return context;
-};
-
-/**
- * withTheme HOC
- * 
- * Higher-order component to inject theme props into class components.
- * 
- * @param {React.Component} Component - Component to wrap
- * @returns {React.Component} Wrapped component with theme props
- * 
- * @example
- * class MyClassComponent extends React.Component {
- *   render() {
- *     return <div>Theme: {this.props.theme}</div>;
- *   }
- * }
- * export default withTheme(MyClassComponent);
- */
-export const withTheme = (Component) => {
-  return function ThemedComponent(props) {
-    const theme = useTheme();
-    return <Component {...props} theme={theme} />;
-  };
 };
 
 export default ThemeContext;

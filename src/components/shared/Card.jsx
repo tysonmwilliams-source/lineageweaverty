@@ -114,12 +114,26 @@ const Card = forwardRef(function Card(
 
   const Component = motion[as] || motion.div;
 
+  // Setting role="button" and tabIndex={0} without a key handler is worse than
+  // leaving it a plain div: it announces itself as a button to assistive tech
+  // and then does nothing when activated. Space is preventDefault'd so the
+  // page doesn't scroll, matching native button behaviour.
+  const handleKeyDown = onClick
+    ? (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          handleClick(event);
+        }
+      }
+    : undefined;
+
   return (
     <Component
       ref={ref}
       className={cardClass}
       style={style}
       onClick={onClick ? handleClick : undefined}
+      onKeyDown={handleKeyDown}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
       {...animationProps}

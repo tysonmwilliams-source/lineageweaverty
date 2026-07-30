@@ -141,6 +141,33 @@
   color: var(--color-error);
 }
 
+/* Home.jsx passes accent-dignities and accent-writing, but no rules existed for
+   them — so two of the six cards on the app's front door silently fell back to
+   the generic hover while their four siblings had accents. */
+.system-card.accent-dignities:hover {
+  border-color: var(--accent-primary);
+}
+
+.system-card.accent-dignities .system-icon {
+  color: var(--accent-primary);
+}
+
+.system-card.accent-writing:hover {
+  border-color: var(--accent-tertiary, var(--accent-secondary));
+}
+
+.system-card.accent-writing .system-icon {
+  color: var(--accent-tertiary, var(--accent-secondary));
+}
+
+/* The card is a <Link>; strip the default anchor styling. */
+.system-card,
+.system-card:hover,
+.system-card:visited {
+  text-decoration: none;
+  color: inherit;
+}
+
 /* ============================================
    RESPONSIVE
    ============================================ */

@@ -221,3 +221,16 @@
     border-bottom-right-radius: 0;
   }
 }
+
+/* ============================================
+   KEYBOARD FOCUS
+   Restores the focus ring for keyboard users. The :focus rules above
+   suppress the default outline for pointer users, which is intended —
+   but without these companions the ring was gone for everyone.
+   ============================================ */
+.household-role-form__input:focus-visible,
+.household-role-form__select:focus-visible,
+.household-role-form__textarea:focus-visible {
+  outline: var(--focus-ring-width, 2px) solid var(--focus-ring);
+  outline-offset: var(--focus-ring-offset, 2px);
+}

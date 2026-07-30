@@ -29,15 +29,16 @@
   --text-primary: #2d2419;         /* Primary text - dark sepia (iron gall ink) */
   --text-secondary: #4d3d2e;       /* Secondary text - warm brown */
   --text-tertiary: #6d5d4e;        /* Tertiary text */
-  --text-disabled: #9d8d78;        /* Disabled state */
+  --text-disabled: #9b8b75;        /* Disabled state */
   --text-inverse: #e8d5b7;         /* Text on dark backgrounds */
 
   /* ============================================
      BORDERS & DIVIDERS
      ============================================ */
   
-  --border-primary: #d4c4a4;       /* Primary borders (subtle) */
-  --border-secondary: #c4b494;     /* Secondary borders (moderate) */
+  --border-primary: #a5884e;       /* Primary borders (subtle) */
+  --border-subtle: #d4c4a4;   /* Decorative rules only — below 3:1, never structural */
+  --border-secondary: #a38a5a;     /* Secondary borders (moderate) */
   --border-heavy: #b4a484;         /* Heavy dividers */
   --border-focus: #c4943c;         /* Focus state border */
 
@@ -50,7 +51,7 @@
   --color-success-dark: #3a6c2c;
   --color-success-bg: #e8f4e4;
   
-  --color-warning: #d4a034;        /* Rich amber */
+  --color-warning: #8e6a1e;        /* Rich amber */
   --color-warning-light: #e4b044;
   --color-warning-dark: #c49024;
   --color-warning-bg: #f9f2e4;
@@ -78,7 +79,7 @@
      ACCENT COLORS (Primary brand/action colors)
      ============================================ */
   
-  --accent-primary: #b8874a;       /* Rich gold accent - primary actions, selected states */
+  --accent-primary: #916a39;       /* Rich gold accent - primary actions, selected states */
   --accent-secondary: #9a6f3a;     /* Darker gold - hover states, secondary emphasis */
   --accent-tertiary: #d4a56b;      /* Lighter gold - subtle highlights */
   --accent-muted: rgba(184, 135, 74, 0.15); /* Muted accent for backgrounds */
@@ -87,7 +88,7 @@
      FOCUS INDICATORS
      ============================================ */
   
-  --focus-ring: #c4943c;           /* Focus outline - rich gold */
+  --focus-ring: #b18536;           /* Focus outline - rich gold */
   --focus-ring-width: 2px;
   --focus-ring-offset: 2px;
   --focus-ring-opacity: 0.15;
