@@ -32,10 +32,19 @@ import {
 } from '../utils/treeHelpers';
 import { logger } from '../utils/logger';
 import './FamilyTree.css';
+import TreeListView from '../components/TreeListView';
+import useMediaQuery from '../hooks/useMediaQuery';
 
 function FamilyTree() {
   // ==================== URL PARAMETERS ====================
   const { personId: urlPersonId } = useParams();
+
+  // Below the phone breakpoint the tree renders as a navigable list instead of a
+  // D3 canvas (decision C1). This is a JS media query rather than CSS because the
+  // canvas must not *mount* — hiding it with CSS would still run the layout and
+  // build the SVG, which is wasted work on the weakest device. 480px matches the
+  // canonical scale in src/styles/responsive.css.
+  const isNarrowViewport = useMediaQuery('(max-width: 480px)');
   const location = useLocation(); // Track navigation for effect triggering
   
   // Use the global theme system
@@ -951,6 +960,16 @@ function FamilyTree() {
   */
 
   const drawTree = () => {
+    // Bail before doing any work when there is no canvas to draw into.
+    //
+    // Below 480px TreeListView renders instead of the <svg>, so svgRef.current is
+    // null. Without this guard nothing *crashes* — d3.select(null) yields an empty
+    // selection and every write becomes a no-op — but all the expensive steps still
+    // ran: buildRelationshipMaps, detectFragments, generation detection and the
+    // whole block layout, computed in order to draw into nothing. Avoiding exactly
+    // that is why the viewport check is in JS rather than CSS.
+    if (!svgRef.current) return;
+
     const themeColors = getAllThemeColors();
     
     let savedTransform = null;
@@ -1797,7 +1816,9 @@ function FamilyTree() {
         compactMode={true}
       />
 
-      {/* Back to Houses button */}
+      {/* Back to Houses button — the list view carries its own exit in the
+          breadcrumb, so this fixed button would just overlap it. */}
+      {!isNarrowViewport && (
       <button
         className="tree-back-btn"
         onClick={() => setSelectedHouseId(null)}
@@ -1806,7 +1827,12 @@ function FamilyTree() {
         <Icon name="arrow-left" size={16} />
         <span>All Houses</span>
       </button>
+      )}
 
+      {/* Both of these are fixed-position and tuned for the canvas — the zoom
+          controls in particular are meaningless without one. */}
+      {!isNarrowViewport && (
+        <>
       <TreeSettingsPanel
         isExpanded={controlsPanelExpanded}
         houses={houses}
@@ -1840,17 +1866,44 @@ function FamilyTree() {
         onZoomChange={(level) => setZoomLevel(level)}
         isDarkTheme={isDarkTheme()}
       />
+        </>
+      )}
 
       {/* Fragment Navigator - Minimal pill in top-left */}
-      {fragmentInfo.hasMultipleFragments && !showBranchView && (
+      {!isNarrowViewport && fragmentInfo.hasMultipleFragments && !showBranchView && (
         <FragmentNavigator
           fragments={fragmentInfo.fragments}
           onNavigateToFragment={navigateToFragment}
         />
       )}
 
-      {/* Main Tree View or Branch View */}
-      {showBranchView && fragmentInfo.hasMultipleFragments ? (
+      {/* Main Tree View, Branch View, or — on a phone — the list view.
+          The list is checked first so D3 never mounts below the breakpoint. */}
+      {isNarrowViewport ? (
+        (() => {
+          const maps = buildRelationshipMaps();
+          // Open on whoever the user was already looking at, then the house's
+          // root, then anyone in the house — so the list starts somewhere
+          // meaningful rather than at an arbitrary record.
+          const startId =
+            (urlPersonId ? parseInt(urlPersonId) : null) ??
+            centreOnPersonId ??
+            fragmentInfo.fragments[0]?.rootPerson?.id ??
+            null;
+
+          return (
+            <TreeListView
+              rootPersonId={startId}
+              people={people}
+              houses={houses}
+              relationships={relationships}
+              maps={maps}
+              onOpenPerson={setSelectedPerson}
+              onExit={() => setSelectedHouseId(null)}
+            />
+          );
+        })()
+      ) : showBranchView && fragmentInfo.hasMultipleFragments ? (
         (() => {
           const maps = buildRelationshipMaps();
           return (

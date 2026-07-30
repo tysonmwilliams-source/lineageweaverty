@@ -1,0 +1,300 @@
+/**
+ * TreeListView.css
+ *
+ * The narrow-viewport tree. Manuscript direction (decision B1) applies here in a
+ * restrained form: this is a navigation surface, not a reading one, so it gets the
+ * accent as structure — a rule down the focus header, accent-marked group titles —
+ * but no drop caps or ornament, which would only get in the way of scanning.
+ *
+ * Every row is a 44px+ target (decision C1); responsive.css sets the floor, but
+ * these are sized deliberately rather than relying on it.
+ */
+
+.tree-list {
+  min-height: 100vh;
+  padding: 0 0 var(--space-12, 3rem);
+  background: var(--bg-primary);
+}
+
+/* ── Breadcrumb trail ────────────────────────────────────────────────────── */
+
+.tree-list__trail {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2, 0.5rem);
+  padding: var(--space-3, 0.75rem) var(--space-4, 1rem);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-primary);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.tree-list__trail-exit,
+.tree-list__trail-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: 44px;
+  padding: 0 var(--space-2, 0.5rem);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm, 2px);
+  cursor: pointer;
+}
+
+.tree-list__trail-exit:hover,
+.tree-list__trail-back:hover,
+.tree-list__trail-exit:focus-visible,
+.tree-list__trail-back:focus-visible {
+  color: var(--text-primary);
+  border-color: var(--accent-primary);
+}
+
+.tree-list__crumbs {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  /* The trail can get long; let it wrap rather than push the row sideways. */
+  min-width: 0;
+}
+
+.tree-list__crumb:not(:last-child)::after {
+  content: '›';
+  margin-left: 0.25rem;
+  opacity: 0.6;
+}
+
+.tree-list__crumb button {
+  font-family: inherit;
+  font-size: inherit;
+  color: var(--accent-primary);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.tree-list__crumb [aria-current='page'] {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* ── Person in focus ─────────────────────────────────────────────────────── */
+
+.tree-list__focus {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3, 0.75rem);
+  padding: var(--space-4, 1rem);
+  /* The accent as structure rather than as text colour. */
+  border-left: 3px solid var(--accent-primary);
+  border-bottom: 1px solid var(--border-primary);
+  background: var(--bg-secondary);
+}
+
+.tree-list__focus-swatch {
+  width: 0.75rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm, 2px);
+}
+
+.tree-list__focus-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.tree-list__focus-name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.tree-list__focus-meta {
+  margin: 0.15rem 0 0;
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.tree-list__focus-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 44px;
+  padding: 0 var(--space-3, 0.75rem);
+  flex-shrink: 0;
+  font-family: inherit;
+  font-size: var(--text-sm);
+  color: var(--accent-primary);
+  background: transparent;
+  border: 1px solid var(--accent-primary);
+  border-radius: var(--radius-sm, 2px);
+  cursor: pointer;
+}
+
+.tree-list__focus-open:hover,
+.tree-list__focus-open:focus-visible {
+  background: var(--bg-tertiary);
+}
+
+/* ── Relation groups ─────────────────────────────────────────────────────── */
+
+.tree-list__group {
+  margin-top: var(--space-5, 1.25rem);
+}
+
+.tree-list__group-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+  margin: 0 0 var(--space-1, 0.25rem);
+  padding: 0 var(--space-4, 1rem);
+  font-family: var(--font-display);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+}
+
+.tree-list__group-count {
+  padding: 0 0.4rem;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-inverse);
+  background: var(--accent-primary);
+  border-radius: var(--radius-sm, 2px);
+}
+
+.tree-list__rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tree-list__row + .tree-list__row {
+  border-top: 1px solid var(--border-subtle, var(--border-primary));
+}
+
+.tree-list__row-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3, 0.75rem);
+  width: 100%;
+  min-height: 56px;
+  padding: var(--space-2, 0.5rem) var(--space-4, 1rem);
+  font-family: inherit;
+  text-align: left;
+  color: var(--text-primary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+
+.tree-list__row-btn:hover,
+.tree-list__row-btn:focus-visible {
+  background: var(--bg-tertiary);
+}
+
+.tree-list__swatch {
+  width: 0.375rem;
+  height: 2rem;
+  flex-shrink: 0;
+  border-radius: 1px;
+}
+
+.tree-list__row-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.tree-list__row-name {
+  font-size: var(--text-base);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tree-list__row-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+}
+
+.tree-list__row-note {
+  color: var(--accent-primary);
+}
+
+.tree-list__row-chevron {
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+}
+
+/* ── Empty / isolated states ─────────────────────────────────────────────── */
+
+.tree-list__isolated {
+  margin: var(--space-5, 1.25rem) var(--space-4, 1rem) 0;
+  padding: var(--space-4, 1rem);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+  border: 1px dashed var(--border-primary);
+  border-radius: var(--radius-sm, 2px);
+}
+
+.tree-list__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3, 0.75rem);
+  padding: var(--space-12, 3rem) var(--space-4, 1rem);
+  text-align: center;
+  color: var(--text-tertiary);
+}
+
+.tree-list__exit {
+  min-height: 44px;
+  padding: 0 var(--space-4, 1rem);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  color: var(--accent-primary);
+  background: transparent;
+  border: 1px solid var(--accent-primary);
+  border-radius: var(--radius-sm, 2px);
+  cursor: pointer;
+}
+
+/* Above the phone breakpoint this component isn't rendered at all — the canvas
+   is. These widths only matter for the band where it is shown on a wider
+   window (a narrow desktop window, or a tablet in portrait). */
+@media (min-width: 481px) {
+  .tree-list__trail,
+  .tree-list__focus,
+  .tree-list__group-title,
+  .tree-list__row-btn {
+    padding-left: max(var(--space-4, 1rem), calc((100% - 44rem) / 2));
+    padding-right: max(var(--space-4, 1rem), calc((100% - 44rem) / 2));
+  }
+}
