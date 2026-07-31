@@ -23,7 +23,19 @@ import {
 import Icon from '../icons';
 import './ShieldTreePanel.css';
 
-function ShieldTreePanel({ root, selectedPath, onSelectPath, onChangeNode, activeSection, onSectionChange }) {
+function ShieldTreePanel({
+  root,
+  selectedPath,
+  onSelectPath,
+  onChangeNode,
+  onMashCoat,
+  activeSection,
+  onSectionChange,
+  onUndo,
+  onRedo,
+  canUndo,
+  canRedo
+}) {
   const [confirmingUndivide, setConfirmingUndivide] = useState(false);
 
   const node = getNodeAtPath(root, selectedPath) ?? root;
@@ -63,8 +75,32 @@ function ShieldTreePanel({ root, selectedPath, onSelectPath, onChangeNode, activ
         <div className="shield-tree__body">
           <p className="section-help">
             Combine whole coats into one shield. Impalement is how a marriage is
-            borne; quartering is how descent is borne.
+            borne — one house's arms beside another's; quartering is how descent
+            is borne.
           </p>
+
+          <div className="shield-tree__history">
+            <button
+              type="button"
+              className="shield-tree__btn"
+              onClick={onUndo}
+              disabled={!canUndo}
+              title="Undo the last change to this shield"
+            >
+              <Icon name="undo" size={14} />
+              <span>Undo</span>
+            </button>
+            <button
+              type="button"
+              className="shield-tree__btn"
+              onClick={onRedo}
+              disabled={!canRedo}
+              title="Redo"
+            >
+              <Icon name="redo" size={14} />
+              <span>Redo</span>
+            </button>
+          </div>
 
           {selectedPath.length > 0 && (
             <nav className="shield-tree__crumbs" aria-label="Shield parts">
@@ -93,20 +129,37 @@ function ShieldTreePanel({ root, selectedPath, onSelectPath, onChangeNode, activ
               <div className="shield-tree__parts">
                 {node.parts.map((part, i) => {
                   const partPath = [...selectedPath, i];
+                  const isCurrent = samePath(partPath, selectedPath);
                   return (
-                    <button
-                      key={i}
-                      type="button"
-                      className={`shield-tree__part ${samePath(partPath, selectedPath) ? 'is-current' : ''}`}
-                      onClick={() => onSelectPath(partPath)}
-                    >
-                      <span className="shield-tree__part-name">{describePath(root, partPath)}</span>
-                      <span className="shield-tree__part-kind">
-                        {isMarshalledNode(part)
-                          ? (MARSHALLING[part.arrangement]?.label ?? 'divided')
-                          : 'single coat'}
-                      </span>
-                    </button>
+                    /* A container rather than one big button: "select this
+                       part" and "fill it from a house" are two actions, and
+                       nesting a control inside a <button> is invalid markup
+                       and unreachable by keyboard. */
+                    <div key={i} className={`shield-tree__part ${isCurrent ? 'is-current' : ''}`}>
+                      <button
+                        type="button"
+                        className="shield-tree__part-select"
+                        onClick={() => onSelectPath(partPath)}
+                      >
+                        <span className="shield-tree__part-name">{describePath(root, partPath)}</span>
+                        <span className="shield-tree__part-kind">
+                          {isMarshalledNode(part)
+                            ? (MARSHALLING[part.arrangement]?.label ?? 'divided')
+                            : 'single coat'}
+                        </span>
+                      </button>
+
+                      {/* The marriage case: fill this part straight from
+                          another house's arms rather than redrawing them. */}
+                      <button
+                        type="button"
+                        className="shield-tree__part-mash"
+                        onClick={() => onMashCoat?.(partPath)}
+                      >
+                        <Icon name="shield" size={12} />
+                        <span>Use a house's arms</span>
+                      </button>
+                    </div>
                   );
                 })}
               </div>
@@ -143,6 +196,17 @@ function ShieldTreePanel({ root, selectedPath, onSelectPath, onChangeNode, activ
               <p className="shield-tree__state">
                 {selectedPath.length === 0 ? 'A single undivided coat.' : 'This part is a single coat.'}
               </p>
+
+              {selectedPath.length > 0 && (
+                <button
+                  type="button"
+                  className="shield-tree__btn shield-tree__btn--mash"
+                  onClick={() => onMashCoat?.(selectedPath)}
+                >
+                  <Icon name="shield" size={14} />
+                  <span>Use another house's arms here</span>
+                </button>
+              )}
 
               {canDivide(root, selectedPath) ? (
                 <div className="shield-tree__divide">

@@ -13,21 +13,35 @@ import { createPlainNode, createMarshalledNode } from '../../utils/heraldry';
 
 const leaf = (t) => createPlainNode({ field: { tincture1: t } });
 
-function setup({ root = leaf('murrey'), selectedPath = [], section = 'marshalling' } = {}) {
+function setup({
+  root = leaf('murrey'),
+  selectedPath = [],
+  section = 'marshalling',
+  canUndo = false,
+  canRedo = false
+} = {}) {
   const onSelectPath = vi.fn();
   const onChangeNode = vi.fn();
   const onSectionChange = vi.fn();
+  const onMashCoat = vi.fn();
+  const onUndo = vi.fn();
+  const onRedo = vi.fn();
   render(
     <ShieldTreePanel
       root={root}
       selectedPath={selectedPath}
       onSelectPath={onSelectPath}
       onChangeNode={onChangeNode}
+      onMashCoat={onMashCoat}
       activeSection={section}
       onSectionChange={onSectionChange}
+      onUndo={onUndo}
+      onRedo={onRedo}
+      canUndo={canUndo}
+      canRedo={canRedo}
     />
   );
-  return { onSelectPath, onChangeNode, onSectionChange };
+  return { onSelectPath, onChangeNode, onSectionChange, onMashCoat, onUndo, onRedo };
 }
 
 describe('ShieldTreePanel — an undivided shield', () => {
@@ -183,5 +197,66 @@ describe('ShieldTreePanel — collapsed', () => {
     setup({ section: '' });
     expect(screen.queryByRole('button', { name: 'Impaled' })).not.toBeInTheDocument();
     expect(screen.getByText('Marshalling')).toBeInTheDocument();
+  });
+});
+
+
+describe('ShieldTreePanel — undo', () => {
+  it('disables both controls when there is no history', () => {
+    setup();
+    expect(screen.getByRole('button', { name: /undo/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /redo/i })).toBeDisabled();
+  });
+
+  it('calls back when there is something to undo', async () => {
+    const { onUndo } = setup({ canUndo: true });
+    await userEvent.click(screen.getByRole('button', { name: /undo/i }));
+    expect(onUndo).toHaveBeenCalled();
+  });
+
+  it('calls back when there is something to redo', async () => {
+    const { onRedo } = setup({ canRedo: true });
+    await userEvent.click(screen.getByRole('button', { name: /redo/i }));
+    expect(onRedo).toHaveBeenCalled();
+  });
+});
+
+describe("ShieldTreePanel — combining another house's arms", () => {
+  const impaled = () => createMarshalledNode('impaled', [leaf('azure'), leaf('gules')]);
+
+  it('offers to fill each part from a house', () => {
+    setup({ root: impaled() });
+    expect(screen.getAllByRole('button', { name: /use a house's arms/i })).toHaveLength(2);
+  });
+
+  it('reports which part is to be filled', async () => {
+    // The marriage case: the sinister half is the spouse's side, so the path
+    // handed back has to be the part that was clicked, not the selection.
+    const { onMashCoat } = setup({ root: impaled(), selectedPath: [] });
+    const buttons = screen.getAllByRole('button', { name: /use a house's arms/i });
+
+    await userEvent.click(buttons[1]);
+    expect(onMashCoat).toHaveBeenCalledWith([1]);
+  });
+
+  it('does not change the selection as a side effect of asking', async () => {
+    const { onMashCoat, onSelectPath } = setup({ root: impaled() });
+    await userEvent.click(screen.getAllByRole('button', { name: /use a house's arms/i })[0]);
+
+    expect(onMashCoat).toHaveBeenCalledWith([0]);
+    expect(onSelectPath).not.toHaveBeenCalled();
+  });
+
+  it('offers it for a nested single coat too', async () => {
+    const nested = createMarshalledNode('quartered', [impaled(), leaf('b'), leaf('c'), leaf('d')]);
+    const { onMashCoat } = setup({ root: nested, selectedPath: [0, 1] });
+
+    await userEvent.click(screen.getByRole('button', { name: /use another house's arms here/i }));
+    expect(onMashCoat).toHaveBeenCalledWith([0, 1]);
+  });
+
+  it('does not offer it for the whole shield, where there is nothing to combine with', () => {
+    setup({ root: leaf('azure'), selectedPath: [] });
+    expect(screen.queryByRole('button', { name: /use another house's arms here/i })).not.toBeInTheDocument();
   });
 });

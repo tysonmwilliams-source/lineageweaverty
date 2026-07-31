@@ -45,6 +45,8 @@ import ExternalChargeRenderer, {
 } from '../components/heraldry/ExternalChargeRenderer';
 import CoatEditor from '../components/heraldry/CoatEditor';
 import ShieldTreePanel from '../components/heraldry/ShieldTreePanel';
+import useUndoable from '../hooks/useUndoable';
+import HeraldryPickerModal from '../components/heraldry/HeraldryPickerModal';
 import { useAuth } from '../contexts/AuthContext';
 import { useDataset } from '../contexts/DatasetContext';
 import {
@@ -811,7 +813,19 @@ function HeraldryCreator() {
   // the composition tree, and the coat being edited is whichever node
   // `selectedPath` points at. A single undivided coat is a tree of one, so this
   // changes nothing on screen until step 5d can divide a shield.
-  const [root, setRoot] = useState(() => createPlainNode());
+  // Undo covers the shield and everything in it, because every edit — tincture,
+  // charge, division, or a whole coat mashed in from another house — funnels
+  // through this one setter. Marshalling is destructive enough that trying
+  // things without a way back is uncomfortable, and trying things is the point.
+  const {
+    value: root,
+    set: setRoot,
+    reset: resetRoot,
+    undo,
+    redo,
+    canUndo,
+    canRedo
+  } = useUndoable(() => createPlainNode());
 
   // [] is the whole shield; [1] its second part; [1, 0] the first part of that.
   const [selectedPath, setSelectedPath] = useState([]);
@@ -822,9 +836,52 @@ function HeraldryCreator() {
   const safePath = clampPath(root, selectedPath);
   const selectedNode = getNodeAtPath(root, safePath) ?? root;
 
+  // Which part of the shield a picked coat should be dropped into. Held rather
+  // than derived because the picker is modal: the user may navigate the tree
+  // before opening it, and the part they clicked is the one they meant.
+  const [mashTargetPath, setMashTargetPath] = useState(null);
+
+  /**
+   * Fill a part of the shield with another house's arms.
+   *
+   * The whole composition is copied in, so mashing a house whose own arms are
+   * quartered yields a grand quarter without any extra work — that is the
+   * recursive model paying for itself.
+   *
+   * It is a snapshot, not a reference. Editing House Wilfrey's arms later will
+   * not change a shield that married them in, which is the right default for
+   * genealogy: arms as borne at the time, not a live feed. It also avoids
+   * needing cycle detection and a dependency check before deleting a coat.
+   */
+  const mashCoatIntoPart = useCallback(async (heraldry) => {
+    const path = mashTargetPath;
+    setMashTargetPath(null);
+    if (!path || !heraldry?.id) return;
+
+    try {
+      const record = await getHeraldry(heraldry.id, activeDataset?.id);
+      const picked = readComposition(record?.composition);
+
+      if (!picked?.root) {
+        // Uploaded or generated arms have imagery and no composition, so there
+        // is nothing to marshal. Say so rather than silently doing nothing.
+        alert(`"${record?.name ?? 'Those arms'}" were uploaded rather than drawn in the Armory, so there is no composition to combine.`);
+        return;
+      }
+
+      setRoot((current) => setNodeAtPath(current, clampPath(current, path), picked.root));
+      setSelectedPath(path);
+    } catch (error) {
+      logger.error('Could not load the arms to combine:', error);
+    }
+  }, [mashTargetPath, activeDataset, setRoot]);
+
+  // `setRoot` is listed because it now comes from useUndoable rather than
+  // useState, so ESLint cannot assume it is stable. It is — the hook wraps it
+  // in useCallback — but stating it keeps the gate clean and the claim honest.
   const replaceSelectedNode = useCallback((nextNode) => {
     setRoot((current) => setNodeAtPath(current, clampPath(current, selectedPath), nextNode));
-  }, [selectedPath]);
+  }, [selectedPath, setRoot]);
 
   // The coat currently being edited. Marshalled nodes have no field of their
   // own, so the editing panel follows the selection down to a leaf.
@@ -939,7 +996,7 @@ function HeraldryCreator() {
           if (stored?.root) {
             // The whole tree, not just its first leaf — a marshalled coat now
             // loads back as the shield it was saved as.
-            setRoot(stored.root);
+            resetRoot(stored.root);
             setSelectedPath([]);
           }
           if (stored?.unmigrated) setCarriedUnmigrated(stored.unmigrated);
@@ -1000,7 +1057,7 @@ function HeraldryCreator() {
               // Derived arms start as the parent's whole shield, marshalling
               // included — cadency differences the achievement, it does not
               // flatten it to one coat.
-              setRoot(parentComposition.root);
+              resetRoot(parentComposition.root);
               setSelectedPath([]);
             }
             if (parentArms.shieldType) {
@@ -1478,8 +1535,13 @@ function HeraldryCreator() {
               selectedPath={safePath}
               onSelectPath={setSelectedPath}
               onChangeNode={replaceSelectedNode}
+              onMashCoat={setMashTargetPath}
               activeSection={activeSection}
               onSectionChange={setActiveSection}
+              onUndo={undo}
+              onRedo={redo}
+              canUndo={canUndo}
+              canRedo={canRedo}
             />
 
             {/* The editor edits whichever node the selection points at, and
@@ -1631,6 +1693,19 @@ function HeraldryCreator() {
           </main>
         </div>
       </div>
+
+      {/* Decision C3: pick another house's arms to marshal into a part of this
+          shield. Reuses the Armory's existing picker rather than growing a
+          second one; `excludeHeraldryId` stops a coat being marshalled into
+          itself, which would be a coat that contains itself. */}
+      <HeraldryPickerModal
+        isOpen={mashTargetPath !== null}
+        onClose={() => setMashTargetPath(null)}
+        onSelect={mashCoatIntoPart}
+        entityType="house"
+        entityName={name || 'this shield'}
+        excludeHeraldryId={isEditMode ? parseInt(id) : null}
+      />
     </>
   );
 }
