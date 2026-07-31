@@ -322,6 +322,9 @@ Two structural refactors are also unambiguously right, but they're big enough th
 | **D2** | Dynasty | **House plus its cadet branches**, via `parentHouseId` | `91904b4` |
 | **D3** | Adoption | **Adopted inherit after natural issue**; adopted links now count | `91904b4` |
 | **D4** | The broken Crown | **Vacant**, and male-primogeniture — owner applies in-app | `9da1c19` (guard) |
+| **G2** | `RankPips` | **Shared component wins**; private copy deleted | `adbbb73` |
+| **G3** | Unimported shared CSS | **Deleted** — 1,481 lines | `adbbb73` |
+| **G1** | Remaining emoji | **Partly done**: 3 invisible icons fixed; the rest deliberate | `adbbb73` |
 | **G7** | React Compiler lint | **`static-components` now**, rest scheduled — rule promoted to error | `bb8fd32` |
 | **C4** | Planner | **Promote to a route** — `/writing/:id/plan/:planId/:view` | `72068fe` |
 | **C3** | Marshalling | **Recursive composition** — the full rebuild | **complete** — 6 steps, `87aa243`…`8740b32` |
@@ -365,7 +368,7 @@ Notes worth carrying forward:
   below: a TypeScript migration and a heraldry-pipeline rewrite landing on the
   same files simultaneously is worse than either alone.
 
-**Still to decide: C2, C5, C6, E1–E9, F1, F5, F7, F8, G1–G3.**
+**Still to decide: C2, C5, C6, E1–E9, F1, F5, F7, F8.**
 
 ---
 
@@ -544,7 +547,35 @@ Everything in Part One is now implemented. These are the items that surfaced
 *during* implementation and stopped at a decision rather than a technical
 blocker. Each one is small; none can be resolved without an answer.
 
-**G1. The remaining 44 emoji.** *(B1 is now decided — full manuscript — so the
+**G1. ~~The remaining 44 emoji.~~ — PARTLY DONE (`adbbb73`); the rest is deliberate.**
+
+*The count was wrong, in the usual direction.* Measured: ~90 emoji sit in `icon:`
+data fields and ~86 elsewhere in non-logger code; a naive scan reports **1,163**,
+almost all of them `logger.log('👑 …')` prefixes that no user ever sees. Another
+scanner count that is not a defect count.
+
+*What was actually broken was not emoji at all.* Three **icon names** —
+`briefcase`, `medal`, `heart-handshake` — were read from
+`data/dignityEducation.js` and passed to `<Icon name={...}>` without being in
+`LUCIDE_ICONS`, so the office, personal-honour and courtesy dignity badges
+rendered nothing. `icon-map.test.jsx` could not catch it because it scans for
+the *literal* `<Icon name="…">` form. Fixed, and the test now also scans the
+data maps that feed `<Icon>`.
+
+*What remains is deliberate, not pending:*
+
+- The `<option>` emoji in `BugReporterButton` and `DignityForm` stay. Browsers
+  allow only text inside `<option>`, so a component child is invalid markup —
+  this is the one place emoji is the technically correct choice.
+- The `heraldicData` division glyphs (`✳`, `☷`, `✚`, `✕`) stay. They are
+  diagram approximations of heraldic divisions, Lucide has no equivalent and
+  never will, and replacing them with a generic line icon would make the picker
+  less informative rather than more.
+- The remaining `icon:` fields in data maps are a large mechanical conversion
+  with no defect behind it, and several entries have no sensible Lucide
+  equivalent. Worth doing as its own pass if ever, not as part of G1.
+
+**G1 (original entry).** *(B1 is now decided — full manuscript — so the
 `icon:` data-map group below can proceed whenever you want it; the other three
 groups still stand on their own reasons.)* 55 more were converted to `<Icon>` in Phase 6, on
 top of the 30 in Phase 4. What's left is left for a reason, and each group needs a
@@ -571,7 +602,13 @@ different kind of answer:
 - **`🏴`** on the Armory's "Field (Base Layer)" section header — no Lucide
   equivalent. Needs either a different metaphor or a custom glyph.
 
-**G2. `RankPips` is still duplicated.** `DignityVisuals.jsx` exports a
+**G2. ~~`RankPips` is still duplicated.~~ — DONE (`adbbb73`).** The exported
+component in `DignityVisuals` turned out to be a strict superset — it already
+accepted `count` and `max`, exactly how the private copy was called — so no API
+change was needed. The two styles differed only by 6px vs 7px pips and a faint
+gold glow; the shared one wins.
+
+**G2 (original entry).** `DignityVisuals.jsx` exports a
 feature-rich version styled with `.rank-pips*`; `DignityEducationPanel.jsx` has a
 private copy styled with `.dignity-education__pip*`. The component logic is
 trivially unifiable — the APIs are already compatible — but the two have
@@ -579,7 +616,14 @@ trivially unifiable — the APIs are already compatible — but the two have
 winner on screen. That's **B1/B3**, not a dedupe. Say which pip style wins and
 this is ten minutes.
 
-**G3. `src/styles/shared/` + `shared-forms.css` — 1,468 lines, still unimported.**
+**G3. ~~`src/styles/shared/` + `shared-forms.css`.~~ — DONE: deleted (`adbbb73`).**
+1,481 lines across five files, imported by nothing. Of their 115 class names
+exactly one (`form-group`) appears in JSX, and that is the collision the Phase 3
+correction identified. The "keep them as a seed for whatever B1 decides"
+argument expired when B1 was decided and produced `styles/manuscript.css`
+instead.
+
+**G3 (original entry).**
 Unchanged since the Phase 3 correction at the top of this document. Delete them,
 or keep them as a seed for whatever **B1** decides? They cannot simply be
 imported; that was the original plan and it was wrong.
