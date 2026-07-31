@@ -574,9 +574,36 @@ export function natureHasTenureHistory(nature) {
  * - notes: Free-form notes
  * @param {string} [userId] - Optional user ID for cloud sync
  */
+/**
+ * Reject a holder who does not exist (decision D4).
+ *
+ * The Crown carried `currentHolderId: 82` against a person who is not in the
+ * database, and nothing stopped it being written or noticed it afterwards.
+ * Because 25 of the 26 dignities chain up to the Crown, one dangling id at the
+ * top made the whole feudal structure describe a kingdom ruled by nobody.
+ *
+ * Validated only when the field is actually being written. A dignity that is
+ * *already* broken must stay editable — otherwise the first thing this guard
+ * would do is prevent anyone fixing the record it was written for.
+ */
+async function assertHolderExists(db, updates) {
+  if (!Object.hasOwn(updates, 'currentHolderId')) return;
+  const holderId = updates.currentHolderId;
+  if (holderId === null || holderId === undefined || holderId === '') return;
+
+  const person = await db.people.get(holderId);
+  if (!person) {
+    throw new Error(
+      `Cannot set dignity holder to person #${holderId}: no such person. ` +
+      'Clear the holder to mark the dignity vacant instead.'
+    );
+  }
+}
+
 export async function createDignity(dignityData, userId = null, datasetId = null) {
   try {
     const db = getDatabase(datasetId);
+    await assertHolderExists(db, dignityData);
     const now = new Date().toISOString();
 
     const record = {
@@ -733,9 +760,11 @@ export async function getAllDignities(datasetId = null) {
  * @param {string} [userId] - Optional user ID for cloud sync
  * @returns {Promise<number>} Number of records updated (1 or 0)
  */
+
 export async function updateDignity(id, updates, userId = null, datasetId = null) {
   try {
     const db = getDatabase(datasetId);
+    await assertHolderExists(db, updates);
     const result = await db.dignities.update(id, {
       ...updates,
       updated: new Date().toISOString()

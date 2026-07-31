@@ -188,3 +188,58 @@ describe('getHeir — one depth cap, shared', () => {
     expect(heir.person.firstName).toBe('Cedric');
   });
 });
+
+describe('a dignity cannot be given a holder who does not exist (decision D4)', () => {
+  // The Crown carried currentHolderId 82 against a person who is not in the
+  // database, and nothing stopped it being written. Because 25 of the 26
+  // dignities chain up to the Crown, one dangling id at the top made the whole
+  // feudal structure describe a kingdom ruled by nobody.
+  it('refuses to create one', async () => {
+    await seed({ people: [{ id: 1, firstName: 'Real', gender: 'male' }] });
+    const { createDignity } = await import('./dignityService');
+
+    await expect(
+      createDignity({ name: 'Phantom Crown', currentHolderId: 82 }, null, datasetId)
+    ).rejects.toThrow(/no such person/i);
+  });
+
+  it('refuses to update one onto an existing dignity', async () => {
+    await seed({
+      people: [{ id: 1, firstName: 'Real', gender: 'male' }],
+      dignities: [{ id: 1, name: 'A Seat', currentHolderId: 1 }]
+    });
+    const { updateDignity } = await import('./dignityService');
+
+    await expect(
+      updateDignity(1, { currentHolderId: 82 }, null, datasetId)
+    ).rejects.toThrow(/no such person/i);
+  });
+
+  it('allows clearing the holder, which is how a dignity is made vacant', async () => {
+    // The fix for the Crown itself must not be blocked by the guard written
+    // for it.
+    await seed({
+      people: [{ id: 1, firstName: 'Real', gender: 'male' }],
+      dignities: [{ id: 1, name: 'A Seat', currentHolderId: 1 }]
+    });
+    const { updateDignity } = await import('./dignityService');
+
+    await updateDignity(1, { currentHolderId: null }, null, datasetId);
+    expect((await getDatabase(datasetId).dignities.get(1)).currentHolderId).toBeNull();
+  });
+
+  it('leaves an already-broken dignity editable', async () => {
+    // Validated only when the field is being written. Otherwise the first thing
+    // this guard would do is prevent anyone repairing the record it exists for.
+    await seed({
+      people: [],
+      dignities: [{ id: 7, name: 'The Crown', currentHolderId: 82 }]
+    });
+    const { updateDignity } = await import('./dignityService');
+
+    await updateDignity(7, { successionType: 'male-primogeniture' }, null, datasetId);
+    const stored = await getDatabase(datasetId).dignities.get(7);
+    expect(stored.successionType).toBe('male-primogeniture');
+    expect(stored.currentHolderId).toBe(82);
+  });
+});
