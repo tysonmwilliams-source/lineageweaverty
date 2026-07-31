@@ -19,7 +19,7 @@
  * - dignityLinks: Junction table for complex entity relationships
  */
 
-import { getDatabase } from './database';
+import { getDatabase, getAllHouses } from './database';
 import {
   syncAddDignity,
   syncUpdateDignity,
@@ -31,6 +31,11 @@ import {
   syncDeleteDignityLink
 } from './dataSyncService';
 import { logger } from '../utils/logger';
+import {
+  buildSuccessionLine,
+  buildAgnaticSeniorityLine,
+  buildRelationshipMaps
+} from '../utils/succession';
 
 // ==================== REFERENCE DATA ====================
 
@@ -1453,14 +1458,62 @@ export function getRankInfo(dignityClass, dignityRank) {
  *   exclusionReason: string | null
  * }
  */
+
+/** How deep a succession line is walked, in generations. */
+const DEFAULT_SUCCESSION_DEPTH = 10;
+
+/**
+ * A relationship word for the UI ("Son", "Nephew", "Cousin").
+ *
+ * Presentation, not rules — kept out of the succession module on purpose. The
+ * previous implementation interleaved this with the ordering logic, which is
+ * part of how a 300-line function ended up with no tests.
+ */
+function describeRelationshipToHolder(person, holder, parentsOf, childrenOf) {
+  if (!person || !holder) return 'Relative';
+
+  const feminine = person.gender === 'female';
+  const holderChildren = childrenOf.get(holder.id) || [];
+
+  if (holderChildren.includes(person.id)) return feminine ? 'Daughter' : 'Son';
+
+  for (const childId of holderChildren) {
+    if ((childrenOf.get(childId) || []).includes(person.id)) {
+      return feminine ? 'Granddaughter' : 'Grandson';
+    }
+  }
+
+  const holderParents = parentsOf.get(holder.id) || [];
+  for (const parentId of holderParents) {
+    const siblings = childrenOf.get(parentId) || [];
+    if (siblings.includes(person.id)) return feminine ? 'Sister' : 'Brother';
+
+    for (const siblingId of siblings) {
+      if (siblingId === holder.id) continue;
+      if ((childrenOf.get(siblingId) || []).includes(person.id)) {
+        return feminine ? 'Niece' : 'Nephew';
+      }
+    }
+
+    for (const grandparentId of parentsOf.get(parentId) || []) {
+      const unclesAunts = childrenOf.get(grandparentId) || [];
+      if (unclesAunts.includes(person.id)) return feminine ? 'Aunt' : 'Uncle';
+      for (const uaId of unclesAunts) {
+        if (uaId === parentId) continue;
+        if ((childrenOf.get(uaId) || []).includes(person.id)) return 'Cousin';
+      }
+    }
+  }
+
+  return 'Relative';
+}
+
 export async function calculateSuccessionLine(
   dignityId,
   allPeople,
-  parentMap,
-  childrenMap,
-  spouseMap,
-  maxDepth = 10,
-  datasetId = null
+  relationships,
+  datasetId = null,
+  maxDepth = DEFAULT_SUCCESSION_DEPTH
 ) {
   try {
     const dignity = await getDignity(dignityId, datasetId);
@@ -1468,13 +1521,12 @@ export async function calculateSuccessionLine(
       logger.warn('Dignity not found for succession calculation');
       return [];
     }
-    
-    // If succession type doesn't support auto-calculation, return empty
+
     const successionType = SUCCESSION_TYPES[dignity.successionType];
+
+    // Elective, appointed and conquered dignities have no computed line. A
+    // named heir is the whole answer for them.
     if (!successionType?.autoCalculate) {
-      logger.log(`👑 Succession type '${dignity.successionType}' does not support auto-calculation`);
-      
-      // If there's a designated heir, return just them
       if (dignity.designatedHeirId) {
         const heir = allPeople.find(p => p.id === dignity.designatedHeirId);
         if (heir) {
@@ -1485,286 +1537,69 @@ export async function calculateSuccessionLine(
             relationship: 'Designated Heir',
             branch: 'designated',
             excluded: false,
-            exclusionReason: null
+            exclusionReason: null,
+            representing: null
           }];
         }
       }
       return [];
     }
-    
-    // Get current holder
-    const currentHolderId = dignity.currentHolderId;
-    if (!currentHolderId) {
+
+    if (!dignity.currentHolderId) {
       logger.log('👑 No current holder - cannot calculate succession');
       return [];
     }
-    
-    const currentHolder = allPeople.find(p => p.id === currentHolderId);
-    if (!currentHolder) {
-      logger.warn('Current holder not found in people list');
+
+    const peopleById = new Map(allPeople.map(p => [p.id, p]));
+    if (!peopleById.has(dignity.currentHolderId)) {
+      logger.warn(`Dignity "${dignity.name}" names holder #${dignity.currentHolderId}, who does not exist`);
       return [];
     }
-    
+
+    const maps = buildRelationshipMaps(relationships);
     const rules = dignity.successionRules || {};
-    const candidates = [];
-    const visited = new Set();
-    
-    // Build a lookup for people by ID
-    const peopleById = new Map(allPeople.map(p => [p.id, p]));
-    
-    /**
-     * Check if a person is eligible based on succession rules
-     */
-    const checkEligibility = (person) => {
-      // Can't succeed if they're dead (unless we're doing historical "what if")
-      if (person.dateOfDeath) {
-        return { eligible: false, reason: 'Deceased' };
-      }
-      
-      // Check gender for male-primogeniture
-      if (dignity.successionType === 'male-primogeniture' && person.gender === 'female') {
-        // Women can inherit if no males available - we'll handle this in ordering
-        return { eligible: true, reason: null, lowerPriority: true };
-      }
-      
-      // Check bastard status
-      if (person.legitimacyStatus === 'bastard') {
-        if (rules.excludeBastards) {
-          // Check if legitimized
-          if (person.bastardStatus === 'legitimized' && rules.legitimizedBastardsEligible) {
-            return { eligible: true, reason: null, lowerPriority: true };
-          }
-          return { eligible: false, reason: 'Illegitimate birth' };
-        }
-      }
-      
-      return { eligible: true, reason: null };
-    };
-    
-    /**
-     * Get relationship description between two people
-     */
-    const getRelationshipDescription = (person, toHolder) => {
-      // This is simplified - could be enhanced with RelationshipCalculator
-      const parents = parentMap.get(person.id) || [];
-      const holderChildren = childrenMap.get(toHolder.id) || [];
-      
-      if (holderChildren.includes(person.id)) {
-        return person.gender === 'female' ? 'Daughter' : 'Son';
-      }
-      
-      // Check if grandchild
-      for (const childId of holderChildren) {
-        const grandchildren = childrenMap.get(childId) || [];
-        if (grandchildren.includes(person.id)) {
-          return person.gender === 'female' ? 'Granddaughter' : 'Grandson';
-        }
-      }
-      
-      // Check if sibling
-      const holderParents = parentMap.get(toHolder.id) || [];
-      for (const parentId of holderParents) {
-        const siblings = childrenMap.get(parentId) || [];
-        if (siblings.includes(person.id)) {
-          return person.gender === 'female' ? 'Sister' : 'Brother';
-        }
-      }
-      
-      // Check if niece/nephew
-      for (const parentId of holderParents) {
-        const siblings = childrenMap.get(parentId) || [];
-        for (const siblingId of siblings) {
-          if (siblingId === toHolder.id) continue;
-          const niblings = childrenMap.get(siblingId) || [];
-          if (niblings.includes(person.id)) {
-            return person.gender === 'female' ? 'Niece' : 'Nephew';
-          }
-        }
-      }
-      
-      // Check if uncle/aunt
-      for (const parentId of holderParents) {
-        const grandparents = parentMap.get(parentId) || [];
-        for (const gpId of grandparents) {
-          const unclesAunts = childrenMap.get(gpId) || [];
-          if (unclesAunts.includes(person.id)) {
-            return person.gender === 'female' ? 'Aunt' : 'Uncle';
-          }
-        }
-      }
-      
-      // Check if cousin
-      for (const parentId of holderParents) {
-        const grandparents = parentMap.get(parentId) || [];
-        for (const gpId of grandparents) {
-          const unclesAunts = childrenMap.get(gpId) || [];
-          for (const uaId of unclesAunts) {
-            if (uaId === parentId) continue;
-            const cousins = childrenMap.get(uaId) || [];
-            if (cousins.includes(person.id)) {
-              return 'Cousin';
-            }
-          }
-        }
-      }
-      
-      return 'Relative';
-    };
-    
-    /**
-     * Recursive traversal for primogeniture systems
-     * Traverses depth-first through descendants, then collaterally
-     */
-    const traversePrimogeniture = (personId, depth, branch) => {
-      if (depth > maxDepth || visited.has(personId)) return;
-      visited.add(personId);
-      
-      const person = peopleById.get(personId);
-      if (!person) return;
-      
-      // Skip the current holder themselves
-      if (personId !== currentHolderId) {
-        const eligibility = checkEligibility(person);
-        candidates.push({
-          personId: person.id,
-          position: 0, // Will be assigned after sorting
-          person,
-          relationship: getRelationshipDescription(person, currentHolder),
-          branch,
-          excluded: !eligibility.eligible,
-          exclusionReason: eligibility.reason,
-          lowerPriority: eligibility.lowerPriority || false,
-          birthDate: person.dateOfBirth,
-          depth
-        });
-      }
-      
-      // Get children and sort by birth date
-      const children = childrenMap.get(personId) || [];
-      const sortedChildren = children
-        .map(id => peopleById.get(id))
-        .filter(p => p)
-        .sort((a, b) => {
-          // For male-primogeniture, males come before females
-          if (dignity.successionType === 'male-primogeniture') {
-            if (a.gender === 'male' && b.gender === 'female') return -1;
-            if (a.gender === 'female' && b.gender === 'male') return 1;
-          }
-          // Then sort by birth date
-          return (parseInt(a.dateOfBirth) || 9999) - (parseInt(b.dateOfBirth) || 9999);
-        });
-      
-      // Traverse children depth-first
-      for (const child of sortedChildren) {
-        traversePrimogeniture(child.id, depth + 1, 'direct');
-      }
-    };
-    
-    /**
-     * Traverse for agnatic seniority (oldest male first)
-     * Need to gather all males in the dynasty and sort by age
-     */
-    const traverseAgnaticSeniority = () => {
-      // Find all people in the same house/dynasty
-      const houseId = currentHolder.houseId;
-      const dynastyMembers = allPeople.filter(p => 
-        p.houseId === houseId && 
-        p.id !== currentHolderId &&
-        p.gender === 'male' &&
-        !p.dateOfDeath
-      );
-      
-      // Sort by birth date (oldest first)
-      dynastyMembers.sort((a, b) => 
-        (parseInt(a.dateOfBirth) || 9999) - (parseInt(b.dateOfBirth) || 9999)
-      );
-      
-      for (const person of dynastyMembers) {
-        const eligibility = checkEligibility(person);
-        candidates.push({
-          personId: person.id,
-          position: 0,
-          person,
-          relationship: getRelationshipDescription(person, currentHolder),
-          branch: 'dynasty',
-          excluded: !eligibility.eligible,
-          exclusionReason: eligibility.reason,
-          lowerPriority: false,
-          birthDate: person.dateOfBirth,
-          depth: 0
-        });
-      }
-    };
-    
-    // Execute the appropriate traversal
+
+    let line;
     if (dignity.successionType === 'agnatic-seniority') {
-      traverseAgnaticSeniority();
+      // Decision D2: the dynasty is a house *and* everything descended from
+      // it, so cadet branches are included. Matching on houseId alone excluded
+      // exactly the people this system exists to include.
+      const houses = await getAllHouses(datasetId);
+      line = buildAgnaticSeniorityLine({
+        holderId: dignity.currentHolderId,
+        people: peopleById,
+        houses,
+        rules
+      });
     } else {
-      // Start with current holder's children
-      traversePrimogeniture(currentHolderId, 0, 'direct');
-      
-      // Then traverse collateral lines (siblings and their descendants)
-      const holderParents = parentMap.get(currentHolderId) || [];
-      for (const parentId of holderParents) {
-        const siblings = (childrenMap.get(parentId) || [])
-          .filter(id => id !== currentHolderId);
-        
-        for (const siblingId of siblings) {
-          traversePrimogeniture(siblingId, 1, 'collateral');
-        }
-        
-        // Also check aunts/uncles
-        const grandparents = parentMap.get(parentId) || [];
-        for (const gpId of grandparents) {
-          const unclesAunts = (childrenMap.get(gpId) || [])
-            .filter(id => id !== parentId);
-          
-          for (const uaId of unclesAunts) {
-            traversePrimogeniture(uaId, 2, 'collateral');
-          }
-        }
-      }
+      line = buildSuccessionLine({
+        holderId: dignity.currentHolderId,
+        people: peopleById,
+        childrenOf: maps.childrenOf,
+        parentsOf: maps.parentsOf,
+        adoptedChildrenOf: maps.adoptedChildrenOf,
+        adoptedIds: maps.adoptedIds,
+        malePreference: dignity.successionType === 'male-primogeniture',
+        rules,
+        maxDepth
+      });
     }
-    
-    // Sort candidates by succession order
-    candidates.sort((a, b) => {
-      // Excluded candidates go to the end
-      if (a.excluded && !b.excluded) return 1;
-      if (!a.excluded && b.excluded) return -1;
-      
-      // Lower priority (e.g., women in male-primogeniture) go after higher
-      if (a.lowerPriority && !b.lowerPriority) return 1;
-      if (!a.lowerPriority && b.lowerPriority) return -1;
-      
-      // Direct line before collateral
-      if (a.branch === 'direct' && b.branch !== 'direct') return -1;
-      if (a.branch !== 'direct' && b.branch === 'direct') return 1;
-      
-      // For agnatic seniority, sort purely by age
-      if (dignity.successionType === 'agnatic-seniority') {
-        return (parseInt(a.birthDate) || 9999) - (parseInt(b.birthDate) || 9999);
-      }
-      
-      // For primogeniture, lower depth (closer generation) comes first
-      if (a.depth !== b.depth) return a.depth - b.depth;
-      
-      // Within same generation, sort by birth date
-      return (parseInt(a.birthDate) || 9999) - (parseInt(b.birthDate) || 9999);
-    });
-    
-    // Assign positions
-    let position = 1;
-    for (const candidate of candidates) {
-      candidate.position = position++;
-      // Clean up internal sorting fields
-      delete candidate.depth;
-      delete candidate.birthDate;
-      delete candidate.lowerPriority;
-    }
-    
-    logger.log(`👑 Calculated succession for ${dignity.name}: ${candidates.length} candidates`);
-    return candidates;
-    
+
+    // The UI wants a relationship word next to each name. Kept out of the rules
+    // module deliberately: it is presentation, and mixing it in is part of how
+    // the previous implementation grew to 300 lines with no tests.
+    const holder = peopleById.get(dignity.currentHolderId);
+    const described = line.map(entry => ({
+      ...entry,
+      relationship: describeRelationshipToHolder(
+        entry.person, holder, maps.parentsOf, maps.childrenOf
+      ),
+      branch: entry.cadet ? 'cadet' : 'direct'
+    }));
+
+    logger.log(`👑 Calculated succession for ${dignity.name}: ${described.length} candidates`);
+    return described;
+
   } catch (error) {
     logger.error('❌ Error calculating succession line:', error);
     throw error;
@@ -1781,10 +1616,12 @@ export async function calculateSuccessionLine(
  * @param {Map} spouseMap - Spouse relationships
  * @returns {Promise<Object|null>} The heir or null
  */
-export async function getHeir(dignityId, allPeople, parentMap, childrenMap, spouseMap, datasetId = null) {
-  const line = await calculateSuccessionLine(dignityId, allPeople, parentMap, childrenMap, spouseMap, 5, datasetId);
-  const eligibleHeir = line.find(c => !c.excluded);
-  return eligibleHeir || null;
+export async function getHeir(dignityId, allPeople, relationships, datasetId = null) {
+  // Was capped at depth 5 while DignityView asked for 10, so "the heir" and
+  // "position 1 of the line" were computed over different trees and could
+  // disagree. One default now, shared.
+  const line = await calculateSuccessionLine(dignityId, allPeople, relationships, datasetId);
+  return line.find(c => !c.excluded) || null;
 }
 
 // ==================== DISPUTE MANAGEMENT ====================

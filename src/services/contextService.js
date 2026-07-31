@@ -1094,14 +1094,24 @@ export async function exportContextToDisk(datasetId) {
     }
 
     // Export people (simplified)
+    //
+    // gender, legitimacyStatus and bastardStatus are included because they are
+    // *rules inputs*, not decoration: succession reads all three, and without
+    // them this snapshot cannot answer anything about who inherits. That gap
+    // surfaced in decision D1, where the change report could not be run against
+    // the exported world because 24 of 26 dignities use male-primogeniture and
+    // the snapshot did not record anyone's gender.
     const peopleData = people.map(p => ({
       id: p.id,
       firstName: p.firstName,
       lastName: p.lastName,
       houseName: houses.find(h => h.id === p.houseId)?.houseName || 'Unknown',
       houseId: p.houseId,
+      gender: p.gender ?? null,
       birth: p.dateOfBirth,
       death: p.dateOfDeath,
+      legitimacyStatus: p.legitimacyStatus ?? null,
+      bastardStatus: p.bastardStatus ?? null,
       titles: p.titles,
       notes: p.notes
     }));
@@ -1176,6 +1186,7 @@ export async function exportContextToDisk(datasetId) {
         swornTo: swornTo?.name || null,
         swornToId: d.swornToId,
         successionType: d.successionType,
+        successionRules: d.successionRules ?? null,
         notes: d.notes
       };
     });

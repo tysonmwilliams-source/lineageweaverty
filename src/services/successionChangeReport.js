@@ -8,42 +8,27 @@
  * you notice; it is something you have to be told.
  *
  * This runs both algorithms over every dignity and reports the differences. It
- * writes nothing, and it does not depend on the swap having happened, so it can
- * be run before, during or after.
+ * writes nothing.
+ *
+ * "Both algorithms" means the corrected rules against `legacySuccession.js`, a
+ * preserved copy of the old one — not against whatever the app currently uses.
+ * That distinction is load-bearing: comparing against the live path would
+ * compare the new rules with themselves the moment the swap landed, and report
+ * that nothing had changed.
  */
 import { getDatabase } from './database';
-import { getAllDignities, SUCCESSION_TYPES, calculateSuccessionLine } from './dignityService';
-import { buildSuccessionLine, buildAgnaticSeniorityLine } from '../utils/succession';
+import { getAllDignities, SUCCESSION_TYPES } from './dignityService';
+import { legacySuccessionLine } from './legacySuccession';
+import {
+  buildSuccessionLine,
+  buildAgnaticSeniorityLine,
+  buildRelationshipMaps
+} from '../utils/succession';
+
+// Re-exported because the report's tests cover it and it was defined here
+// before the dignity service needed it too (decision D1).
+export { buildRelationshipMaps };
 import { logger } from '../utils/logger';
-
-/** The relationship maps both algorithms need, built once for the whole run. */
-export function buildRelationshipMaps(relationships) {
-  const childrenOf = new Map();
-  const parentsOf = new Map();
-  const spouseMap = new Map();
-  const adoptedChildrenOf = new Map();
-  const adoptedIds = new Set();
-
-  const push = (map, key, value) => map.set(key, [...(map.get(key) ?? []), value]);
-
-  for (const rel of relationships) {
-    if (rel.relationshipType === 'parent') {
-      push(parentsOf, rel.person2Id, rel.person1Id);
-      push(childrenOf, rel.person1Id, rel.person2Id);
-    } else if (rel.relationshipType === 'spouse') {
-      spouseMap.set(rel.person1Id, rel.person2Id);
-      spouseMap.set(rel.person2Id, rel.person1Id);
-    } else if (rel.relationshipType === 'adopted-parent') {
-      // Decision D3. These links exist in the schema and the tree, and were
-      // invisible to succession entirely — an adopted child inherited only if
-      // they happened to also hold a natural parent link.
-      push(adoptedChildrenOf, rel.person1Id, rel.person2Id);
-      adoptedIds.add(rel.person2Id);
-    }
-  }
-
-  return { childrenOf, parentsOf, spouseMap, adoptedChildrenOf, adoptedIds };
-}
 
 /** The corrected line for one dignity, using the rules module. */
 export function buildCorrectedLine(dignity, { people, maps, houses, maxDepth = 10 }) {
@@ -166,8 +151,11 @@ export async function buildSuccessionChangeReport(datasetId = null) {
       report.autoCalculated++;
 
       try {
-        const before = await calculateSuccessionLine(
-          dignity.id, people, maps.parentsOf, maps.childrenOf, maps.spouseMap, 10, datasetId
+        // The *preserved* old algorithm, not the live one. Once the live path
+        // was swapped to the corrected rules, comparing against it compared the
+        // new rules with themselves and could only ever report "no change".
+        const before = legacySuccessionLine(
+          dignity, people, maps.parentsOf, maps.childrenOf, maps.spouseMap, 10
         );
         const after = buildCorrectedLine(dignity, { people: peopleById, maps, houses });
 

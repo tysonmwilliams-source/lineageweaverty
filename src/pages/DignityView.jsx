@@ -234,29 +234,14 @@ function DignityView() {
     try {
       setLoadingSuccession(true);
 
-      const parentMap = new Map();
-      const childrenMap = new Map();
-      const spouseMap = new Map();
-
-      for (const rel of relationshipsData) {
-        if (rel.relationshipType === 'parent') {
-          const existingParents = parentMap.get(rel.person2Id) || [];
-          parentMap.set(rel.person2Id, [...existingParents, rel.person1Id]);
-          const existingChildren = childrenMap.get(rel.person1Id) || [];
-          childrenMap.set(rel.person1Id, [...existingChildren, rel.person2Id]);
-        } else if (rel.relationshipType === 'spouse') {
-          spouseMap.set(rel.person1Id, rel.person2Id);
-          spouseMap.set(rel.person2Id, rel.person1Id);
-        }
-      }
-
+      // Decision D1. This used to build parent/child/spouse maps here and pass
+      // them in — which meant adopted-parent links were never built at all, and
+      // the depth cap was a magic number at the call site. The service owns
+      // that now, so every caller gets the same rules.
       const line = await calculateSuccessionLine(
         dignityData.id,
         peopleData,
-        parentMap,
-        childrenMap,
-        spouseMap,
-        10,
+        relationshipsData,
         activeDataset?.id
       );
 
