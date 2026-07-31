@@ -15,7 +15,7 @@
  * Uses Lucide icons, Framer Motion animations, and CSS custom properties
  */
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
@@ -43,6 +43,19 @@ import useDebouncedValue from '../hooks/useDebouncedValue';
 import './DignitiesLanding.css';
 import { logger } from '../utils/logger';
 import { formatRelativeDate as formatDate } from '../utils/formatDate';
+
+/**
+ * Decision D1: the succession change report.
+ *
+ * Lazy *and* DEV-gated, for the same reason as the Armory's migration panel: a
+ * plain import would tree-shake the component's JS out of production but still
+ * ship its stylesheet, because a CSS import is a side effect Rollup keeps
+ * regardless of the dead branch. Behind a dynamic import the whole chunk is
+ * unreachable and never emitted.
+ */
+const SuccessionChangeReportPanel = import.meta.env.DEV
+  ? lazy(() => import('../components/dignities/SuccessionChangeReportPanel'))
+  : null;
 
 // Animation variants
 const CONTAINER_VARIANTS = {
@@ -481,6 +494,12 @@ function DignitiesLanding() {
                   </motion.div>
                 </div>
               </motion.section>
+            )}
+
+            {SuccessionChangeReportPanel && (
+              <Suspense fallback={null}>
+                <SuccessionChangeReportPanel />
+              </Suspense>
             )}
 
             {/* Search & Controls */}
