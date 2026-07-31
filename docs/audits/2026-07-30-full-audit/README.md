@@ -328,7 +328,7 @@ Two structural refactors are also unambiguously right, but they're big enough th
 | **G7** | React Compiler lint | **`static-components` now**, rest scheduled — rule promoted to error | `bb8fd32` |
 | **C4** | Planner | **Promote to a route** — `/writing/:id/plan/:planId/:view` | `72068fe` |
 | **C3** | Marshalling | **Recursive composition** — the full rebuild | **complete** — 6 steps, `87aa243`…`8740b32` |
-| **F4** | TypeScript | **Full migration** to `.ts`/`.tsx` | *not started* |
+| **F4** | TypeScript | **Full migration** to `.ts`/`.tsx` | *underway* — toolchain + first module, `4208429` |
 
 Notes worth carrying forward:
 
@@ -692,13 +692,27 @@ can pause at any file boundary with the build green, whereas C3 has a
 mid-flight state where saved coats are in the old shape and the code expects the
 new one. Long-running work should be the interruptible kind.
 
-**F4's first step is toolchain, not conversion.** There is no `tsconfig.json`
-and no `typescript` dependency, so before any file is renamed: add `typescript`,
-add a config with `allowJs` so `.js` and `.ts` coexist during the migration, and
-add a `tsc --noEmit` step to CI alongside the existing lint gate. Vite compiles
-TS without type-checking it, so a build that passes proves nothing about types —
-without the CI step the migration produces the appearance of safety and not the
-fact of it.
+**F4's first step is toolchain, not conversion — DONE (`4208429`).**
+`typescript`, `tsconfig.json` with `allowJs`, `npm run typecheck`, and a
+blocking CI step, because Vite strips types without checking them and a green
+build proves nothing about type correctness.
+
+Three things that step settled, worth not rediscovering:
+
+- **`checkJs` is off, deliberately.** On, it checks all 103k lines of existing
+  JS at once, the gate is red from the first commit, and it gets switched off —
+  exactly how `no-unused-vars` ended up at `error` with 411 violations and CI
+  running lint with `continue-on-error`.
+- **A `.ts` file matched no ESLint config**, so ESLint skipped it with "File
+  ignored because no matching configuration was supplied". Every converted file
+  would have silently left the lint gate. Fixed with a `typescript-eslint`
+  block; verified in both directions with a probe.
+- **TypeScript is pinned to 5.x, not 7.** `typescript-eslint` peers on
+  `<6.1.0`, so TS 7 can only be installed by forcing a resolution the tooling
+  does not support. Lint-covered TS 5 beats unlinted TS 7.
+
+**Beachhead: `src/utils/succession`** — pure, no React, 32 tests, and its types
+document the succession data model, which nothing else records.
 
 **C3's first step is the migration and its tests, not the renderer.** This is
 the only outstanding item that can damage heraldry already drawn.

@@ -88,10 +88,17 @@ gated on a green light for timing. See "What is left" below.
 **Current baselines** (verify these still hold before and after your work):
 
 ```bash
-npm run build      # passes, ~20s
+npm run build      # passes, ~10s
+npm run typecheck  # tsc --noEmit, passes, exits 0 — CI blocks on it (F4)
 npx vitest run     # 773 tests pass, 28 files, exits 0
 npx eslint .       # 0 errors, 342 warnings — exits 0, and CI blocks on it
 ```
+
+**`npm run typecheck` is not optional and not decorative.** Vite strips
+TypeScript types *without checking them*, so a green `npm run build` says
+nothing about type correctness. As files convert, this is the only gate that
+does. `checkJs` is off, so existing `.js` is not checked — files opt in by being
+converted.
 
 Lint is now a **blocking gate** (decision F3). `no-undef`, `no-dupe-keys`,
 `rules-of-hooks` and — as of `bb8fd32` — `react-hooks/static-components` are hard
