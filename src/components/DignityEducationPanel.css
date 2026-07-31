@@ -650,22 +650,9 @@
    RANK PIPS
    ============================================ */
 
-.dignity-education__pips {
-  display: flex;
-  gap: 3px;
-}
-
-.dignity-education__pip {
-  width: 6px;
-  height: 6px;
-  border-radius: var(--radius-full);
-  background: var(--border-secondary);
-  transition: background-color var(--duration-fast) var(--ease-standard);
-}
-
-.dignity-education__pip--filled {
-  background: var(--accent-primary);
-}
+/* The pip styles that sat here are gone with the private RankPips copy
+   (decision G2). The shared component brings `.rank-pips*` from
+   DignityVisuals.css with it. */
 
 /* ============================================
    FOOTER

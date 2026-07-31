@@ -29,6 +29,23 @@ for (const file of walk(SRC)) {
   for (const m of src.matchAll(/<Icon\s+name="([a-z0-9-]+)"/g)) usedNames.add(m[1]);
 }
 
+// Names that reach <Icon> from a data map rather than from JSX.
+//
+// This scan was missing, and three names were missing with it: `briefcase`,
+// `medal` and `heart-handshake` are read from data/dignityEducation.js and
+// passed to <Icon name={...}>, so the literal scan above could never see them
+// and all three rendered nothing. A dynamic name is exactly as invisible as a
+// mistyped literal one, and rather more likely to survive.
+const dataMapFiles = [
+  path.join(SRC, 'data', 'dignityEducation.js'),
+  path.join(SRC, 'services', 'dignityService.js')
+];
+for (const file of dataMapFiles) {
+  if (!fs.existsSync(file)) continue;
+  const src = fs.readFileSync(file, 'utf8');
+  for (const m of src.matchAll(/\bicon(?:Name)?:\s*'([a-z0-9-]+)'/g)) usedNames.add(m[1]);
+}
+
 describe('Icon name map', () => {
   it('finds icon usages to check', () => {
     expect(usedNames.size).toBeGreaterThan(50);

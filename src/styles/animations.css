@@ -8,7 +8,12 @@
  *
  * Imported from main.jsx so it is present before any component stylesheet.
  *
- * Deliberately kept separate from src/styles/shared/ — that folder is two
+ * (src/styles/shared/ was deleted by decision G3: 1,481 lines across five files
+ * that nothing imported and whose 115 class names were referenced zero times in
+ * JSX. This file is the one shared stylesheet that is actually loaded, from
+ * main.jsx.)
+ *
+ * Formerly noted as separate from src/styles/shared/ — that folder was two
  * unadopted drafts pending decision B1/B3. This file is loaded and live.
  */
 

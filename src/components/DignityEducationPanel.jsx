@@ -17,6 +17,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Icon from './icons';
 import { DIGNITY_EDUCATION, CLASS_ORDER, DIGNITY_NATURE_EDUCATION, NATURE_ORDER } from '../data/dignityEducation';
+import { RankPips } from './DignityVisuals';
 import './DignityEducationPanel.css';
 
 // Local storage key for collapse state
@@ -58,21 +59,12 @@ function saveCollapseState(state) {
   }
 }
 
-/**
- * Render rank pips (visual hierarchy indicator)
- */
-function RankPips({ count, max = 5 }) {
-  return (
-    <div className="dignity-education__pips">
-      {Array.from({ length: max }, (_, i) => (
-        <span
-          key={i}
-          className={`dignity-education__pip ${i < count ? 'dignity-education__pip--filled' : ''}`}
-        />
-      ))}
-    </div>
-  );
-}
+// RankPips was a private copy here (decision G2). The exported one in
+// DignityVisuals is a strict superset — it already accepts `count` and `max`,
+// which is exactly how this file called it — so the swap needed no API change.
+// The two differed only in styling: 6px pips with no glow here, 7px with a
+// faint gold glow and three size variants there. The shared one wins, being
+// the richer of the two and the one other surfaces already use.
 
 /**
  * Individual rank card

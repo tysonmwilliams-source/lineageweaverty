@@ -183,6 +183,9 @@ import {
   Square,
   Grid3x3,
   SearchX,
+  Briefcase,
+  Medal,
+  HeartHandshake,
   MousePointerClick,
   Dog,
   Bird,
@@ -490,6 +493,12 @@ const LUCIDE_ICONS = {
   'square': Square,
   'grid-3x3': Grid3x3,
   'search-x': SearchX,
+  // Referenced from data/dignityEducation.js rather than from JSX, so
+  // icon-map.test.jsx's literal scan could not see them and all three rendered
+  // nothing — the office, honour and courtesy dignity badges were blank.
+  'briefcase': Briefcase,
+  'medal': Medal,
+  'heart-handshake': HeartHandshake,
   'mouse-pointer-click': MousePointerClick,
   'dog': Dog,
   'bird': Bird,
