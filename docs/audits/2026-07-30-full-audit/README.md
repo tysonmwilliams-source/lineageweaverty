@@ -320,7 +320,7 @@ Two structural refactors are also unambiguously right, but they're big enough th
 | **F2, F6, G4, G5** | Housekeeping | Archives + stale branch deleted, favicon, claude-context untracked | `705583f` |
 | **G7** | React Compiler lint | **`static-components` now**, rest scheduled — rule promoted to error | `bb8fd32` |
 | **C4** | Planner | **Promote to a route** — `/writing/:id/plan/:planId/:view` | `72068fe` |
-| **C3** | Marshalling | **Recursive composition** — the full rebuild | *step 1 of 6* `87aa243` |
+| **C3** | Marshalling | **Recursive composition** — the full rebuild | **complete** — 6 steps, `87aa243`…`8740b32` |
 | **F4** | TypeScript | **Full migration** to `.ts`/`.tsx` | *not started* |
 
 Notes worth carrying forward:
@@ -638,7 +638,14 @@ fact of it.
 **C3's first step is the migration and its tests, not the renderer.** This is
 the only outstanding item that can damage heraldry already drawn.
 
-### C3 progress
+### C3 progress — complete
+
+All six steps are done, plus undo and combining arms by hand (`6c27246`), which
+came out of the owner using the editor. The Armory can now express impalement,
+quartering and arbitrary nesting; a marriage can be borne from the spouse
+relationship in one click; and the stored format migrated without altering a
+single drawn shield.
+
 
 | Step | What | Status |
 |---|---|---|
@@ -647,7 +654,7 @@ the only outstanding item that can damage heraldry already drawn.
 | 3 | Save path: `composeCoat` writes v3; cadency recorded; apply flow | **done** — `face632` |
 | 4 | Render marshalled nodes — the SVG pipeline divides a shield | **done** — `991171a` |
 | 5 | Full recursive tree editor | **done** — `1db2936`, `81db30f`, `26047a5`, `ffe2472` |
-| 6 | Marriage arms: derive an impaled coat from a spouse relationship | not started |
+| 6 | Marriage arms: impale with a spouse's house arms | **done** — `8740b32` |
 
 Step 1 is inert by design — nothing imports it, so it cannot break anything.
 **The stored data is still v2 and nothing has been rewritten**; the migration is
