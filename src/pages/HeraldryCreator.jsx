@@ -28,7 +28,8 @@ import {
   isPlainNode,
   getNodeAtPath,
   setNodeAtPath,
-  clampPath
+  clampPath,
+  impaleWith
 } from '../utils/heraldry';
 import {
   TINCTURES,
@@ -47,6 +48,7 @@ import CoatEditor from '../components/heraldry/CoatEditor';
 import ShieldTreePanel from '../components/heraldry/ShieldTreePanel';
 import useUndoable from '../hooks/useUndoable';
 import HeraldryPickerModal from '../components/heraldry/HeraldryPickerModal';
+import { getMarriageArmsOptions } from '../services/marriageArmsService';
 import { useAuth } from '../contexts/AuthContext';
 import { useDataset } from '../contexts/DatasetContext';
 import {
@@ -841,6 +843,39 @@ function HeraldryCreator() {
   // before opening it, and the part they clicked is the one they meant.
   const [mashTargetPath, setMashTargetPath] = useState(null);
 
+  // Decision C3, step 6. Resolved once per person rather than on every render:
+  // it reads people, relationships, houses and heraldry to walk
+  // person → spouse → their house → its arms.
+  const [marriageOptions, setMarriageOptions] = useState([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!personId) {
+      setMarriageOptions([]);
+      return;
+    }
+    getMarriageArmsOptions(personId, activeDataset?.id).then((options) => {
+      if (!cancelled) setMarriageOptions(options);
+    });
+    return () => { cancelled = true; };
+  }, [personId, activeDataset]);
+
+  /**
+   * Impale the selected coat with a spouse's house arms.
+   *
+   * The coat being edited stays dexter and the spouse's goes sinister — the
+   * classical arrangement, decided by whose arms these are rather than by
+   * anyone's gender.
+   */
+  const impaleWithSpouse = useCallback((option) => {
+    if (!option?.composition?.root) return;
+    setRoot((current) => {
+      const path = clampPath(current, selectedPath);
+      const bearer = getNodeAtPath(current, path) ?? current;
+      return setNodeAtPath(current, path, impaleWith(bearer, option.composition.root));
+    });
+  }, [selectedPath, setRoot]);
+
   /**
    * Fill a part of the shield with another house's arms.
    *
@@ -1542,6 +1577,8 @@ function HeraldryCreator() {
               onRedo={redo}
               canUndo={canUndo}
               canRedo={canRedo}
+              marriageOptions={marriageOptions}
+              onImpaleWith={impaleWithSpouse}
             />
 
             {/* The editor edits whichever node the selection points at, and

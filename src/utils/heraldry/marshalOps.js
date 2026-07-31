@@ -35,6 +35,24 @@ export function divideNode(node, arrangement) {
 }
 
 /**
+ * Impale one coat with another — the marriage case (decision C3, step 6).
+ *
+ * The coat being borne goes **dexter**, the other **sinister**. Classically the
+ * husband's arms take the dexter half and the wife's the sinister, but this
+ * deliberately does not decide that from anyone's gender: it puts whoever's
+ * arms are being edited on the dexter side and the spouse's on the sinister.
+ * That is the same result in the ordinary case, and it does not impose a rule
+ * the owner's world may not share.
+ *
+ * The spouse's *whole* composition comes across, so marrying a house whose own
+ * arms are quartered gives an impalement of a quartering — which is exactly
+ * what real marshalling does, and comes free from the recursive model.
+ */
+export function impaleWith(bearer, spouse) {
+  return createMarshalledNode('impaled', [bearer, spouse]);
+}
+
+/**
  * Collapse a marshalled node back to a single coat.
  *
  * Returns the first part, because that is where `divideNode` put the coat the

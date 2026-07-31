@@ -18,7 +18,8 @@ function setup({
   selectedPath = [],
   section = 'marshalling',
   canUndo = false,
-  canRedo = false
+  canRedo = false,
+  marriageOptions = []
 } = {}) {
   const onSelectPath = vi.fn();
   const onChangeNode = vi.fn();
@@ -26,6 +27,7 @@ function setup({
   const onMashCoat = vi.fn();
   const onUndo = vi.fn();
   const onRedo = vi.fn();
+  const onImpaleWith = vi.fn();
   render(
     <ShieldTreePanel
       root={root}
@@ -39,9 +41,11 @@ function setup({
       onRedo={onRedo}
       canUndo={canUndo}
       canRedo={canRedo}
+      marriageOptions={marriageOptions}
+      onImpaleWith={onImpaleWith}
     />
   );
-  return { onSelectPath, onChangeNode, onSectionChange, onMashCoat, onUndo, onRedo };
+  return { onSelectPath, onChangeNode, onSectionChange, onMashCoat, onUndo, onRedo, onImpaleWith };
 }
 
 describe('ShieldTreePanel — an undivided shield', () => {
@@ -258,5 +262,73 @@ describe("ShieldTreePanel — combining another house's arms", () => {
   it('does not offer it for the whole shield, where there is nothing to combine with', () => {
     setup({ root: leaf('azure'), selectedPath: [] });
     expect(screen.queryByRole('button', { name: /use another house's arms here/i })).not.toBeInTheDocument();
+  });
+});
+
+
+describe('ShieldTreePanel — marriage arms (step 6)', () => {
+  const usable = {
+    spouse: { id: 2, firstName: 'Salenne', lastName: 'Shadash' },
+    house: { houseName: 'House Shadash' },
+    composition: { version: 3, root: leaf('gules') },
+    usable: true,
+    reason: null
+  };
+
+  it('offers to impale with a named spouse', () => {
+    setup({ marriageOptions: [usable] });
+    expect(screen.getByRole('button', { name: /impale with salenne shadash — house shadash/i }))
+      .toBeInTheDocument();
+  });
+
+  it('hands the whole option back, not just a name', async () => {
+    const { onImpaleWith } = setup({ marriageOptions: [usable] });
+    await userEvent.click(screen.getByRole('button', { name: /impale with/i }));
+    expect(onImpaleWith).toHaveBeenCalledWith(usable);
+  });
+
+  it('says why a spouse cannot be used instead of hiding them', async () => {
+    // A house with no arms drawn yet is actionable information; silence would
+    // be indistinguishable from the feature being broken.
+    setup({
+      marriageOptions: [{
+        spouse: { id: 3, firstName: 'Mirelle' },
+        house: { houseName: 'House Riverhead' },
+        usable: false,
+        reason: 'House Riverhead has no arms yet'
+      }]
+    });
+
+    expect(screen.getByText(/Mirelle — House Riverhead has no arms yet/i)).toBeInTheDocument();
+    // The house is named once, by the reason — not twice, as it was when this
+    // line reused the button's label.
+    expect(screen.queryByText(/House Riverhead — House Riverhead/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /impale with/i })).not.toBeInTheDocument();
+  });
+
+  it('lists every marriage for someone widowed and remarried', () => {
+    setup({
+      marriageOptions: [
+        usable,
+        { ...usable, spouse: { id: 3, firstName: 'Mirelle', lastName: 'Riverhead' },
+          house: { houseName: 'House Riverhead' } }
+      ]
+    });
+    expect(screen.getAllByRole('button', { name: /impale with/i })).toHaveLength(2);
+  });
+
+  it('shows nothing for someone with no marriages', () => {
+    setup({ marriageOptions: [] });
+    expect(screen.queryByText(/marriage arms/i)).not.toBeInTheDocument();
+  });
+
+  it('hides the offer once the shield is already divided', () => {
+    // Offering it here would impale an impalement, which is not what the
+    // button says it does.
+    setup({
+      root: createMarshalledNode('impaled', [leaf('azure'), leaf('gules')]),
+      marriageOptions: [usable]
+    });
+    expect(screen.queryByRole('button', { name: /impale with/i })).not.toBeInTheDocument();
   });
 });

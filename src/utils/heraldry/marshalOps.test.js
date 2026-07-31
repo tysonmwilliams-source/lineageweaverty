@@ -9,6 +9,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   divideNode,
+  impaleWith,
   undivideNode,
   undivideLoses,
   canDivide,
@@ -148,5 +149,43 @@ describe('isUndivided', () => {
   it('is true for every coat stored today', () => {
     expect(isUndivided(leaf('azure'))).toBe(true);
     expect(isUndivided(createMarshalledNode('impaled', [leaf('a'), leaf('b')]))).toBe(false);
+  });
+});
+
+describe('impaleWith — the marriage case (step 6)', () => {
+  const bearer = leaf('azure');
+  const spouse = leaf('gules');
+
+  it('puts the bearer dexter and the spouse sinister', () => {
+    // Classically the husband takes dexter and the wife sinister. This decides
+    // it by *whose arms these are*, not by anyone's gender — same result in the
+    // ordinary case, without imposing a rule the world may not share.
+    const marriage = impaleWith(bearer, spouse);
+
+    expect(marriage.arrangement).toBe('impaled');
+    expect(marriage.parts[0]).toBe(bearer);
+    expect(marriage.parts[1]).toBe(spouse);
+  });
+
+  it('produces a composition that validates', () => {
+    expect(validateComposition(wrap(impaleWith(bearer, spouse))).valid).toBe(true);
+  });
+
+  it('carries a marshalled spouse coat across whole', () => {
+    // Marrying a house whose arms are quartered gives an impalement of a
+    // quartering, which is what real marshalling does.
+    const quarteredSpouse = createMarshalledNode('quartered', [
+      leaf('a'), leaf('b'), leaf('c'), leaf('d')
+    ]);
+    const marriage = impaleWith(bearer, quarteredSpouse);
+
+    expect(marriage.parts[1].type).toBe('marshalled');
+    expect(validateComposition(wrap(marriage)).valid).toBe(true);
+  });
+
+  it('is undone by undivideNode, keeping the bearer', () => {
+    // Undo aside, collapsing a marriage should leave the person with their own
+    // arms rather than their spouse's.
+    expect(undivideNode(impaleWith(bearer, spouse))).toBe(bearer);
   });
 });

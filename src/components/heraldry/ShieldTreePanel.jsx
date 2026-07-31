@@ -20,6 +20,7 @@ import {
   undivideLoses,
   canDivide
 } from '../../utils/heraldry';
+import { describeMarriageOption, describeSpouse } from '../../services/marriageArmsService';
 import Icon from '../icons';
 import './ShieldTreePanel.css';
 
@@ -34,7 +35,9 @@ function ShieldTreePanel({
   onUndo,
   onRedo,
   canUndo,
-  canRedo
+  canRedo,
+  marriageOptions = [],
+  onImpaleWith
 }) {
   const [confirmingUndivide, setConfirmingUndivide] = useState(false);
 
@@ -101,6 +104,38 @@ function ShieldTreePanel({
               <span>Redo</span>
             </button>
           </div>
+
+          {/* Decision C3, step 6. The app already knows who married whom, so
+              the commonest reason to divide a shield does not need the user to
+              find the other house themselves. */}
+          {marriageOptions.length > 0 && !divided && (
+            <div className="shield-tree__marriage">
+              <h3 className="shield-tree__marriage-title">
+                <Icon name="heart" size={14} /> Marriage arms
+              </h3>
+              {marriageOptions.map((option, i) => (
+                <div key={option.spouse?.id ?? i} className="shield-tree__marriage-row">
+                  {option.usable ? (
+                    <button
+                      type="button"
+                      className="shield-tree__btn shield-tree__btn--primary"
+                      onClick={() => onImpaleWith?.(option)}
+                    >
+                      <span>Impale with {describeMarriageOption(option)}</span>
+                    </button>
+                  ) : (
+                    /* Said plainly rather than hidden: a spouse who cannot be
+                       impaled is usually a house that has no arms drawn yet,
+                       which is actionable — silence would just look broken. */
+                    <p className="shield-tree__marriage-blocked">
+                      <Icon name="info" size={12} />
+                      {describeSpouse(option)} — {option.reason}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
 
           {selectedPath.length > 0 && (
             <nav className="shield-tree__crumbs" aria-label="Shield parts">
