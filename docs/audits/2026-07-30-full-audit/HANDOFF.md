@@ -89,7 +89,7 @@ gated on a green light for timing. See "What is left" below.
 
 ```bash
 npm run build      # passes, ~20s
-npx vitest run     # 766 tests pass, 28 files, exits 0
+npx vitest run     # 770 tests pass, 28 files, exits 0
 npx eslint .       # 0 errors, 342 warnings — exits 0, and CI blocks on it
 ```
 
@@ -148,10 +148,19 @@ first answering something — that is the honest state of it.
   only ever report "no change", which is exactly what happened when the swap
   landed. It is wrong in three documented ways. Do not adopt it for anything.
 
-- **D4 — still open, and still a worldbuilding answer.** Whether person 82 was
-  deleted or the Crown should be vacant. The code no longer fails silently: the
-  succession path returns an empty line and warns, and the change report names
-  the dignity and says the holder does not exist.
+- **D4 — decided.** The Crown is to be **vacant** with **male-primogeniture**;
+  both are single fields the owner sets in the app. The code half is `9da1c19`:
+  createDignity and updateDignity now reject a holder id with no matching
+  person, validated only when that field is written so an already-broken record
+  stays repairable.
+
+  Two audit corrections came out of it: **25** dignities chain up to the Crown,
+  not 24 — every other one in the world — and person 82 sits inside a contiguous
+  gap of 103 missing ids, so it was a bulk deletion rather than a king removed
+  on purpose. The Crown also had **no successionType**, which the audit did not
+  mention and which alone would have made its line uncomputable.
+
+**The whole D group is now decided.**
 - **E1–E9** — the owner's world data. **Never auto-change creative content.**
 - **G1–G3** (README Part Two, Section G) — what is still open of the items that
   stopped at a decision during Phases 4–6: the remaining 44 emoji (G1), the
