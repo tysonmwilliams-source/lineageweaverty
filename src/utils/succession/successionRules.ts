@@ -23,9 +23,33 @@
  * testable at all, and the old one had no tests because it was none of those.
  */
 
+import type { Person, SuccessionRules, SuccessionEntry } from './types';
+
+/** Everything the walk needs, threaded through instead of closed over. */
+interface WalkContext {
+  people: Map<number, Person>;
+  childrenOf: Map<number, number[]>;
+  adoptedChildrenOf: Map<number, number[]>;
+  adoptedIds: Set<number>;
+  malePreference: boolean;
+  rules: SuccessionRules;
+  maxDepth: number;
+  seen: Set<number>;
+}
+
+/** An entry before positions are assigned. */
+interface PendingEntry {
+  personId: number;
+  person: Person;
+  excluded: boolean;
+  exclusionReason: string | null;
+  representing: number | null;
+  depth: number;
+}
+
 /** Sort key for birth order. Unknown dates sort last, not first. */
-const birthKey = (person) => {
-  const year = parseInt(person?.dateOfBirth, 10);
+const birthKey = (person: Person | undefined): number => {
+  const year = parseInt(String(person?.dateOfBirth), 10);
   return Number.isFinite(year) ? year : Number.POSITIVE_INFINITY;
 };
 
@@ -36,7 +60,7 @@ const birthKey = (person) => {
  * issue — the usual compromise, and the least surprising, since an adopted heir
  * normally matters when there is no natural one.
  */
-function siblingRank(person, ctx) {
+function siblingRank(person: Person, ctx: WalkContext): number {
   const adopted = ctx.adoptedIds.has(person.id);
   const bastard = person.legitimacyStatus === 'bastard'
     && !(person.bastardStatus === 'legitimized' && ctx.rules.legitimizedBastardsEligible);
@@ -46,10 +70,13 @@ function siblingRank(person, ctx) {
   return 1;
 }
 
-function orderSiblings(ids, ctx) {
+function orderSiblings(ids: number[], ctx: WalkContext): number[] {
+  // `.filter(Boolean)` does not narrow the element type, so the predicate is
+  // written out. Not ceremony: an id with no matching person is a real state
+  // here — the Crown pointed at one for months (decision D4).
   return ids
     .map((id) => ctx.people.get(id))
-    .filter(Boolean)
+    .filter((person): person is Person => person !== undefined)
     .sort((a, b) => {
       const rankDiff = siblingRank(a, ctx) - siblingRank(b, ctx);
       if (rankDiff !== 0) return rankDiff;
@@ -67,7 +94,7 @@ function orderSiblings(ids, ctx) {
     .map((p) => p.id);
 }
 
-function eligibilityOf(person, ctx) {
+function eligibilityOf(person: Person, ctx: WalkContext): { eligible: boolean; reason: string | null } {
   if (person.legitimacyStatus === 'bastard' && ctx.rules.excludeBastards) {
     const legitimised = person.bastardStatus === 'legitimized'
       && ctx.rules.legitimizedBastardsEligible;
@@ -77,7 +104,7 @@ function eligibilityOf(person, ctx) {
 }
 
 /** All children of a person, natural first then adopted (decision D3). */
-function childrenOf(personId, ctx) {
+function childrenOf(personId: number, ctx: WalkContext): number[] {
   const natural = ctx.childrenOf.get(personId) ?? [];
   const adopted = ctx.adoptedChildrenOf.get(personId) ?? [];
   // Deduplicated: a child can hold both a parent and an adopted-parent link.
@@ -91,7 +118,13 @@ function childrenOf(personId, ctx) {
  * is taking, so the UI can say "in place of his late father" rather than
  * leaving the jump unexplained.
  */
-function walkDescent(personId, ctx, out, depth, representing) {
+function walkDescent(
+  personId: number,
+  ctx: WalkContext,
+  out: PendingEntry[],
+  depth: number,
+  representing: number | null
+): void {
   if (depth > ctx.maxDepth) return;
   if (ctx.seen.has(personId)) return;
   ctx.seen.add(personId);
@@ -140,11 +173,21 @@ export function buildSuccessionLine({
   malePreference = false,
   rules = {},
   maxDepth = 10
-}) {
+}: {
+  holderId: number;
+  people: Map<number, Person>;
+  childrenOf: Map<number, number[]>;
+  parentsOf: Map<number, number[]>;
+  adoptedChildrenOf?: Map<number, number[]>;
+  adoptedIds?: Set<number>;
+  malePreference?: boolean;
+  rules?: SuccessionRules;
+  maxDepth?: number;
+}): SuccessionEntry[] {
   const holder = people.get(holderId);
   if (!holder) return [];
 
-  const ctx = {
+  const ctx: WalkContext = {
     people,
     childrenOf: childMap,
     adoptedChildrenOf,
@@ -155,7 +198,7 @@ export function buildSuccessionLine({
     seen: new Set([holderId])
   };
 
-  const out = [];
+  const out: PendingEntry[] = [];
 
   // 1. The holder's own descent.
   for (const childId of childrenOf(holderId, ctx)) {
@@ -164,7 +207,7 @@ export function buildSuccessionLine({
 
   // 2. Outward through the ancestors: siblings, then uncles and aunts, and so
   //    on. Each ancestor's other children are a sibling set in their own right.
-  let generation = [holderId];
+  let generation: number[] = [holderId];
   let rise = 0;
 
   while (rise < maxDepth && generation.length > 0) {

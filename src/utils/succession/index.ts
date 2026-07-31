@@ -7,5 +7,13 @@
  * Dexie, and had no tests at all.
  */
 export { buildSuccessionLine } from './successionRules';
+export type {
+  Person,
+  House,
+  Relationship,
+  SuccessionRules,
+  SuccessionEntry,
+  RelationshipMaps
+} from './types';
 export { buildRelationshipMaps } from './relationshipMaps';
 export { buildAgnaticSeniorityLine, collectDynastyHouses } from './dynasty';

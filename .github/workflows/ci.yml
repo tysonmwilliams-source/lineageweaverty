@@ -21,6 +21,13 @@ jobs:
 
       - run: npm run build
 
+      # Blocking from day one of decision F4, and it has to be: **Vite strips
+      # TypeScript types without checking them**, so `npm run build` passing
+      # says nothing at all about type correctness. Without this step the
+      # migration would produce the appearance of type safety rather than the
+      # fact of it.
+      - run: npm run typecheck
+
       - run: npm run test:run
 
       # Blocking as of decision F3. `no-unused-vars` and the React Compiler rules

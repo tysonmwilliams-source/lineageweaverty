@@ -8,15 +8,20 @@
  * that becoming a cycle.
  */
 
-/** Build parent, child, spouse and adoption maps from raw relationship rows. */
-export function buildRelationshipMaps(relationships = []) {
-  const childrenOf = new Map();
-  const parentsOf = new Map();
-  const spouseMap = new Map();
-  const adoptedChildrenOf = new Map();
-  const adoptedIds = new Set();
+import type { Relationship, RelationshipMaps } from './types';
 
-  const push = (map, key, value) => map.set(key, [...(map.get(key) ?? []), value]);
+/** Build parent, child, spouse and adoption maps from raw relationship rows. */
+export function buildRelationshipMaps(
+  relationships: Relationship[] = []
+): RelationshipMaps {
+  const childrenOf = new Map<number, number[]>();
+  const parentsOf = new Map<number, number[]>();
+  const spouseMap = new Map<number, number>();
+  const adoptedChildrenOf = new Map<number, number[]>();
+  const adoptedIds = new Set<number>();
+
+  const push = (map: Map<number, number[]>, key: number, value: number) =>
+    map.set(key, [...(map.get(key) ?? []), value]);
 
   for (const rel of relationships) {
     if (rel.relationshipType === 'parent') {

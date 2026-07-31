@@ -1,0 +1,52 @@
+{
+  // Decision F4 — the TypeScript migration, step 1: toolchain.
+  //
+  // Two settings here are the whole point, and both are easy to get wrong in a
+  // way that makes the migration look like it is working when it is not:
+  //
+  //   allowJs    .js and .ts have to coexist for however long this takes. The
+  //              alternative is a big-bang rename, which for 103k lines is not
+  //              a migration, it is a rewrite.
+  //
+  //   checkJs    false, deliberately. Turning it on would type-check every
+  //              existing .js file at once and produce thousands of errors, so
+  //              the gate would be red from the first commit and get switched
+  //              off — which is exactly how `no-unused-vars` ended up at
+  //              `error` with 411 violations and CI running lint with
+  //              continue-on-error. A gate nobody can pass is not a gate.
+  //              Files opt in by being converted, or by a `// @ts-check`
+  //              comment.
+  //
+  // `noEmit` because Vite does the compiling. This config exists purely to
+  // check types — and it has to, because **Vite strips types without checking
+  // them**, so a green `npm run build` says nothing whatsoever about type
+  // correctness. `npm run typecheck` is the only thing that does.
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+
+    "allowJs": true,
+    "checkJs": false,
+    "noEmit": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": false,
+
+    // Strict from the start. Relaxing later is easy; retrofitting strictness
+    // onto files already converted loosely is the expensive direction, and is
+    // how a migration ends up producing TypeScript that checks nothing.
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+
+    "skipLibCheck": true
+  },
+  "include": ["src", "vite.config.js"],
+  "exclude": ["node_modules", "dist", "extras"]
+}

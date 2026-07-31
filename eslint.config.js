@@ -2,6 +2,7 @@ import js from '@eslint/js'
 import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
+import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
@@ -19,6 +20,40 @@ export default defineConfig([
     files: ['*.config.js', 'src/test/**/*.{js,jsx}'],
     languageOptions: {
       globals: { ...globals.browser, ...globals.node },
+    },
+  },
+  // Decision F4. TypeScript files need their own parser, and they need to be in
+  // the gate at all: a `.ts` file matches no config above, so ESLint reports
+  // "File ignored because no matching configuration was supplied" and skips it
+  // silently. Without this, every file the migration converts would quietly
+  // leave the lint gate — `no-undef`, `rules-of-hooks` and `static-components`
+  // would stop applying one file at a time, and the warning count would fall
+  // for the wrong reason.
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      js.configs.recommended,
+      ...tseslint.configs.recommended,
+      reactHooks.configs.flat.recommended,
+      reactRefresh.configs.vite,
+    ],
+    languageOptions: {
+      globals: globals.browser,
+      parserOptions: { ecmaFeatures: { jsx: true } },
+    },
+    rules: {
+      // The base rule does not understand TS types and reports false positives
+      // on them; the TS-aware version replaces it with the same settings.
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': ['warn', {
+        varsIgnorePattern: '^[A-Z_]',
+        argsIgnorePattern: '^_',
+        caughtErrorsIgnorePattern: '^_',
+        ignoreRestSiblings: true,
+      }],
+      'no-undef': 'off', // tsc does this properly, and knows about types
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/static-components': 'error',
     },
   },
   {
