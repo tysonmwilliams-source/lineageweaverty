@@ -81,6 +81,9 @@ gated on a green light for timing. See "What is left" below.
 | `5fa1bda` | — | **C3 step 2**: version-tolerant composition readers |
 | `face632` | — | **C3 step 3**: writes v3, records cadency, apply flow |
 | `991171a` | — | **C3 step 4**: the SVG pipeline divides a shield |
+| `1db2936`…`8740b32` | — | **C3 step 5–6**: dimidiation, tree editor, marriage arms |
+| `6c27246` | — | **C3**: undo, and combining another house's arms |
+| `cf59650`…`91904b4` | — | **D1, D2, D3**: succession rules, change report, adopted |
 
 **Current baselines** (verify these still hold before and after your work):
 
@@ -133,9 +136,22 @@ first answering something — that is the honest state of it.
 - **C2, C5, C6** — Gemini key architecture, household roles, multiple spouses.
   **C1 and C4 are decided and complete**; **C3 is decided and underway — steps 1
   to 6 of 6 are done — C3 is complete**. See the C3 progress table in README.
-- **D1–D4** — succession semantics. D4 (the broken Crown) is now *reported* by
-  the integrity check instead of failing silently, but whether person 82 was
-  deleted or the Crown should be vacant is still a worldbuilding answer.
+- **D1, D2 and D3 are decided and adopted** (`91904b4`). Succession now uses a
+  pure, tested rules module: the depth-first walk survives, representation
+  through a predeceased heir works, male preference applies within a sibling set
+  only, the dynasty includes cadet branches, and adopted children rank after
+  natural issue *and* have a succession path at all for the first time.
+
+  **`legacySuccession.js` is the old algorithm, preserved on purpose.** It is
+  used by nothing but the change report, which must compare against it rather
+  than against the live path — comparing the corrected rules with themselves can
+  only ever report "no change", which is exactly what happened when the swap
+  landed. It is wrong in three documented ways. Do not adopt it for anything.
+
+- **D4 — still open, and still a worldbuilding answer.** Whether person 82 was
+  deleted or the Crown should be vacant. The code no longer fails silently: the
+  succession path returns an empty line and warns, and the change report names
+  the dignity and says the holder does not exist.
 - **E1–E9** — the owner's world data. **Never auto-change creative content.**
 - **G1–G3** (README Part Two, Section G) — what is still open of the items that
   stopped at a decision during Phases 4–6: the remaining 44 emoji (G1), the
