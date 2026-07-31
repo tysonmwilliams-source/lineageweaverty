@@ -86,8 +86,8 @@ gated on a green light for timing. See "What is left" below.
 
 ```bash
 npm run build      # passes, ~20s
-npx vitest run     # 710 tests pass, 25 files, exits 0
-npx eslint .       # 0 errors, 343 warnings — exits 0, and CI blocks on it
+npx vitest run     # 766 tests pass, 28 files, exits 0
+npx eslint .       # 0 errors, 342 warnings — exits 0, and CI blocks on it
 ```
 
 Lint is now a **blocking gate** (decision F3). `no-undef`, `no-dupe-keys`,

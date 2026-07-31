@@ -318,6 +318,9 @@ Two structural refactors are also unambiguously right, but they're big enough th
 | **C1** | Mobile | **Full responsive** — complete | `4d1f784`…`1dc3d83` |
 | **A2** | Key history | **Revoke, leave history** — no code change | — |
 | **F2, F6, G4, G5** | Housekeeping | Archives + stale branch deleted, favicon, claude-context untracked | `705583f` |
+| **D1** | Succession rules | **Correct rules + change report**, adopted | `cf59650`…`91904b4` |
+| **D2** | Dynasty | **House plus its cadet branches**, via `parentHouseId` | `91904b4` |
+| **D3** | Adoption | **Adopted inherit after natural issue**; adopted links now count | `91904b4` |
 | **G7** | React Compiler lint | **`static-components` now**, rest scheduled — rule promoted to error | `bb8fd32` |
 | **C4** | Planner | **Promote to a route** — `/writing/:id/plan/:planId/:view` | `72068fe` |
 | **C3** | Marshalling | **Recursive composition** — the full rebuild | **complete** — 6 steps, `87aa243`…`8740b32` |
@@ -361,7 +364,7 @@ Notes worth carrying forward:
   below: a TypeScript migration and a heraldry-pipeline rewrite landing on the
   same files simultaneously is worse than either alone.
 
-**Still to decide: C2, C5, C6, D1–D4, E1–E9, F1, F5, F7, F8, G1–G3.**
+**Still to decide: C2, C5, C6, D4, E1–E9, F1, F5, F7, F8, G1–G3.**
 
 ---
 
