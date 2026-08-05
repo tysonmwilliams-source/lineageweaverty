@@ -784,8 +784,8 @@ async function logContextEvent(contextId, event, trigger, datasetId, stats = {})
  *
  * @param {string} entityType - Type of entity (person, house, codex, relationship)
  * @param {string} operation - Operation (create, update, delete)
- * @param {Object} entity - The entity data
- * @param {string} datasetId - Dataset ID
+ * @param {*} entity - The entity data, of whatever shape entityType implies
+ * @param {string|null} [datasetId] - Dataset ID
  */
 export function notifyChange(entityType, operation, entity, datasetId) {
   pendingChanges.push({

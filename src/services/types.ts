@@ -41,6 +41,68 @@ export interface HeraldryRecord {
   composition?: StoredComposition | null;
 }
 
+/**
+ * A Codex entry.
+ *
+ * `id` is required here and absent from `CodexEntryInput` below, which is the
+ * distinction Dexie's third type parameter exists for: a row that came *out* of
+ * the database always has a key, and a row going *in* usually must not. Getting
+ * this wrong is what forces `link.id!` on every `bulkDelete`.
+ */
+export interface CodexEntry {
+  id: number;
+  /** 'personage' | 'house' | 'location' | 'event' | 'mysteria' | 'heraldry' | 'custom' — stored free-form. */
+  type: string;
+  title: string;
+  subtitle?: string | null;
+  /** Markdown, with `[[wiki-links]]`. */
+  content: string;
+  sections?: unknown[];
+  category?: string | null;
+  tags?: string[];
+  era?: string | null;
+  /** Links out to the other subsystems. Null when this entry stands alone. */
+  personId?: number | null;
+  houseId?: number | null;
+  heraldryId?: number | null;
+  dignityId?: number | null;
+  created?: string;
+  updated?: string;
+  /**
+   * Written by exactly two paths — `migrateSelectedMysteria` and
+   * `markMysteriaSkipMigration` — and read by nothing. Every other write in the
+   * Codex sets `updated`, including the bulk `migrateMysteriaToDignities` that
+   * the selected-entries version was presumably copied from, so those two
+   * paths silently leave `updated` stale.
+   *
+   * Declared rather than fixed, deliberately: correcting it changes behaviour,
+   * and a behaviour change hiding inside a TypeScript conversion is exactly
+   * what the F4 notes say not to do. Typing the table is what found it.
+   */
+  modified?: string;
+  wordCount?: number;
+  version?: number;
+  changelog?: unknown[];
+  /** Set by the mysteria migration tool to take an entry out of its list. */
+  skipMigration?: boolean;
+}
+
+/** A Codex entry on its way in, before Dexie assigns a key. */
+export type CodexEntryInput = Omit<CodexEntry, 'id'> & { id?: number };
+
+/** A link between two Codex entries. */
+export interface CodexLink {
+  id: number;
+  sourceId: number;
+  targetId: number;
+  /** 'wiki-reference' is derived from prose and is the only type reconciliation prunes. */
+  type: string;
+  label?: string | null;
+  bidirectional?: boolean;
+}
+
+export type CodexLinkInput = Omit<CodexLink, 'id'> & { id?: number };
+
 /** One entry of `SUCCESSION_TYPES` — how a dignity passes to the next holder. */
 export interface SuccessionTypeDefinition {
   id: string;
@@ -95,6 +157,8 @@ export type AppDatabase = Dexie & {
   houses: Table<House, number>;
   relationships: Table<Relationship, number>;
   heraldry: Table<HeraldryRecord, number>;
+  codexEntries: Table<CodexEntry, number, CodexEntryInput>;
+  codexLinks: Table<CodexLink, number, CodexLinkInput>;
 };
 
 /** An identifier for the dataset (world) an operation runs against. */

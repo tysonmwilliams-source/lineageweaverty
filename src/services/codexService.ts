@@ -1,23 +1,103 @@
 /**
  * Codex Service
- * 
+ *
  * Handles all database operations for The Codex encyclopedia system.
  * Manages codex entries (character bios, locations, events, etc.) and their links.
+ *
+ * Converted under decision F4 (item 5 of the order in HANDOFF.md). Two notes on
+ * how, because they are the conventions the rest of the service layer follows:
+ *
+ *   - `datasetId` is optional everywhere here rather than defaulted, because
+ *     that is how the JavaScript behaved — every one of these functions took it
+ *     as a bare positional and callers routinely omit it.
+ *   - `parseInt` on a value that is sometimes already a number is typed with a
+ *     cast rather than wrapped in `String(...)`. A cast has no runtime
+ *     existence, so a conversion commit cannot change behaviour by accident.
+ *     The one exception is called out where it happens.
  */
 
-import { getDatabase } from './database.js';
+import { getDatabase } from './database';
 import { logger } from '../utils/logger';
+import { errorMessage } from '../utils/errorMessage';
+import type {
+  CodexEntry,
+  CodexEntryInput,
+  CodexLink,
+  DatasetId,
+  UserId
+} from './types';
+
+/** A new entry, before the database gives it an id. Type and title are required. */
+export interface NewCodexEntry {
+  /** 'personage', 'house', 'location', 'event', 'mysteria', 'custom' */
+  type: string;
+  title: string;
+  subtitle?: string | null;
+  /** Markdown text with [[wiki-links]] */
+  content?: string;
+  sections?: unknown[];
+  category?: string | null;
+  tags?: string[];
+  era?: string | null;
+  personId?: number | null;
+  houseId?: number | null;
+  heraldryId?: number | null;
+  dignityId?: number | null;
+}
+
+/** An entry being restored from the cloud, which already knows its own id. */
+export type RestoredCodexEntry = Partial<CodexEntry> & { id: number | string };
+
+/** A link decorated with which way it points, for the backlinks panel. */
+export interface DirectedCodexLink extends CodexLink {
+  direction: 'incoming' | 'outgoing-bidirectional';
+  /** The entry at the other end — whichever end that is for this direction. */
+  referringEntryId: number;
+}
+
+export interface CodexStatistics {
+  total: number;
+  byType: Record<string, number>;
+  totalWords: number;
+  recentlyUpdated: Array<{ id: number; title: string; updated: string | undefined }>;
+}
+
+export interface MigrationOutcome {
+  success: boolean;
+  total: number;
+  errors: Array<{ id: number; title?: string; error: string }>;
+}
+
+export interface MysteriaMigrationResult extends MigrationOutcome {
+  migrated: number;
+}
+
+export interface SkipMigrationResult extends MigrationOutcome {
+  marked: number;
+}
+
+type ContextNotifier = (
+  entityType: string,
+  operation: string,
+  entity: unknown,
+  datasetId?: DatasetId
+) => void;
 
 // Context notification - lazy loaded to avoid circular deps
-let contextNotify = null;
-async function notifyContextChange(entityType, operation, entity, datasetId) {
+let contextNotify: ContextNotifier | null = null;
+async function notifyContextChange(
+  entityType: string,
+  operation: string,
+  entity: unknown,
+  datasetId?: DatasetId
+): Promise<void> {
   try {
     if (!contextNotify) {
       const { notifyChange } = await import('./contextService.js');
       contextNotify = notifyChange;
     }
     contextNotify(entityType, operation, entity, datasetId);
-  } catch (e) {
+  } catch {
     // Context service not available - silently skip
   }
 }
@@ -26,16 +106,17 @@ async function notifyContextChange(entityType, operation, entity, datasetId) {
 
 /**
  * Create a new codex entry
- * @param {Object} entryData - Entry data with required fields
- * @param {string} [datasetId] - Dataset ID (optional)
- * @returns {Promise<number>} - ID of created entry
+ * @returns ID of created entry
  */
-export async function createEntry(entryData, datasetId) {
+export async function createEntry(
+  entryData: NewCodexEntry,
+  datasetId?: DatasetId
+): Promise<number> {
   try {
     const db = getDatabase(datasetId);
 
     // Ensure required fields
-    const entry = {
+    const entry: CodexEntryInput = {
       // Core identity
       type: entryData.type, // Required: 'personage', 'house', 'location', 'event', 'mysteria', 'custom'
       title: entryData.title, // Required
@@ -81,26 +162,37 @@ export async function createEntry(entryData, datasetId) {
 
 /**
  * Restore a codex entry with a specific ID
- * 
+ *
  * IMPORTANT: This is different from createEntry() because it uses .put()
  * which preserves the original ID instead of auto-generating a new one.
- * 
+ *
  * Used during cloud sync to restore entries without creating duplicates.
- * 
- * @param {Object} entryData - Entry data including the original ID
- * @returns {Promise<number>} - The ID of the restored entry
+ *
+ * @returns The ID of the restored entry
  */
-export async function restoreEntry(entryData, datasetId) {
+export async function restoreEntry(
+  entryData: RestoredCodexEntry,
+  datasetId?: DatasetId
+): Promise<number> {
   try {
     const db = getDatabase(datasetId);
 
     // Build the entry object, preserving the original ID
-    const entry = {
-      id: parseInt(entryData.id) || entryData.id, // CRITICAL: preserve original ID
+    const entry: CodexEntryInput = {
+      // CRITICAL: preserve original ID. The `|| entryData.id` fallback means a
+      // non-numeric id stays exactly as it arrived rather than becoming NaN —
+      // hence the cast on the result: the table is keyed by number, and this is
+      // the one path that can put something else there. Typing it did not
+      // create that hazard, only made it visible.
+      //
+      // `String(...)` rather than a cast because `entryData.id` is genuinely
+      // `number | string` and TypeScript will not pretend otherwise. It is the
+      // same call at runtime: `parseInt` stringifies its argument anyway.
+      id: (parseInt(String(entryData.id)) || entryData.id) as number,
 
       // Core identity
-      type: entryData.type,
-      title: entryData.title,
+      type: entryData.type as string,
+      title: entryData.title as string,
       subtitle: entryData.subtitle || null,
 
       // Content
@@ -142,7 +234,10 @@ export async function restoreEntry(entryData, datasetId) {
 /**
  * Get a single codex entry by ID
  */
-export async function getEntry(id, datasetId) {
+export async function getEntry(
+  id: number,
+  datasetId?: DatasetId
+): Promise<CodexEntry | undefined> {
   try {
     const db = getDatabase(datasetId);
     const entry = await db.codexEntries.get(id);
@@ -158,12 +253,11 @@ export async function getEntry(id, datasetId) {
  *
  * TREE-CODEX INTEGRATION: Used to find the Codex entry for a person
  * when navigating from the Family Tree or Data Management.
- *
- * @param {number} personId - The person's database ID
- * @param {string} [datasetId] - Dataset ID (optional)
- * @returns {Object|null} The codex entry or null if not found
  */
-export async function getEntryByPersonId(personId, datasetId) {
+export async function getEntryByPersonId(
+  personId: number | null | undefined,
+  datasetId?: DatasetId
+): Promise<CodexEntry | null> {
   try {
     if (personId === null || personId === undefined) return null;
     const db = getDatabase(datasetId);
@@ -183,12 +277,11 @@ export async function getEntryByPersonId(personId, datasetId) {
  *
  * HOUSE-CODEX INTEGRATION: Used to find the Codex entry for a house
  * when navigating from Data Management or for cascade delete.
- *
- * @param {number} houseId - The house's database ID
- * @param {string} [datasetId] - Dataset ID (optional)
- * @returns {Object|null} The codex entry or null if not found
  */
-export async function getEntryByHouseId(houseId, datasetId) {
+export async function getEntryByHouseId(
+  houseId: number | null | undefined,
+  datasetId?: DatasetId
+): Promise<CodexEntry | null> {
   try {
     if (houseId === null || houseId === undefined) return null;
     const db = getDatabase(datasetId);
@@ -208,12 +301,11 @@ export async function getEntryByHouseId(houseId, datasetId) {
  *
  * DIGNITY-CODEX INTEGRATION: Used to find the Codex entry for a dignity
  * when navigating from the Dignities system or for cascade delete.
- *
- * @param {number} dignityId - The dignity's database ID
- * @param {string} [datasetId] - Dataset ID (optional)
- * @returns {Object|null} The codex entry or null if not found
  */
-export async function getEntryByDignityId(dignityId, datasetId) {
+export async function getEntryByDignityId(
+  dignityId: number | null | undefined,
+  datasetId?: DatasetId
+): Promise<CodexEntry | null> {
   try {
     if (dignityId === null || dignityId === undefined) return null;
     const db = getDatabase(datasetId);
@@ -233,12 +325,11 @@ export async function getEntryByDignityId(dignityId, datasetId) {
  *
  * PHASE 5 - CODEX-HERALDRY INTEGRATION: Used to find the Codex entry
  * for a heraldry record when navigating from The Armory.
- *
- * @param {number} heraldryId - The heraldry record's database ID
- * @param {string} [datasetId] - Dataset ID (optional)
- * @returns {Object|null} The codex entry or null if not found
  */
-export async function getEntryByHeraldryId(heraldryId, datasetId) {
+export async function getEntryByHeraldryId(
+  heraldryId: number | null | undefined,
+  datasetId?: DatasetId
+): Promise<CodexEntry | null> {
   try {
     if (heraldryId === null || heraldryId === undefined) return null;
     const db = getDatabase(datasetId);
@@ -256,7 +347,7 @@ export async function getEntryByHeraldryId(heraldryId, datasetId) {
 /**
  * Get all codex entries
  */
-export async function getAllEntries(datasetId) {
+export async function getAllEntries(datasetId?: DatasetId): Promise<CodexEntry[]> {
   try {
     const db = getDatabase(datasetId);
     const entries = await db.codexEntries.toArray();
@@ -270,10 +361,8 @@ export async function getAllEntries(datasetId) {
 /**
  * Get count of codex entries without loading all data
  * More efficient than getAllEntries().length for stats
- * @param {string} [datasetId] - Dataset ID (optional)
- * @returns {Promise<number>} Count of entries
  */
-export async function getEntriesCount(datasetId) {
+export async function getEntriesCount(datasetId?: DatasetId): Promise<number> {
   try {
     const db = getDatabase(datasetId);
     return await db.codexEntries.count();
@@ -285,10 +374,12 @@ export async function getEntriesCount(datasetId) {
 
 /**
  * Get entries by type
- * @param {string} type - Entry type (personage, house, location, event, mysteria, custom, or 'all')
- * @param {string} [datasetId] - Dataset ID (optional)
+ * @param type - Entry type (personage, house, location, event, mysteria, custom, or 'all')
  */
-export async function getEntriesByType(type, datasetId) {
+export async function getEntriesByType(
+  type: string,
+  datasetId?: DatasetId
+): Promise<CodexEntry[]> {
   try {
     const db = getDatabase(datasetId);
     // Handle 'all' type to return all entries
@@ -306,7 +397,10 @@ export async function getEntriesByType(type, datasetId) {
 /**
  * Get entries by category
  */
-export async function getEntriesByCategory(category, datasetId) {
+export async function getEntriesByCategory(
+  category: string,
+  datasetId?: DatasetId
+): Promise<CodexEntry[]> {
   try {
     const db = getDatabase(datasetId);
     const entries = await db.codexEntries.where('category').equals(category).toArray();
@@ -320,7 +414,10 @@ export async function getEntriesByCategory(category, datasetId) {
 /**
  * Get entries by era
  */
-export async function getEntriesByEra(era, datasetId) {
+export async function getEntriesByEra(
+  era: string,
+  datasetId?: DatasetId
+): Promise<CodexEntry[]> {
   try {
     const db = getDatabase(datasetId);
     const entries = await db.codexEntries.where('era').equals(era).toArray();
@@ -334,7 +431,10 @@ export async function getEntriesByEra(era, datasetId) {
 /**
  * Get entries by tag
  */
-export async function getEntriesByTag(tag, datasetId) {
+export async function getEntriesByTag(
+  tag: string,
+  datasetId?: DatasetId
+): Promise<CodexEntry[]> {
   try {
     const db = getDatabase(datasetId);
     // Dexie's multi-entry index (the * prefix) allows this
@@ -349,7 +449,10 @@ export async function getEntriesByTag(tag, datasetId) {
 /**
  * Search entries by title (case-insensitive)
  */
-export async function searchEntriesByTitle(searchTerm, datasetId) {
+export async function searchEntriesByTitle(
+  searchTerm: string,
+  datasetId?: DatasetId
+): Promise<CodexEntry[]> {
   try {
     const db = getDatabase(datasetId);
     const allEntries = await db.codexEntries.toArray();
@@ -367,7 +470,10 @@ export async function searchEntriesByTitle(searchTerm, datasetId) {
 /**
  * Full-text search across all entry content
  */
-export async function searchEntriesFullText(searchTerm, datasetId) {
+export async function searchEntriesFullText(
+  searchTerm: string,
+  datasetId?: DatasetId
+): Promise<CodexEntry[]> {
   try {
     const db = getDatabase(datasetId);
     const allEntries = await db.codexEntries.toArray();
@@ -389,11 +495,16 @@ export async function searchEntriesFullText(searchTerm, datasetId) {
 /**
  * Update an existing codex entry
  */
-export async function updateEntry(id, updates, datasetId, userId = null) {
+export async function updateEntry(
+  id: number,
+  updates: Partial<CodexEntry>,
+  datasetId?: DatasetId,
+  userId: UserId = null
+): Promise<number> {
   try {
     const db = getDatabase(datasetId);
     // Always update the 'updated' timestamp and recalculate word count
-    const modifiedUpdates = {
+    const modifiedUpdates: Partial<CodexEntry> = {
       ...updates,
       updated: new Date().toISOString()
     };
@@ -425,7 +536,11 @@ export async function updateEntry(id, updates, datasetId, userId = null) {
 /**
  * Delete a codex entry
  */
-export async function deleteEntry(id, datasetId, userId = null) {
+export async function deleteEntry(
+  id: number,
+  datasetId?: DatasetId,
+  userId: UserId = null
+): Promise<void> {
   try {
     const db = getDatabase(datasetId);
 
@@ -466,10 +581,11 @@ export async function deleteEntry(id, datasetId, userId = null) {
 
 /**
  * Create a link between two entries
- * @param {Object} linkData - Link data
- * @param {string} [datasetId] - Dataset ID (optional)
  */
-export async function createLink(linkData, datasetId) {
+export async function createLink(
+  linkData: Partial<CodexLink> & { sourceId: number; targetId: number },
+  datasetId?: DatasetId
+): Promise<number> {
   try {
     const db = getDatabase(datasetId);
     const link = {
@@ -501,22 +617,29 @@ export async function createLink(linkData, datasetId) {
  * links are touched: links created deliberately through the UI are not derived
  * from prose and must not be pruned by editing it.
  *
- * @param {number} entryId - The entry whose content changed
- * @param {string} content - The new content
- * @param {string} [datasetId]
- * @param {string} [userId] - When present, deletions are propagated to the cloud
- * @returns {Promise<number>} How many stale links were removed
+ * @param entryId - The entry whose content changed
+ * @param content - The new content
+ * @param userId - When present, deletions are propagated to the cloud
+ * @returns How many stale links were removed
  */
-export async function reconcileWikiLinks(entryId, content, datasetId, userId = null) {
+export async function reconcileWikiLinks(
+  entryId: number,
+  content: string,
+  datasetId?: DatasetId,
+  userId: UserId = null
+): Promise<number> {
   try {
     const db = getDatabase(datasetId);
 
     // Resolve the targets the content currently names, the same way the renderer
     // does: case-insensitive on title, honouring [[Display|Actual]] aliases.
-    const targets = new Set();
+    const targets = new Set<string>();
     for (const match of String(content || '').matchAll(/\[\[([^\]]+)\]\]/g)) {
-      const text = match[1].trim();
-      targets.add((text.includes('|') ? text.split('|')[1] : text).trim().toLowerCase());
+      const text = match[1]?.trim();
+      // `[^\]]+` guarantees a group, so this only skips `[[ ]]` — which
+      // resolved to nothing before and resolves to nothing now.
+      if (!text) continue;
+      targets.add((text.includes('|') ? text.split('|')[1] ?? text : text).trim().toLowerCase());
     }
 
     const allEntries = await db.codexEntries.toArray();
@@ -558,7 +681,10 @@ export async function reconcileWikiLinks(entryId, content, datasetId, userId = n
 /**
  * Get all outgoing links from an entry (links this entry makes to others)
  */
-export async function getOutgoingLinks(entryId, datasetId) {
+export async function getOutgoingLinks(
+  entryId: number,
+  datasetId?: DatasetId
+): Promise<CodexLink[]> {
   try {
     const db = getDatabase(datasetId);
     const links = await db.codexLinks.where('sourceId').equals(entryId).toArray();
@@ -571,57 +697,58 @@ export async function getOutgoingLinks(entryId, datasetId) {
 
 /**
  * Get all incoming links to an entry (backlinks - other entries that mention this one)
- * 
+ *
  * BIDIRECTIONAL SUPPORT: This function now returns both:
  * 1. Links where this entry is the TARGET (traditional backlinks)
  * 2. Links where this entry is the SOURCE AND the link is marked bidirectional
- * 
+ *
  * This ensures that if Entry A links to Entry B with bidirectional=true,
  * BOTH entries will show each other in their backlinks panel.
- * 
- * @param {number} entryId - The entry to get backlinks for
- * @param {string} [datasetId] - Dataset ID (optional)
- * @returns {Promise<Array>} - Array of link objects with added `direction` property
+ *
+ * @returns Array of link objects with added `direction` property
  */
-export async function getIncomingLinks(entryId, datasetId) {
+export async function getIncomingLinks(
+  entryId: number,
+  datasetId?: DatasetId
+): Promise<DirectedCodexLink[]> {
   try {
     const db = getDatabase(datasetId);
-    
+
     // 1. Traditional backlinks: links pointing TO this entry
     const incomingLinks = await db.codexLinks
       .where('targetId')
       .equals(entryId)
       .toArray();
-    
+
     // Mark these as 'incoming' direction for context snippet handling
-    const markedIncoming = incomingLinks.map(link => ({
+    const markedIncoming: DirectedCodexLink[] = incomingLinks.map(link => ({
       ...link,
       direction: 'incoming',
       // For incoming links, sourceId is the entry that references us
       referringEntryId: link.sourceId
     }));
-    
+
     // 2. Bidirectional reverse links: links FROM this entry that are bidirectional
     const outgoingBidirectional = await db.codexLinks
       .where('sourceId')
       .equals(entryId)
       .filter(link => link.bidirectional === true)
       .toArray();
-    
+
     // Mark these as 'outgoing-bidirectional' and swap the reference
-    const markedOutgoing = outgoingBidirectional.map(link => ({
+    const markedOutgoing: DirectedCodexLink[] = outgoingBidirectional.map(link => ({
       ...link,
       direction: 'outgoing-bidirectional',
       // For bidirectional outgoing links, targetId is the entry we link to
       // but we want to show IT in OUR backlinks, so referringEntryId = targetId
       referringEntryId: link.targetId
     }));
-    
+
     // 3. Combine and deduplicate (in case of circular references)
     const allLinks = [...markedIncoming, ...markedOutgoing];
-    
+
     // Deduplicate by referringEntryId to avoid showing same entry twice
-    const seen = new Set();
+    const seen = new Set<number>();
     const deduplicated = allLinks.filter(link => {
       if (seen.has(link.referringEntryId)) {
         return false;
@@ -629,7 +756,7 @@ export async function getIncomingLinks(entryId, datasetId) {
       seen.add(link.referringEntryId);
       return true;
     });
-    
+
     return deduplicated;
   } catch (error) {
     logger.error('Error getting incoming links:', error);
@@ -638,19 +765,13 @@ export async function getIncomingLinks(entryId, datasetId) {
 }
 
 /**
- * Get all links for an entry (both incoming and outgoing)
- */
-/**
  * Get every codex link in the dataset.
  *
  * Every other table had a bulk reader; codexLinks only had the per-entry
  * getAllLinksForEntry, which is why the integrity check could not see dangling
  * links without N queries.
- *
- * @param {string} [datasetId] - Dataset ID (optional)
- * @returns {Promise<Array>} All codex links
  */
-export async function getAllLinks(datasetId) {
+export async function getAllLinks(datasetId?: DatasetId): Promise<CodexLink[]> {
   try {
     const db = getDatabase(datasetId);
     return await db.codexLinks.toArray();
@@ -660,7 +781,13 @@ export async function getAllLinks(datasetId) {
   }
 }
 
-export async function getAllLinksForEntry(entryId, datasetId) {
+/**
+ * Get all links for an entry (both incoming and outgoing)
+ */
+export async function getAllLinksForEntry(
+  entryId: number,
+  datasetId?: DatasetId
+): Promise<{ outgoing: CodexLink[]; incoming: DirectedCodexLink[] }> {
   try {
     const [outgoing, incoming] = await Promise.all([
       getOutgoingLinks(entryId, datasetId),
@@ -680,7 +807,11 @@ export async function getAllLinksForEntry(entryId, datasetId) {
 /**
  * Delete all links associated with an entry
  */
-export async function deleteLinksForEntry(entryId, datasetId, userId = null) {
+export async function deleteLinksForEntry(
+  entryId: number,
+  datasetId?: DatasetId,
+  userId: UserId = null
+): Promise<void> {
   try {
     const db = getDatabase(datasetId);
 
@@ -701,7 +832,7 @@ export async function deleteLinksForEntry(entryId, datasetId, userId = null) {
 
     if (userId && doomed.length > 0) {
       const { syncDeleteCodexLink } = await import('./dataSyncService.js');
-      const seen = new Set();
+      const seen = new Set<number>();
       for (const link of doomed) {
         if (seen.has(link.id)) continue;
         seen.add(link.id);
@@ -723,7 +854,7 @@ export async function deleteLinksForEntry(entryId, datasetId, userId = null) {
 /**
  * Delete a specific link
  */
-export async function deleteLink(linkId, datasetId) {
+export async function deleteLink(linkId: number, datasetId?: DatasetId): Promise<void> {
   try {
     const db = getDatabase(datasetId);
     await db.codexLinks.delete(linkId);
@@ -739,15 +870,15 @@ export async function deleteLink(linkId, datasetId) {
 /**
  * Calculate word count from markdown content
  */
-function calculateWordCount(content) {
+function calculateWordCount(content: string): number {
   if (!content) return 0;
-  
+
   // Remove markdown syntax for more accurate count
   const cleanText = content
     .replace(/\[\[.*?\]\]/g, '') // Remove wiki links
     .replace(/[#*_`]/g, '') // Remove markdown formatting
     .trim();
-  
+
   const words = cleanText.split(/\s+/).filter(word => word.length > 0);
   return words.length;
 }
@@ -755,11 +886,11 @@ function calculateWordCount(content) {
 /**
  * Get entry statistics
  */
-export async function getCodexStatistics(datasetId) {
+export async function getCodexStatistics(datasetId?: DatasetId): Promise<CodexStatistics> {
   try {
     const allEntries = await getAllEntries(datasetId);
 
-    const stats = {
+    const stats: CodexStatistics = {
       total: allEntries.length,
       byType: {},
       totalWords: 0,
@@ -772,9 +903,15 @@ export async function getCodexStatistics(datasetId) {
       stats.totalWords += entry.wordCount || 0;
     });
 
-    // Get 5 most recently updated
+    // Get 5 most recently updated.
+    //
+    // `.getTime()` is the one place this conversion changed an expression:
+    // `new Date(b.updated) - new Date(a.updated)` does not type-check, because
+    // subtracting Dates only works through an implicit valueOf(). The result is
+    // identical for every input, including the invalid dates an entry with no
+    // `updated` produces — both spellings give NaN there.
     stats.recentlyUpdated = allEntries
-      .sort((a, b) => new Date(b.updated) - new Date(a.updated))
+      .sort((a, b) => new Date(b.updated ?? '').getTime() - new Date(a.updated ?? '').getTime())
       .slice(0, 5)
       .map(e => ({ id: e.id, title: e.title, updated: e.updated }));
 
@@ -790,11 +927,10 @@ export async function getCodexStatistics(datasetId) {
  *
  * This moves all entries with type 'mysteria' to type 'heraldry'
  * with category 'titles', placing them in the Dignities & Titles subsection.
- *
- * @param {string} [datasetId] - Dataset ID (optional)
- * @returns {Promise<Object>} Migration results with count of migrated entries
  */
-export async function migrateMysteriaToDignities(datasetId) {
+export async function migrateMysteriaToDignities(
+  datasetId?: DatasetId
+): Promise<MysteriaMigrationResult> {
   try {
     const db = getDatabase(datasetId);
 
@@ -804,7 +940,7 @@ export async function migrateMysteriaToDignities(datasetId) {
       .toArray();
 
     let migratedCount = 0;
-    const errors = [];
+    const errors: MigrationOutcome['errors'] = [];
 
     for (const entry of mysteriaEntries) {
       try {
@@ -816,7 +952,7 @@ export async function migrateMysteriaToDignities(datasetId) {
         });
         migratedCount++;
       } catch (err) {
-        errors.push({ id: entry.id, title: entry.title, error: err.message });
+        errors.push({ id: entry.id, title: entry.title, error: errorMessage(err) });
       }
     }
 
@@ -837,10 +973,8 @@ export async function migrateMysteriaToDignities(datasetId) {
 /**
  * Get count of mysteria entries that can be migrated
  * Excludes entries marked with skipMigration flag
- * @param {string} [datasetId] - Dataset ID (optional)
- * @returns {Promise<number>} Count of mysteria entries
  */
-export async function getMysteriaMigrationCount(datasetId) {
+export async function getMysteriaMigrationCount(datasetId?: DatasetId): Promise<number> {
   try {
     const db = getDatabase(datasetId);
     const count = await db.codexEntries
@@ -856,10 +990,10 @@ export async function getMysteriaMigrationCount(datasetId) {
 /**
  * Get all mysteria entries that can be migrated
  * Excludes entries marked with skipMigration flag
- * @param {string} [datasetId] - Dataset ID (optional)
- * @returns {Promise<Array>} Array of mysteria entries
  */
-export async function getMysteriaMigrationEntries(datasetId) {
+export async function getMysteriaMigrationEntries(
+  datasetId?: DatasetId
+): Promise<CodexEntry[]> {
   try {
     const db = getDatabase(datasetId);
     const entries = await db.codexEntries
@@ -874,16 +1008,16 @@ export async function getMysteriaMigrationEntries(datasetId) {
 
 /**
  * Migrate selected mysteria entries to Dignities & Titles
- * @param {Array<number>} entryIds - Array of entry IDs to migrate
- * @param {string} [datasetId] - Dataset ID (optional)
- * @returns {Promise<Object>} Migration results
  */
-export async function migrateSelectedMysteria(entryIds, datasetId) {
+export async function migrateSelectedMysteria(
+  entryIds: number[],
+  datasetId?: DatasetId
+): Promise<MysteriaMigrationResult> {
   try {
     const db = getDatabase(datasetId);
 
     let migratedCount = 0;
-    const errors = [];
+    const errors: MigrationOutcome['errors'] = [];
 
     for (const id of entryIds) {
       try {
@@ -902,7 +1036,7 @@ export async function migrateSelectedMysteria(entryIds, datasetId) {
         });
         migratedCount++;
       } catch (err) {
-        errors.push({ id, title: 'Unknown', error: err.message });
+        errors.push({ id, title: 'Unknown', error: errorMessage(err) });
       }
     }
 
@@ -923,16 +1057,16 @@ export async function migrateSelectedMysteria(entryIds, datasetId) {
 /**
  * Mark mysteria entries to skip migration
  * These entries will no longer appear in the migration list
- * @param {Array<number>} entryIds - Array of entry IDs to mark
- * @param {string} [datasetId] - Dataset ID (optional)
- * @returns {Promise<Object>} Result with count of marked entries
  */
-export async function markMysteriaSkipMigration(entryIds, datasetId) {
+export async function markMysteriaSkipMigration(
+  entryIds: number[],
+  datasetId?: DatasetId
+): Promise<SkipMigrationResult> {
   try {
     const db = getDatabase(datasetId);
 
     let markedCount = 0;
-    const errors = [];
+    const errors: MigrationOutcome['errors'] = [];
 
     for (const id of entryIds) {
       try {
@@ -942,7 +1076,7 @@ export async function markMysteriaSkipMigration(entryIds, datasetId) {
         });
         markedCount++;
       } catch (err) {
-        errors.push({ id, error: err.message });
+        errors.push({ id, error: errorMessage(err) });
       }
     }
 
@@ -978,7 +1112,7 @@ export default {
   searchEntriesFullText,
   updateEntry,
   deleteEntry,
-  
+
   // Link operations
   createLink,
   getOutgoingLinks,
@@ -988,7 +1122,7 @@ export default {
   getAllLinksForEntry,
   deleteLinksForEntry,
   deleteLink,
-  
+
   // Statistics
   getCodexStatistics,
 
