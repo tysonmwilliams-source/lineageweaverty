@@ -83,8 +83,13 @@ function createDatabaseInstance(datasetId) {
  * Get a database instance for a specific dataset
  * Creates a new instance if one doesn't exist, otherwise returns cached instance.
  *
- * @param {string} [datasetId='default'] - The dataset ID
- * @returns {Dexie} Database instance for the dataset
+ * The return type is asserted rather than inferred: the stores are added
+ * dynamically by `applySchema`, so a bare `Dexie` has no `people`, `houses` or
+ * any other table on it as far as a type-checker is concerned. `AppDatabase`
+ * names the tables converted code reads (decision F4).
+ *
+ * @param {string|null} [datasetId='default'] - The dataset ID
+ * @returns {import('./types').AppDatabase} Database instance for the dataset
  */
 export function getDatabase(datasetId = DEFAULT_DATASET_ID) {
   const id = datasetId || DEFAULT_DATASET_ID;

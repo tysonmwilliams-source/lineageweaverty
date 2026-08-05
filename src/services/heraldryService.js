@@ -132,7 +132,8 @@ export async function getHeraldry(id, datasetId = null) {
 
 /**
  * Get all heraldry records
- * 
+ *
+ * @param {string|null} [datasetId] - Dataset ID (optional)
  * @returns {Promise<Array>} Array of all heraldry records
  */
 export async function getAllHeraldry(datasetId = null) {
@@ -167,7 +168,8 @@ export async function getHeraldryCount(datasetId = null) {
  *
  * @param {number} id - The heraldry ID to update
  * @param {Object} updates - The fields to update
- * @param {string} [userId] - Optional user ID for cloud sync
+ * @param {string|null} [userId] - User ID for cloud sync; without it the write stays local
+ * @param {string|null} [datasetId] - Dataset ID (optional)
  * @returns {Promise<number>} Number of records updated (1 or 0)
  */
 export async function updateHeraldry(id, updates, userId = null, datasetId = null) {

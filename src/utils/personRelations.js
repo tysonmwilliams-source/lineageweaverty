@@ -47,9 +47,9 @@ function byBirthThenName(peopleById) {
  * person is common enough in a genealogy that hiding it would be a real loss.
  *
  * @param {number} personId
- * @param {Array} relationships - Raw relationship rows
+ * @param {Array<import('./succession/types').Relationship>} relationships - Raw relationship rows
  * @param {Map} peopleById
- * @returns {Array<{id: number, relationship: Object}>}
+ * @returns {Array<{id: number, relationship: import('./succession/types').Relationship}>}
  */
 export function getSpouses(personId, relationships, peopleById) {
   const seen = new Set();

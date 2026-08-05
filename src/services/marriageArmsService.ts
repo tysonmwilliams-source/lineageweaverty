@@ -18,21 +18,40 @@ import { getDatabase } from './database';
 import { getSpouses } from '../utils/personRelations';
 import { readComposition } from '../utils/heraldry';
 import { logger } from '../utils/logger';
+import type { StoredComposition } from '../utils/heraldry/types';
+import type {
+  DatasetId,
+  HeraldryRecord,
+  House,
+  Person,
+  Relationship
+} from './types';
+
+/**
+ * One marriage, and whether it can be borne as impaled arms.
+ *
+ * `usable` and `reason` are a pair on purpose: every unusable option carries
+ * the reason it is unusable, because "no marriage arms available" with no
+ * explanation is the kind of dead end that reads as a bug.
+ */
+export interface MarriageArmsOption {
+  spouse: Person;
+  relationship: Relationship;
+  house: House | null;
+  heraldry: HeraldryRecord | null;
+  /** Normalised to version 3 in memory. Only set when `usable`. */
+  composition: StoredComposition | null;
+  usable: boolean;
+  reason: string | null;
+}
 
 /**
  * Every marriage of a person that could be borne as impaled arms.
- *
- * Returns one entry per spouse, each reporting whether it is usable and — when
- * it is not — why, because "no marriage arms available" with no reason is the
- * kind of dead end that reads as a bug.
- *
- * @returns {Promise<Array<{
- *   spouse: Object, house: Object|null, heraldry: Object|null,
- *   composition: Object|null, usable: boolean, reason: string|null,
- *   relationship: Object
- * }>>}
  */
-export async function getMarriageArmsOptions(personId, datasetId = null) {
+export async function getMarriageArmsOptions(
+  personId: number | null | undefined,
+  datasetId: DatasetId = null
+): Promise<MarriageArmsOption[]> {
   if (!personId) return [];
 
   try {
@@ -47,13 +66,13 @@ export async function getMarriageArmsOptions(personId, datasetId = null) {
     const spouses = getSpouses(personId, relationships, peopleById);
     if (spouses.length === 0) return [];
 
-    const options = [];
+    const options: MarriageArmsOption[] = [];
 
     for (const { id: spouseId, relationship } of spouses) {
       const spouse = peopleById.get(spouseId);
       if (!spouse) continue;
 
-      const option = {
+      const option: MarriageArmsOption = {
         spouse,
         relationship,
         house: null,
@@ -95,7 +114,7 @@ export async function getMarriageArmsOptions(personId, datasetId = null) {
 
       // Uploaded and generated arms are an image and nothing more. There is no
       // composition to marshal, and inventing one would fabricate a coat.
-      const composition = readComposition(heraldry.composition);
+      const composition: StoredComposition | null = readComposition(heraldry.composition);
       if (!composition?.root) {
         option.reason = `"${heraldry.name}" was uploaded rather than drawn, so it cannot be combined`;
         options.push(option);
@@ -115,7 +134,7 @@ export async function getMarriageArmsOptions(personId, datasetId = null) {
 }
 
 /** Just the spouse's name. */
-export function describeSpouse(option) {
+export function describeSpouse(option: MarriageArmsOption): string {
   return [option.spouse?.firstName, option.spouse?.lastName].filter(Boolean).join(' ') || 'their spouse';
 }
 
@@ -131,7 +150,7 @@ export function describeSpouse(option) {
  * pairing them produced "Mirelle Riverhead — House Riverhead — House Riverhead
  * has no arms yet".
  */
-export function describeMarriageOption(option) {
+export function describeMarriageOption(option: MarriageArmsOption): string {
   const name = describeSpouse(option);
   return option.house?.houseName ? `${name} — ${option.house.houseName}` : name;
 }

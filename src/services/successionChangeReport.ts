@@ -10,7 +10,7 @@
  * This runs both algorithms over every dignity and reports the differences. It
  * writes nothing.
  *
- * "Both algorithms" means the corrected rules against `legacySuccession.js`, a
+ * "Both algorithms" means the corrected rules against `legacySuccession.ts`, a
  * preserved copy of the old one — not against whatever the app currently uses.
  * That distinction is load-bearing: comparing against the live path would
  * compare the new rules with themselves the moment the swap landed, and report
@@ -24,15 +24,88 @@ import {
   buildAgnaticSeniorityLine,
   buildRelationshipMaps
 } from '../utils/succession';
+import type {
+  House,
+  Person,
+  RelationshipMaps,
+  SuccessionEntry
+} from '../utils/succession';
 
 // Re-exported because the report's tests cover it and it was defined here
 // before the dignity service needed it too (decision D1).
 export { buildRelationshipMaps };
 import { logger } from '../utils/logger';
+import { errorMessage } from '../utils/errorMessage';
+import type { DatasetId, DignityRecord } from './types';
+
+/**
+ * The fields both algorithms' entries share.
+ *
+ * The two lines being compared are genuinely different shapes — the legacy
+ * entry carries `relationship` and `branch`, the corrected one carries
+ * `representing` and `cadet`. Typing the diff against what they have in common
+ * is what makes it honest that the comparison only ever looks at three fields.
+ */
+interface ComparableEntry {
+  personId: number;
+  person: Person;
+  excluded: boolean;
+}
+
+export interface LineDiff {
+  changed: boolean;
+  firstChangedPosition: number | null;
+  heirChanged: boolean;
+  heirBefore: string | null;
+  heirAfter: string | null;
+  added: string[];
+  removed: string[];
+  beforeTop: string[];
+  afterTop: string[];
+  countBefore: number;
+  countAfter: number;
+}
+
+export interface DignityDiff extends LineDiff {
+  id: number;
+  name: string | undefined;
+  successionType: string | undefined;
+}
+
+export interface SkippedDignity {
+  name: string | undefined;
+  reason: string;
+}
+
+export interface ReportError {
+  name: string | null | undefined;
+  error: string;
+}
+
+export interface SuccessionChangeReport {
+  total: number;
+  autoCalculated: number;
+  unchanged: number;
+  changed: number;
+  heirsChanged: number;
+  skipped: SkippedDignity[];
+  dignities: DignityDiff[];
+  errors: ReportError[];
+}
+
+export interface CorrectedLineContext {
+  people: Map<number, Person>;
+  maps: RelationshipMaps;
+  houses: House[];
+  maxDepth?: number;
+}
 
 /** The corrected line for one dignity, using the rules module. */
-export function buildCorrectedLine(dignity, { people, maps, houses, maxDepth = 10 }) {
-  const type = SUCCESSION_TYPES[dignity.successionType];
+export function buildCorrectedLine(
+  dignity: DignityRecord,
+  { people, maps, houses, maxDepth = 10 }: CorrectedLineContext
+): SuccessionEntry[] {
+  const type = dignity.successionType ? SUCCESSION_TYPES[dignity.successionType] : undefined;
   if (!type?.autoCalculate || !dignity.currentHolderId) return [];
 
   if (dignity.successionType === 'agnatic-seniority') {
@@ -57,7 +130,7 @@ export function buildCorrectedLine(dignity, { people, maps, houses, maxDepth = 1
   });
 }
 
-const nameOf = (person) =>
+const nameOf = (person: Person | undefined): string =>
   [person?.firstName, person?.lastName].filter(Boolean).join(' ') || `#${person?.id ?? '?'}`;
 
 /**
@@ -67,7 +140,7 @@ const nameOf = (person) =>
  * actually cares about — "the heir changes" is a different fact from "position
  * nine changes", and burying both in a count would hide it.
  */
-function diffLines(before, after) {
+function diffLines(before: ComparableEntry[], after: ComparableEntry[]): LineDiff {
   const beforeIds = before.map((c) => c.personId);
   const afterIds = after.map((c) => c.personId);
 
@@ -77,7 +150,7 @@ function diffLines(before, after) {
   const added = after.filter((c) => !beforeSet.has(c.personId));
   const removed = before.filter((c) => !afterSet.has(c.personId));
 
-  let firstChangedPosition = null;
+  let firstChangedPosition: number | null = null;
   const limit = Math.max(beforeIds.length, afterIds.length);
   for (let i = 0; i < limit; i++) {
     if (beforeIds[i] !== afterIds[i]) { firstChangedPosition = i + 1; break; }
@@ -106,8 +179,10 @@ function diffLines(before, after) {
  *
  * Read-only. Nothing here can alter a dignity, a person or a line.
  */
-export async function buildSuccessionChangeReport(datasetId = null) {
-  const report = {
+export async function buildSuccessionChangeReport(
+  datasetId: DatasetId = null
+): Promise<SuccessionChangeReport> {
+  const report: SuccessionChangeReport = {
     total: 0,
     autoCalculated: 0,
     unchanged: 0,
@@ -132,7 +207,7 @@ export async function buildSuccessionChangeReport(datasetId = null) {
     report.total = dignities.length;
 
     for (const dignity of dignities) {
-      const type = SUCCESSION_TYPES[dignity.successionType];
+      const type = dignity.successionType ? SUCCESSION_TYPES[dignity.successionType] : undefined;
 
       // Elective, appointed and conquered dignities have no computed line to
       // change. Listed rather than dropped, so the counts add up.
@@ -174,7 +249,7 @@ export async function buildSuccessionChangeReport(datasetId = null) {
           ...diff
         });
       } catch (error) {
-        report.errors.push({ name: dignity.name, error: error.message });
+        report.errors.push({ name: dignity.name, error: errorMessage(error) });
         logger.error(`Could not compare succession for "${dignity.name}":`, error);
       }
     }
@@ -195,7 +270,7 @@ export async function buildSuccessionChangeReport(datasetId = null) {
     return report;
   } catch (error) {
     logger.error('Could not build the succession change report:', error);
-    report.errors.push({ name: null, error: error.message });
+    report.errors.push({ name: null, error: errorMessage(error) });
     return report;
   }
 }

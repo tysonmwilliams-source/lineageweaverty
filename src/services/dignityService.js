@@ -182,6 +182,12 @@ export const END_TYPES = {
 /**
  * Succession Types - How a dignity passes to the next holder
  * These define the rules for calculating the line of succession
+ *
+ * Typed as a map rather than by its seven literal keys because callers index it
+ * with `dignity.successionType`, which comes off a stored record and can be an
+ * unknown string or missing entirely (decision F4).
+ *
+ * @type {import('./types').SuccessionTypeMap}
  */
 export const SUCCESSION_TYPES = {
   'male-primogeniture': {
@@ -738,8 +744,9 @@ export async function getDignity(id, datasetId = null) {
 
 /**
  * Get all dignity records
- * 
- * @returns {Promise<Array>} Array of all dignity records
+ *
+ * @param {string|null} [datasetId] - Dataset ID (optional)
+ * @returns {Promise<Array<import('./types').DignityRecord>>} Array of all dignity records
  */
 export async function getAllDignities(datasetId = null) {
   try {

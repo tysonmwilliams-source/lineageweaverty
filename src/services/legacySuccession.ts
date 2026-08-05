@@ -22,26 +22,63 @@
  * Kept verbatim apart from taking a dignity object instead of fetching one, so
  * that what it reproduces is genuinely the old behaviour and not an
  * approximation of it.
+ *
+ * **That verbatim rule governs how this file was typed (decision F4).** Where
+ * the old code does `parseInt(person.dateOfBirth)` on a year that is sometimes
+ * stored as a number, the fix is a cast and not `String(...)`: a cast has no
+ * runtime existence at all, so it cannot alter what this reproduces. Everywhere
+ * else in F4, prefer the real fix — here, being unchanged *is* the requirement.
  */
 import { SUCCESSION_TYPES } from './dignityService';
 import { logger } from '../utils/logger';
+import type { DignityRecord, Person } from './types';
+
+/**
+ * One candidate in a legacy line.
+ *
+ * `depth`, `birthDate` and `lowerPriority` are internal sort keys and are
+ * `delete`d from every entry before it is returned — which is why they are
+ * optional here rather than required. TypeScript will not let you `delete` a
+ * required property, and that restriction is telling the truth about this
+ * shape: a returned entry genuinely does not have them.
+ */
+export interface LegacySuccessionEntry {
+  personId: number;
+  position: number;
+  person: Person;
+  relationship: string;
+  branch: 'direct' | 'collateral' | 'dynasty' | 'designated';
+  excluded: boolean;
+  exclusionReason: string | null;
+  lowerPriority?: boolean;
+  birthDate?: Person['dateOfBirth'];
+  depth?: number;
+}
+
+interface Eligibility {
+  eligible: boolean;
+  reason: string | null;
+  lowerPriority?: boolean;
+}
 
 export function legacySuccessionLine(
-  dignity,
-  allPeople,
-  parentMap,
-  childrenMap,
-  spouseMap,
+  dignity: DignityRecord | null | undefined,
+  allPeople: Person[],
+  parentMap: Map<number, number[]>,
+  childrenMap: Map<number, number[]>,
+  spouseMap: Map<number, number>,
   maxDepth = 10
-) {
+): LegacySuccessionEntry[] {
   try {
     if (!dignity) return [];
-    
+
     // If succession type doesn't support auto-calculation, return empty
-    const successionType = SUCCESSION_TYPES[dignity.successionType];
+    const successionType = dignity.successionType
+      ? SUCCESSION_TYPES[dignity.successionType]
+      : undefined;
     if (!successionType?.autoCalculate) {
       logger.log(`👑 Succession type '${dignity.successionType}' does not support auto-calculation`);
-      
+
       // If there's a designated heir, return just them
       if (dignity.designatedHeirId) {
         const heir = allPeople.find(p => p.id === dignity.designatedHeirId);
@@ -59,42 +96,42 @@ export function legacySuccessionLine(
       }
       return [];
     }
-    
+
     // Get current holder
     const currentHolderId = dignity.currentHolderId;
     if (!currentHolderId) {
       logger.log('👑 No current holder - cannot calculate succession');
       return [];
     }
-    
+
     const currentHolder = allPeople.find(p => p.id === currentHolderId);
     if (!currentHolder) {
       logger.warn('Current holder not found in people list');
       return [];
     }
-    
+
     const rules = dignity.successionRules || {};
-    const candidates = [];
-    const visited = new Set();
-    
+    const candidates: LegacySuccessionEntry[] = [];
+    const visited = new Set<number>();
+
     // Build a lookup for people by ID
     const peopleById = new Map(allPeople.map(p => [p.id, p]));
-    
+
     /**
      * Check if a person is eligible based on succession rules
      */
-    const checkEligibility = (person) => {
+    const checkEligibility = (person: Person): Eligibility => {
       // Can't succeed if they're dead (unless we're doing historical "what if")
       if (person.dateOfDeath) {
         return { eligible: false, reason: 'Deceased' };
       }
-      
+
       // Check gender for male-primogeniture
       if (dignity.successionType === 'male-primogeniture' && person.gender === 'female') {
         // Women can inherit if no males available - we'll handle this in ordering
         return { eligible: true, reason: null, lowerPriority: true };
       }
-      
+
       // Check bastard status
       if (person.legitimacyStatus === 'bastard') {
         if (rules.excludeBastards) {
@@ -105,24 +142,24 @@ export function legacySuccessionLine(
           return { eligible: false, reason: 'Illegitimate birth' };
         }
       }
-      
+
       return { eligible: true, reason: null };
     };
-    
+
     /**
      * Get relationship description between two people
      */
-    const getRelationshipDescription = (person, toHolder) => {
+    const getRelationshipDescription = (person: Person, toHolder: Person): string => {
       // This is simplified - could be enhanced with RelationshipCalculator
       // `const parents = parentMap.get(person.id)` sat here unused in the
       // original. Dropped rather than preserved — an unused local is not
       // behaviour, and the lint gate should stay at zero.
       const holderChildren = childrenMap.get(toHolder.id) || [];
-      
+
       if (holderChildren.includes(person.id)) {
         return person.gender === 'female' ? 'Daughter' : 'Son';
       }
-      
+
       // Check if grandchild
       for (const childId of holderChildren) {
         const grandchildren = childrenMap.get(childId) || [];
@@ -130,7 +167,7 @@ export function legacySuccessionLine(
           return person.gender === 'female' ? 'Granddaughter' : 'Grandson';
         }
       }
-      
+
       // Check if sibling
       const holderParents = parentMap.get(toHolder.id) || [];
       for (const parentId of holderParents) {
@@ -139,7 +176,7 @@ export function legacySuccessionLine(
           return person.gender === 'female' ? 'Sister' : 'Brother';
         }
       }
-      
+
       // Check if niece/nephew
       for (const parentId of holderParents) {
         const siblings = childrenMap.get(parentId) || [];
@@ -151,7 +188,7 @@ export function legacySuccessionLine(
           }
         }
       }
-      
+
       // Check if uncle/aunt
       for (const parentId of holderParents) {
         const grandparents = parentMap.get(parentId) || [];
@@ -162,7 +199,7 @@ export function legacySuccessionLine(
           }
         }
       }
-      
+
       // Check if cousin
       for (const parentId of holderParents) {
         const grandparents = parentMap.get(parentId) || [];
@@ -177,21 +214,25 @@ export function legacySuccessionLine(
           }
         }
       }
-      
+
       return 'Relative';
     };
-    
+
     /**
      * Recursive traversal for primogeniture systems
      * Traverses depth-first through descendants, then collaterally
      */
-    const traversePrimogeniture = (personId, depth, branch) => {
+    const traversePrimogeniture = (
+      personId: number,
+      depth: number,
+      branch: LegacySuccessionEntry['branch']
+    ): void => {
       if (depth > maxDepth || visited.has(personId)) return;
       visited.add(personId);
-      
+
       const person = peopleById.get(personId);
       if (!person) return;
-      
+
       // Skip the current holder themselves
       if (personId !== currentHolderId) {
         const eligibility = checkEligibility(person);
@@ -208,12 +249,12 @@ export function legacySuccessionLine(
           depth
         });
       }
-      
+
       // Get children and sort by birth date
       const children = childrenMap.get(personId) || [];
       const sortedChildren = children
         .map(id => peopleById.get(id))
-        .filter(p => p)
+        .filter((p): p is Person => Boolean(p))
         .sort((a, b) => {
           // For male-primogeniture, males come before females
           if (dignity.successionType === 'male-primogeniture') {
@@ -221,34 +262,34 @@ export function legacySuccessionLine(
             if (a.gender === 'female' && b.gender === 'male') return 1;
           }
           // Then sort by birth date
-          return (parseInt(a.dateOfBirth) || 9999) - (parseInt(b.dateOfBirth) || 9999);
+          return (parseInt(a.dateOfBirth as string) || 9999) - (parseInt(b.dateOfBirth as string) || 9999);
         });
-      
+
       // Traverse children depth-first
       for (const child of sortedChildren) {
         traversePrimogeniture(child.id, depth + 1, 'direct');
       }
     };
-    
+
     /**
      * Traverse for agnatic seniority (oldest male first)
      * Need to gather all males in the dynasty and sort by age
      */
-    const traverseAgnaticSeniority = () => {
+    const traverseAgnaticSeniority = (): void => {
       // Find all people in the same house/dynasty
       const houseId = currentHolder.houseId;
-      const dynastyMembers = allPeople.filter(p => 
-        p.houseId === houseId && 
+      const dynastyMembers = allPeople.filter(p =>
+        p.houseId === houseId &&
         p.id !== currentHolderId &&
         p.gender === 'male' &&
         !p.dateOfDeath
       );
-      
+
       // Sort by birth date (oldest first)
-      dynastyMembers.sort((a, b) => 
-        (parseInt(a.dateOfBirth) || 9999) - (parseInt(b.dateOfBirth) || 9999)
+      dynastyMembers.sort((a, b) =>
+        (parseInt(a.dateOfBirth as string) || 9999) - (parseInt(b.dateOfBirth as string) || 9999)
       );
-      
+
       for (const person of dynastyMembers) {
         const eligibility = checkEligibility(person);
         candidates.push({
@@ -265,63 +306,63 @@ export function legacySuccessionLine(
         });
       }
     };
-    
+
     // Execute the appropriate traversal
     if (dignity.successionType === 'agnatic-seniority') {
       traverseAgnaticSeniority();
     } else {
       // Start with current holder's children
       traversePrimogeniture(currentHolderId, 0, 'direct');
-      
+
       // Then traverse collateral lines (siblings and their descendants)
       const holderParents = parentMap.get(currentHolderId) || [];
       for (const parentId of holderParents) {
         const siblings = (childrenMap.get(parentId) || [])
           .filter(id => id !== currentHolderId);
-        
+
         for (const siblingId of siblings) {
           traversePrimogeniture(siblingId, 1, 'collateral');
         }
-        
+
         // Also check aunts/uncles
         const grandparents = parentMap.get(parentId) || [];
         for (const gpId of grandparents) {
           const unclesAunts = (childrenMap.get(gpId) || [])
             .filter(id => id !== parentId);
-          
+
           for (const uaId of unclesAunts) {
             traversePrimogeniture(uaId, 2, 'collateral');
           }
         }
       }
     }
-    
+
     // Sort candidates by succession order
     candidates.sort((a, b) => {
       // Excluded candidates go to the end
       if (a.excluded && !b.excluded) return 1;
       if (!a.excluded && b.excluded) return -1;
-      
+
       // Lower priority (e.g., women in male-primogeniture) go after higher
       if (a.lowerPriority && !b.lowerPriority) return 1;
       if (!a.lowerPriority && b.lowerPriority) return -1;
-      
+
       // Direct line before collateral
       if (a.branch === 'direct' && b.branch !== 'direct') return -1;
       if (a.branch !== 'direct' && b.branch === 'direct') return 1;
-      
+
       // For agnatic seniority, sort purely by age
       if (dignity.successionType === 'agnatic-seniority') {
-        return (parseInt(a.birthDate) || 9999) - (parseInt(b.birthDate) || 9999);
+        return (parseInt(a.birthDate as string) || 9999) - (parseInt(b.birthDate as string) || 9999);
       }
-      
+
       // For primogeniture, lower depth (closer generation) comes first
-      if (a.depth !== b.depth) return a.depth - b.depth;
-      
+      if (a.depth !== b.depth) return (a.depth as number) - (b.depth as number);
+
       // Within same generation, sort by birth date
-      return (parseInt(a.birthDate) || 9999) - (parseInt(b.birthDate) || 9999);
+      return (parseInt(a.birthDate as string) || 9999) - (parseInt(b.birthDate as string) || 9999);
     });
-    
+
     // Assign positions
     let position = 1;
     for (const candidate of candidates) {
@@ -331,10 +372,10 @@ export function legacySuccessionLine(
       delete candidate.birthDate;
       delete candidate.lowerPriority;
     }
-    
+
     logger.log(`👑 Calculated succession for ${dignity.name}: ${candidates.length} candidates`);
     return candidates;
-    
+
   } catch (error) {
     logger.error('❌ Error calculating succession line:', error);
     throw error;
