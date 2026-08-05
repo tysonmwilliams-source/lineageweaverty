@@ -81,9 +81,12 @@ gated on a green light for timing. See "What is left" below.
 | `5fa1bda` | — | **C3 step 2**: version-tolerant composition readers |
 | `face632` | — | **C3 step 3**: writes v3, records cadency, apply flow |
 | `991171a` | — | **C3 step 4**: the SVG pipeline divides a shield |
-| `1db2936`…`8740b32` | — | **C3 step 5–6**: dimidiation, tree editor, marriage arms |
-| `6c27246` | — | **C3**: undo, and combining another house's arms |
+| `1db2936`…`8740b32` | — | **C3 steps 5–6**: dimidiation, tree editor, marriage arms |
+| `6c27246` | — | **C3**: undo/redo, and combining another house's arms |
 | `cf59650`…`91904b4` | — | **D1, D2, D3**: succession rules, change report, adopted |
+| `9da1c19` | — | **D4**: a dignity cannot be given a nonexistent holder |
+| `adbbb73` | — | **G1, G2, G3**: 3 invisible icons, RankPips, 1,481 dead CSS lines |
+| `4208429` | — | **F4 step 1**: TypeScript toolchain + `src/utils/succession` converted |
 
 **Current baselines** (verify these still hold before and after your work):
 
@@ -115,8 +118,14 @@ than a snapshot.
 
 ## What is left
 
-All of Part One is complete. Nothing here can be picked up without the owner
-first answering something — that is the honest state of it.
+All of Part One is complete. Most of Part Two is now answered too — the A, B,
+C3, C4, D and G groups are all closed, and F4 is underway. What is listed below
+is what genuinely remains.
+
+**If you are picking this up cold and the task is "convert the services to
+TypeScript", skip to "F4 — converting the services" below.** It has the order,
+the file that must not be converted yet and why, and the hazards specific to
+this codebase's service layer.
 
 ### Blocked on the owner (README Part Two)
 
@@ -257,6 +266,83 @@ Both were always described as needing agreement on timing, not on whether:
   the seam to abstract along. The shared shell each view currently reimplements
   (load-by-plan-id, loading/empty states, the close handler) is what lifts into
   the route.
+
+
+---
+
+## F4 — converting the services (next session starts here)
+
+**Toolchain is done and is not the job.** `4208429` added `typescript@5.x`,
+`tsconfig.json`, `npm run typecheck`, a blocking CI step, and an ESLint config
+block for `.ts`. `src/utils/succession` is converted as the beachhead. All four
+gates are green: build, typecheck, 773 tests, lint 0 errors / 342 warnings.
+
+### Read this before converting anything in src/services
+
+**Do not convert `dataSyncService.js` or `firestoreService.js` yet.** They are
+2,385 and 2,154 lines, and the sync-manifest refactor (designed in
+[`sections/02-data-sync.md`](sections/02-data-sync.md), still green-light-gated)
+collapses those ~4,500 lines to roughly 980. Typing them first means carefully
+typing 4,500 lines that are meant to be deleted, and then doing it again.
+
+This is the same sequencing trap as C3-before-F4, one level down: **type the
+thing whose shape is settled; leave the thing that is about to change.** Ask the
+owner about the manifest refactor before touching either file.
+
+### Suggested order, easiest and safest first
+
+| Order | File | Lines | Why |
+|---|---|---|---|
+| 1 | `heraldryCompositionMigration.js` | 162 | Small, fully tested, its types already exist in `utils/heraldry` |
+| 2 | `marriageArmsService.js` | ~130 | Small, tested, consumes the succession types already written |
+| 3 | `legacySuccession.js` | 341 | Frozen by definition — it is a preserved reference implementation and will never change again |
+| 4 | `successionChangeReport.js` | ~200 | Tested; consumes types from `utils/succession` |
+| 5 | `codexService.js` | 1,000 | Well-bounded, no sync tangle |
+| 6 | `dignityService.js` | 2,037 | Large but exports the enums everything else imports, so typing it pays out widely |
+| 7 | `database.js` | 2,004 | The Dexie schema. Highest value and highest care — it is the source of truth for every entity shape |
+| — | `dataSyncService.js`, `firestoreService.js` | 4,539 | **Blocked on the manifest decision** |
+
+### Hazards specific to this codebase's services
+
+These are documented in CLAUDE.md but are exactly what a type signature will
+force you to confront, so they are worth having in front of you:
+
+- **Two argument shapes that look alike.** `addPerson(data, datasetId)` takes a
+  **string**; `addHouse(data, options)` takes an **options object**
+  (`{ datasetId, skipCodexCreation }`). A genuine inconsistency. Typing them
+  will make it obvious — resist the urge to "fix" it in the same commit as the
+  conversion, because that is a behaviour change hiding inside a refactor.
+- **Sync signatures are positional and easy to transpose.**
+  `add(userId, datasetId, localId, fullData)`,
+  `update(userId, datasetId, id, changedFields)`, `delete(userId, datasetId, id)`.
+  Phase 4 found real bugs from `(userId, id, data, datasetId)` being passed
+  against these — which spun up phantom `LineageweaverDB_<id>` databases. Typing
+  these is one of the highest-value things in F4, and an argument for doing the
+  manifest refactor first so it only has to be done once.
+- **Planner mutations take a trailing `userId` and sync.** A planner write that
+  skips `syncQueue` is invisible to the data-loss guard.
+- **Dexie versions declare only the changed store.** Schema is at v18.
+
+### Conventions established by the beachhead
+
+- Types live in a `types.ts` beside the module, and are **narrow** — they
+  describe the fields the code actually reads, not the whole record. A type
+  claiming to mirror the Dexie schema is a second copy of it and the first thing
+  to go stale.
+- `strict` and `noUncheckedIndexedAccess` are on. `.filter(Boolean)` does not
+  narrow; write the type predicate.
+- `checkJs` stays **off**. Files opt in by being converted.
+- Convert with `git mv` so the rename is visible in history rather than showing
+  as a delete plus an add.
+- After each file: `npm run typecheck && npx vitest run && npx eslint .`. The
+  warning count is a ratchet — it may fall, never rise.
+
+### The trap that makes this whole decision worth it
+
+**Vite strips TypeScript types without checking them.** `npm run build` passing
+proves nothing about type correctness. `npm run typecheck` is the only gate that
+does, which is why it went into CI on day one rather than "once there is enough
+TypeScript to be worth it".
 
 ---
 
