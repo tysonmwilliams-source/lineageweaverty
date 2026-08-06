@@ -33,6 +33,24 @@
 /** The operations an entity supports. Four link types are add/delete only. */
 export type SyncOperation = 'add' | 'update' | 'delete';
 
+/**
+ * How a create stamps the document.
+ *
+ * Three values because the code has three behaviours, not because three were
+ * wanted: 14 entities stamp `createdAt` and `updatedAt`, 5 stamp only
+ * `createdAt`, and `codexLinks` stamps `syncedAt`. See `cloudRepo.ts`.
+ */
+export type CreateStamp = 'created-and-updated' | 'created-only' | 'synced';
+
+/**
+ * How an update writes.
+ *
+ * `merge` upserts, which writings and chapters need: an edit to a row the cloud
+ * has never seen must create it rather than throw "No document to update".
+ * `unstamped` writes no `updatedAt` and is used by exactly one entity.
+ */
+export type UpdateMode = 'stamped' | 'unstamped' | 'merge';
+
 export interface SyncEntity {
   /**
    * The key written into `syncQueue.entityType`, and the key this map is
@@ -57,6 +75,17 @@ export interface SyncEntity {
   collection: string;
   /** Which operations have a sync wrapper today. */
   ops: readonly SyncOperation[];
+  /**
+   * How a create stamps the document. Defaults to `'created-and-updated'`.
+   *
+   * Declared only where an entity deviates, and `syncManifest.test.js` pins
+   * exactly which those are — so a deviation cannot be added or removed without
+   * the test naming it. That is the point: this variation existed before the
+   * manifest, spread across 2,200 lines, and nobody could see it.
+   */
+  create?: CreateStamp;
+  /** How an update writes. Defaults to `'stamped'`. See `cloudRepo.ts`. */
+  update?: UpdateMode;
 }
 
 /**
@@ -75,24 +104,24 @@ export const ENTITIES = {
   // ---- The Codex ----
   codexEntry: { entityType: 'codexEntry', table: 'codexEntries', collection: 'codexEntries', ops: ['add', 'update', 'delete'] },
   // No update: a link is created or removed, never edited in place.
-  codexLink: { entityType: 'codexLink', table: 'codexLinks', collection: 'codexLinks', ops: ['add', 'delete'] },
+  codexLink: { entityType: 'codexLink', table: 'codexLinks', collection: 'codexLinks', ops: ['add', 'delete'], create: 'synced' },
 
   // ---- The Armory ----
   heraldry: { entityType: 'heraldry', table: 'heraldry', collection: 'heraldry', ops: ['add', 'update', 'delete'] },
-  heraldryLink: { entityType: 'heraldryLink', table: 'heraldryLinks', collection: 'heraldryLinks', ops: ['add', 'delete'] },
+  heraldryLink: { entityType: 'heraldryLink', table: 'heraldryLinks', collection: 'heraldryLinks', ops: ['add', 'delete'], create: 'created-only' },
 
   // ---- Dignities ----
   dignity: { entityType: 'dignity', table: 'dignities', collection: 'dignities', ops: ['add', 'update', 'delete'] },
-  dignityTenure: { entityType: 'dignityTenure', table: 'dignityTenures', collection: 'dignityTenures', ops: ['add', 'update', 'delete'] },
-  dignityLink: { entityType: 'dignityLink', table: 'dignityLinks', collection: 'dignityLinks', ops: ['add', 'delete'] },
+  dignityTenure: { entityType: 'dignityTenure', table: 'dignityTenures', collection: 'dignityTenures', ops: ['add', 'update', 'delete'], create: 'created-only', update: 'unstamped' },
+  dignityLink: { entityType: 'dignityLink', table: 'dignityLinks', collection: 'dignityLinks', ops: ['add', 'delete'], create: 'created-only' },
 
   // ---- Households ----
-  householdRole: { entityType: 'householdRole', table: 'householdRoles', collection: 'householdRoles', ops: ['add', 'update', 'delete'] },
+  householdRole: { entityType: 'householdRole', table: 'householdRoles', collection: 'householdRoles', ops: ['add', 'update', 'delete'], create: 'created-only' },
 
   // ---- Writing Studio ----
-  writing: { entityType: 'writing', table: 'writings', collection: 'writings', ops: ['add', 'update', 'delete'] },
-  chapter: { entityType: 'chapter', table: 'chapters', collection: 'chapters', ops: ['add', 'update', 'delete'] },
-  writingLink: { entityType: 'writingLink', table: 'writingLinks', collection: 'writingLinks', ops: ['add', 'delete'] },
+  writing: { entityType: 'writing', table: 'writings', collection: 'writings', ops: ['add', 'update', 'delete'], update: 'merge' },
+  chapter: { entityType: 'chapter', table: 'chapters', collection: 'chapters', ops: ['add', 'update', 'delete'], update: 'merge' },
+  writingLink: { entityType: 'writingLink', table: 'writingLinks', collection: 'writingLinks', ops: ['add', 'delete'], create: 'created-only' },
 
   // ---- Story Planner ----
   storyPlan: { entityType: 'storyPlan', table: 'storyPlans', collection: 'storyPlans', ops: ['add', 'update', 'delete'] },
@@ -228,4 +257,25 @@ export function cloudCollections(): string[] {
 /** Every Dexie table that participates in cloud sync. */
 export function syncedTables(): string[] {
   return allEntities().map((entity) => entity.table);
+}
+
+/** The create-stamp policy for an entity, with the common default applied. */
+export function createStampFor(entityType: string): CreateStamp {
+  return getEntity(entityType)?.create ?? 'created-and-updated';
+}
+
+/** The update-write policy for an entity, with the common default applied. */
+export function updateModeFor(entityType: string): UpdateMode {
+  return getEntity(entityType)?.update ?? 'stamped';
+}
+
+/** Entities whose create or update deviates from the default. Pinned by the tests. */
+export function writePolicyDeviations(): Array<{ entityType: string; create?: CreateStamp; update?: UpdateMode }> {
+  return allEntities()
+    .filter((entity) => entity.create !== undefined || entity.update !== undefined)
+    .map((entity) => ({
+      entityType: entity.entityType,
+      ...(entity.create !== undefined ? { create: entity.create } : {}),
+      ...(entity.update !== undefined ? { update: entity.update } : {})
+    }));
 }

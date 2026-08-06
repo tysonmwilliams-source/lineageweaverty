@@ -32,7 +32,10 @@ import {
   STRUCTURAL_RULES_PATHS,
   allEntities,
   cloudCollections,
+  createStampFor,
   getEntity,
+  updateModeFor,
+  writePolicyDeviations,
   syncedCollections,
   syncedTables
 } from './syncManifest';
@@ -178,6 +181,51 @@ describe('the legacy flat-path list stays historical', () => {
     for (const name of LEGACY_FLAT_COLLECTIONS) {
       expect(cloudCollections()).toContain(name);
     }
+  });
+});
+
+describe('the write policies stay pinned', () => {
+  /**
+   * The 79 per-entity Firestore functions were not, as the audit has it,
+   * identical but for a collection name. Six behavioural variants hid in them,
+   * and they were invisible because they were spread over 2,200 lines. This
+   * test is what keeps them visible: the exact set of deviations is written
+   * down, so adding or removing one fails here and has to be deliberate.
+   */
+  it('lists exactly the entities that deviate from the defaults', () => {
+    expect(writePolicyDeviations()).toEqual([
+      // codexLinks stamps syncedAt rather than createdAt, and its add returns
+      // nothing. Both call sites ignore the return, so this is invisible today.
+      { entityType: 'codexLink', create: 'synced' },
+      { entityType: 'heraldryLink', create: 'created-only' },
+      // The only entity that both stamps no updatedAt on create and writes no
+      // updatedAt on update. Looks like drift rather than intent.
+      { entityType: 'dignityTenure', create: 'created-only', update: 'unstamped' },
+      { entityType: 'dignityLink', create: 'created-only' },
+      { entityType: 'householdRole', create: 'created-only' },
+      // Deliberate and load-bearing: merge upserts, so editing a row the cloud
+      // has never seen creates it instead of throwing "No document to update".
+      { entityType: 'writing', update: 'merge' },
+      { entityType: 'chapter', update: 'merge' },
+      { entityType: 'writingLink', create: 'created-only' }
+    ]);
+  });
+
+  it('defaults everything else', () => {
+    const deviating = new Set(writePolicyDeviations().map((d) => d.entityType));
+    for (const entity of allEntities()) {
+      if (deviating.has(entity.entityType)) continue;
+      expect(createStampFor(entity.entityType)).toBe('created-and-updated');
+      expect(updateModeFor(entity.entityType)).toBe('stamped');
+    }
+  });
+
+  it('never reports a policy for an entity it does not know', () => {
+    // An unknown entity falling back to the default would let a typo write to
+    // nothing quietly. cloudRepo throws instead; these are the defaults it
+    // would have used, and they are only reachable via a known entity.
+    expect(createStampFor('person')).toBe('created-and-updated');
+    expect(updateModeFor('writing')).toBe('merge');
   });
 });
 

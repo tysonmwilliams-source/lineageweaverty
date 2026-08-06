@@ -70,9 +70,17 @@ if (missingConfigs.length > 0) {
 // ==================== INITIALIZATION ====================
 // Initialize Firebase app (the main entry point)
 
+// Declared before the try block and assigned inside it, so TypeScript infers
+// them as `any` from the declaration alone. Annotated for the converted modules
+// that import them (decision F4) — `cloudRepo.ts` passes `db` straight into
+// Firestore's own typed helpers, which reject an implicit any.
+/** @type {import('firebase/app').FirebaseApp} */
 let app;
+/** @type {import('firebase/auth').Auth} */
 let auth;
+/** @type {import('firebase/firestore').Firestore} */
 let db;
+/** @type {import('firebase/auth').GoogleAuthProvider} */
 let googleProvider;
 
 try {
