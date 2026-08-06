@@ -1267,9 +1267,9 @@ export async function syncDeleteHeraldryLink(userId, datasetId, linkId) {
 
 /**
  * Add dignity (local + cloud)
- * @param {string} userId - The user's Firebase UID
- * @param {string} datasetId - The dataset ID
- * @param {number} dignityId - The local dignity ID (after local add)
+ * @param {string|null} userId - The user's Firebase UID; null when signed out
+ * @param {string|null} datasetId - The dataset ID
+ * @param {number} dignityId - The local id (after the local write)
  * @param {Object} dignityData - The dignity data
  */
 export async function syncAddDignity(userId, datasetId, dignityId, dignityData) {
@@ -1287,6 +1287,10 @@ export async function syncAddDignity(userId, datasetId, dignityId, dignityData) 
 
 /**
  * Update dignity (local + cloud)
+ * @param {string|null} userId - The user's Firebase UID; null when signed out
+ * @param {string|null} datasetId - The dataset ID
+ * @param {number} dignityId - The local id (after the local write)
+ * @param {Object} updates - The changed fields
  */
 export async function syncUpdateDignity(userId, datasetId, dignityId, updates) {
   await addToSyncQueue({ entityType: 'dignity', entityId: dignityId, operation: 'update', data: updates }, datasetId);
@@ -1303,6 +1307,9 @@ export async function syncUpdateDignity(userId, datasetId, dignityId, updates) {
 
 /**
  * Delete dignity (local + cloud)
+ * @param {string|null} userId - The user's Firebase UID; null when signed out
+ * @param {string|null} datasetId - The dataset ID
+ * @param {number} dignityId - The local id
  */
 export async function syncDeleteDignity(userId, datasetId, dignityId) {
   await addToSyncQueue({ entityType: 'dignity', entityId: dignityId, operation: 'delete' }, datasetId);
@@ -1319,6 +1326,10 @@ export async function syncDeleteDignity(userId, datasetId, dignityId) {
 
 /**
  * Add dignity tenure (local + cloud)
+ * @param {string|null} userId - The user's Firebase UID; null when signed out
+ * @param {string|null} datasetId - The dataset ID
+ * @param {number} tenureId - The local id (after the local write)
+ * @param {Object} tenureData - The tenure data
  */
 export async function syncAddDignityTenure(userId, datasetId, tenureId, tenureData) {
   await addToSyncQueue({ entityType: 'dignityTenure', entityId: tenureId, operation: 'add', data: tenureData }, datasetId);
@@ -1335,6 +1346,10 @@ export async function syncAddDignityTenure(userId, datasetId, tenureId, tenureDa
 
 /**
  * Update dignity tenure (local + cloud)
+ * @param {string|null} userId - The user's Firebase UID; null when signed out
+ * @param {string|null} datasetId - The dataset ID
+ * @param {number} tenureId - The local id (after the local write)
+ * @param {Object} updates - The changed fields
  */
 export async function syncUpdateDignityTenure(userId, datasetId, tenureId, updates) {
   await addToSyncQueue({ entityType: 'dignityTenure', entityId: tenureId, operation: 'update', data: updates }, datasetId);
@@ -1351,6 +1366,9 @@ export async function syncUpdateDignityTenure(userId, datasetId, tenureId, updat
 
 /**
  * Delete dignity tenure (local + cloud)
+ * @param {string|null} userId - The user's Firebase UID; null when signed out
+ * @param {string|null} datasetId - The dataset ID
+ * @param {number} tenureId - The local id
  */
 export async function syncDeleteDignityTenure(userId, datasetId, tenureId) {
   await addToSyncQueue({ entityType: 'dignityTenure', entityId: tenureId, operation: 'delete' }, datasetId);
@@ -1367,6 +1385,10 @@ export async function syncDeleteDignityTenure(userId, datasetId, tenureId) {
 
 /**
  * Add dignity link (local + cloud)
+ * @param {string|null} userId - The user's Firebase UID; null when signed out
+ * @param {string|null} datasetId - The dataset ID
+ * @param {number} linkId - The local id (after the local write)
+ * @param {Object} linkData - The link data
  */
 export async function syncAddDignityLink(userId, datasetId, linkId, linkData) {
   await addToSyncQueue({ entityType: 'dignityLink', entityId: linkId, operation: 'add', data: linkData }, datasetId);
@@ -1383,6 +1405,9 @@ export async function syncAddDignityLink(userId, datasetId, linkId, linkData) {
 
 /**
  * Delete dignity link (local + cloud)
+ * @param {string|null} userId - The user's Firebase UID; null when signed out
+ * @param {string|null} datasetId - The dataset ID
+ * @param {number} linkId - The local id
  */
 export async function syncDeleteDignityLink(userId, datasetId, linkId) {
   await addToSyncQueue({ entityType: 'dignityLink', entityId: linkId, operation: 'delete' }, datasetId);

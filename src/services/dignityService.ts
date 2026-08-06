@@ -36,14 +36,36 @@ import {
   buildAgnaticSeniorityLine,
   buildRelationshipMaps
 } from '../utils/succession';
+import type { Person, Relationship, SuccessionEntry } from '../utils/succession';
+import type {
+  AppDatabase,
+  DatasetId,
+  DignityClassDefinition,
+  DignityInput,
+  DignityLink,
+  DignityLinkInput,
+  DignityNatureDefinition,
+  DignityRankDefinition,
+  DignityRecord,
+  DignityTenure,
+  DignityTenureInput,
+  Dispute,
+  DisplayIconDefinition,
+  House,
+  Interregnum,
+  SuccessionTypeMap,
+  UserId
+} from './types';
 
 // ==================== REFERENCE DATA ====================
 
 /**
  * Dignity Classes - The major categories of authority
  * Based on the Charter's seven articles
+ *
+ * Typed as a map because `record.dignityClass` indexes it (decision F4).
  */
-export const DIGNITY_CLASSES = {
+export const DIGNITY_CLASSES: Record<string, DignityClassDefinition> = {
   driht: {
     id: 'driht',
     name: 'Driht',
@@ -93,8 +115,11 @@ export const CLASS_ICONS = Object.fromEntries(
 /**
  * Dignity Ranks by Class
  * These define the hierarchical position within each class
+ *
+ * Two levels of runtime indexing — class, then rank — so both are maps
+ * (decision F4). See `getRankInfo`.
  */
-export const DIGNITY_RANKS = {
+export const DIGNITY_RANKS: Record<string, Record<string, DignityRankDefinition>> = {
   // Article I - Driht Authority (Lordship by Right)
   driht: {
     drihten: { id: 'drihten', name: 'Drihten', description: 'Paramount lord of a house or region', order: 1 },
@@ -186,10 +211,8 @@ export const END_TYPES = {
  * Typed as a map rather than by its seven literal keys because callers index it
  * with `dignity.successionType`, which comes off a stored record and can be an
  * unknown string or missing entirely (decision F4).
- *
- * @type {import('./types').SuccessionTypeMap}
  */
-export const SUCCESSION_TYPES = {
+export const SUCCESSION_TYPES: SuccessionTypeMap = {
   'male-primogeniture': {
     id: 'male-primogeniture',
     name: 'Male Primogeniture',
@@ -430,7 +453,7 @@ export const INTERREGNUM_REASONS = {
  * Dignity Natures - Fundamental categorization of how a dignity works
  * This determines succession behavior, grant tracking, and UI display
  */
-export const DIGNITY_NATURES = {
+export const DIGNITY_NATURES: Record<string, DignityNatureDefinition> = {
   territorial: {
     id: 'territorial',
     name: 'Territorial',
@@ -477,7 +500,7 @@ export const DIGNITY_NATURES = {
  * Display Icons by rank
  * For visual indicators on tree cards
  */
-export const DISPLAY_ICONS = {
+export const DISPLAY_ICONS: Record<string, DisplayIconDefinition> = {
   crown: { id: 'crown', icon: '♛', name: 'Crown' },
   coronet: { id: 'coronet', icon: '♕', name: 'Coronet' },
   helm: { id: 'helm', icon: '🛡️', name: 'Helm' },
@@ -495,7 +518,7 @@ export const DISPLAY_ICONS = {
  * @param {Object} dignityData - The dignity data
  * @returns {string} The inferred nature
  */
-function inferDignityNature(dignityData) {
+function inferDignityNature(dignityData: Partial<DignityRecord>): string {
   // If nature is explicitly set, use it
   if (dignityData.dignityNature) {
     return dignityData.dignityNature;
@@ -525,8 +548,8 @@ function inferDignityNature(dignityData) {
  * @param {string} nature - The dignity nature
  * @returns {boolean} Whether succession applies
  */
-export function natureHasSuccession(nature) {
-  return DIGNITY_NATURES[nature]?.hasSuccession ?? false;
+export function natureHasSuccession(nature: string | null | undefined): boolean {
+  return (nature ? DIGNITY_NATURES[nature]?.hasSuccession : undefined) ?? false;
 }
 
 /**
@@ -535,8 +558,8 @@ export function natureHasSuccession(nature) {
  * @param {string} nature - The dignity nature
  * @returns {boolean} Whether grant tracking applies
  */
-export function natureHasGrantTracking(nature) {
-  return DIGNITY_NATURES[nature]?.hasGrantTracking ?? false;
+export function natureHasGrantTracking(nature: string | null | undefined): boolean {
+  return (nature ? DIGNITY_NATURES[nature]?.hasGrantTracking : undefined) ?? false;
 }
 
 /**
@@ -545,8 +568,8 @@ export function natureHasGrantTracking(nature) {
  * @param {string} nature - The dignity nature
  * @returns {boolean} Whether tenure history applies
  */
-export function natureHasTenureHistory(nature) {
-  return DIGNITY_NATURES[nature]?.hasTenureHistory ?? false;
+export function natureHasTenureHistory(nature: string | null | undefined): boolean {
+  return (nature ? DIGNITY_NATURES[nature]?.hasTenureHistory : undefined) ?? false;
 }
 
 // ==================== DIGNITY CRUD OPERATIONS ====================
@@ -592,12 +615,20 @@ export function natureHasTenureHistory(nature) {
  * *already* broken must stay editable — otherwise the first thing this guard
  * would do is prevent anyone fixing the record it was written for.
  */
-async function assertHolderExists(db, updates) {
+async function assertHolderExists(
+  db: AppDatabase,
+  // Looser than `DignityRecord` on purpose: this runs on data straight off a
+  // form, where a cleared holder field arrives as `''` rather than as null.
+  // That empty-string check below is why — it is not dead code.
+  updates: { currentHolderId?: number | string | null }
+): Promise<void> {
   if (!Object.hasOwn(updates, 'currentHolderId')) return;
   const holderId = updates.currentHolderId;
   if (holderId === null || holderId === undefined || holderId === '') return;
 
-  const person = await db.people.get(holderId);
+  // Cast, not coercion: a non-numeric id finds no person and the guard throws,
+  // which is the behaviour this check was written for (decision D4).
+  const person = await db.people.get(holderId as number);
   if (!person) {
     throw new Error(
       `Cannot set dignity holder to person #${holderId}: no such person. ` +
@@ -606,7 +637,11 @@ async function assertHolderExists(db, updates) {
   }
 }
 
-export async function createDignity(dignityData, userId = null, datasetId = null) {
+export async function createDignity(
+  dignityData: Partial<DignityRecord>,
+  userId: UserId = null,
+  datasetId: DatasetId = null
+): Promise<number> {
   try {
     const db = getDatabase(datasetId);
     await assertHolderExists(db, dignityData);
@@ -700,7 +735,7 @@ export async function createDignity(dignityData, userId = null, datasetId = null
           subtitle: record.dignityRank ? `${DIGNITY_CLASSES[record.dignityClass]?.name || record.dignityClass} Dignity` : 'Dignity',
           content: record.notes || '',
           category: record.dignityClass || 'driht',
-          tags: ['dignity', record.dignityClass, record.dignityRank].filter(Boolean),
+          tags: ['dignity', record.dignityClass, record.dignityRank].filter((t): t is string => Boolean(t)),
           dignityId: id
         }, datasetId);
 
@@ -731,7 +766,10 @@ export async function createDignity(dignityData, userId = null, datasetId = null
  * @param {number} id - The dignity ID
  * @returns {Promise<Object|undefined>} The dignity record or undefined
  */
-export async function getDignity(id, datasetId = null) {
+export async function getDignity(
+  id: number,
+  datasetId: DatasetId = null
+): Promise<DignityRecord | undefined> {
   try {
     const db = getDatabase(datasetId);
     const dignity = await db.dignities.get(id);
@@ -748,7 +786,9 @@ export async function getDignity(id, datasetId = null) {
  * @param {string|null} [datasetId] - Dataset ID (optional)
  * @returns {Promise<Array<import('./types').DignityRecord>>} Array of all dignity records
  */
-export async function getAllDignities(datasetId = null) {
+export async function getAllDignities(
+  datasetId: DatasetId = null
+): Promise<DignityRecord[]> {
   try {
     const db = getDatabase(datasetId);
     const dignities = await db.dignities.toArray();
@@ -768,7 +808,12 @@ export async function getAllDignities(datasetId = null) {
  * @returns {Promise<number>} Number of records updated (1 or 0)
  */
 
-export async function updateDignity(id, updates, userId = null, datasetId = null) {
+export async function updateDignity(
+  id: number,
+  updates: Partial<DignityRecord>,
+  userId: UserId = null,
+  datasetId: DatasetId = null
+): Promise<number> {
   try {
     const db = getDatabase(datasetId);
     await assertHolderExists(db, updates);
@@ -825,7 +870,11 @@ export async function updateDignity(id, updates, userId = null, datasetId = null
  * @param {string} [userId] - Optional user ID for cloud sync
  * @returns {Promise<void>}
  */
-export async function deleteDignity(id, userId = null, datasetId = null) {
+export async function deleteDignity(
+  id: number,
+  userId: UserId = null,
+  datasetId: DatasetId = null
+): Promise<void> {
   try {
     const db = getDatabase(datasetId);
     // Cascade delete Codex entry if it exists
@@ -885,7 +934,11 @@ export async function deleteDignity(id, userId = null, datasetId = null) {
  * @param {string} [userId] - Optional user ID for cloud sync
  * @returns {Promise<number>} The tenure ID
  */
-export async function createDignityTenure(tenureData, userId = null, datasetId = null) {
+export async function createDignityTenure(
+  tenureData: DignityTenureInput,
+  userId: UserId = null,
+  datasetId: DatasetId = null
+): Promise<number> {
   try {
     const db = getDatabase(datasetId);
     const now = new Date().toISOString();
@@ -933,7 +986,10 @@ export async function createDignityTenure(tenureData, userId = null, datasetId =
  * @param {number} dignityId - The dignity ID
  * @returns {Promise<Array>} Array of tenure records
  */
-export async function getTenuresForDignity(dignityId, datasetId = null) {
+export async function getTenuresForDignity(
+  dignityId: number,
+  datasetId: DatasetId = null
+): Promise<DignityTenure[]> {
   try {
     const db = getDatabase(datasetId);
     const tenures = await db.dignityTenures
@@ -946,7 +1002,7 @@ export async function getTenuresForDignity(dignityId, datasetId = null) {
       if (!a.dateStarted && !b.dateStarted) return 0;
       if (!a.dateStarted) return 1;
       if (!b.dateStarted) return -1;
-      return new Date(a.dateStarted) - new Date(b.dateStarted);
+      return new Date(a.dateStarted).getTime() - new Date(b.dateStarted).getTime();
     });
   } catch (error) {
     logger.error('❌ Error getting tenures for dignity:', error);
@@ -960,7 +1016,10 @@ export async function getTenuresForDignity(dignityId, datasetId = null) {
  * @param {number} personId - The person ID
  * @returns {Promise<Array>} Array of tenure records with dignity data
  */
-export async function getTenuresForPerson(personId, datasetId = null) {
+export async function getTenuresForPerson(
+  personId: number,
+  datasetId: DatasetId = null
+): Promise<Array<DignityTenure & { dignity: DignityRecord | undefined }>> {
   try {
     const db = getDatabase(datasetId);
     const tenures = await db.dignityTenures
@@ -992,7 +1051,10 @@ export async function getTenuresForPerson(personId, datasetId = null) {
  * @param {number} dignityId - The dignity ID
  * @returns {Promise<Object|null>} The current tenure or null
  */
-export async function getCurrentTenure(dignityId, datasetId = null) {
+export async function getCurrentTenure(
+  dignityId: number,
+  datasetId: DatasetId = null
+): Promise<DignityTenure | null> {
   try {
     const tenures = await getTenuresForDignity(dignityId, datasetId);
     return tenures.find(t => !t.dateEnded) || null;
@@ -1010,7 +1072,12 @@ export async function getCurrentTenure(dignityId, datasetId = null) {
  * @param {string} [userId] - Optional user ID for cloud sync
  * @returns {Promise<number>} Number of records updated
  */
-export async function updateDignityTenure(id, updates, userId = null, datasetId = null) {
+export async function updateDignityTenure(
+  id: number,
+  updates: Partial<DignityTenure>,
+  userId: UserId = null,
+  datasetId: DatasetId = null
+): Promise<number> {
   try {
     const db = getDatabase(datasetId);
     const result = await db.dignityTenures.update(id, updates);
@@ -1035,7 +1102,11 @@ export async function updateDignityTenure(id, updates, userId = null, datasetId 
  * @param {string} [userId] - Optional user ID for cloud sync
  * @returns {Promise<void>}
  */
-export async function deleteDignityTenure(id, userId = null, datasetId = null) {
+export async function deleteDignityTenure(
+  id: number,
+  userId: UserId = null,
+  datasetId: DatasetId = null
+): Promise<void> {
   try {
     const db = getDatabase(datasetId);
     await db.dignityTenures.delete(id);
@@ -1060,7 +1131,11 @@ export async function deleteDignityTenure(id, userId = null, datasetId = null) {
  * @param {string} [userId] - Optional user ID for cloud sync
  * @returns {Promise<number>} The link ID
  */
-export async function linkDignityToEntity(linkData, userId = null, datasetId = null) {
+export async function linkDignityToEntity(
+  linkData: DignityLinkInput,
+  userId: UserId = null,
+  datasetId: DatasetId = null
+): Promise<number> {
   try {
     const db = getDatabase(datasetId);
     const link = {
@@ -1093,7 +1168,10 @@ export async function linkDignityToEntity(linkData, userId = null, datasetId = n
  * @param {number} dignityId - The dignity ID
  * @returns {Promise<Array>} Array of link records
  */
-export async function getDignityLinks(dignityId, datasetId = null) {
+export async function getDignityLinks(
+  dignityId: number,
+  datasetId: DatasetId = null
+): Promise<DignityLink[]> {
   try {
     const db = getDatabase(datasetId);
     const links = await db.dignityLinks
@@ -1114,7 +1192,11 @@ export async function getDignityLinks(dignityId, datasetId = null) {
  * @param {number} entityId - The entity's ID
  * @returns {Promise<Array>} Array of dignity records
  */
-export async function getDignitiesForEntity(entityType, entityId, datasetId = null) {
+export async function getDignitiesForEntity(
+  entityType: string,
+  entityId: number,
+  datasetId: DatasetId = null
+): Promise<DignityRecord[]> {
   try {
     const db = getDatabase(datasetId);
     const links = await db.dignityLinks
@@ -1150,7 +1232,11 @@ export async function getDignitiesForEntity(entityType, entityId, datasetId = nu
  * @param {string} [userId] - Optional user ID for cloud sync
  * @returns {Promise<void>}
  */
-export async function unlinkDignity(linkId, userId = null, datasetId = null) {
+export async function unlinkDignity(
+  linkId: number,
+  userId: UserId = null,
+  datasetId: DatasetId = null
+): Promise<void> {
   try {
     const db = getDatabase(datasetId);
     await db.dignityLinks.delete(linkId);
@@ -1174,7 +1260,10 @@ export async function unlinkDignity(linkId, userId = null, datasetId = null) {
  * @param {string} dignityClass - 'driht' | 'ward' | 'sir' | 'crown' | 'other'
  * @returns {Promise<Array>} Matching dignities
  */
-export async function getDignitiesByClass(dignityClass, datasetId = null) {
+export async function getDignitiesByClass(
+  dignityClass: string,
+  datasetId: DatasetId = null
+): Promise<DignityRecord[]> {
   try {
     const db = getDatabase(datasetId);
     const all = await db.dignities.toArray();
@@ -1191,7 +1280,10 @@ export async function getDignitiesByClass(dignityClass, datasetId = null) {
  * @param {string} dignityRank - e.g., 'drihten', 'drithen', 'wardyn'
  * @returns {Promise<Array>} Matching dignities
  */
-export async function getDignitiesByRank(dignityRank, datasetId = null) {
+export async function getDignitiesByRank(
+  dignityRank: string,
+  datasetId: DatasetId = null
+): Promise<DignityRecord[]> {
   try {
     const db = getDatabase(datasetId);
     const all = await db.dignities.toArray();
@@ -1208,7 +1300,10 @@ export async function getDignitiesByRank(dignityRank, datasetId = null) {
  * @param {number} houseId - The house ID
  * @returns {Promise<Array>} Dignities where currentHouseId matches
  */
-export async function getDignitiesForHouse(houseId, datasetId = null) {
+export async function getDignitiesForHouse(
+  houseId: number,
+  datasetId: DatasetId = null
+): Promise<DignityRecord[]> {
   try {
     const db = getDatabase(datasetId);
     const all = await db.dignities.toArray();
@@ -1225,7 +1320,10 @@ export async function getDignitiesForHouse(houseId, datasetId = null) {
  * @param {number} personId - The person ID
  * @returns {Promise<Array>} Dignities where currentHolderId matches
  */
-export async function getDignitiesForPerson(personId, datasetId = null) {
+export async function getDignitiesForPerson(
+  personId: number,
+  datasetId: DatasetId = null
+): Promise<DignityRecord[]> {
   try {
     const db = getDatabase(datasetId);
     const all = await db.dignities.toArray();
@@ -1242,7 +1340,10 @@ export async function getDignitiesForPerson(personId, datasetId = null) {
  * @param {number} dignityId - The superior dignity ID
  * @returns {Promise<Array>} Dignities sworn to this one
  */
-export async function getSubordinateDignities(dignityId, datasetId = null) {
+export async function getSubordinateDignities(
+  dignityId: number,
+  datasetId: DatasetId = null
+): Promise<DignityRecord[]> {
   try {
     const db = getDatabase(datasetId);
     const all = await db.dignities.toArray();
@@ -1260,18 +1361,21 @@ export async function getSubordinateDignities(dignityId, datasetId = null) {
  * @param {number} dignityId - Starting dignity
  * @returns {Promise<Array>} Chain of dignities [given, superior, superior's superior, ...]
  */
-export async function getFeudalChain(dignityId, datasetId = null) {
+export async function getFeudalChain(
+  dignityId: number,
+  datasetId: DatasetId = null
+): Promise<DignityRecord[]> {
   try {
-    const chain = [];
-    let currentId = dignityId;
-    const visited = new Set(); // Prevent infinite loops
+    const chain: DignityRecord[] = [];
+    let currentId: number | null = dignityId;
+    const visited = new Set<number>(); // Prevent infinite loops
 
     while (currentId && !visited.has(currentId)) {
       visited.add(currentId);
       const dignity = await getDignity(currentId, datasetId);
       if (dignity) {
         chain.push(dignity);
-        currentId = dignity.swornToId;
+        currentId = dignity.swornToId ?? null;
       } else {
         break;
       }
@@ -1290,7 +1394,10 @@ export async function getFeudalChain(dignityId, datasetId = null) {
  * @param {string} searchTerm - The search term
  * @returns {Promise<Array>} Matching dignities
  */
-export async function searchDignities(searchTerm, datasetId = null) {
+export async function searchDignities(
+  searchTerm: string,
+  datasetId: DatasetId = null
+): Promise<DignityRecord[]> {
   try {
     const db = getDatabase(datasetId);
     const term = searchTerm.toLowerCase();
@@ -1315,21 +1422,21 @@ export async function searchDignities(searchTerm, datasetId = null) {
  * 
  * @returns {Promise<Object>} Statistics object
  */
-export async function getDignityStatistics(datasetId = null) {
+export async function getDignityStatistics(datasetId: DatasetId = null) {
   try {
     const db = getDatabase(datasetId);
     const all = await db.dignities.toArray();
     const tenures = await db.dignityTenures.toArray();
 
     // Count by class
-    const byClass = {};
+    const byClass: Record<string, number> = {};
     all.forEach(d => {
       const cls = d.dignityClass || 'other';
       byClass[cls] = (byClass[cls] || 0) + 1;
     });
 
     // Count by rank
-    const byRank = {};
+    const byRank: Record<string, number> = {};
     all.forEach(d => {
       if (d.dignityRank) {
         byRank[d.dignityRank] = (byRank[d.dignityRank] || 0) + 1;
@@ -1337,7 +1444,7 @@ export async function getDignityStatistics(datasetId = null) {
     });
 
     // Count by nature
-    const byNature = {};
+    const byNature: Record<string, number> = {};
     all.forEach(d => {
       // Use stored nature, or infer from isHereditary for legacy data
       const nature = d.dignityNature || (d.isHereditary === false ? 'office' : 'territorial');
@@ -1380,12 +1487,15 @@ export async function getDignityStatistics(datasetId = null) {
  * @param {number} limit - Maximum number to return
  * @returns {Promise<Array>} Recent dignities
  */
-export async function getRecentDignities(limit = 5, datasetId = null) {
+export async function getRecentDignities(
+  limit = 5,
+  datasetId: DatasetId = null
+): Promise<DignityRecord[]> {
   try {
     const db = getDatabase(datasetId);
     const all = await db.dignities.toArray();
     return all
-      .sort((a, b) => new Date(b.updated) - new Date(a.updated))
+      .sort((a, b) => new Date(b.updated ?? '').getTime() - new Date(a.updated ?? '').getTime())
       .slice(0, limit);
   } catch (error) {
     logger.error('❌ Error getting recent dignities:', error);
@@ -1403,7 +1513,10 @@ export async function getRecentDignities(limit = 5, datasetId = null) {
  * @param {string} holderName - Optional name to include
  * @returns {string} Formatted title
  */
-export function formatDignityTitle(dignity, holderName = null) {
+export function formatDignityTitle(
+  dignity: DignityRecord | null | undefined,
+  holderName: string | null = null
+): string {
   if (!dignity) return '';
   
   const parts = [];
@@ -1432,12 +1545,13 @@ export function formatDignityTitle(dignity, holderName = null) {
  * @param {Object} dignity - The dignity record
  * @returns {string} Icon character
  */
-export function getDignityIcon(dignity) {
+export function getDignityIcon(dignity: DignityRecord | null | undefined): string {
   if (!dignity) return '';
   
   // Use explicitly set icon first
-  if (dignity.displayIcon && DISPLAY_ICONS[dignity.displayIcon]) {
-    return DISPLAY_ICONS[dignity.displayIcon].icon;
+  const explicit = dignity.displayIcon ? DISPLAY_ICONS[dignity.displayIcon] : undefined;
+  if (explicit) {
+    return explicit.icon;
   }
   
   // Otherwise derive from class/rank
@@ -1458,7 +1572,10 @@ export function getDignityIcon(dignity) {
  * @param {string} dignityRank - The dignity rank
  * @returns {Object|null} Rank information
  */
-export function getRankInfo(dignityClass, dignityRank) {
+export function getRankInfo(
+  dignityClass: string | null | undefined,
+  dignityRank: string | null | undefined
+): DignityRankDefinition | null {
   if (!dignityClass || !dignityRank) return null;
   const classRanks = DIGNITY_RANKS[dignityClass];
   if (!classRanks) return null;
@@ -1505,7 +1622,17 @@ const DEFAULT_SUCCESSION_DEPTH = 10;
  * previous implementation interleaved this with the ordering logic, which is
  * part of how a 300-line function ended up with no tests.
  */
-function describeRelationshipToHolder(person, holder, parentsOf, childrenOf) {
+function describeRelationshipToHolder(
+  person: Person,
+  // Unreachable as undefined: both line builders return an empty line when the
+  // holder is not among the people passed in, so this map never runs in that
+  // case. Typed honestly rather than asserted, because a dignity whose holder
+  // does not exist is precisely the state decision D4 was about.
+  holder: Person | undefined,
+  parentsOf: Map<number, number[]>,
+  childrenOf: Map<number, number[]>
+): string {
+  if (!holder) return 'Relative';
   if (!person || !holder) return 'Relative';
 
   const feminine = person.gender === 'female';
@@ -1544,13 +1671,25 @@ function describeRelationshipToHolder(person, holder, parentsOf, childrenOf) {
   return 'Relative';
 }
 
+/**
+ * A succession entry plus the two fields the UI wants beside each name.
+ *
+ * They are added here rather than in `utils/succession` on purpose: they are
+ * presentation, and folding presentation into the rules module is part of how
+ * the implementation this replaced reached 300 lines with no tests.
+ */
+export interface DescribedSuccessionEntry extends SuccessionEntry {
+  relationship: string;
+  branch: string;
+}
+
 export async function calculateSuccessionLine(
-  dignityId,
-  allPeople,
-  relationships,
-  datasetId = null,
-  maxDepth = DEFAULT_SUCCESSION_DEPTH
-) {
+  dignityId: number,
+  allPeople: Person[],
+  relationships: Relationship[],
+  datasetId: DatasetId = null,
+  maxDepth: number = DEFAULT_SUCCESSION_DEPTH
+): Promise<DescribedSuccessionEntry[]> {
   try {
     const dignity = await getDignity(dignityId, datasetId);
     if (!dignity) {
@@ -1558,7 +1697,9 @@ export async function calculateSuccessionLine(
       return [];
     }
 
-    const successionType = SUCCESSION_TYPES[dignity.successionType];
+    const successionType = dignity.successionType
+      ? SUCCESSION_TYPES[dignity.successionType]
+      : undefined;
 
     // Elective, appointed and conquered dignities have no computed line. A
     // named heir is the whole answer for them.
@@ -1652,7 +1793,12 @@ export async function calculateSuccessionLine(
  * @param {Map} spouseMap - Spouse relationships
  * @returns {Promise<Object|null>} The heir or null
  */
-export async function getHeir(dignityId, allPeople, relationships, datasetId = null) {
+export async function getHeir(
+  dignityId: number,
+  allPeople: Person[],
+  relationships: Relationship[],
+  datasetId: DatasetId = null
+): Promise<DescribedSuccessionEntry | null> {
   // Was capped at depth 5 while DignityView asked for 10, so "the heir" and
   // "position 1 of the line" were computed over different trees and could
   // disagree. One default now, shared.
@@ -1680,7 +1826,12 @@ export async function getHeir(dignityId, allPeople, relationships, datasetId = n
  *   notes: string
  * }
  */
-export async function addDispute(dignityId, disputeData, userId = null, datasetId = null) {
+export async function addDispute(
+  dignityId: number,
+  disputeData: Partial<Dispute>,
+  userId: UserId = null,
+  datasetId: DatasetId = null
+): Promise<DignityRecord> {
   try {
     const dignity = await getDignity(dignityId, datasetId);
     if (!dignity) throw new Error('Dignity not found');
@@ -1728,7 +1879,13 @@ export async function addDispute(dignityId, disputeData, userId = null, datasetI
  * @param {string} [userId] - Optional user ID for cloud sync
  * @returns {Promise<Object>} The updated dignity
  */
-export async function updateDispute(dignityId, disputeId, updates, userId = null, datasetId = null) {
+export async function updateDispute(
+  dignityId: number,
+  disputeId: string,
+  updates: Partial<Dispute>,
+  userId: UserId = null,
+  datasetId: DatasetId = null
+): Promise<DignityRecord> {
   try {
     const dignity = await getDignity(dignityId, datasetId);
     if (!dignity) throw new Error('Dignity not found');
@@ -1770,7 +1927,14 @@ export async function updateDispute(dignityId, disputeId, updates, userId = null
  * @param {string} [userId] - Optional user ID for cloud sync
  * @returns {Promise<Object>} The updated dignity
  */
-export async function resolveDispute(dignityId, disputeId, resolution, resolvedDate, userId = null, datasetId = null) {
+export async function resolveDispute(
+  dignityId: number,
+  disputeId: string,
+  resolution: string,
+  resolvedDate: string | null,
+  userId: UserId = null,
+  datasetId: DatasetId = null
+): Promise<DignityRecord> {
   return updateDispute(dignityId, disputeId, {
     resolution,
     resolvedDate
@@ -1785,7 +1949,12 @@ export async function resolveDispute(dignityId, disputeId, resolution, resolvedD
  * @param {string} [userId] - Optional user ID for cloud sync
  * @returns {Promise<Object>} The updated dignity
  */
-export async function removeDispute(dignityId, disputeId, userId = null, datasetId = null) {
+export async function removeDispute(
+  dignityId: number,
+  disputeId: string,
+  userId: UserId = null,
+  datasetId: DatasetId = null
+): Promise<DignityRecord> {
   try {
     const dignity = await getDignity(dignityId, datasetId);
     if (!dignity) throw new Error('Dignity not found');
@@ -1818,7 +1987,10 @@ export async function removeDispute(dignityId, disputeId, userId = null, dataset
  * @param {number} dignityId - The dignity ID
  * @returns {Promise<Array>} Active disputes
  */
-export async function getActiveDisputes(dignityId, datasetId = null) {
+export async function getActiveDisputes(
+  dignityId: number,
+  datasetId: DatasetId = null
+): Promise<Dispute[]> {
   try {
     const dignity = await getDignity(dignityId, datasetId);
     if (!dignity) return [];
@@ -1877,7 +2049,12 @@ export async function getAllDisputes(datasetId = null) {
  *   notes: string
  * }
  */
-export async function setInterregnum(dignityId, interregnumData, userId = null, datasetId = null) {
+export async function setInterregnum(
+  dignityId: number,
+  interregnumData: Partial<Interregnum>,
+  userId: UserId = null,
+  datasetId: DatasetId = null
+): Promise<DignityRecord | undefined> {
   try {
     const interregnum = {
       startDate: interregnumData.startDate || null,
@@ -1909,7 +2086,12 @@ export async function setInterregnum(dignityId, interregnumData, userId = null, 
  * @param {string} [userId] - Optional user ID for cloud sync
  * @returns {Promise<Object>} The updated dignity
  */
-export async function endInterregnum(dignityId, newHolderId, userId = null, datasetId = null) {
+export async function endInterregnum(
+  dignityId: number,
+  newHolderId: number,
+  userId: UserId = null,
+  datasetId: DatasetId = null
+): Promise<DignityRecord | undefined> {
   try {
     await updateDignity(dignityId, {
       interregnum: null,

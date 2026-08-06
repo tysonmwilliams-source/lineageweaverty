@@ -103,6 +103,46 @@ export interface CodexLink {
 
 export type CodexLinkInput = Omit<CodexLink, 'id'> & { id?: number };
 
+/**
+ * The dignity reference-data maps.
+ *
+ * Only the maps that get indexed by a *runtime* string are typed as `Record`s.
+ * The rest keep their inferred literal keys, which is strictly more useful to a
+ * consumer — widening a constant that is only ever read by a known key would
+ * throw away type information for nothing.
+ */
+export interface DignityClassDefinition {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  iconName: string;
+}
+
+export interface DignityRankDefinition {
+  id: string;
+  name: string;
+  description: string;
+  order: number;
+}
+
+export interface DignityNatureDefinition {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  hasSuccession: boolean;
+  hasTenureHistory: boolean;
+  hasGrantTracking: boolean;
+  examples: string;
+}
+
+export interface DisplayIconDefinition {
+  id: string;
+  icon: string;
+  name: string;
+}
+
 /** One entry of `SUCCESSION_TYPES` — how a dignity passes to the next holder. */
 export interface SuccessionTypeDefinition {
   id: string;
@@ -125,17 +165,123 @@ export interface SuccessionTypeDefinition {
  */
 export type SuccessionTypeMap = Record<string, SuccessionTypeDefinition>;
 
-/** A dignity, as the succession code reads it. */
+/**
+ * A contested claim on a dignity, stored inline on the dignity record.
+ *
+ * The id is a generated string, not a database key — disputes live in an array
+ * on their dignity rather than in a table of their own.
+ */
+export interface Dispute {
+  id: string;
+  claimantId?: number | null;
+  claimType?: string;
+  claimStrength?: string;
+  claimBasis?: string;
+  supportingFactions?: string[];
+  startDate?: string | null;
+  resolvedDate?: string | null;
+  /** 'ongoing' until resolved; anything else is a value from DISPUTE_RESOLUTIONS. */
+  resolution?: string;
+  notes?: string | null;
+  created?: string;
+}
+
+/** A period between holders, stored inline on the dignity record. */
+export interface Interregnum {
+  startDate?: string | null;
+  regentId?: number | null;
+  regentTitle?: string;
+  /** A key of INTERREGNUM_REASONS. */
+  reason?: string;
+  notes?: string | null;
+}
+
+/**
+ * A dignity — a title, office, rank or honour.
+ *
+ * Wider than the other records in this file, and deliberately so: unlike
+ * `Person` or `House`, whose types describe only what one caller reads, this is
+ * the entity `dignityService` itself owns, and that service reads and writes
+ * essentially every field. Narrowing it here would just mean writing it out
+ * again inside the service.
+ */
 export interface DignityRecord {
   id: number;
   name?: string;
+  shortName?: string | null;
+  /** 'driht' | 'ward' | 'sir' | 'crown' | 'other' */
+  dignityClass?: string;
+  /** Class-specific — see DIGNITY_RANKS. */
+  dignityRank?: string | null;
+  /** Article IV styling: 'of', 'in', 'at'… */
+  tenureType?: string;
+  placeName?: string | null;
+  /** The seat lives on the dignity, not on the house. */
+  seatName?: string | null;
+  codexLocationId?: number | null;
+  /** The superior dignity this one is sworn to (Article V). */
+  swornToId?: number | null;
+  fealtyType?: string;
+  currentHolderId?: number | null;
+  currentHouseId?: number | null;
+  isVacant?: boolean;
+  /** 'territorial' | 'office' | 'personal-honour' | 'courtesy' — governs which features apply. */
+  dignityNature?: string;
+  isHereditary?: boolean;
+  grantedById?: number | null;
+  grantedByDignityId?: number | null;
+  grantDate?: string | null;
   /** A key into `SUCCESSION_TYPES`. Absent on records that predate the field. */
   successionType?: string;
-  currentHolderId?: number | null;
+  successionRules?: SuccessionRules;
   /** Used only by succession types that do not auto-calculate. */
   designatedHeirId?: number | null;
-  successionRules?: SuccessionRules;
+  successionStatus?: string;
+  disputes?: Dispute[];
+  interregnum?: Interregnum | null;
+  codexEntryId?: number | null;
+  displayIcon?: string | null;
+  displayPriority?: number;
+  notes?: string | null;
+  created?: string;
+  updated?: string;
 }
+
+export type DignityInput = Omit<DignityRecord, 'id'> & { id?: number };
+
+/** One period in which a person held a dignity. */
+export interface DignityTenure {
+  id: number;
+  dignityId: number;
+  personId: number;
+  dateStarted?: string | null;
+  /** Null means this is the tenure still running. */
+  dateEnded?: string | null;
+  acquisitionType?: string;
+  endType?: string | null;
+  grantedById?: number | null;
+  witnessedByIds?: number[] | null;
+  recordReference?: string | null;
+  notes?: string | null;
+  created?: string;
+}
+
+export type DignityTenureInput = Omit<DignityTenure, 'id'> & { id?: number };
+
+/** Junction row tying a dignity to a house, location, event or faction. */
+export interface DignityLink {
+  id: number;
+  dignityId: number;
+  /** 'house' | 'location' | 'event' | 'faction' */
+  entityType: string;
+  entityId: number;
+  /** 'primary' | 'secondary' | 'historical' | 'claimant' | 'pretender' */
+  linkType?: string;
+  notes?: string | null;
+  created?: string;
+}
+
+export type DignityLinkInput = Omit<DignityLink, 'id'> & { id?: number };
 
 /**
  * The Dexie instance, with the tables converted code reads.
@@ -159,6 +305,9 @@ export type AppDatabase = Dexie & {
   heraldry: Table<HeraldryRecord, number>;
   codexEntries: Table<CodexEntry, number, CodexEntryInput>;
   codexLinks: Table<CodexLink, number, CodexLinkInput>;
+  dignities: Table<DignityRecord, number, DignityInput>;
+  dignityTenures: Table<DignityTenure, number, DignityTenureInput>;
+  dignityLinks: Table<DignityLink, number, DignityLinkInput>;
 };
 
 /** An identifier for the dataset (world) an operation runs against. */
