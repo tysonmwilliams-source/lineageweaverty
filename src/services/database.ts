@@ -1,16 +1,42 @@
 import Dexie from 'dexie';
 import { logger } from '../utils/logger';
+import { errorMessage } from '../utils/errorMessage';
+import type {
+  AcknowledgedDuplicate,
+  AppDatabase,
+  DatasetId,
+  House,
+  HouseInput,
+  Person,
+  PersonInput,
+  Relationship,
+  RelationshipInput,
+  SyncQueueEntry,
+  UserId
+} from './types';
+
+type ContextNotifier = (
+  entityType: string,
+  operation: string,
+  entity: unknown,
+  datasetId?: DatasetId
+) => void;
 
 // Context notification - lazy loaded to avoid circular deps
-let contextNotify = null;
-async function notifyContextChange(entityType, operation, entity, datasetId) {
+let contextNotify: ContextNotifier | null = null;
+async function notifyContextChange(
+  entityType: string,
+  operation: string,
+  entity: unknown,
+  datasetId?: DatasetId
+): Promise<void> {
   try {
     if (!contextNotify) {
       const { notifyChange } = await import('./contextService.js');
       contextNotify = notifyChange;
     }
     contextNotify(entityType, operation, entity, datasetId);
-  } catch (e) {
+  } catch {
     // Context service not available - silently skip
   }
 }
@@ -28,23 +54,107 @@ async function notifyContextChange(entityType, operation, entity, datasetId) {
  * Database instances are cached in a Map for performance.
  */
 
+/**
+ * Options for `addHouse`.
+ *
+ * Note the shape: `addHouse(data, options)` takes an **object** while
+ * `addPerson(data, datasetId)` takes a bare string. That inconsistency is real
+ * and long-standing (CLAUDE.md names it), and it is left alone here on purpose
+ * — reconciling the two signatures is a behaviour change, and F4 conversions do
+ * not carry those. Typing them is what makes it impossible to get wrong by
+ * accident, which was most of the risk.
+ */
+export interface AddHouseOptions {
+  /** Skip auto-creation of the Codex entry — used by cloud restore, to avoid duplicates. */
+  skipCodexCreation?: boolean;
+  datasetId?: DatasetId;
+}
+
+export interface DeleteHouseOptions {
+  /** Skip cascade deletion of the Codex entry. */
+  skipCodexDeletion?: boolean;
+  datasetId?: DatasetId;
+  /**
+   * Propagates the cascading Codex delete to the cloud. Read by the body and
+   * absent from the JSDoc that documented this function until now — without it
+   * the deleted entry returns on the next download.
+   */
+  userId?: UserId;
+}
+
+/** Whether a person may found a cadet house, and which tier. */
+export interface CeremonyEligibility {
+  eligible: boolean;
+  tier: number | null;
+  reason: string | null;
+}
+
+export interface CadetCeremonyData {
+  founderId: number;
+  parentHouseId: number;
+  houseName: string;
+  ceremonyDate?: string | null;
+  motto?: string | null;
+  colorCode?: string | null;
+  cadetTier?: number;
+  foundingType?: string;
+}
+
+/** The envelope `exportFullDatabase` produces and `importFullDatabase` accepts. */
+export interface FullBackup {
+  format: string;
+  formatVersion: number;
+  schemaVersion: number;
+  exportDate: string;
+  datasetId: string;
+  counts: Record<string, number>;
+  tables: Record<string, unknown[]>;
+}
+
+/** A stale queue entry, summarised for the log before it is deleted. */
+export interface ArchivedSyncOperation {
+  id: number;
+  entityType: string;
+  entityId: string;
+  operation: string;
+  timestamp: number;
+  age: string;
+}
+
+export interface SyncQueueStats {
+  totalPending: number;
+  totalSynced: number;
+  staleCount: number;
+  recentCount: number;
+  oldestPendingAge: string;
+  healthy: boolean;
+  error?: string;
+}
+
 // Default dataset ID
 export const DEFAULT_DATASET_ID = 'default';
 
 // Cache for database instances (one per dataset)
-const dbInstances = new Map();
+const dbInstances = new Map<string, AppDatabase>();
 
 /**
  * Create and configure a new Dexie database instance
- * @param {string} datasetId - The dataset ID
- * @returns {Dexie} Configured database instance
+ *
+ * This is the **one** place in the codebase where a bare `Dexie` becomes an
+ * `AppDatabase` (decision F4). The stores are declared as version strings by
+ * `applySchema`, not as class fields, so nothing about `db.people` is knowable
+ * to a type-checker by inference — it has to be asserted exactly once, here, at
+ * the point of construction, rather than at every call site that reads a table.
+ *
+ * @param datasetId - The dataset ID
+ * @returns Configured database instance
  */
-function createDatabaseInstance(datasetId) {
+function createDatabaseInstance(datasetId: string): AppDatabase {
   const dbName = datasetId === DEFAULT_DATASET_ID
     ? 'LineageweaverDB'  // Backward compatible name for default dataset
     : `LineageweaverDB_${datasetId}`;
 
-  const db = new Dexie(dbName);
+  const db = new Dexie(dbName) as AppDatabase;
 
   // Handle blocked database upgrades (multi-tab scenarios)
   // This fires when a database upgrade is needed but another tab has the DB open
@@ -83,31 +193,37 @@ function createDatabaseInstance(datasetId) {
  * Get a database instance for a specific dataset
  * Creates a new instance if one doesn't exist, otherwise returns cached instance.
  *
- * The return type is asserted rather than inferred: the stores are added
- * dynamically by `applySchema`, so a bare `Dexie` has no `people`, `houses` or
- * any other table on it as far as a type-checker is concerned. `AppDatabase`
- * names the tables converted code reads (decision F4).
+ * Accepts null as well as undefined, because that is what the service layer
+ * passes: nearly every function in it defaults `datasetId` to `null`, and a
+ * default parameter only fires for `undefined`. The `|| DEFAULT_DATASET_ID`
+ * below is what actually handles it, and is why there is no
+ * `LineageweaverDB_null` — worth knowing, given the phantom-database bugs
+ * Phase 4 found from ids reaching this function by the wrong route.
  *
- * @param {string|null} [datasetId='default'] - The dataset ID
- * @returns {import('./types').AppDatabase} Database instance for the dataset
+ * @param datasetId - The dataset ID
+ * @returns Database instance for the dataset
  */
-export function getDatabase(datasetId = DEFAULT_DATASET_ID) {
+export function getDatabase(datasetId: DatasetId = DEFAULT_DATASET_ID): AppDatabase {
   const id = datasetId || DEFAULT_DATASET_ID;
 
-  if (!dbInstances.has(id)) {
-    const instance = createDatabaseInstance(id);
+  // One lookup instead of has()-then-get(): the Map never stores undefined, so
+  // a miss and an absence are the same thing, and this needs no assertion to
+  // prove the instance exists on the way out.
+  let instance = dbInstances.get(id);
+  if (!instance) {
+    instance = createDatabaseInstance(id);
     dbInstances.set(id, instance);
     logger.log('📦 Created database instance for dataset:', id);
   }
 
-  return dbInstances.get(id);
+  return instance;
 }
 
 /**
  * Close and remove a database instance from the cache
- * @param {string} datasetId - The dataset ID
+ * @param datasetId - The dataset ID
  */
-export async function closeDatabaseInstance(datasetId) {
+export async function closeDatabaseInstance(datasetId: DatasetId): Promise<void> {
   const id = datasetId || DEFAULT_DATASET_ID;
   const instance = dbInstances.get(id);
 
@@ -121,9 +237,9 @@ export async function closeDatabaseInstance(datasetId) {
 /**
  * Delete an entire database for a dataset
  * WARNING: This permanently deletes all data!
- * @param {string} datasetId - The dataset ID
+ * @param datasetId - The dataset ID
  */
-export async function deleteDatabaseForDataset(datasetId) {
+export async function deleteDatabaseForDataset(datasetId: DatasetId): Promise<void> {
   const id = datasetId || DEFAULT_DATASET_ID;
   const dbName = id === DEFAULT_DATASET_ID
     ? 'LineageweaverDB'
@@ -145,7 +261,7 @@ export const db = getDatabase(DEFAULT_DATASET_ID);
  * Apply schema versions to a database instance
  * @param {Dexie} db - The database instance
  */
-function applySchema(db) {
+function applySchema(db: Dexie): void {
 
   // Version 1: Original schema
   db.version(1).stores({
@@ -588,7 +704,10 @@ db.version(18).stores({
 
 // ==================== PEOPLE OPERATIONS ====================
 
-export async function addPerson(personData, datasetId) {
+export async function addPerson(
+  personData: PersonInput,
+  datasetId?: DatasetId
+): Promise<number> {
   try {
     const database = getDatabase(datasetId);
     const id = await database.people.add(personData);
@@ -604,7 +723,10 @@ export async function addPerson(personData, datasetId) {
   }
 }
 
-export async function getPerson(id, datasetId) {
+export async function getPerson(
+  id: number,
+  datasetId?: DatasetId
+): Promise<Person | undefined> {
   try {
     const database = getDatabase(datasetId);
     const person = await database.people.get(id);
@@ -615,7 +737,7 @@ export async function getPerson(id, datasetId) {
   }
 }
 
-export async function getAllPeople(datasetId) {
+export async function getAllPeople(datasetId?: DatasetId): Promise<Person[]> {
   try {
     const database = getDatabase(datasetId);
     const people = await database.people.toArray();
@@ -630,7 +752,7 @@ export async function getAllPeople(datasetId) {
  * Get count of people without loading all data
  * More efficient than getAllPeople().length for stats
  */
-export async function getPeopleCount(datasetId) {
+export async function getPeopleCount(datasetId?: DatasetId): Promise<number> {
   try {
     const database = getDatabase(datasetId);
     return await database.people.count();
@@ -640,7 +762,10 @@ export async function getPeopleCount(datasetId) {
   }
 }
 
-export async function getPeopleByHouse(houseId, datasetId) {
+export async function getPeopleByHouse(
+  houseId: number,
+  datasetId?: DatasetId
+): Promise<Person[]> {
   try {
     const database = getDatabase(datasetId);
     const people = await database.people.where('houseId').equals(houseId).toArray();
@@ -669,7 +794,12 @@ export async function getPeopleByHouse(houseId, datasetId) {
  * @param {string} [datasetId]
  * @param {string} [userId] - When present, the title change is synced
  */
-async function propagateNameToCodex(codexEntryId, newTitle, datasetId, userId = null) {
+async function propagateNameToCodex(
+  codexEntryId: number | null | undefined,
+  newTitle: string | null | undefined,
+  datasetId?: DatasetId,
+  userId: UserId = null
+): Promise<void> {
   if (!codexEntryId || !newTitle?.trim()) return;
 
   try {
@@ -696,7 +826,12 @@ async function propagateNameToCodex(codexEntryId, newTitle, datasetId, userId = 
   }
 }
 
-export async function updatePerson(id, updates, datasetId, userId = null) {
+export async function updatePerson(
+  id: number,
+  updates: Partial<Person>,
+  datasetId?: DatasetId,
+  userId: UserId = null
+): Promise<number> {
   try {
     const database = getDatabase(datasetId);
     const result = await database.people.update(id, updates);
@@ -728,7 +863,10 @@ export async function updatePerson(id, updates, datasetId, userId = null) {
   }
 }
 
-export async function deletePerson(id, datasetId) {
+export async function deletePerson(
+  id: number,
+  datasetId?: DatasetId
+): Promise<{ deletedRelationships: number }> {
   try {
     const database = getDatabase(datasetId);
 
@@ -742,7 +880,7 @@ export async function deletePerson(id, datasetId) {
       .toArray();
 
     if (relationshipsToDelete.length > 0) {
-      const relationshipIds = relationshipsToDelete.map(r => r.id);
+      const relationshipIds = relationshipsToDelete.map(r => r.id).filter((relId): relId is number => relId !== undefined);
       await database.relationships.bulkDelete(relationshipIds);
       logger.log(`Cascade deleted ${relationshipIds.length} relationships for person ${id}`);
     }
@@ -774,7 +912,10 @@ export async function deletePerson(id, datasetId) {
  * @param {string} [options.datasetId] - Dataset ID (optional, defaults to 'default')
  * @returns {Promise<number>} The new house ID
  */
-export async function addHouse(houseData, options = {}) {
+export async function addHouse(
+  houseData: HouseInput,
+  options: AddHouseOptions = {}
+): Promise<number> {
   try {
     const database = getDatabase(options.datasetId);
     const id = await database.houses.add(houseData);
@@ -790,7 +931,7 @@ export async function addHouse(houseData, options = {}) {
         // Create a Codex entry for this house
         const codexEntryId = await createEntry({
           type: 'house',
-          title: houseData.houseName.startsWith('House ') ? houseData.houseName : `House ${houseData.houseName}`,
+          title: (houseData.houseName ?? '').startsWith('House ') ? houseData.houseName ?? '' : `House ${houseData.houseName ?? ''}`,
           subtitle: houseData.houseType === 'cadet' ? 'Cadet Branch' : 'Noble House',
           content: houseData.notes || '',
           category: houseData.houseType || 'main',
@@ -818,7 +959,10 @@ export async function addHouse(houseData, options = {}) {
   }
 }
 
-export async function getHouse(id, datasetId) {
+export async function getHouse(
+  id: number,
+  datasetId?: DatasetId
+): Promise<House | undefined> {
   try {
     const database = getDatabase(datasetId);
     const house = await database.houses.get(id);
@@ -829,7 +973,7 @@ export async function getHouse(id, datasetId) {
   }
 }
 
-export async function getAllHouses(datasetId) {
+export async function getAllHouses(datasetId?: DatasetId): Promise<House[]> {
   try {
     const database = getDatabase(datasetId);
     const houses = await database.houses.toArray();
@@ -844,7 +988,7 @@ export async function getAllHouses(datasetId) {
  * Get count of houses without loading all data
  * More efficient than getAllHouses().length for stats
  */
-export async function getHousesCount(datasetId) {
+export async function getHousesCount(datasetId?: DatasetId): Promise<number> {
   try {
     const database = getDatabase(datasetId);
     return await database.houses.count();
@@ -854,7 +998,10 @@ export async function getHousesCount(datasetId) {
   }
 }
 
-export async function getCadetHouses(parentHouseId, datasetId) {
+export async function getCadetHouses(
+  parentHouseId: number,
+  datasetId?: DatasetId
+): Promise<House[]> {
   try {
     const database = getDatabase(datasetId);
     const cadetHouses = await database.houses
@@ -872,7 +1019,10 @@ export async function getCadetHouses(parentHouseId, datasetId) {
  * Get all people personally sworn to a specific house.
  * These are members of bastard-elevation cadet branches who have individual allegiance.
  */
-export async function getPeopleSwornToHouse(houseId, datasetId) {
+export async function getPeopleSwornToHouse(
+  houseId: number,
+  datasetId?: DatasetId
+): Promise<Person[]> {
   try {
     const database = getDatabase(datasetId);
     return await database.people
@@ -889,15 +1039,20 @@ export async function getPeopleSwornToHouse(houseId, datasetId) {
  * Determine if a house is a bastard-elevation cadet branch.
  * Uses cadetTier/foundingType as primary, falls back to Dum/Dun name prefix for legacy data.
  */
-export function isBastardCadet(house) {
+export function isBastardCadet(house: House | null | undefined): boolean {
   if (!house) return false;
   if (house.cadetTier === 2 || house.foundingType === 'bastard-elevation') return true;
   if (house.cadetTier === 1) return false;
   // Fallback: name prefix for legacy data without cadetTier
-  return /^(Dum|Dun)/i.test(house.houseName);
+  return /^(Dum|Dun)/i.test(house.houseName ?? '');
 }
 
-export async function updateHouse(id, updates, datasetId, userId = null) {
+export async function updateHouse(
+  id: number,
+  updates: Partial<House>,
+  datasetId?: DatasetId,
+  userId: UserId = null
+): Promise<number> {
   try {
     const database = getDatabase(datasetId);
     const result = await database.houses.update(id, updates);
@@ -936,7 +1091,14 @@ export async function updateHouse(id, updates, datasetId, userId = null) {
  * @param {string} [options.datasetId] - Dataset ID (optional, defaults to 'default')
  * @returns {Promise<Object>} Info about cascade operations
  */
-export async function deleteHouse(id, options = {}) {
+export async function deleteHouse(
+  id: number,
+  options: DeleteHouseOptions = {}
+): Promise<{
+  clearedPeopleCount: number;
+  clearedPersonIds: number[];
+  deletedCodexEntryId: number | null;
+}> {
   try {
     const database = getDatabase(options.datasetId);
     let clearedPeopleCount = 0;
@@ -1012,7 +1174,10 @@ export async function deleteHouse(id, options = {}) {
  * @returns {Promise<number>} The new relationship ID
  * @throws {Error} If validation fails (circular reference, self-reference)
  */
-export async function addRelationship(relationshipData, datasetId) {
+export async function addRelationship(
+  relationshipData: RelationshipInput,
+  datasetId?: DatasetId
+): Promise<number> {
   try {
     const database = getDatabase(datasetId);
 
@@ -1041,7 +1206,7 @@ export async function addRelationship(relationshipData, datasetId) {
       const circularCheck = detectCircularAncestry(childId, parentId, allRelationships);
 
       if (circularCheck.isCircular) {
-        const pathStr = circularCheck.path.join(' → ');
+        const pathStr = (circularCheck.path ?? []).join(' → ');
         throw new Error(`Cannot create parent-child relationship: would cause circular ancestry (${pathStr})`);
       }
     }
@@ -1059,7 +1224,10 @@ export async function addRelationship(relationshipData, datasetId) {
   }
 }
 
-export async function getRelationshipsForPerson(personId, datasetId) {
+export async function getRelationshipsForPerson(
+  personId: number,
+  datasetId?: DatasetId
+): Promise<Relationship[]> {
   try {
     const database = getDatabase(datasetId);
     const relationships = await database.relationships
@@ -1073,7 +1241,7 @@ export async function getRelationshipsForPerson(personId, datasetId) {
   }
 }
 
-export async function getAllRelationships(datasetId) {
+export async function getAllRelationships(datasetId?: DatasetId): Promise<Relationship[]> {
   try {
     const database = getDatabase(datasetId);
     const relationships = await database.relationships.toArray();
@@ -1088,7 +1256,7 @@ export async function getAllRelationships(datasetId) {
  * Get count of relationships without loading all data
  * More efficient than getAllRelationships().length for stats
  */
-export async function getRelationshipsCount(datasetId) {
+export async function getRelationshipsCount(datasetId?: DatasetId): Promise<number> {
   try {
     const database = getDatabase(datasetId);
     return await database.relationships.count();
@@ -1098,7 +1266,11 @@ export async function getRelationshipsCount(datasetId) {
   }
 }
 
-export async function updateRelationship(id, updates, datasetId) {
+export async function updateRelationship(
+  id: number,
+  updates: Partial<Relationship>,
+  datasetId?: DatasetId
+): Promise<number> {
   try {
     const database = getDatabase(datasetId);
     const result = await database.relationships.update(id, updates);
@@ -1110,7 +1282,7 @@ export async function updateRelationship(id, updates, datasetId) {
   }
 }
 
-export async function deleteRelationship(id, datasetId) {
+export async function deleteRelationship(id: number, datasetId?: DatasetId): Promise<void> {
   try {
     const database = getDatabase(datasetId);
 
@@ -1132,7 +1304,7 @@ export async function deleteRelationship(id, datasetId) {
 
 // ==================== CADET HOUSE OPERATIONS ====================
 
-export function calculateAge(dateOfBirth) {
+export function calculateAge(dateOfBirth: string | number | null | undefined): number | null {
   if (!dateOfBirth) return null;
   const today = new Date();
   const birth = new Date(dateOfBirth);
@@ -1165,7 +1337,7 @@ export function calculateAge(dateOfBirth) {
  * @param {string} [person.bastardStatus] - Bastard status if applicable
  * @returns {{eligible: boolean, tier: number|null, reason: string|null}}
  */
-export function isEligibleForCeremony(person) {
+export function isEligibleForCeremony(person: Person): CeremonyEligibility {
   // Must have a birth date
   if (!person.dateOfBirth) {
     return { eligible: false, tier: null, reason: 'No birth date recorded' };
@@ -1173,7 +1345,9 @@ export function isEligibleForCeremony(person) {
   
   // Must be at least 18
   const age = calculateAge(person.dateOfBirth);
-  if (age < 18) {
+  // `null < 18` was already true by coercion, so this is the same branch —
+  // written out because the coercion was doing load-bearing work invisibly.
+  if (age === null || age < 18) {
     return { eligible: false, tier: null, reason: `Must be at least 18 (currently ${age})` };
   }
   
@@ -1210,7 +1384,7 @@ export function isEligibleForCeremony(person) {
  * Returns boolean instead of object
  * @deprecated Use isEligibleForCeremony(person).eligible instead
  */
-export function canFoundCadetHouse(person) {
+export function canFoundCadetHouse(person: Person): boolean {
   return isEligibleForCeremony(person).eligible;
 }
 
@@ -1239,7 +1413,10 @@ export function canFoundCadetHouse(person) {
  * @param {string} [datasetId] - Dataset ID
  * @returns {Promise<{house: Object, founder: Object}>}
  */
-export async function foundCadetHouse(ceremonyData, datasetId) {
+export async function foundCadetHouse(
+  ceremonyData: CadetCeremonyData,
+  datasetId?: DatasetId
+): Promise<{ house: House | undefined; founder: Person | undefined }> {
   const {
     founderId,
     houseName,
@@ -1281,7 +1458,7 @@ export async function foundCadetHouse(ceremonyData, datasetId) {
       foundedBy: founderId,
       foundedDate: ceremonyDate,
       swornTo: parentHouseId,
-      namePrefix: parentHouse.namePrefix || parentHouse.houseName.substring(0, 4),
+      namePrefix: parentHouse.namePrefix || (parentHouse.houseName ?? '').substring(0, 4),
       sigil: null,
       motto: motto,
       colorCode: colorCode || parentHouse.colorCode,
@@ -1343,11 +1520,11 @@ export const FULL_BACKUP_FORMAT_VERSION = 1;
  * @param {string} [datasetId]
  * @returns {Promise<Object>} Backup envelope with a `tables` map
  */
-export async function exportFullDatabase(datasetId) {
+export async function exportFullDatabase(datasetId?: DatasetId): Promise<FullBackup> {
   const database = getDatabase(datasetId);
 
-  const tables = {};
-  const counts = {};
+  const tables: Record<string, unknown[]> = {};
+  const counts: Record<string, number> = {};
 
   for (const table of database.tables) {
     if (BACKUP_EXCLUDED_TABLES.has(table.name)) continue;
@@ -1380,7 +1557,11 @@ export async function exportFullDatabase(datasetId) {
  * @param {boolean} [options.replace=true] - Clear each table before writing
  * @returns {Promise<Object>} { restored: {table: count}, skipped: string[] }
  */
-export async function importFullDatabase(backup, datasetId, options = {}) {
+export async function importFullDatabase(
+  backup: FullBackup | null | undefined,
+  datasetId?: DatasetId,
+  options: { replace?: boolean } = {}
+): Promise<{ restored: Record<string, number>; skipped: string[] }> {
   const { replace = true } = options;
 
   if (!backup || backup.format !== FULL_BACKUP_FORMAT || !backup.tables) {
@@ -1395,13 +1576,21 @@ export async function importFullDatabase(backup, datasetId, options = {}) {
   );
   const skipped = Object.keys(backup.tables).filter(name => !incoming.includes(name));
 
-  const restored = {};
+  const restored: Record<string, number> = {};
 
-  await database.transaction('rw', incoming.map(name => known.get(name)), async () => {
-    for (const name of incoming) {
+  // Resolved once, as [name, table] pairs, rather than re-fetched three times
+  // per iteration. `incoming` was already filtered on `known.has(name)`, so the
+  // filter below removes nothing — it is how that guarantee is stated to the
+  // type-checker without an assertion.
+  const targets = incoming
+    .map(name => [name, known.get(name)] as const)
+    .filter((pair): pair is [string, NonNullable<(typeof pair)[1]>] => pair[1] !== undefined);
+
+  await database.transaction('rw', targets.map(([, table]) => table), async () => {
+    for (const [name, table] of targets) {
       const rows = backup.tables[name] || [];
-      if (replace) await known.get(name).clear();
-      if (rows.length > 0) await known.get(name).bulkPut(rows);
+      if (replace) await table.clear();
+      if (rows.length > 0) await table.bulkPut(rows);
       restored[name] = rows.length;
     }
   });
@@ -1429,7 +1618,10 @@ export async function importFullDatabase(backup, datasetId, options = {}) {
  * @param {Object} [options] - Options
  * @param {boolean} [options.clearSyncQueue=false] - Also clear sync queue (only after successful full sync)
  */
-export async function deleteAllData(datasetId, options = {}) {
+export async function deleteAllData(
+  datasetId?: DatasetId,
+  options: { clearSyncQueue?: boolean; includeLocalOnly?: boolean } = {}
+): Promise<boolean> {
   try {
     const database = getDatabase(datasetId);
 
@@ -1498,7 +1690,7 @@ export async function deleteAllData(datasetId, options = {}) {
  *
  * @param {string} [datasetId] - Dataset ID (optional, defaults to 'default')
  */
-export async function deleteGenealogyData(datasetId) {
+export async function deleteGenealogyData(datasetId?: DatasetId): Promise<boolean> {
   try {
     const database = getDatabase(datasetId);
     await database.people.clear();
@@ -1524,7 +1716,11 @@ export async function deleteGenealogyData(datasetId) {
  * @param {number} person2Id - Second person ID
  * @param {string} [datasetId] - Dataset ID (optional, defaults to 'default')
  */
-export async function isAcknowledgedDuplicate(person1Id, person2Id, datasetId) {
+export async function isAcknowledgedDuplicate(
+  person1Id: number,
+  person2Id: number,
+  datasetId?: DatasetId
+): Promise<boolean> {
   try {
     const database = getDatabase(datasetId);
     const found = await database.acknowledgedDuplicates
@@ -1552,7 +1748,9 @@ export async function isAcknowledgedDuplicate(person1Id, person2Id, datasetId) {
  *
  * @param {string} [datasetId] - Dataset ID (optional, defaults to 'default')
  */
-export async function getAllAcknowledgedDuplicates(datasetId) {
+export async function getAllAcknowledgedDuplicates(
+  datasetId?: DatasetId
+): Promise<AcknowledgedDuplicate[]> {
   try {
     const database = getDatabase(datasetId);
     return await database.acknowledgedDuplicates.toArray();
@@ -1570,7 +1768,11 @@ export async function getAllAcknowledgedDuplicates(datasetId) {
  * @param {number} person2Id - Second person ID
  * @param {string} [datasetId] - Dataset ID (optional, defaults to 'default')
  */
-export async function acknowledgeDuplicate(person1Id, person2Id, datasetId) {
+export async function acknowledgeDuplicate(
+  person1Id: number,
+  person2Id: number,
+  datasetId?: DatasetId
+): Promise<number | null> {
   try {
     const database = getDatabase(datasetId);
 
@@ -1582,8 +1784,10 @@ export async function acknowledgeDuplicate(person1Id, person2Id, datasetId) {
     }
 
     const id = await database.acknowledgedDuplicates.add({
-      person1Id: parseInt(person1Id),
-      person2Id: parseInt(person2Id),
+      // `parseInt(number)` was a no-op that only worked because parseInt
+      // stringifies first. Both parameters are ids and are already numbers.
+      person1Id,
+      person2Id,
       acknowledgedAt: new Date().toISOString()
     });
 
@@ -1602,7 +1806,11 @@ export async function acknowledgeDuplicate(person1Id, person2Id, datasetId) {
  * @param {number} person2Id - Second person ID
  * @param {string} [datasetId] - Dataset ID (optional, defaults to 'default')
  */
-export async function removeAcknowledgedDuplicate(person1Id, person2Id, datasetId) {
+export async function removeAcknowledgedDuplicate(
+  person1Id: number,
+  person2Id: number,
+  datasetId?: DatasetId
+): Promise<boolean> {
   try {
     const database = getDatabase(datasetId);
 
@@ -1632,7 +1840,10 @@ export async function removeAcknowledgedDuplicate(person1Id, person2Id, datasetI
  * @param {number} personId - Person ID
  * @param {string} [datasetId] - Dataset ID (optional, defaults to 'default')
  */
-export async function getNamedAfterRelationships(personId, datasetId) {
+export async function getNamedAfterRelationships(
+  personId: number,
+  datasetId?: DatasetId
+): Promise<{ namedAfter: Relationship[]; namesakes: Relationship[] }> {
   try {
     const database = getDatabase(datasetId);
     const relationships = await database.relationships
@@ -1670,7 +1881,15 @@ export async function getNamedAfterRelationships(personId, datasetId) {
  * @param {string} [datasetId] - Dataset ID
  * @returns {Promise<number>} The sync queue entry ID
  */
-export async function addToSyncQueue(change, datasetId) {
+export async function addToSyncQueue(
+  change: {
+    entityType: string;
+    entityId: number | string;
+    operation: string;
+    data?: unknown;
+  },
+  datasetId?: DatasetId
+): Promise<number> {
   try {
     const database = getDatabase(datasetId);
     const entry = {
@@ -1679,7 +1898,7 @@ export async function addToSyncQueue(change, datasetId) {
       operation: change.operation,
       data: change.data || null,
       timestamp: Date.now(),
-      synced: 0 // 0 = pending, 1 = synced
+      synced: 0 as const // 0 = pending, 1 = synced
     };
     const id = await database.syncQueue.add(entry);
     logger.log(`📝 Queued ${change.operation} for ${change.entityType}:${change.entityId}`);
@@ -1696,7 +1915,7 @@ export async function addToSyncQueue(change, datasetId) {
  * @param {number} queueId - The sync queue entry ID
  * @param {string} [datasetId] - Dataset ID
  */
-export async function markSynced(queueId, datasetId) {
+export async function markSynced(queueId: number, datasetId?: DatasetId): Promise<void> {
   try {
     const database = getDatabase(datasetId);
     await database.syncQueue.update(queueId, { synced: 1 });
@@ -1713,7 +1932,11 @@ export async function markSynced(queueId, datasetId) {
  * @param {number|string} entityId - The entity ID
  * @param {string} [datasetId] - Dataset ID
  */
-export async function markEntitySynced(entityType, entityId, datasetId) {
+export async function markEntitySynced(
+  entityType: string,
+  entityId: number | string,
+  datasetId?: DatasetId
+): Promise<void> {
   try {
     const database = getDatabase(datasetId);
     await database.syncQueue
@@ -1732,7 +1955,7 @@ export async function markEntitySynced(entityType, entityId, datasetId) {
  * @param {string} [datasetId] - Dataset ID
  * @returns {Promise<Array>} Array of pending changes
  */
-export async function getPendingChanges(datasetId) {
+export async function getPendingChanges(datasetId?: DatasetId): Promise<SyncQueueEntry[]> {
   try {
     const database = getDatabase(datasetId);
     const pending = await database.syncQueue
@@ -1752,7 +1975,7 @@ export async function getPendingChanges(datasetId) {
  * @param {string} [datasetId] - Dataset ID
  * @returns {Promise<boolean>} True if pending changes exist
  */
-export async function hasPendingChanges(datasetId) {
+export async function hasPendingChanges(datasetId?: DatasetId): Promise<boolean> {
   try {
     const database = getDatabase(datasetId);
     const count = await database.syncQueue
@@ -1771,7 +1994,7 @@ export async function hasPendingChanges(datasetId) {
  * @param {string} [datasetId] - Dataset ID
  * @returns {Promise<number>} Count of pending changes
  */
-export async function getPendingChangeCount(datasetId) {
+export async function getPendingChangeCount(datasetId?: DatasetId): Promise<number> {
   try {
     const database = getDatabase(datasetId);
     const count = await database.syncQueue
@@ -1790,7 +2013,7 @@ export async function getPendingChangeCount(datasetId) {
  *
  * @param {string} [datasetId] - Dataset ID
  */
-export async function clearSyncedItems(datasetId) {
+export async function clearSyncedItems(datasetId?: DatasetId): Promise<number | undefined> {
   try {
     const database = getDatabase(datasetId);
     const deleted = await database.syncQueue
@@ -1808,7 +2031,7 @@ export async function clearSyncedItems(datasetId) {
  *
  * @param {string} [datasetId] - Dataset ID
  */
-export async function clearSyncQueue(datasetId) {
+export async function clearSyncQueue(datasetId?: DatasetId): Promise<void> {
   try {
     const database = getDatabase(datasetId);
     await database.syncQueue.clear();
@@ -1824,15 +2047,13 @@ export async function clearSyncQueue(datasetId) {
  * @param {string} [datasetId] - Dataset ID
  * @returns {Promise<Object>} Object with entity types as keys and arrays of changes as values
  */
-export async function getPendingChangesByType(datasetId) {
+export async function getPendingChangesByType(datasetId?: DatasetId): Promise<Record<string, SyncQueueEntry[]>> {
   try {
     const pending = await getPendingChanges(datasetId);
-    const grouped = {};
+    const grouped: Record<string, SyncQueueEntry[]> = {};
     for (const change of pending) {
-      if (!grouped[change.entityType]) {
-        grouped[change.entityType] = [];
-      }
-      grouped[change.entityType].push(change);
+      const bucket = grouped[change.entityType] ?? (grouped[change.entityType] = []);
+      bucket.push(change);
     }
     return grouped;
   } catch (error) {
@@ -1862,7 +2083,10 @@ const STALE_THRESHOLD_MS = 24 * 60 * 60 * 1000; // 24 hours
  * @param {number} [maxAgeMs=24h] - Maximum age in milliseconds before operation is considered stale
  * @returns {Promise<{ deleted: number, archived: Array }>} Cleanup results
  */
-export async function cleanupStaleSyncOperations(datasetId, maxAgeMs = STALE_THRESHOLD_MS) {
+export async function cleanupStaleSyncOperations(
+  datasetId?: DatasetId,
+  maxAgeMs: number = STALE_THRESHOLD_MS
+): Promise<{ deleted: number; archived: ArchivedSyncOperation[]; error?: string }> {
   try {
     const database = getDatabase(datasetId);
     const cutoffTime = Date.now() - maxAgeMs;
@@ -1899,7 +2123,7 @@ export async function cleanupStaleSyncOperations(datasetId, maxAgeMs = STALE_THR
     return { deleted: staleIds.length, archived };
   } catch (error) {
     logger.error('Error cleaning up stale sync operations:', error);
-    return { deleted: 0, archived: [], error: error.message };
+    return { deleted: 0, archived: [], error: errorMessage(error) };
   }
 }
 
@@ -1909,7 +2133,7 @@ export async function cleanupStaleSyncOperations(datasetId, maxAgeMs = STALE_THR
  * @param {string} [datasetId] - Dataset ID
  * @returns {Promise<Object>} Queue statistics
  */
-export async function getSyncQueueStats(datasetId) {
+export async function getSyncQueueStats(datasetId?: DatasetId): Promise<SyncQueueStats> {
   try {
     const database = getDatabase(datasetId);
 
@@ -1958,7 +2182,7 @@ export async function getSyncQueueStats(datasetId) {
       recentCount: 0,
       oldestPendingAge: 'unknown',
       healthy: false,
-      error: error.message
+      error: errorMessage(error)
     };
   }
 }
@@ -1975,7 +2199,7 @@ export async function getSyncQueueStats(datasetId) {
  * @param {string} [datasetId] - Dataset ID
  * @returns {Promise<Object>} Maintenance results
  */
-export async function performSyncQueueMaintenance(datasetId) {
+export async function performSyncQueueMaintenance(datasetId?: DatasetId) {
   try {
     logger.log('🔧 Running sync queue maintenance...');
 
@@ -2002,7 +2226,7 @@ export async function performSyncQueueMaintenance(datasetId) {
     };
   } catch (error) {
     logger.error('Error during sync queue maintenance:', error);
-    return { error: error.message };
+    return { error: errorMessage(error) };
   }
 }
 

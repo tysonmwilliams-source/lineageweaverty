@@ -22,13 +22,55 @@ import type {
 import type { StoredComposition } from '../utils/heraldry/types';
 
 export type { Relationship, SuccessionRules };
-export type Person = SuccessionPerson;
+
+/**
+ * A person, plus the fields the services read that succession does not.
+ *
+ * The extra fields live here rather than in `utils/succession/types` on
+ * purpose: that module's types are meant to say what the *succession rules*
+ * read, and adding a Codex link or a rename timestamp to them would make them
+ * lie about that.
+ */
+export interface Person extends SuccessionPerson {
+  maidenName?: string | null;
+  /** The Codex article about this person, if one exists. */
+  codexEntryId?: number | null;
+  /** Personal allegiance, used by bastard-elevation cadet branches. */
+  swornToHouseId?: number | null;
+  created?: string;
+  updated?: string;
+}
+
+export type PersonInput = Omit<Person, 'id'> & { id?: number };
 
 /** A house, plus the fields the services read that succession does not. */
 export interface House extends SuccessionHouse {
   /** The coat of arms borne by this house, if one has been drawn. */
   heraldryId?: number | null;
+  sigil?: string | null;
+  motto?: string | null;
+  foundedDate?: string | number | null;
+  colorCode?: string | null;
+  notes?: string | null;
+  /** 'main' | 'cadet' */
+  houseType?: string;
+  /** 1 for a noble cadet branch, 2 for a bastard elevation. */
+  cadetTier?: number;
+  /** 'noble' | 'bastard-elevation' */
+  foundingType?: string;
+  foundedBy?: number | null;
+  /** The house this one is sworn to. Distinct from `parentHouseId`, which is descent. */
+  swornTo?: number | null;
+  /** Name stem a cadet branch inherits, e.g. "Dun-". */
+  namePrefix?: string | null;
+  codexEntryId?: number | null;
+  created?: string;
+  updated?: string;
 }
+
+export type HouseInput = Omit<House, 'id'> & { id?: number };
+
+export type RelationshipInput = Omit<Relationship, 'id'> & { id?: number };
 
 /** A stored coat of arms. */
 export interface HeraldryRecord {
@@ -284,6 +326,49 @@ export interface DignityLink {
 export type DignityLinkInput = Omit<DignityLink, 'id'> & { id?: number };
 
 /**
+ * One pending change in the local sync queue.
+ *
+ * `entityId` is a **string** even for numeric ids — `addToSyncQueue` calls
+ * `String()` on the way in, and `markEntitySynced` compares with `String()` on
+ * the way out. Typing it as a number would compile and never match.
+ */
+export interface SyncQueueEntry {
+  id: number;
+  entityType: string;
+  entityId: string;
+  /** 'add' | 'update' | 'delete' */
+  operation: string;
+  data?: unknown;
+  timestamp: number;
+  /** 0 = pending, 1 = synced. Not a boolean: Dexie cannot index booleans. */
+  synced: 0 | 1;
+}
+
+export type SyncQueueEntryInput = Omit<SyncQueueEntry, 'id'> & { id?: number };
+
+/** A pair of people the user has confirmed are not duplicates of each other. */
+export interface AcknowledgedDuplicate {
+  id: number;
+  person1Id: number;
+  person2Id: number;
+  acknowledgedAt: string;
+}
+
+export type AcknowledgedDuplicateInput = Omit<AcknowledgedDuplicate, 'id'> & { id?: number };
+
+/**
+ * A table this file only clears, counts or copies wholesale.
+ *
+ * `deleteAllData`, `deleteGenealogyData` and the full backup touch nearly every
+ * store in the schema without ever reading a field. Giving those tables real
+ * row types would mean writing out the writing-studio and story-planner
+ * entities here, in a file that has no other reason to know them — a second
+ * copy of the schema, which is the drift the narrow-types rule exists to stop.
+ * Each of these gets a real type when the service that owns it is converted.
+ */
+export type OpaqueTable = Table<Record<string, unknown>, number>;
+
+/**
  * The Dexie instance, with the tables converted code reads.
  *
  * `database.js` builds a **bare `new Dexie(name)`** and adds its ~26 stores
@@ -299,15 +384,31 @@ export type DignityLinkInput = Omit<DignityLink, 'id'> & { id?: number };
  * exists to prevent.
  */
 export type AppDatabase = Dexie & {
-  people: Table<Person, number>;
-  houses: Table<House, number>;
-  relationships: Table<Relationship, number>;
+  people: Table<Person, number, PersonInput>;
+  houses: Table<House, number, HouseInput>;
+  relationships: Table<Relationship, number, RelationshipInput>;
   heraldry: Table<HeraldryRecord, number>;
   codexEntries: Table<CodexEntry, number, CodexEntryInput>;
   codexLinks: Table<CodexLink, number, CodexLinkInput>;
   dignities: Table<DignityRecord, number, DignityInput>;
   dignityTenures: Table<DignityTenure, number, DignityTenureInput>;
   dignityLinks: Table<DignityLink, number, DignityLinkInput>;
+  syncQueue: Table<SyncQueueEntry, number, SyncQueueEntryInput>;
+  acknowledgedDuplicates: Table<AcknowledgedDuplicate, number, AcknowledgedDuplicateInput>;
+
+  // Cleared and backed up here, never read field-by-field. See OpaqueTable.
+  bugs: OpaqueTable;
+  heraldryLinks: OpaqueTable;
+  householdRoles: OpaqueTable;
+  writings: OpaqueTable;
+  chapters: OpaqueTable;
+  writingLinks: OpaqueTable;
+  storyPlans: OpaqueTable;
+  storyArcs: OpaqueTable;
+  storyBeats: OpaqueTable;
+  scenePlans: OpaqueTable;
+  characterArcs: OpaqueTable;
+  plotThreads: OpaqueTable;
 };
 
 /** An identifier for the dataset (world) an operation runs against. */
