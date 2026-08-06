@@ -102,7 +102,7 @@ gated on a green light for timing. See "What is left" below.
 ```bash
 npm run build      # passes, ~10s
 npm run typecheck  # tsc --noEmit, passes, exits 0 — CI blocks on it (F4)
-npx vitest run     # 773 tests pass, 28 files, exits 0
+npx vitest run     # 793 tests pass, 29 files, exits 0
 npx eslint .       # 0 errors, 340 warnings — exits 0, and CI blocks on it
 ```
 
@@ -114,9 +114,13 @@ converted.
 
 Lint is now a **blocking gate** (decision F3). `no-undef`, `no-dupe-keys`,
 `rules-of-hooks` and — as of `bb8fd32` — `react-hooks/static-components` are hard
-errors and all sit at zero, so a new violation fails the build. `no-unused-vars`
-(250) and the remaining React Compiler rules (29) are warnings; the warning count
-is the yardstick and should go down, never up.
+errors and all sit at zero, so a new violation fails the build. Everything else
+is a warning, and **340 is the yardstick — it should go down, never up.** The
+breakdown, as of `033e161`: `no-unused-vars` 244 plus its TS twin 2,
+`react-hooks/*` 64 (36 of them `exhaustive-deps`),
+`react-refresh/only-export-components` 21, `no-case-declarations` 8,
+`no-control-regex` 1. Trust the total over the breakdown; re-derive it with
+`npx eslint . -f json` rather than believing these sub-counts, which rot fastest.
 
 **The pattern to copy when you clear a rule: fix the violations, then promote the
 rule to `error`.** A rule at zero that stays a warning has fixed today and
