@@ -1032,7 +1032,7 @@ export async function migrateSelectedMysteria(
         await db.codexEntries.update(id, {
           type: 'heraldry',
           category: 'titles',
-          modified: new Date().toISOString()
+          updated: new Date().toISOString()
         });
         migratedCount++;
       } catch (err) {
@@ -1072,7 +1072,7 @@ export async function markMysteriaSkipMigration(
       try {
         await db.codexEntries.update(id, {
           skipMigration: true,
-          modified: new Date().toISOString()
+          updated: new Date().toISOString()
         });
         markedCount++;
       } catch (err) {

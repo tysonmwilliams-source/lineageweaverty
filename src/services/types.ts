@@ -110,18 +110,6 @@ export interface CodexEntry {
   dignityId?: number | null;
   created?: string;
   updated?: string;
-  /**
-   * Written by exactly two paths — `migrateSelectedMysteria` and
-   * `markMysteriaSkipMigration` — and read by nothing. Every other write in the
-   * Codex sets `updated`, including the bulk `migrateMysteriaToDignities` that
-   * the selected-entries version was presumably copied from, so those two
-   * paths silently leave `updated` stale.
-   *
-   * Declared rather than fixed, deliberately: correcting it changes behaviour,
-   * and a behaviour change hiding inside a TypeScript conversion is exactly
-   * what the F4 notes say not to do. Typing the table is what found it.
-   */
-  modified?: string;
   wordCount?: number;
   version?: number;
   changelog?: unknown[];
