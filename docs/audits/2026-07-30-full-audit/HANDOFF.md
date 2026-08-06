@@ -96,6 +96,7 @@ gated on a green light for timing. See "What is left" below.
 | `de31243` | — | `clearSyncedItems` reports 0 on failure, not `undefined` |
 | `bc82157` | — | The one-at-a-time mysteria migrations write `updated`, not `modified` |
 | `8485e0f` | — | **Sync manifest step 2**: the four collection lists become one |
+| `64c4d77` | — | **Sync manifest step 3**: `cloudRepo.ts`; firestoreService 2,238 → 1,036 |
 
 **Current baselines** (verify these still hold before and after your work):
 
@@ -510,18 +511,65 @@ makes `db.peopl` a compile error — so the cast is contained in one helper the
 manifest's test underwrites. Use it for the step 3–5 loops rather than adding
 another cast.
 
-### Steps 3–7 are next
+### Step 3 is done (`64c4d77`) — and the audit is wrong here too
+
+`cloudRepo.ts` implements the five operations generically; the 79 `*Cloud`
+functions are one-line aliases onto it. firestoreService 2,238 → 1,036.
+
+**The audit's "differing only by a collection-name literal" is false**, and it
+is the second time a step's premise has not survived contact. Normalising all 79
+bodies gives **six** behavioural variants:
+
+| Operation | Variants |
+|---|---|
+| `delete`, `getAll`, single `get` | one shape each (20, 21, 3) |
+| `add` | 14 stamp `createdAt`+`updatedAt`; 5 stamp `createdAt` only; codexLinks stamps `syncedAt` and returns nothing |
+| `update` | 13 `updateDoc`+`updatedAt`; writings/chapters `setDoc(…, { merge: true })`; dignityTenures `updateDoc` with no stamp |
+
+All six are preserved, declared per entity in the manifest as `create` and
+`update` policies, and `writePolicyDeviations()` plus a test pin the exact set
+of eight deviating entities.
+
+**Do not "simplify" these to one shape.** The merge variant is load-bearing —
+its own comment says it prevents "No document to update" when the local row has
+not reached the cloud yet. And the stamps are read: `WritingStudio.jsx` sorts on
+`updatedAt`, `entitySearchService` orders four result sets by it.
+
+Three of the eight look like drift rather than intent and are **open findings**,
+not fixed: `createdAt`-only on five entities, `syncedAt` plus no return value on
+codexLinks, and the unstamped update on dignityTenures. Each is a one-line
+manifest change if the owner wants them normalised, but each also rewrites
+documents in their Firestore, so it is their call.
+
+### A verification habit worth copying for steps 4–7
+
+Each of these steps rewrites code that no test exercises — the suite does not
+touch Firebase. So each substitution was checked against `git show HEAD:` by
+script rather than by reading:
+
+- step 2 ran the manifest derivations against the literals pasted from each call
+  site and asserted set equality before replacing them;
+- step 3 extracted every old function's collection from **its own body** (never
+  from its name) and asserted all 79 aliases kept the same name, collection,
+  operation and arity, then separately asserted the declared write policies
+  matched what each old body did.
+
+One hazard that only a check like this catches: `export const` is not hoisted,
+so an alias referenced above its own definition is a runtime TDZ error that a
+green build and a green suite both miss. Verified as absent; re-verify it in
+step 7 when the aliases are deleted.
+
+### Steps 4–7 are next
 
 Unchanged from the design in [`sections/02-data-sync.md`](sections/02-data-sync.md):
-introduce `cloudRepo.js` (step 3), `syncEngine.js` (step 4), replace the bulk
-operations and the two duplicated restore blocks with manifest loops (step 5),
-move cascades into the manifest (step 6), delete the shims (step 7). **Then**
-convert what remains of those two files to TypeScript — that is the tail of F4.
+`syncEngine.js` (step 4), replace the bulk operations and the two duplicated
+restore blocks with manifest loops (step 5), move cascades into the manifest
+(step 6), delete the shims (step 7). **Then** convert what remains of those two
+files to TypeScript — that is the tail of F4.
 
-Note that step 5's targets are already visible: `syncAllToCloud` and
-`downloadAllFromCloud` each carry the same twenty-key destructure, and
-`downloadAllFromCloud` follows it with a twenty-entry `Promise.all` and a
-twenty-line log object.
+Step 5's targets are already visible: `syncAllToCloud` and `downloadAllFromCloud`
+each carry the same twenty-key destructure, and `downloadAllFromCloud` follows it
+with a twenty-entry `Promise.all` and a twenty-line log object.
 
 ---
 
