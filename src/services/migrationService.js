@@ -98,6 +98,7 @@ import {
 } from 'firebase/firestore';
 import { db as firestoreDb } from '../config/firebase';
 import { logger } from '../utils/logger';
+import { LEGACY_FLAT_COLLECTIONS } from './syncManifest';
 
 // ==================== HOUSE → CODEX MIGRATION ====================
 
@@ -1066,23 +1067,18 @@ export async function getMigrationStatus() {
 // ==================== DATASET STRUCTURE MIGRATION ====================
 
 /**
- * Collections that need to be migrated to the new dataset structure
+ * Collections that need to be migrated to the new dataset structure.
+ *
+ * Moved to the manifest as `LEGACY_FLAT_COLLECTIONS` (sync manifest, step 2) so
+ * that collection names are declared in one file — but **not** derived from the
+ * entity list, and the distinction matters. These thirteen are the collections
+ * that existed at the flat `users/{uid}/{collection}` path, which is the set as
+ * of Dexie v12, when this migration was written. Deriving them from
+ * `syncedCollections()` would add nine that cannot exist there and drop
+ * `acknowledgedDuplicates` and `bugs`, which can — stranding them permanently.
+ * The full reasoning is on the export.
  */
-const ENTITY_COLLECTIONS = [
-  'people',
-  'houses',
-  'relationships',
-  'codexEntries',
-  'codexLinks',
-  'acknowledgedDuplicates',
-  'heraldry',
-  'heraldryLinks',
-  'dignities',
-  'dignityTenures',
-  'dignityLinks',
-  'bugs',
-  'householdRoles'
-];
+const ENTITY_COLLECTIONS = LEGACY_FLAT_COLLECTIONS;
 
 /**
  * Check if user needs dataset structure migration

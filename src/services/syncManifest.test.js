@@ -26,10 +26,12 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   ENTITIES,
+  LEGACY_FLAT_COLLECTIONS,
   LOCAL_ONLY_TABLES,
   RULES_WITHOUT_SYNC,
   STRUCTURAL_RULES_PATHS,
   allEntities,
+  cloudCollections,
   getEntity,
   syncedCollections,
   syncedTables
@@ -122,6 +124,60 @@ describe('every manifest entity is permitted in the cloud', () => {
     // RULES_WITHOUT_SYNC) or an open security surface nobody meant to leave.
     const unaccounted = rulesCollections.filter((name) => !accountedFor.has(name));
     expect(unaccounted).toEqual([]);
+  });
+});
+
+describe('destructive operations cover everything', () => {
+  it('sweeps the two collections nothing syncs to', () => {
+    // deleteDataset and deleteAllCloudData both iterate cloudCollections().
+    // Missing these would leave documents under a dataset the user deleted,
+    // which the next dataset created with the same id would inherit.
+    for (const name of RULES_WITHOUT_SYNC) {
+      expect(cloudCollections()).toContain(name);
+    }
+  });
+
+  it('is a strict superset of what sync touches', () => {
+    for (const name of syncedCollections()) {
+      expect(cloudCollections()).toContain(name);
+    }
+    expect(cloudCollections().length).toBeGreaterThan(syncedCollections().length);
+  });
+
+  it('names nothing twice', () => {
+    expect(new Set(cloudCollections()).size).toBe(cloudCollections().length);
+  });
+});
+
+describe('the legacy flat-path list stays historical', () => {
+  it('keeps the two local-only collections that sync derivation would drop', () => {
+    // The whole trap of step 2. `acknowledgedDuplicates` and `bugs` exist at
+    // the pre-dataset path for anyone who used the app before datasets, and
+    // deriving this list from syncedCollections() would strand them there.
+    expect(LEGACY_FLAT_COLLECTIONS).toContain('acknowledgedDuplicates');
+    expect(LEGACY_FLAT_COLLECTIONS).toContain('bugs');
+  });
+
+  it('excludes everything added after the dataset structure', () => {
+    // Writing Studio (v14) and Story Planner (v15) postdate datasets, and have
+    // only ever been written through a path including datasets/{id}. If one
+    // appears here, someone has "helpfully" derived this list.
+    const postDataset = [
+      'writings', 'chapters', 'writingLinks',
+      'storyPlans', 'storyArcs', 'storyBeats',
+      'scenePlans', 'characterArcs', 'plotThreads'
+    ];
+    for (const name of postDataset) {
+      expect(LEGACY_FLAT_COLLECTIONS).not.toContain(name);
+    }
+  });
+
+  it('names only collections that really exist', () => {
+    // Historical, but not free to contain typos: every name must still be a
+    // real cloud collection.
+    for (const name of LEGACY_FLAT_COLLECTIONS) {
+      expect(cloudCollections()).toContain(name);
+    }
   });
 });
 

@@ -39,8 +39,10 @@ import {
   canFoundCadetHouse,
   exportFullDatabase,
   importFullDatabase,
+  deleteAllData,
   FULL_BACKUP_FORMAT
 } from './database';
+import { syncedTables } from './syncManifest';
 
 // Use a unique dataset ID for each test to ensure isolation
 const TEST_DATASET_ID = 'test-dataset';
@@ -795,6 +797,80 @@ describe('Database Service', () => {
 
       const entry = await db.codexEntries.get(codexEntryId);
       expect(entry.title).toBe('Has A Title');
+    });
+  });
+
+  describe('deleteAllData', () => {
+    /**
+     * This path had no tests at all before the sync manifest drove it
+     * (manifest step 2), which is the worst combination available: a wipe whose
+     * failure mode is silent. If the manifest loop cleared nothing, the restore
+     * that follows would duplicate every row; if it cleared too much, it would
+     * take local-only data with it. Both look like nothing at the call site.
+     */
+    async function seedOneOfEverything() {
+      const db = getDatabase(TEST_DATASET_ID);
+
+      // One row in every table the manifest says syncs.
+      for (const name of syncedTables()) {
+        await db.table(name).add({ seeded: true });
+      }
+
+      // And one in each of the local-only tables with a distinct fate.
+      await db.acknowledgedDuplicates.add({ person1Id: 1, person2Id: 2, acknowledgedAt: 'now' });
+      await db.syncQueue.add({
+        entityType: 'person', entityId: '1', operation: 'add', timestamp: Date.now(), synced: 0
+      });
+      await db.contextRegistry.add({ seeded: true });
+    }
+
+    it('clears every synced table', async () => {
+      const db = getDatabase(TEST_DATASET_ID);
+      await seedOneOfEverything();
+
+      await deleteAllData(TEST_DATASET_ID);
+
+      const remaining = [];
+      for (const name of syncedTables()) {
+        if ((await db.table(name).count()) > 0) remaining.push(name);
+      }
+      expect(remaining).toEqual([]);
+    });
+
+    it('preserves the sync queue unless asked, because it is the data-loss guard', async () => {
+      const db = getDatabase(TEST_DATASET_ID);
+      await seedOneOfEverything();
+
+      await deleteAllData(TEST_DATASET_ID);
+      expect(await db.syncQueue.count()).toBe(1);
+
+      await deleteAllData(TEST_DATASET_ID, { clearSyncQueue: true });
+      expect(await db.syncQueue.count()).toBe(0);
+    });
+
+    it('preserves local-only data on the restore path, and only then', async () => {
+      const db = getDatabase(TEST_DATASET_ID);
+      await seedOneOfEverything();
+
+      // The cloud-restore path. Clearing these here destroyed them permanently,
+      // because nothing uploads them and so nothing restores them.
+      await deleteAllData(TEST_DATASET_ID);
+      expect(await db.acknowledgedDuplicates.count()).toBe(1);
+
+      // A deliberate user-initiated wipe does take them.
+      await deleteAllData(TEST_DATASET_ID, { includeLocalOnly: true });
+      expect(await db.acknowledgedDuplicates.count()).toBe(0);
+    });
+
+    it('leaves the derived context tables alone', async () => {
+      const db = getDatabase(TEST_DATASET_ID);
+      await seedOneOfEverything();
+
+      await deleteAllData(TEST_DATASET_ID, { includeLocalOnly: true, clearSyncQueue: true });
+
+      // contextService regenerates these; a documented quirk, asserted so that
+      // manifest-driven clearing cannot quietly start sweeping them.
+      expect(await db.contextRegistry.count()).toBe(1);
     });
   });
 });

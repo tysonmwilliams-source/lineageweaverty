@@ -1,6 +1,8 @@
 import Dexie from 'dexie';
+import type { Table } from 'dexie';
 import { logger } from '../utils/logger';
 import { errorMessage } from '../utils/errorMessage';
+import { syncedTables } from './syncManifest';
 import type {
   AcknowledgedDuplicate,
   AppDatabase,
@@ -53,6 +55,22 @@ async function notifyContextChange(
  *
  * Database instances are cached in a Map for performance.
  */
+
+/**
+ * A table looked up by a name computed at runtime.
+ *
+ * `AppDatabase` has no index signature, deliberately — it is what makes
+ * `db.peopl` a compile error rather than a runtime undefined. The
+ * manifest-driven loops are the one place that legitimately needs a table by
+ * string, and the manifest's own test guarantees every name it yields is a real
+ * store, so the cast is contained here rather than repeated at each loop.
+ *
+ * Still returns `undefined` for an absent table: an older database opened
+ * before a store was added genuinely will not have it.
+ */
+function tableByName(database: AppDatabase, name: string): Table<unknown, number> | undefined {
+  return (database as unknown as Record<string, Table<unknown, number> | undefined>)[name];
+}
 
 /**
  * Options for `addHouse`.
@@ -1625,14 +1643,20 @@ export async function deleteAllData(
   try {
     const database = getDatabase(datasetId);
 
-    // Clear all core tables
-    await database.people.clear();
-    await database.houses.clear();
-    await database.relationships.clear();
-
-    // Clear Codex tables (CRITICAL - prevents duplicates during sync)
-    await database.codexEntries.clear();
-    await database.codexLinks.clear();
+    // Clear every table that participates in cloud sync.
+    //
+    // Was twenty hand-written `.clear()` lines — the fourth of the four
+    // divergent entity lists (sync manifest, step 2). Driving it from the
+    // manifest means a new entity is cleared on the download path the moment it
+    // is declared. Forgetting that line is how a table keeps stale rows that
+    // the restore then duplicates.
+    //
+    // The three `context*` tables are deliberately not cleared here, which is a
+    // documented quirk rather than an oversight: contextService regenerates
+    // them from the primary data.
+    for (const name of syncedTables()) {
+      await tableByName(database, name)?.clear();
+    }
 
     // `acknowledgedDuplicates` and `bugs` are local-only: neither appears in
     // syncAllToCloud or downloadAllFromCloud. Clearing them on the cloud-restore
@@ -1643,31 +1667,6 @@ export async function deleteAllData(
       await database.acknowledgedDuplicates.clear();
       if (database.bugs) await database.bugs.clear();
     }
-
-    // Clear heraldry tables if they exist
-    if (database.heraldry) await database.heraldry.clear();
-    if (database.heraldryLinks) await database.heraldryLinks.clear();
-
-    // Clear dignities tables if they exist
-    if (database.dignities) await database.dignities.clear();
-    if (database.dignityTenures) await database.dignityTenures.clear();
-    if (database.dignityLinks) await database.dignityLinks.clear();
-
-    // Clear household roles table if it exists
-    if (database.householdRoles) await database.householdRoles.clear();
-
-    // Clear writing studio tables if they exist
-    if (database.writings) await database.writings.clear();
-    if (database.chapters) await database.chapters.clear();
-    if (database.writingLinks) await database.writingLinks.clear();
-
-    // Clear story planning tables if they exist
-    if (database.storyPlans) await database.storyPlans.clear();
-    if (database.storyArcs) await database.storyArcs.clear();
-    if (database.storyBeats) await database.storyBeats.clear();
-    if (database.scenePlans) await database.scenePlans.clear();
-    if (database.characterArcs) await database.characterArcs.clear();
-    if (database.plotThreads) await database.plotThreads.clear();
 
     // Only clear syncQueue if explicitly requested (after successful full sync)
     if (options.clearSyncQueue && database.syncQueue) {

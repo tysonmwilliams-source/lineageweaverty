@@ -134,6 +134,49 @@ export const LOCAL_ONLY_TABLES: Readonly<Record<string, string>> = {
 export const RULES_WITHOUT_SYNC: readonly string[] = ['acknowledgedDuplicates', 'bugs'];
 
 /**
+ * The collections that existed before the dataset structure did.
+ *
+ * **This is not a stale copy of the entity list, and must not be replaced with
+ * `syncedCollections()`.** The audit counts it as drift against the other lists'
+ * 22 entries. It is not drift — it is a historical set, and it is correct.
+ *
+ * `migrationService.js` uses it to move documents from the pre-dataset flat path
+ * `users/{uid}/{collection}` to `users/{uid}/datasets/{id}/{collection}`. That
+ * migration was written when the Dexie schema was at **v12** (verified: the
+ * commit that added `migrationService.js` carries `.version(12)` as its highest
+ * store declaration). Everything from v13 on — `syncQueue`, then the Writing
+ * Studio at v14, then the Story Planner at v15 — arrived *after* datasets, and
+ * `firestoreService` has only ever written those through `getUserCollection`,
+ * which always includes `datasets/{id}`. Those collections cannot exist at the
+ * flat path, so scanning for them would be pure waste.
+ *
+ * More importantly, the derivation would be actively harmful in the other
+ * direction: `syncedCollections()` omits `acknowledgedDuplicates` and `bugs`,
+ * which **do** exist at the flat path for anyone who used the app before
+ * datasets. Deriving this list would strand them there permanently.
+ *
+ * It lives here rather than in `migrationService.js` so that collection names
+ * are declared in one file, which was the point of step 2 — but membership stays
+ * a deliberate choice, not a computed one. Nothing should ever be added to it:
+ * the set of collections that existed in January 2026 is closed.
+ */
+export const LEGACY_FLAT_COLLECTIONS: readonly string[] = [
+  'people',
+  'houses',
+  'relationships',
+  'codexEntries',
+  'codexLinks',
+  'acknowledgedDuplicates',
+  'heraldry',
+  'heraldryLinks',
+  'dignities',
+  'dignityTenures',
+  'dignityLinks',
+  'bugs',
+  'householdRoles'
+];
+
+/**
  * Firestore paths that are structure rather than entities.
  *
  * `users`, `datasets` and `databases` are containers; `datasetsMetadata` is the
@@ -157,13 +200,29 @@ export function allEntities(): SyncEntity[] {
 }
 
 /**
- * Every synced Firestore collection name.
+ * Every Firestore collection that entity sync reads or writes.
  *
- * This is the derivation that replaces the four hand-written collection lists
- * in step 2. It is exported now so that step's diff is a deletion.
+ * Twenty. Use this when the question is "what does sync touch?".
  */
 export function syncedCollections(): string[] {
   return allEntities().map((entity) => entity.collection);
+}
+
+/**
+ * Every collection that can hold documents under a dataset — the twenty synced
+ * ones plus the two that only a legacy install has.
+ *
+ * Use this, not `syncedCollections()`, whenever the operation is *destructive
+ * and total*: deleting a dataset, or wiping cloud data. A wipe that skips
+ * `acknowledgedDuplicates` and `bugs` leaves documents behind under a dataset
+ * the user believes is gone, and the next dataset created with the same id
+ * inherits them.
+ *
+ * Twenty-two, which is exactly what the two hand-written lists this replaces
+ * both contained.
+ */
+export function cloudCollections(): string[] {
+  return [...syncedCollections(), ...RULES_WITHOUT_SYNC];
 }
 
 /** Every Dexie table that participates in cloud sync. */

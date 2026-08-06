@@ -35,6 +35,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { logger } from '../utils/logger';
+import { cloudCollections } from './syncManifest';
 
 // Local storage key for active dataset
 const ACTIVE_DATASET_KEY = 'lineageweaver_activeDatasetId';
@@ -196,34 +197,14 @@ export async function updateDataset(userId, datasetId, updates) {
  */
 export async function deleteDataset(userId, datasetId) {
   try {
-    // First, delete all collections under the dataset
-    const collections = [
-      'people',
-      'houses',
-      'relationships',
-      'codexEntries',
-      'codexLinks',
-      'acknowledgedDuplicates',
-      'heraldry',
-      'heraldryLinks',
-      'dignities',
-      'dignityTenures',
-      'dignityLinks',
-      'bugs',
-      'householdRoles',
-      'writings',
-      'chapters',
-      'writingLinks',
-      'storyPlans',
-      'storyArcs',
-      'storyBeats',
-      'scenePlans',
-      'plotThreads',
-      'characterArcs'
-    ];
-
-    // Delete documents in each collection
-    for (const collName of collections) {
+    // First, delete all collections under the dataset.
+    //
+    // Was a hand-written list of 22 names (sync manifest, step 2). Deleting a
+    // dataset has to be *total*, so this is `cloudCollections()` — the twenty
+    // synced entities plus the two a legacy install can still have — and not
+    // `syncedCollections()`, which would leave documents behind under a dataset
+    // the user believes is gone.
+    for (const collName of cloudCollections()) {
       const collRef = collection(db, 'users', userId, 'datasets', datasetId, collName);
       const snapshot = await getDocs(collRef);
 

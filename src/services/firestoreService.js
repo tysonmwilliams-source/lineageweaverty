@@ -46,6 +46,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { logger } from '../utils/logger';
+import { cloudCollections } from './syncManifest';
 
 // ==================== CONSTANTS ====================
 
@@ -2000,9 +2001,10 @@ export async function deleteAllCloudData(userId, datasetId) {
   try {
     logger.log('☁️ Deleting all cloud data for dataset:', datasetId);
 
-    const collections = ['people', 'houses', 'relationships', 'codexEntries', 'codexLinks', 'acknowledgedDuplicates', 'heraldry', 'heraldryLinks', 'dignities', 'dignityTenures', 'dignityLinks', 'bugs', 'householdRoles', 'writings', 'chapters', 'writingLinks', 'storyPlans', 'storyArcs', 'storyBeats', 'scenePlans', 'plotThreads', 'characterArcs'];
-
-    for (const collName of collections) {
+    // Was a hand-written list of 22 names, one of four such lists that had
+    // drifted apart (sync manifest, step 2). `cloudCollections()` is the same
+    // 22 and stays right when an entity is added.
+    for (const collName of cloudCollections()) {
       const collRef = getUserCollection(userId, datasetId, collName);
       const snapshot = await getDocs(collRef);
 
