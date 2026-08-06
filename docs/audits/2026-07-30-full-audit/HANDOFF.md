@@ -93,6 +93,9 @@ gated on a green light for timing. See "What is left" below.
 | `0a06ec2` | — | **F4 item 7**: `database.js` — the schema. Every unblocked item is done |
 | `2742d36` | — | Docs: what the seven conversions settled and found |
 | `3204ecc` | — | **Sync manifest step 1**: the manifest and its ten assertions |
+| `de31243` | — | `clearSyncedItems` reports 0 on failure, not `undefined` |
+| `bc82157` | — | The one-at-a-time mysteria migrations write `updated`, not `modified` |
+| `8485e0f` | — | **Sync manifest step 2**: the four collection lists become one |
 
 **Current baselines** (verify these still hold before and after your work):
 
@@ -448,12 +451,12 @@ synced entity or declared local-only with a reason. Adding a table is now forced
 to be a decision about whether it syncs, rather than a store that
 `deleteAllData` silently wipes with nothing to restore it from.
 
-### Before starting step 2 — read this, the audit is wrong here
+### Step 2 is done (`8485e0f`) — and here is the thing it nearly got wrong
 
-Step 2 is "replace the four divergent collection lists with manifest
-derivations". Three of the four are what the audit says they are. **The fourth
-is not a divergent copy at all**, and replacing it mechanically would cause the
-data loss the step is meant to prevent.
+Step 2 was "replace the four divergent collection lists with manifest
+derivations". Three of the four were what the audit says they are. **The fourth
+is not a divergent copy at all**, and replacing it mechanically would have caused
+the data loss the step is meant to prevent.
 
 `ENTITY_COLLECTIONS` in `migrationService.js:1071` holds 13 collections, and the
 audit counts that as drift against the other lists' 23/23/20. It is not. Those
@@ -465,25 +468,56 @@ Studio and Story Planner — was added after the dataset structure landed, and
 which always includes `datasets/{dsId}`. **Those nine collections cannot exist
 at the legacy path.** The list is historical on purpose.
 
-So for step 2:
+**Verified rather than inferred**: the commit that added `migrationService.js`
+carries `.version(12)` as its highest store declaration, so v13 onward genuinely
+postdates it.
 
-- Deriving `ENTITY_COLLECTIONS` from `syncedCollections()` would add nine
-  collections that are always empty (harmless) **and drop
-  `acknowledgedDuplicates` and `bugs`, which do exist at the legacy path**
-  (not harmless — they would be stranded there permanently).
-- If it is derived at all, it needs an explicit "existed before the dataset
-  migration" predicate plus those two local-only tables, not
-  `syncedCollections()`. Leaving it hand-written with a comment explaining why
-  is a defensible answer too.
-- `datasetService.js:200` (22 entries, for deleting a whole dataset's cloud
-  data) legitimately includes `acknowledgedDuplicates` and `bugs`: a full delete
-  should sweep collections even though nothing writes them. Derive it as
-  `syncedCollections()` **plus** `RULES_WITHOUT_SYNC`, not from
-  `syncedCollections()` alone.
+How it was resolved:
+
+- `LEGACY_FLAT_COLLECTIONS` lives in the manifest, so collection names are
+  declared in one file, but membership stays an **explicit list**, not a
+  derivation. Nothing should ever be added to it — the set of collections that
+  existed in January 2026 is closed. Two tests hold that line, one of which
+  fails if someone derives it from `syncedCollections()`.
+- The other three now use manifest derivations, and there are **two of them**
+  for a reason. `cloudCollections()` (22 — synced plus the two only a legacy
+  install has) is for *destructive and total* operations: deleting a dataset, or
+  wiping cloud data. `syncedCollections()` / `syncedTables()` (20) is for "what
+  does sync touch". Using the narrow one for a wipe leaves documents under a
+  dataset the user believes is gone.
+
+Every substitution was proved equivalent before it was made, by running the
+derivations against the literals pasted verbatim from each call site.
 
 The general lesson, which is the same one the audit taught twice already: a list
 that differs from another list is not automatically drift. Check what each one
 is *for* first.
+
+### What step 2 also had to fix
+
+**`deleteAllData` had no tests.** It is a wipe on the cloud-restore path, so a
+loop that clears nothing surfaces as duplicated rows after restore, and one that
+clears too much takes local-only data — both silent at the call site. Four tests
+now cover it, mutation-tested by dropping a table from the loop.
+
+`tableByName` in `database.ts` is the only place that reaches a Dexie table by a
+runtime string. `AppDatabase` has no index signature on purpose — that is what
+makes `db.peopl` a compile error — so the cast is contained in one helper the
+manifest's test underwrites. Use it for the step 3–5 loops rather than adding
+another cast.
+
+### Steps 3–7 are next
+
+Unchanged from the design in [`sections/02-data-sync.md`](sections/02-data-sync.md):
+introduce `cloudRepo.js` (step 3), `syncEngine.js` (step 4), replace the bulk
+operations and the two duplicated restore blocks with manifest loops (step 5),
+move cascades into the manifest (step 6), delete the shims (step 7). **Then**
+convert what remains of those two files to TypeScript — that is the tail of F4.
+
+Note that step 5's targets are already visible: `syncAllToCloud` and
+`downloadAllFromCloud` each carry the same twenty-key destructure, and
+`downloadAllFromCloud` follows it with a twenty-entry `Promise.all` and a
+twenty-line log object.
 
 ---
 

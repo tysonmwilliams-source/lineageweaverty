@@ -368,7 +368,7 @@ Notes worth carrying forward:
   below: a TypeScript migration and a heraldry-pipeline rewrite landing on the
   same files simultaneously is worse than either alone.
 
-| **Sync manifest** | Timing of the structural refactor | **Go — manifest first, then type the two files it collapses** | step 1 done, `3204ecc` |
+| **Sync manifest** | Timing of the structural refactor | **Go — manifest first, then type the two files it collapses** | steps 1–2 of 7 done, `3204ecc`, `8485e0f` |
 
 **Still to decide: C2, C5, C6, E1–E9, F1, F5, F7, F8** — and the planner view
 abstraction, the one structural refactor still gated.
