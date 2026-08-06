@@ -91,6 +91,8 @@ gated on a green light for timing. See "What is left" below.
 | `e28a24f` | — | **F4 item 5**: `codexService` |
 | `9736976` | — | **F4 item 6**: `dignityService` |
 | `0a06ec2` | — | **F4 item 7**: `database.js` — the schema. Every unblocked item is done |
+| `2742d36` | — | Docs: what the seven conversions settled and found |
+| `3204ecc` | — | **Sync manifest step 1**: the manifest and its ten assertions |
 
 **Current baselines** (verify these still hold before and after your work):
 
@@ -257,14 +259,17 @@ Still unanswered and worth batching next, in rough order of leverage:
 
 ### Green-light gated (Part One, below the line)
 
-Both were always described as needing agreement on timing, not on whether:
-
-- **The sync manifest** — ~4,700 lines → ~980, eliminates five bug classes
-  structurally. Design and migration path in
-  [`sections/02-data-sync.md`](sections/02-data-sync.md). ~1 week, 7
-  independently revertable steps.
-- **The planner view abstraction** — 3,873 lines of view code → ~1,400 and 7,858
-  CSS → ~3,000, and the natural place to enforce the sync rule once. ~4 days.
+- **The sync manifest — GREEN-LIT (2026-08-06), and step 1 is done (`3204ecc`).**
+  The owner chose "manifest first, then type it" over converting
+  `dataSyncService.js` and `firestoreService.js` as they stand. **F4's last two
+  files are therefore waiting on this refactor, not on another decision.** Design
+  and migration path in [`sections/02-data-sync.md`](sections/02-data-sync.md);
+  ~1 week, 7 independently revertable steps. See "The sync manifest" below for
+  where it stands and what step 2 needs to know before it starts.
+- **The planner view abstraction** — still gated, and unchanged. See below.
+- **The planner view abstraction (detail)** — 3,873 lines of view code → ~1,400
+  and 7,858 CSS → ~3,000, and the natural place to enforce the sync rule once.
+  ~4 days.
   **C4 is answered, so this is now a routing change**: the seven views are
   already mounted by `pages/StoryPlanner.jsx` from `:planId`/`:view`, which is
   the seam to abstract along. The shared shell each view currently reimplements
@@ -419,6 +424,64 @@ TypeScript to be worth it".
 
 ---
 
+## The sync manifest — where it stands
+
+**Step 1 is done and on `main` (`3204ecc`).** `src/services/syncManifest.ts`
+declares all twenty synced entities plus the six local-only tables;
+`syncManifest.test.js` holds ten assertions. Nothing imports the manifest yet
+apart from its test, so step 1 is revertable by deleting two files.
+
+The twenty entities were verified against all three sides rather than
+transcribed from the audit: the `entityType` strings `dataSyncService` actually
+writes into the queue, the collections `firestoreService` actually touches, and
+the tables Dexie reports at runtime. All ten assertions were **mutation-tested**
+— reintroducing the audit's phantom `arcMilestones` fails two of them, and
+removing a `LOCAL_ONLY_TABLES` entry fails a third.
+
+The load-bearing one is **total coverage**: every Dexie table must be either a
+synced entity or declared local-only with a reason. Adding a table is now forced
+to be a decision about whether it syncs, rather than a store that
+`deleteAllData` silently wipes with nothing to restore it from.
+
+### Before starting step 2 — read this, the audit is wrong here
+
+Step 2 is "replace the four divergent collection lists with manifest
+derivations". Three of the four are what the audit says they are. **The fourth
+is not a divergent copy at all**, and replacing it mechanically would cause the
+data loss the step is meant to prevent.
+
+`ENTITY_COLLECTIONS` in `migrationService.js:1071` holds 13 collections, and the
+audit counts that as drift against the other lists' 23/23/20. It is not. Those
+13 are **exactly the tables that existed at schema v1–v12**, and the function
+that uses them (`migrationService.js:1188`) reads the *pre-dataset* flat path
+`users/{uid}/{collection}`. Everything from v14 onward — the whole Writing
+Studio and Story Planner — was added after the dataset structure landed, and
+`firestoreService` has only ever written those through `getUserCollection`,
+which always includes `datasets/{dsId}`. **Those nine collections cannot exist
+at the legacy path.** The list is historical on purpose.
+
+So for step 2:
+
+- Deriving `ENTITY_COLLECTIONS` from `syncedCollections()` would add nine
+  collections that are always empty (harmless) **and drop
+  `acknowledgedDuplicates` and `bugs`, which do exist at the legacy path**
+  (not harmless — they would be stranded there permanently).
+- If it is derived at all, it needs an explicit "existed before the dataset
+  migration" predicate plus those two local-only tables, not
+  `syncedCollections()`. Leaving it hand-written with a comment explaining why
+  is a defensible answer too.
+- `datasetService.js:200` (22 entries, for deleting a whole dataset's cloud
+  data) legitimately includes `acknowledgedDuplicates` and `bugs`: a full delete
+  should sweep collections even though nothing writes them. Derive it as
+  `syncedCollections()` **plus** `RULES_WITHOUT_SYNC`, not from
+  `syncedCollections()` alone.
+
+The general lesson, which is the same one the audit taught twice already: a list
+that differs from another list is not automatically drift. Check what each one
+is *for* first.
+
+---
+
 ## Where the audit was wrong
 
 Corrections found while implementing, recorded so nobody re-derives them. The
@@ -506,6 +569,21 @@ re-checking the work rather than by reading the report.
   stopped spinning and the placeholder shield shrank to 20px. **General lesson:
   when replacing an emoji with `<Icon>`, grep the stylesheet for a `span`
   selector sizing it — an SVG inherits neither `font-size` nor that selector.**
+
+**F4 and the manifest**
+
+- **The heraldry migration's types did not "already exist in `utils/heraldry`".**
+  The order table said so; that module is plain `.js` with no typedefs at all.
+  `src/utils/heraldry/types.ts` was written to make the claim true.
+- **`migrationService.js`'s 13-collection list is not drift.** See "Before
+  starting step 2" above — it is the pre-dataset table set, and treating it as
+  a stale copy of the entity list would strand two collections at the legacy
+  path.
+- **The coverage matrix's planner rows are stale.** It records `storyPlans`,
+  `storyArcs`, `storyBeats`, `scenePlans`, `characterArcs`, `plotThreads` and
+  `writingLinks` as having "0 call sites" and never syncing. They sync now —
+  `planningService.js` and `writingLinkService.js` both call the wrappers, from
+  the Phase 0/5 work. Do not "fix" this.
 
 **The C3/C4/G7 batch** — three more, and two of them were entries that had gone
 stale rather than been wrong when written. That is a distinct failure mode worth
