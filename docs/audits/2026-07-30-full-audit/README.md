@@ -328,7 +328,7 @@ Two structural refactors are also unambiguously right, but they're big enough th
 | **G7** | React Compiler lint | **`static-components` now**, rest scheduled — rule promoted to error | `bb8fd32` |
 | **C4** | Planner | **Promote to a route** — `/writing/:id/plan/:planId/:view` | `72068fe` |
 | **C3** | Marshalling | **Recursive composition** — the full rebuild | **complete** — 6 steps, `87aa243`…`8740b32` |
-| **F4** | TypeScript | **Full migration** to `.ts`/`.tsx` | *underway* — toolchain + first module, `4208429` |
+| **F4** | TypeScript | **Full migration** to `.ts`/`.tsx` | *underway* — services done bar the blocked pair, `4208429`…`0a06ec2` |
 
 Notes worth carrying forward:
 

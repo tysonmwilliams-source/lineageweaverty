@@ -87,6 +87,10 @@ gated on a green light for timing. See "What is left" below.
 | `9da1c19` | — | **D4**: a dignity cannot be given a nonexistent holder |
 | `adbbb73` | — | **G1, G2, G3**: 3 invisible icons, RankPips, 1,481 dead CSS lines |
 | `4208429` | — | **F4 step 1**: TypeScript toolchain + `src/utils/succession` converted |
+| `15b855f` | — | **F4 step 2**: the four small tested services; Dexie + JS-callee boundaries settled |
+| `e28a24f` | — | **F4 item 5**: `codexService` |
+| `9736976` | — | **F4 item 6**: `dignityService` |
+| `0a06ec2` | — | **F4 item 7**: `database.js` — the schema. Every unblocked item is done |
 
 **Current baselines** (verify these still hold before and after your work):
 
@@ -94,7 +98,7 @@ gated on a green light for timing. See "What is left" below.
 npm run build      # passes, ~10s
 npm run typecheck  # tsc --noEmit, passes, exits 0 — CI blocks on it (F4)
 npx vitest run     # 773 tests pass, 28 files, exits 0
-npx eslint .       # 0 errors, 342 warnings — exits 0, and CI blocks on it
+npx eslint .       # 0 errors, 340 warnings — exits 0, and CI blocks on it
 ```
 
 **`npm run typecheck` is not optional and not decorative.** Vite strips
@@ -272,10 +276,15 @@ Both were always described as needing agreement on timing, not on whether:
 
 ## F4 — converting the services (next session starts here)
 
+**Items 1–7 are all done** (`15b855f`, `e28a24f`, `9736976`, `0a06ec2`). What
+remains of F4 is `dataSyncService.js` and `firestoreService.js`, and **those are
+blocked on the manifest decision — ask the owner before touching either.** The
+rest of this section is kept because the conventions in it still govern.
+
 **Toolchain is done and is not the job.** `4208429` added `typescript@5.x`,
 `tsconfig.json`, `npm run typecheck`, a blocking CI step, and an ESLint config
 block for `.ts`. `src/utils/succession` is converted as the beachhead. All four
-gates are green: build, typecheck, 773 tests, lint 0 errors / 342 warnings.
+gates are green: build, typecheck, 773 tests, lint 0 errors / 340 warnings.
 
 ### Read this before converting anything in src/services
 
@@ -293,13 +302,13 @@ owner about the manifest refactor before touching either file.
 
 | Order | File | Lines | Why |
 |---|---|---|---|
-| 1 | `heraldryCompositionMigration.js` | 162 | Small, fully tested, its types already exist in `utils/heraldry` |
-| 2 | `marriageArmsService.js` | ~130 | Small, tested, consumes the succession types already written |
-| 3 | `legacySuccession.js` | 341 | Frozen by definition — it is a preserved reference implementation and will never change again |
-| 4 | `successionChangeReport.js` | ~200 | Tested; consumes types from `utils/succession` |
-| 5 | `codexService.js` | 1,000 | Well-bounded, no sync tangle |
-| 6 | `dignityService.js` | 2,037 | Large but exports the enums everything else imports, so typing it pays out widely |
-| 7 | `database.js` | 2,004 | The Dexie schema. Highest value and highest care — it is the source of truth for every entity shape |
+| 1 | `heraldryCompositionMigration.js` | 162 | **DONE** `15b855f`. Its types did *not* already exist in `utils/heraldry` — that module is plain `.js` with no typedefs. `src/utils/heraldry/types.ts` is new |
+| 2 | `marriageArmsService.js` | ~130 | **DONE** `15b855f` |
+| 3 | `legacySuccession.js` | 341 | **DONE** `15b855f`. Typed with casts, not fixes — see below |
+| 4 | `successionChangeReport.js` | ~200 | **DONE** `15b855f` |
+| 5 | `codexService.js` | 1,000 | **DONE** `e28a24f` |
+| 6 | `dignityService.js` | 2,037 | **DONE** `9736976` |
+| 7 | `database.js` | 2,004 | **DONE** `0a06ec2` |
 | — | `dataSyncService.js`, `firestoreService.js` | 4,539 | **Blocked on the manifest decision** |
 
 ### Hazards specific to this codebase's services
@@ -323,6 +332,61 @@ force you to confront, so they are worth having in front of you:
   skips `syncQueue` is invisible to the data-loss guard.
 - **Dexie versions declare only the changed store.** Schema is at v18.
 
+### Two boundaries the service conversions had to settle
+
+Both were found in the first file and apply to every one after it.
+
+- **The Dexie boundary.** `getDatabase()` builds a bare `new Dexie(name)` and
+  adds its stores dynamically through `applySchema`, so `db.people` does not
+  exist on the `Dexie` type and no converted service can read a table. The
+  answer is `AppDatabase` in **`src/services/types.ts`**, which lists only the
+  tables converted code touches — and which `database.ts` now uses itself, so it
+  was typed once rather than shimmed and redone. **There is exactly one cast in
+  the codebase turning a `Dexie` into an `AppDatabase`**, in
+  `createDatabaseInstance`, at the point of construction. Do not add a second.
+- **Calling unconverted JS.** TypeScript infers a JS parameter's type from its
+  default, so `getAllHeraldry(datasetId = null)` was inferred as taking `null`
+  and rejected every real call. **Annotate the callee's JSDoc; do not cast at
+  the call site.** It is honest, it survives the callee's own conversion, and it
+  keeps finding wrong annotations — `updateHeraldry` claimed
+  `@param {string} [userId]` where every caller passes `null`, and the eight
+  dignity sync wrappers documented `datasetId` as `{string}` for the same
+  reason.
+
+Also added: **`errorMessage(unknown)`** in `src/utils/errorMessage.ts`. `strict`
+turns on `useUnknownInCatchVariables`, so `error.message` no longer compiles and
+every service hits it in its first try/catch. Use it rather than a cast.
+
+### What typing found, and why none of it was fixed
+
+Four defects surfaced that a type signature made visible. **All four are still
+present**, deliberately: fixing them is a behaviour change, and the worth of a
+conversion commit is that a reviewer can trust nothing runs differently after
+it. Each is documented at the site.
+
+- **`codexService`'s two selected-mysteria paths write `modified`, not
+  `updated`.** Nothing reads `modified`. Every other Codex write sets `updated`,
+  including the bulk migration those two were copied from — so migrating entries
+  one at a time leaves the "recently updated" list stale.
+- **`clearSyncedItems` returns `undefined` when it throws** and a count when it
+  does not. Typed `Promise<number | undefined>` rather than given a `return 0`.
+- **`deleteHouse` reads an `options.userId` its JSDoc never documented.**
+  Without it the cascading Codex delete never reaches the cloud.
+- **`acknowledgeDuplicate` called `parseInt` on two numbers.** Removed — that
+  one *is* a no-op at runtime, which is why it was safe to drop.
+
+Two smaller judgement calls worth knowing:
+
+- **`legacySuccession.ts` is typed with casts where the rest of F4 would use a
+  real fix.** It is a frozen reference implementation whose entire purpose is
+  reproducing old behaviour, so `parseInt(x as string)` — which has no runtime
+  existence — is correct there and `String(x)` would not be. Do not "clean it
+  up".
+- **`new Date(a) - new Date(b)` does not type-check anywhere**, and no cast
+  expresses it. The three sorts that did this use `.getTime()`, which is
+  identical for every input including the invalid dates a missing timestamp
+  produces. This is the only expression shape the conversions changed.
+
 ### Conventions established by the beachhead
 
 - Types live in a `types.ts` beside the module, and are **narrow** — they
@@ -335,7 +399,16 @@ force you to confront, so they are worth having in front of you:
 - Convert with `git mv` so the rename is visible in history rather than showing
   as a delete plus an add.
 - After each file: `npm run typecheck && npx vitest run && npx eslint .`. The
-  warning count is a ratchet — it may fall, never rise.
+  warning count is a ratchet — it may fall, never rise. It is now **340**.
+- **Entity types live in `src/services/types.ts`**, narrow, and grow only when a
+  converted file reads a field. Tables this codebase only clears or backs up are
+  `OpaqueTable` — giving them row types would recreate the schema by hand in a
+  second file. `Person` and `House` extend the succession types rather than
+  replacing them, so `utils/succession/types.ts` keeps telling the truth about
+  what the *rules* read.
+- Use Dexie's third type parameter: `Table<Row, number, RowInput>`. A row read
+  back always has an `id`; a row going in need not. Skipping this is what forces
+  a non-null assertion onto every `bulkDelete`.
 
 ### The trap that makes this whole decision worth it
 
