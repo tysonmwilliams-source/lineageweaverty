@@ -2011,9 +2011,18 @@ export async function getPendingChangeCount(datasetId?: DatasetId): Promise<numb
  * Clear all synced entries from the queue (cleanup)
  * Should be called periodically or after successful full sync
  *
+ * On failure this reports 0 rather than throwing: the delete is transactional,
+ * so a thrown error means nothing was removed, and 0 is the honest count. It
+ * does not throw because the only caller, performSyncQueueMaintenance, runs
+ * stale *pending* cleanup in the step after this one — and stale pending
+ * entries are what the startup data-loss guard reads. A failure to tidy up
+ * already-synced rows must not skip that. The error is still reported:
+ * logger.error is the one level that is not a DEV-only no-op.
+ *
  * @param {string} [datasetId] - Dataset ID
+ * @returns {Promise<number>} Rows deleted; 0 if the delete failed
  */
-export async function clearSyncedItems(datasetId?: DatasetId): Promise<number | undefined> {
+export async function clearSyncedItems(datasetId?: DatasetId): Promise<number> {
   try {
     const database = getDatabase(datasetId);
     const deleted = await database.syncQueue
@@ -2023,6 +2032,7 @@ export async function clearSyncedItems(datasetId?: DatasetId): Promise<number | 
     return deleted;
   } catch (error) {
     logger.error('Error clearing synced items:', error);
+    return 0;
   }
 }
 

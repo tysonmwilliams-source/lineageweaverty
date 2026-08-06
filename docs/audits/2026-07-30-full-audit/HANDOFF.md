@@ -364,17 +364,22 @@ every service hits it in its first try/catch. Use it rather than a cast.
 
 ### What typing found, and why none of it was fixed
 
-Four defects surfaced that a type signature made visible. **All four are still
-present**, deliberately: fixing them is a behaviour change, and the worth of a
-conversion commit is that a reviewer can trust nothing runs differently after
-it. Each is documented at the site.
+Four defects surfaced that a type signature made visible. **None were fixed in
+the conversion commits**, deliberately: fixing them is a behaviour change, and
+the worth of a conversion commit is that a reviewer can trust nothing runs
+differently after it. Each is documented at the site. One has since been fixed
+in a commit of its own — marked below.
 
 - **`codexService`'s two selected-mysteria paths write `modified`, not
   `updated`.** Nothing reads `modified`. Every other Codex write sets `updated`,
   including the bulk migration those two were copied from — so migrating entries
   one at a time leaves the "recently updated" list stale.
-- **`clearSyncedItems` returns `undefined` when it throws** and a count when it
-  does not. Typed `Promise<number | undefined>` rather than given a `return 0`.
+- ~~**`clearSyncedItems` returns `undefined` when it throws** and a count when it
+  does not. Typed `Promise<number | undefined>` rather than given a `return 0`.~~
+  **Fixed separately:** the catch now returns 0 and the type is `Promise<number>`.
+  Not a rethrow, because the sole caller runs stale *pending* cleanup in the
+  next step and that is the input to the startup data-loss guard — a failure to
+  clear already-synced rows must not skip it. Nothing deleted changed.
 - **`deleteHouse` reads an `options.userId` its JSDoc never documented.**
   Without it the cascading Codex delete never reaches the cloud.
 - **`acknowledgeDuplicate` called `parseInt` on two numbers.** Removed — that
