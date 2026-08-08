@@ -39,7 +39,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { logger } from '../utils/logger';
-import { cloudCollections } from './syncManifest';
+import { allEntities, cloudCollections } from './syncManifest';
 import {
   addCloud,
   getCloud,
@@ -414,29 +414,40 @@ export const deleteWritingLinkCloud = (userId, datasetId, linkId) =>
 // ==================== BULK OPERATIONS ====================
 
 /**
- * Sync all local data to cloud
- * Used for initial upload when user first signs in with existing local data
+ * Upload every local row to the cloud, in batches.
+ *
+ * Sync manifest, step 5. This was twenty copies of the same eight-line loop —
+ * one per entity, each naming its collection as a literal — followed by a
+ * twenty-key destructure and a twenty-line log object. The manifest already
+ * knows every table and the collection it maps to, so the whole thing is one
+ * loop over `allEntities()`.
+ *
+ * `localData` is keyed by **table** name, which is what every caller already
+ * passes and why `entity.table` and `entity.collection` are separate fields on
+ * the manifest rather than one.
+ *
+ * Note what this writes: `syncedAt` only, no `createdAt` or `updatedAt`. That
+ * differs from `addCloud`, which stamps per the entity's create policy — a bulk
+ * upload is a snapshot of local state, not twenty thousand individual creates,
+ * and it deliberately does not claim to know when each row was made. Preserved
+ * exactly as it was.
  *
  * @param {string} userId - The user's Firebase UID
  * @param {string} datasetId - The dataset ID
- * @param {Object} localData - Object containing people, houses, relationships arrays
+ * @param {Object} localData - Rows keyed by table name
  */
 export async function syncAllToCloud(userId, datasetId, localData) {
   try {
     logger.log('☁️ Starting full sync to cloud for dataset:', datasetId);
 
-    const { people, houses, relationships, codexEntries, codexLinks, heraldry, heraldryLinks, dignities, dignityTenures, dignityLinks, householdRoles, writings, chapters, writingLinks, storyPlans, storyArcs, storyBeats, scenePlans, plotThreads, characterArcs } = localData;
-
-    // Use batched writes for efficiency (max 500 operations per batch)
-    // We'll create multiple batches if needed
-
+    // Firestore caps a batch at 500 operations, so commit and start a fresh one
+    // as we approach it. 450 leaves room for the loop to overshoot by a row.
     let operationCount = 0;
     let batch = writeBatch(db);
 
-    // Helper to commit batch if getting full
     const checkBatch = async () => {
       operationCount++;
-      if (operationCount >= 450) { // Leave buffer before 500 limit
+      if (operationCount >= 450) {
         await batch.commit();
         batch = writeBatch(db);
         operationCount = 0;
@@ -444,255 +455,31 @@ export async function syncAllToCloud(userId, datasetId, localData) {
       }
     };
 
-    // Sync houses first (people reference houses)
-    for (const house of houses || []) {
-      const docRef = getUserDoc(userId, datasetId, 'houses', String(house.id));
-      batch.set(docRef, {
-        ...house,
-        localId: house.id,
-        syncedAt: serverTimestamp()
-      });
-      await checkBatch();
+    const counts = {};
+
+    // The old code ran houses before people, with a comment saying people
+    // reference houses. That ordering was inert — Firestore has no referential
+    // integrity and a batch is not ordered — so manifest order is used instead.
+    for (const entity of allEntities()) {
+      const rows = localData[entity.table] || [];
+      counts[entity.table] = rows.length;
+
+      for (const row of rows) {
+        const docRef = getUserDoc(userId, datasetId, entity.collection, String(row.id));
+        batch.set(docRef, {
+          ...row,
+          localId: row.id,
+          syncedAt: serverTimestamp()
+        });
+        await checkBatch();
+      }
     }
 
-    // Sync people
-    for (const person of people || []) {
-      const docRef = getUserDoc(userId, datasetId, 'people', String(person.id));
-      batch.set(docRef, {
-        ...person,
-        localId: person.id,
-        syncedAt: serverTimestamp()
-      });
-      await checkBatch();
-    }
-
-    // Sync relationships
-    for (const rel of relationships || []) {
-      const docRef = getUserDoc(userId, datasetId, 'relationships', String(rel.id));
-      batch.set(docRef, {
-        ...rel,
-        localId: rel.id,
-        syncedAt: serverTimestamp()
-      });
-      await checkBatch();
-    }
-
-    // Sync codex entries
-    for (const entry of codexEntries || []) {
-      const docRef = getUserDoc(userId, datasetId, 'codexEntries', String(entry.id));
-      batch.set(docRef, {
-        ...entry,
-        localId: entry.id,
-        syncedAt: serverTimestamp()
-      });
-      await checkBatch();
-    }
-
-    // Sync codex links
-    for (const link of codexLinks || []) {
-      const docRef = getUserDoc(userId, datasetId, 'codexLinks', String(link.id));
-      batch.set(docRef, {
-        ...link,
-        localId: link.id,
-        syncedAt: serverTimestamp()
-      });
-      await checkBatch();
-    }
-
-    // Sync heraldry
-    for (const h of heraldry || []) {
-      const docRef = getUserDoc(userId, datasetId, 'heraldry', String(h.id));
-      batch.set(docRef, {
-        ...h,
-        localId: h.id,
-        syncedAt: serverTimestamp()
-      });
-      await checkBatch();
-    }
-
-    // Sync heraldry links
-    for (const link of heraldryLinks || []) {
-      const docRef = getUserDoc(userId, datasetId, 'heraldryLinks', String(link.id));
-      batch.set(docRef, {
-        ...link,
-        localId: link.id,
-        syncedAt: serverTimestamp()
-      });
-      await checkBatch();
-    }
-
-    // Sync dignities
-    for (const dignity of dignities || []) {
-      const docRef = getUserDoc(userId, datasetId, 'dignities', String(dignity.id));
-      batch.set(docRef, {
-        ...dignity,
-        localId: dignity.id,
-        syncedAt: serverTimestamp()
-      });
-      await checkBatch();
-    }
-
-    // Sync dignity tenures
-    for (const tenure of dignityTenures || []) {
-      const docRef = getUserDoc(userId, datasetId, 'dignityTenures', String(tenure.id));
-      batch.set(docRef, {
-        ...tenure,
-        localId: tenure.id,
-        syncedAt: serverTimestamp()
-      });
-      await checkBatch();
-    }
-
-    // Sync dignity links
-    for (const link of dignityLinks || []) {
-      const docRef = getUserDoc(userId, datasetId, 'dignityLinks', String(link.id));
-      batch.set(docRef, {
-        ...link,
-        localId: link.id,
-        syncedAt: serverTimestamp()
-      });
-      await checkBatch();
-    }
-
-    // Sync household roles
-    for (const role of householdRoles || []) {
-      const docRef = getUserDoc(userId, datasetId, 'householdRoles', String(role.id));
-      batch.set(docRef, {
-        ...role,
-        localId: role.id,
-        syncedAt: serverTimestamp()
-      });
-      await checkBatch();
-    }
-
-    // Sync writings
-    for (const writing of writings || []) {
-      const docRef = getUserDoc(userId, datasetId, 'writings', String(writing.id));
-      batch.set(docRef, {
-        ...writing,
-        localId: writing.id,
-        syncedAt: serverTimestamp()
-      });
-      await checkBatch();
-    }
-
-    // Sync chapters
-    for (const chapter of chapters || []) {
-      const docRef = getUserDoc(userId, datasetId, 'chapters', String(chapter.id));
-      batch.set(docRef, {
-        ...chapter,
-        localId: chapter.id,
-        syncedAt: serverTimestamp()
-      });
-      await checkBatch();
-    }
-
-    // Sync writing links
-    for (const link of writingLinks || []) {
-      const docRef = getUserDoc(userId, datasetId, 'writingLinks', String(link.id));
-      batch.set(docRef, {
-        ...link,
-        localId: link.id,
-        syncedAt: serverTimestamp()
-      });
-      await checkBatch();
-    }
-
-    // Sync story plans
-    for (const plan of storyPlans || []) {
-      const docRef = getUserDoc(userId, datasetId, 'storyPlans', String(plan.id));
-      batch.set(docRef, {
-        ...plan,
-        localId: plan.id,
-        syncedAt: serverTimestamp()
-      });
-      await checkBatch();
-    }
-
-    // Sync story arcs
-    for (const arc of storyArcs || []) {
-      const docRef = getUserDoc(userId, datasetId, 'storyArcs', String(arc.id));
-      batch.set(docRef, {
-        ...arc,
-        localId: arc.id,
-        syncedAt: serverTimestamp()
-      });
-      await checkBatch();
-    }
-
-    // Sync story beats
-    for (const beat of storyBeats || []) {
-      const docRef = getUserDoc(userId, datasetId, 'storyBeats', String(beat.id));
-      batch.set(docRef, {
-        ...beat,
-        localId: beat.id,
-        syncedAt: serverTimestamp()
-      });
-      await checkBatch();
-    }
-
-    // Sync scene plans
-    for (const scene of scenePlans || []) {
-      const docRef = getUserDoc(userId, datasetId, 'scenePlans', String(scene.id));
-      batch.set(docRef, {
-        ...scene,
-        localId: scene.id,
-        syncedAt: serverTimestamp()
-      });
-      await checkBatch();
-    }
-
-    // Sync plot threads
-    for (const thread of plotThreads || []) {
-      const docRef = getUserDoc(userId, datasetId, 'plotThreads', String(thread.id));
-      batch.set(docRef, {
-        ...thread,
-        localId: thread.id,
-        syncedAt: serverTimestamp()
-      });
-      await checkBatch();
-    }
-
-    // Sync character arcs
-    for (const arc of characterArcs || []) {
-      const docRef = getUserDoc(userId, datasetId, 'characterArcs', String(arc.id));
-      batch.set(docRef, {
-        ...arc,
-        localId: arc.id,
-        syncedAt: serverTimestamp()
-      });
-      await checkBatch();
-    }
-
-
-    // Commit remaining operations
     if (operationCount > 0) {
       await batch.commit();
     }
 
-    logger.log('☁️ Full sync to cloud complete!', {
-      dataset: datasetId,
-      houses: houses?.length || 0,
-      people: people?.length || 0,
-      relationships: relationships?.length || 0,
-      codexEntries: codexEntries?.length || 0,
-      codexLinks: codexLinks?.length || 0,
-      heraldry: heraldry?.length || 0,
-      heraldryLinks: heraldryLinks?.length || 0,
-      dignities: dignities?.length || 0,
-      dignityTenures: dignityTenures?.length || 0,
-      dignityLinks: dignityLinks?.length || 0,
-      householdRoles: householdRoles?.length || 0,
-      writings: writings?.length || 0,
-      chapters: chapters?.length || 0,
-      writingLinks: writingLinks?.length || 0,
-      storyPlans: storyPlans?.length || 0,
-      storyArcs: storyArcs?.length || 0,
-      storyBeats: storyBeats?.length || 0,
-      scenePlans: scenePlans?.length || 0,
-      plotThreads: plotThreads?.length || 0,
-      characterArcs: characterArcs?.length || 0
-    });
+    logger.log('☁️ Full sync to cloud complete!', { dataset: datasetId, ...counts });
 
     return true;
   } catch (error) {
@@ -702,65 +489,36 @@ export async function syncAllToCloud(userId, datasetId, localData) {
 }
 
 /**
- * Download all cloud data to local
- * Used when user signs in on a new device
+ * Read every cloud row for a dataset, keyed by table name.
+ *
+ * Sync manifest, step 5. Was a twenty-entry `Promise.all`, a twenty-name array
+ * destructure, a twenty-line log object and a twenty-key return literal — four
+ * separate lists that had to agree, in the function whose whole job is to not
+ * miss a collection.
  *
  * @param {string} userId - The user's Firebase UID
  * @param {string} datasetId - The dataset ID
- * @returns {Object} Object containing people, houses, relationships, codexEntries arrays
+ * @returns {Object} Rows keyed by table name
  */
 export async function downloadAllFromCloud(userId, datasetId) {
   try {
     logger.log('☁️ Downloading all data from cloud for dataset:', datasetId);
 
-    const [people, houses, relationships, codexEntries, codexLinks, heraldry, heraldryLinks, dignities, dignityTenures, dignityLinks, householdRoles, writings, chapters, writingLinks, storyPlans, storyArcs, storyBeats, scenePlans, plotThreads, characterArcs] = await Promise.all([
-      getAllPeopleCloud(userId, datasetId),
-      getAllHousesCloud(userId, datasetId),
-      getAllRelationshipsCloud(userId, datasetId),
-      getAllCodexEntriesCloud(userId, datasetId),
-      getAllCodexLinksCloud(userId, datasetId),
-      getAllHeraldryCloud(userId, datasetId),
-      getAllHeraldryLinksCloud(userId, datasetId),
-      getAllDignitiesCloud(userId, datasetId),
-      getAllDignityTenuresCloud(userId, datasetId),
-      getAllDignityLinksCloud(userId, datasetId),
-      getAllHouseholdRolesCloud(userId, datasetId),
-      getAllWritingsCloud(userId, datasetId),
-      getAllChaptersCloud(userId, datasetId),
-      getAllWritingLinksCloud(userId, datasetId),
-      getAllStoryPlansCloud(userId, datasetId),
-      getAllStoryArcsCloud(userId, datasetId),
-      getAllStoryBeatsCloud(userId, datasetId),
-      getAllScenePlansCloud(userId, datasetId),
-      getAllPlotThreadsCloud(userId, datasetId),
-      getAllCharacterArcsCloud(userId, datasetId)
-    ]);
+    const entities = allEntities();
+    const results = await Promise.all(
+      entities.map((entity) => getAllCloud(entity.entityType, userId, datasetId))
+    );
 
-    logger.log('☁️ Download complete!', {
-      dataset: datasetId,
-      houses: houses.length,
-      people: people.length,
-      relationships: relationships.length,
-      codexEntries: codexEntries.length,
-      codexLinks: codexLinks.length,
-      heraldry: heraldry.length,
-      heraldryLinks: heraldryLinks.length,
-      dignities: dignities.length,
-      dignityTenures: dignityTenures.length,
-      dignityLinks: dignityLinks.length,
-      householdRoles: householdRoles.length,
-      writings: writings.length,
-      chapters: chapters.length,
-      writingLinks: writingLinks.length,
-      storyPlans: storyPlans.length,
-      storyArcs: storyArcs.length,
-      storyBeats: storyBeats.length,
-      scenePlans: scenePlans.length,
-      plotThreads: plotThreads.length,
-      characterArcs: characterArcs.length
+    const data = {};
+    const counts = {};
+    entities.forEach((entity, index) => {
+      data[entity.table] = results[index];
+      counts[entity.table] = results[index].length;
     });
 
-    return { people, houses, relationships, codexEntries, codexLinks, heraldry, heraldryLinks, dignities, dignityTenures, dignityLinks, householdRoles, writings, chapters, writingLinks, storyPlans, storyArcs, storyBeats, scenePlans, plotThreads, characterArcs };
+    logger.log('☁️ Download complete!', { dataset: datasetId, ...counts });
+
+    return data;
   } catch (error) {
     logger.error('☁️ Error downloading from cloud:', error);
     throw error;
