@@ -97,14 +97,15 @@ gated on a green light for timing. See "What is left" below.
 | `bc82157` | — | The one-at-a-time mysteria migrations write `updated`, not `modified` |
 | `8485e0f` | — | **Sync manifest step 2**: the four collection lists become one |
 | `64c4d77` | — | **Sync manifest step 3**: `cloudRepo.ts`; firestoreService 2,238 → 1,036 |
+| `6ccd764` | — | **Sync manifest step 4**: `syncEngine.ts`; dataSyncService 2,410 → 1,727 |
 
 **Current baselines** (verify these still hold before and after your work):
 
 ```bash
 npm run build      # passes, ~10s
 npm run typecheck  # tsc --noEmit, passes, exits 0 — CI blocks on it (F4)
-npx vitest run     # 796 tests pass, 29 files, exits 0
-npx eslint .       # 0 errors, 340 warnings — exits 0, and CI blocks on it
+npx vitest run     # 809 tests pass, 30 files, exits 0
+npx eslint .       # 0 errors, 339 warnings — exits 0, and CI blocks on it
 ```
 
 **`npm run typecheck` is not optional and not decorative.** Vite strips
@@ -541,6 +542,23 @@ codexLinks, and the unstamped update on dignityTenures. Each is a one-line
 manifest change if the owner wants them normalised, but each also rewrites
 documents in their Firestore, so it is their call.
 
+**A fourth open finding, from step 4: retry is applied to 5 of the 56 sync
+paths.** `retryWithBackoff` wraps the cloud call in `syncAddPerson`,
+`syncUpdatePerson`, `syncAddHouse`, `syncUpdateHouse` and `syncAddRelationship`,
+and nowhere else. `syncUpdateRelationship` does not retry. No delete retries.
+Nothing in the Codex, the Armory, Dignities, the Writing Studio or the Story
+Planner retries. It reads as a feature that reached the first few wrappers and
+stopped, and because it splits *within* an entity it cannot be declared
+per-entity the way the write policies are — so `syncOp` takes it as a per-call
+flag and `syncEngine.test.js` pins exactly which five pass it.
+
+Unlike the three above, normalising this one writes nothing to Firestore and is
+a one-word change per call site. It only affects how hard a failed sync tries
+before giving up and leaving the row queued for the periodic sync — which is
+why it is safe, and also why it is not urgent. It was left alone in step 4
+because changing the network behaviour of 51 sync paths inside a refactor
+commit produces a diff nobody can review.
+
 ### A verification habit worth copying for steps 4–7
 
 Each of these steps rewrites code that no test exercises — the suite does not
@@ -559,17 +577,46 @@ so an alias referenced above its own definition is a runtime TDZ error that a
 green build and a green suite both miss. Verified as absent; re-verify it in
 step 7 when the aliases are deleted.
 
-### Steps 4–7 are next
+### Step 4 landed (`6ccd764`); steps 5–7 are next
 
-Unchanged from the design in [`sections/02-data-sync.md`](sections/02-data-sync.md):
-`syncEngine.js` (step 4), replace the bulk operations and the two duplicated
-restore blocks with manifest loops (step 5), move cascades into the manifest
-(step 6), delete the shims (step 7). **Then** convert what remains of those two
-files to TypeScript — that is the tail of F4.
+`syncEngine.ts` replaces the 56 `sync*` wrappers. dataSyncService 2,410 → 1,727.
+
+**Two audit findings are now structurally impossible rather than fixed.**
+Wrappers confirmed a write with `markEntitySynced(entityType, entityId)`, which
+flips *every* pending row for that entity — so an edit queued while an earlier
+one was uploading got marked synced without being sent, and stopped counting as
+a pending change. `push()` confirms by queue row id. Separately, the 100-line
+`syncMap` in `syncSingleChange` is gone: routing resolves against the manifest,
+so the missing-handler class that silently discarded `dignityTenure`,
+`dignityLink` and `heraldryLink` changes cannot recur.
+
+**The count in the audit is wrong: there are 56 wrappers, not 60.** The
+arcMilestones phantom's three went with the phantom.
+
+**`markEntitySynced` now has zero call sites.** Left exported with a warning on
+it rather than deleted. If nothing claims it by step 7, delete it.
+
+**This layer now has tests — its first, 13 of them** (`syncEngine.test.js`),
+against a real IndexedDB queue with `cloudRepo` mocked. That is the pattern to
+copy for steps 5–7: `cloudRepo` is the entire Firebase boundary, so mocking that
+one module makes any of this testable without a network.
+
+Remaining, unchanged from the design in
+[`sections/02-data-sync.md`](sections/02-data-sync.md): replace the bulk
+operations and the two duplicated restore blocks with manifest loops (step 5),
+move cascades into the manifest (step 6), delete the shims (step 7). **Then**
+convert what remains of those two files to TypeScript — the tail of F4.
 
 Step 5's targets are already visible: `syncAllToCloud` and `downloadAllFromCloud`
 each carry the same twenty-key destructure, and `downloadAllFromCloud` follows it
 with a twenty-entry `Promise.all` and a twenty-line log object.
+
+Verification for step 4 followed the same rule as steps 2–3 — the suite touches
+no Firebase, so equivalence was checked by script against `git show HEAD:`: all
+56 wrappers kept their name, parameter list, entity, operation, payload and
+retry flag, and each old `*Cloud` call resolves through step 3's 79 aliases to
+the same entity. The TDZ hazard was re-checked and is absent; every export in
+both files is a hoisted function declaration.
 
 ---
 
