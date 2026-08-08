@@ -98,14 +98,18 @@ gated on a green light for timing. See "What is left" below.
 | `8485e0f` | — | **Sync manifest step 2**: the four collection lists become one |
 | `64c4d77` | — | **Sync manifest step 3**: `cloudRepo.ts`; firestoreService 2,238 → 1,036 |
 | `6ccd764` | — | **Sync manifest step 4**: `syncEngine.ts`; dataSyncService 2,410 → 1,727 |
+| `77c7284` | — | All 56 sync paths retry, not 5 (owner-approved) |
+| `87e64c0` | — | **Step 5a**: the two bulk operations become manifest loops; firestoreService 1,037 → 795 |
+| `17985d0` | — | **Step 5b**: one restore path instead of two copies; dataSyncService 1,721 → 1,469 |
+| `e6dd1ee` | — | The Codex syncs to its own dataset, not always the default |
 
 **Current baselines** (verify these still hold before and after your work):
 
 ```bash
 npm run build      # passes, ~10s
 npm run typecheck  # tsc --noEmit, passes, exits 0 — CI blocks on it (F4)
-npx vitest run     # 809 tests pass, 30 files, exits 0
-npx eslint .       # 0 errors, 339 warnings — exits 0, and CI blocks on it
+npx vitest run     # 817 tests pass, 30 files, exits 0
+npx eslint .       # 0 errors, 338 warnings — exits 0, and CI blocks on it
 ```
 
 **`npm run typecheck` is not optional and not decorative.** Vite strips
@@ -601,10 +605,57 @@ against a real IndexedDB queue with `cloudRepo` mocked. That is the pattern to
 copy for steps 5–7: `cloudRepo` is the entire Firebase boundary, so mocking that
 one module makes any of this testable without a network.
 
+### Step 5 is two thirds done; the prune leg is deliberately not started
+
+`87e64c0` (5a) replaced `syncAllToCloud` and `downloadAllFromCloud` with
+manifest loops. `17985d0` (5b) replaced the two copies of the 190-line restore
+block with one `restoreAllFromCloud`. Both verified by script against
+`git show HEAD:` — same collections, same order, same restore target per
+entity, same per-row error handling.
+
+**Do not add the prune leg without fixing the localData assembly first.** This
+is the one part of step 5 that is not done, and the reason is not effort.
+
+The design calls for `syncAllToCloud` to delete cloud documents with no local
+counterpart, fixing the audit's "upload never deletes, so forceUploadToCloud
+resurrects deleted entities" finding. That is correct in isolation. It is
+dangerous in combination with how `localData` is built today: the assembly in
+`initializeSync` and `forceUploadToCloud` wraps each group of local reads in
+`try { … } catch (e) { logger.warn(…) }` and leaves the array at its initial
+`[]` on failure. Empty and failed are indistinguishable downstream.
+
+Add pruning on top of that and a transient local read failure — one throwing
+Dexie call inside a five-table `try` — stops being a warning in the console and
+becomes permanent deletion of those collections from the user's Firestore, on
+the very code path whose job is to protect their data. The pending-changes
+guard does not help: it checks the sync queue, not whether the snapshot it is
+about to upload is complete.
+
+So the order has to be: make the assembly distinguish "no rows" from "could not
+read" (a manifest loop over `syncedTables()` reading through `getDatabase(dsId)`
+would do both jobs, and would have made the codex bug below impossible), and
+only then prune. Pruning should also refuse to run on a snapshot that reported
+any read failure at all.
+
+### A bug class the manifest work keeps turning up
+
+`e6dd1ee` fixed three calls that dropped the dataset argument — two
+`getAllCodexEntries()` on the upload side (the audit's own MEDIUM finding) and
+`restoreEntry(row)` on the restore side, found while writing 5b. Every one of
+these helpers defaults to `'default'` when the argument is omitted, so all three
+were silent, and they compose: restore a non-default dataset and its Codex lands
+in the default world; upload it later and the default world's Codex — now
+holding another dataset's entries — is written back. The Codex becomes the union
+of every dataset the user has synced.
+
+There is now a test asserting `dataSyncService` contains **no zero-argument
+calls at all**, which is the shape of the entire class. Keep it passing rather
+than reasoning about each new call site.
+
 Remaining, unchanged from the design in
-[`sections/02-data-sync.md`](sections/02-data-sync.md): replace the bulk
-operations and the two duplicated restore blocks with manifest loops (step 5),
-move cascades into the manifest (step 6), delete the shims (step 7). **Then**
+[`sections/02-data-sync.md`](sections/02-data-sync.md): the prune leg and the
+localData assembly (the rest of step 5), move cascades into the manifest
+(step 6), delete the shims (step 7). **Then**
 convert what remains of those two files to TypeScript — the tail of F4.
 
 Step 5's targets are already visible: `syncAllToCloud` and `downloadAllFromCloud`
