@@ -231,6 +231,23 @@ describe('the restore order covers the manifest', () => {
   });
 });
 
+describe('nothing in the sync path forgets the dataset', () => {
+  // Every local read and write in dataSyncService is dataset-scoped, and each
+  // takes the dataset as an argument that defaults to 'default' when omitted.
+  // That default is what made the two codex bugs silent: uploading a
+  // non-default dataset read the default world's Codex into it, and restoring
+  // one wrote its Codex back into the default world. Both looked like ordinary
+  // calls. A zero-argument call in this file is the shape of that bug.
+  it('has no zero-argument calls to dataset-scoped helpers', async () => {
+    const { readFileSync } = await import('node:fs');
+    const src = readFileSync('src/services/dataSyncService.js', 'utf8');
+
+    const bare = [...src.matchAll(/await ([a-zA-Z][a-zA-Z0-9]*)\(\)/g)].map(m => m[1]);
+
+    expect(bare).toEqual([]);
+  });
+});
+
 describe('every send retries', () => {
   // Retry used to be opt-in and only 5 of the 56 wrappers opted in — not
   // syncUpdateRelationship, no delete, nothing outside genealogy. It is now

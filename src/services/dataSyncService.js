@@ -344,10 +344,7 @@ const CLOUD_RESTORE = {
   house: (row, dsId) => localAddHouse(row, { skipCodexCreation: true, datasetId: dsId }),
   person: (row, dsId) => localAddPerson(row, dsId),
   relationship: (row, dsId) => localAddRelationship(row, dsId),
-  // No dataset argument, and `restoreEntry` takes one. Preserved exactly as it
-  // was rather than fixed here — see the note in HANDOFF.md. It means restoring
-  // a non-default dataset writes its Codex into the default world.
-  codexEntry: (row) => localRestoreCodexEntry(row),
+  codexEntry: (row, dsId) => localRestoreCodexEntry(row, dsId),
   writing: (row, dsId) => localRestoreWriting(row, dsId),
   chapter: (row, dsId) => localRestoreChapter(row, dsId),
   writingLink: (row, dsId) => localRestoreWritingLink(row, dsId),
@@ -506,7 +503,7 @@ export async function initializeSync(userId, datasetId = DEFAULT_DATASET_ID) {
       let heraldryLinks = [];
 
       try {
-        codexEntries = await getAllCodexEntries();
+        codexEntries = await getAllCodexEntries(dsId);
         codexLinks = await localDb.codexLinks.toArray();
       } catch (e) {
         logger.warn('Could not get codex entries/links:', e);
@@ -1268,7 +1265,7 @@ export async function forceUploadToCloud(userId, datasetId = DEFAULT_DATASET_ID)
     let householdRoles = [];
 
     try {
-      codexEntries = await getAllCodexEntries();
+      codexEntries = await getAllCodexEntries(dsId);
       codexLinks = await localDb.codexLinks.toArray();
     } catch (e) {
       logger.warn('Could not get codex data for upload:', e);
