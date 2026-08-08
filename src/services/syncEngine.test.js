@@ -35,6 +35,7 @@ import { addCloud, updateCloud, deleteCloud } from './cloudRepo';
 import { retryWithBackoff, SYNC_RETRY_CONFIG } from '../utils/retryWithBackoff';
 import { syncOp, enqueue, push, sendToCloud, isOnline, setOnlineForTesting } from './syncEngine';
 import { getDatabase, closeDatabaseInstance, deleteDatabaseForDataset, getPendingChanges } from './database';
+import { allEntities } from './syncManifest';
 
 const DATASET = 'sync-engine-test';
 const USER = 'test-uid';
@@ -205,6 +206,28 @@ describe('operations the manifest does not declare are refused', () => {
       await sendToCloud(entityType, 'add', USER, DATASET, 1, { note: 'x' });
     }
     expect(addCloud).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe('the restore order covers the manifest', () => {
+  // restoreAllFromCloud walks RESTORE_ORDER, not the manifest, because local
+  // restore goes through service functions that can validate and the original
+  // order has to be preserved. That makes it the one list in the sync layer
+  // that can fall behind ENTITIES again — which is the exact failure the
+  // manifest exists to prevent, so it is asserted rather than trusted.
+  it('lists every synced entity exactly once', async () => {
+    const { readFileSync } = await import('node:fs');
+    const src = readFileSync('src/services/dataSyncService.js', 'utf8');
+
+    const listed = src
+      .match(/const RESTORE_ORDER = \[([\s\S]*?)\];/)[1]
+      .match(/'([^']+)'/g)
+      .map(s => s.slice(1, -1));
+
+    const declared = allEntities().map(e => e.entityType);
+
+    expect(listed.slice().sort()).toEqual(declared.slice().sort());
+    expect(new Set(listed).size).toBe(listed.length);
   });
 });
 

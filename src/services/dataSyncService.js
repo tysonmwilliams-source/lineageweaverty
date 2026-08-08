@@ -50,6 +50,8 @@ import {
   isOnline
 } from './syncEngine';
 
+import { getEntity } from './syncManifest';
+
 // The 56 per-entity *Cloud imports are gone: every sync wrapper below now goes
 // through syncEngine, which resolves the collection from the manifest. What is
 // left are the three bulk operations, which step 5 replaces with manifest loops.
@@ -122,7 +124,6 @@ import {
   restorePlotThread as localRestorePlotThread
 } from './planningService';
 
-import { db as localDb } from './database';
 import { logger } from '../utils/logger';
 
 // ==================== SYNC STATE ====================
@@ -321,6 +322,126 @@ export function stopPeriodicSync() {
   periodicSyncDatasetId = null;
 }
 
+// ==================== RESTORE FROM CLOUD ====================
+
+/**
+ * How each entity is written back into the local database on restore.
+ *
+ * Sync manifest, step 5. This replaces two copies of the same 190-line block —
+ * one in `initializeSync`, one in `forceCloudSync` — which were functionally
+ * identical (verified line by line; they differed only in comments and in
+ * whether the warning said "during force sync"). Two copies of a restore path
+ * is how the two drift, and a restore that drifts loses whichever entity the
+ * other copy learned about.
+ *
+ * Most entities restore with a plain `put`, so the default is exactly that and
+ * only the thirteen that need a service function are listed. A service function
+ * is required wherever restoring has to do more than write the row: `house`
+ * must not re-create a Codex entry, and the writing and planning tables have
+ * restore helpers that preserve ids rather than autoincrementing new ones.
+ */
+const CLOUD_RESTORE = {
+  house: (row, dsId) => localAddHouse(row, { skipCodexCreation: true, datasetId: dsId }),
+  person: (row, dsId) => localAddPerson(row, dsId),
+  relationship: (row, dsId) => localAddRelationship(row, dsId),
+  // No dataset argument, and `restoreEntry` takes one. Preserved exactly as it
+  // was rather than fixed here — see the note in HANDOFF.md. It means restoring
+  // a non-default dataset writes its Codex into the default world.
+  codexEntry: (row) => localRestoreCodexEntry(row),
+  writing: (row, dsId) => localRestoreWriting(row, dsId),
+  chapter: (row, dsId) => localRestoreChapter(row, dsId),
+  writingLink: (row, dsId) => localRestoreWritingLink(row, dsId),
+  storyPlan: (row, dsId) => localRestoreStoryPlan(row, dsId),
+  storyArc: (row, dsId) => localRestoreStoryArc(row, dsId),
+  storyBeat: (row, dsId) => localRestoreStoryBeat(row, dsId),
+  scenePlan: (row, dsId) => localRestoreScenePlan(row, dsId),
+  plotThread: (row, dsId) => localRestorePlotThread(row, dsId),
+  characterArc: (row, dsId) => localRestoreCharacterArc(row, dsId)
+};
+
+/**
+ * Entities whose restore failure aborts the whole restore.
+ *
+ * The other seventeen catch per row and warn. That asymmetry is preserved
+ * because it is defensible, not because it was designed: a missing person or
+ * house makes everything referencing them meaningless, so failing loudly beats
+ * a half-populated tree. A dropped link or beat does not.
+ */
+const RESTORE_MUST_SUCCEED = new Set(['house', 'person', 'relationship']);
+
+/**
+ * The order entities are restored in.
+ *
+ * Spelled out rather than taken from the manifest, which orders `person` before
+ * `house`. Unlike the cloud upload — where ordering is inert because Firestore
+ * has no referential integrity — this writes through local service functions
+ * that can validate, so the original order is preserved exactly.
+ * `syncEngine.test.js` asserts this covers every manifest entity, so adding one
+ * without placing it here fails rather than silently skipping it on restore.
+ */
+const RESTORE_ORDER = [
+  'house', 'person', 'relationship',
+  'codexEntry', 'codexLink',
+  'heraldry', 'heraldryLink',
+  'dignity', 'dignityTenure', 'dignityLink',
+  'householdRole',
+  'writing', 'chapter', 'writingLink',
+  'storyPlan', 'storyArc', 'storyBeat', 'scenePlan', 'plotThread', 'characterArc'
+];
+
+/**
+ * Strip the fields Firestore added, leaving the row as local storage wants it.
+ *
+ * Five entities used to omit `updatedAt` from this list. That was safe rather
+ * than meaningful — their manifest write policies (`created-only`, `synced`,
+ * `unstamped`) mean none of them can ever carry an `updatedAt` — so stripping
+ * it uniformly changes nothing today and stays correct if a policy changes.
+ */
+function stripCloudFields(row) {
+  const { createdAt, updatedAt, syncedAt, localId, ...data } = row;
+  return data;
+}
+
+/**
+ * Re-populate the local database from a cloud snapshot.
+ *
+ * @param {Object} cloudData - Rows keyed by table name, from downloadAllFromCloud
+ * @param {string} dsId - The dataset ID
+ * @param {Object} [options]
+ * @param {string} [options.logSuffix] - Appended to warnings, to say which caller
+ */
+async function restoreAllFromCloud(cloudData, dsId, { logSuffix = '' } = {}) {
+  const database = getDatabase(dsId);
+
+  for (const entityType of RESTORE_ORDER) {
+    const entity = getEntity(entityType);
+    const rows = cloudData[entity.table] || [];
+    if (rows.length === 0) continue;
+
+    const restore = CLOUD_RESTORE[entityType]
+      ?? ((row) => database[entity.table].put(row));
+    const mustSucceed = RESTORE_MUST_SUCCEED.has(entityType);
+
+    for (const row of rows) {
+      // `parseInt(x) || x` leaves a non-numeric id untouched instead of turning
+      // it into NaN. It also mishandles id 0 — unreachable, because Dexie's
+      // autoincrement never issues one. Was written out 42 times; now once.
+      const data = { ...stripCloudFields(row), id: parseInt(row.id) || row.id };
+
+      if (mustSucceed) {
+        await restore(data, dsId);
+      } else {
+        try {
+          await restore(data, dsId);
+        } catch (e) {
+          logger.warn(`Could not restore ${entityType}${logSuffix}:`, e);
+        }
+      }
+    }
+  }
+}
+
+
 // ==================== INITIALIZATION ====================
 
 /**
@@ -511,195 +632,7 @@ export async function initializeSync(userId, datasetId = DEFAULT_DATASET_ID) {
     await localDeleteAllData(dsId, { clearSyncQueue: true });
 
     // Re-populate local DB with cloud data
-    for (const house of cloudData.houses || []) {
-      // Remove Firestore-specific fields before saving locally
-      const { createdAt, updatedAt, syncedAt, localId, ...houseData } = house;
-      // Skip Codex auto-creation during sync restore to prevent duplicates
-      await localAddHouse({ ...houseData, id: parseInt(house.id) || house.id }, { skipCodexCreation: true, datasetId: dsId });
-    }
-
-    for (const person of cloudData.people || []) {
-      const { createdAt, updatedAt, syncedAt, localId, ...personData } = person;
-      await localAddPerson({ ...personData, id: parseInt(person.id) || person.id }, dsId);
-    }
-
-    for (const rel of cloudData.relationships || []) {
-      const { createdAt, updatedAt, syncedAt, localId, ...relData } = rel;
-      await localAddRelationship({ ...relData, id: parseInt(rel.id) || rel.id }, dsId);
-    }
-
-    // Handle codex entries if they exist
-    // IMPORTANT: Use restoreEntry (not createEntry) to preserve original IDs
-    // This prevents duplicate entries during sync
-    for (const entry of cloudData.codexEntries || []) {
-      const { createdAt, updatedAt, syncedAt, localId, ...entryData } = entry;
-      try {
-        await localRestoreCodexEntry({ ...entryData, id: parseInt(entry.id) || entry.id });
-      } catch (e) {
-        logger.warn('Could not restore codex entry:', e);
-      }
-    }
-
-    // Handle codex links if they exist
-    for (const link of cloudData.codexLinks || []) {
-      const { createdAt, syncedAt, localId, ...linkData } = link;
-      try {
-        await localDb.codexLinks.put({ ...linkData, id: parseInt(link.id) || link.id });
-      } catch (e) {
-        logger.warn('Could not restore codex link:', e);
-      }
-    }
-
-    // Handle heraldry if it exists
-    for (const h of cloudData.heraldry || []) {
-      const { createdAt, updatedAt, syncedAt, localId, ...heraldryData } = h;
-      try {
-        // Use put to insert with specific ID
-        await localDb.heraldry.put({ ...heraldryData, id: parseInt(h.id) || h.id });
-      } catch (e) {
-        logger.warn('Could not restore heraldry:', e);
-      }
-    }
-
-    // Handle heraldry links if they exist
-    for (const link of cloudData.heraldryLinks || []) {
-      const { createdAt, syncedAt, localId, ...linkData } = link;
-      try {
-        await localDb.heraldryLinks.put({ ...linkData, id: parseInt(link.id) || link.id });
-      } catch (e) {
-        logger.warn('Could not restore heraldry link:', e);
-      }
-    }
-
-    // Handle dignities if they exist
-    for (const dignity of cloudData.dignities || []) {
-      const { createdAt, updatedAt, syncedAt, localId, ...dignityData } = dignity;
-      try {
-        await localDb.dignities.put({ ...dignityData, id: parseInt(dignity.id) || dignity.id });
-      } catch (e) {
-        logger.warn('Could not restore dignity:', e);
-      }
-    }
-
-    // Handle dignity tenures if they exist
-    for (const tenure of cloudData.dignityTenures || []) {
-      const { createdAt, syncedAt, localId, ...tenureData } = tenure;
-      try {
-        await localDb.dignityTenures.put({ ...tenureData, id: parseInt(tenure.id) || tenure.id });
-      } catch (e) {
-        logger.warn('Could not restore dignity tenure:', e);
-      }
-    }
-
-    // Handle dignity links if they exist
-    for (const link of cloudData.dignityLinks || []) {
-      const { createdAt, syncedAt, localId, ...linkData } = link;
-      try {
-        await localDb.dignityLinks.put({ ...linkData, id: parseInt(link.id) || link.id });
-      } catch (e) {
-        logger.warn('Could not restore dignity link:', e);
-      }
-    }
-
-    // Handle household roles if they exist
-    for (const role of cloudData.householdRoles || []) {
-      const { createdAt, updatedAt, syncedAt, localId, ...roleData } = role;
-      try {
-        await localDb.householdRoles.put({ ...roleData, id: parseInt(role.id) || role.id });
-      } catch (e) {
-        logger.warn('Could not restore household role:', e);
-      }
-    }
-
-    // Handle writings if they exist
-    for (const writing of cloudData.writings || []) {
-      const { createdAt, updatedAt, syncedAt, localId, ...writingData } = writing;
-      try {
-        await localRestoreWriting({ ...writingData, id: parseInt(writing.id) || writing.id }, dsId);
-      } catch (e) {
-        logger.warn('Could not restore writing:', e);
-      }
-    }
-
-    // Handle chapters if they exist
-    for (const chapter of cloudData.chapters || []) {
-      const { createdAt, updatedAt, syncedAt, localId, ...chapterData } = chapter;
-      try {
-        await localRestoreChapter({ ...chapterData, id: parseInt(chapter.id) || chapter.id }, dsId);
-      } catch (e) {
-        logger.warn('Could not restore chapter:', e);
-      }
-    }
-
-    // Handle writing links if they exist
-    for (const link of cloudData.writingLinks || []) {
-      const { createdAt, syncedAt, localId, ...linkData } = link;
-      try {
-        await localRestoreWritingLink({ ...linkData, id: parseInt(link.id) || link.id }, dsId);
-      } catch (e) {
-        logger.warn('Could not restore writing link:', e);
-      }
-    }
-
-    // Handle story plans if they exist
-    for (const plan of cloudData.storyPlans || []) {
-      const { createdAt, updatedAt, syncedAt, localId, ...planData } = plan;
-      try {
-        await localRestoreStoryPlan({ ...planData, id: parseInt(plan.id) || plan.id }, dsId);
-      } catch (e) {
-        logger.warn('Could not restore story plan:', e);
-      }
-    }
-
-    // Handle story arcs if they exist
-    for (const arc of cloudData.storyArcs || []) {
-      const { createdAt, updatedAt, syncedAt, localId, ...arcData } = arc;
-      try {
-        await localRestoreStoryArc({ ...arcData, id: parseInt(arc.id) || arc.id }, dsId);
-      } catch (e) {
-        logger.warn('Could not restore story arc:', e);
-      }
-    }
-
-    // Handle story beats if they exist
-    for (const beat of cloudData.storyBeats || []) {
-      const { createdAt, updatedAt, syncedAt, localId, ...beatData } = beat;
-      try {
-        await localRestoreStoryBeat({ ...beatData, id: parseInt(beat.id) || beat.id }, dsId);
-      } catch (e) {
-        logger.warn('Could not restore story beat:', e);
-      }
-    }
-
-    // Handle scene plans if they exist
-    for (const scene of cloudData.scenePlans || []) {
-      const { createdAt, updatedAt, syncedAt, localId, ...sceneData } = scene;
-      try {
-        await localRestoreScenePlan({ ...sceneData, id: parseInt(scene.id) || scene.id }, dsId);
-      } catch (e) {
-        logger.warn('Could not restore scene plan:', e);
-      }
-    }
-
-    // Handle plot threads if they exist
-    for (const thread of cloudData.plotThreads || []) {
-      const { createdAt, updatedAt, syncedAt, localId, ...threadData } = thread;
-      try {
-        await localRestorePlotThread({ ...threadData, id: parseInt(thread.id) || thread.id }, dsId);
-      } catch (e) {
-        logger.warn('Could not restore plot thread:', e);
-      }
-    }
-
-    // Handle character arcs if they exist
-    for (const arc of cloudData.characterArcs || []) {
-      const { createdAt, updatedAt, syncedAt, localId, ...arcData } = arc;
-      try {
-        await localRestoreCharacterArc({ ...arcData, id: parseInt(arc.id) || arc.id }, dsId);
-      } catch (e) {
-        logger.warn('Could not restore character arc:', e);
-      }
-    }
+    await restoreAllFromCloud(cloudData, dsId);
 
 
     updateSyncStatus({ isSyncing: false, lastSyncTime: new Date() });
@@ -1254,7 +1187,6 @@ export async function forceCloudSync(userId, datasetId = DEFAULT_DATASET_ID, opt
   if (!userId) return { status: 'no-user' };
 
   const dsId = datasetId || DEFAULT_DATASET_ID;
-  const localDb = getDatabase(dsId);
 
   updateSyncStatus({ isSyncing: true, error: null });
 
@@ -1288,191 +1220,7 @@ export async function forceCloudSync(userId, datasetId = DEFAULT_DATASET_ID, opt
     const cloudData = await downloadAllFromCloud(userId, dsId);
 
     // Re-populate local - houses first (people reference houses)
-    for (const house of cloudData.houses || []) {
-      const { createdAt, updatedAt, syncedAt, localId, ...houseData } = house;
-      // Skip Codex auto-creation during sync restore to prevent duplicates
-      await localAddHouse({ ...houseData, id: parseInt(house.id) || house.id }, { skipCodexCreation: true, datasetId: dsId });
-    }
-
-    for (const person of cloudData.people || []) {
-      const { createdAt, updatedAt, syncedAt, localId, ...personData } = person;
-      await localAddPerson({ ...personData, id: parseInt(person.id) || person.id }, dsId);
-    }
-
-    for (const rel of cloudData.relationships || []) {
-      const { createdAt, updatedAt, syncedAt, localId, ...relData } = rel;
-      await localAddRelationship({ ...relData, id: parseInt(rel.id) || rel.id }, dsId);
-    }
-
-    // Restore codex entries (using restoreEntry to preserve IDs)
-    for (const entry of cloudData.codexEntries || []) {
-      const { createdAt, updatedAt, syncedAt, localId, ...entryData } = entry;
-      try {
-        await localRestoreCodexEntry({ ...entryData, id: parseInt(entry.id) || entry.id });
-      } catch (e) {
-        logger.warn('Could not restore codex entry during force sync:', e);
-      }
-    }
-
-    // Restore codex links
-    for (const link of cloudData.codexLinks || []) {
-      const { createdAt, syncedAt, localId, ...linkData } = link;
-      try {
-        await localDb.codexLinks.put({ ...linkData, id: parseInt(link.id) || link.id });
-      } catch (e) {
-        logger.warn('Could not restore codex link during force sync:', e);
-      }
-    }
-
-    // Restore heraldry
-    for (const h of cloudData.heraldry || []) {
-      const { createdAt, updatedAt, syncedAt, localId, ...heraldryData } = h;
-      try {
-        await localDb.heraldry.put({ ...heraldryData, id: parseInt(h.id) || h.id });
-      } catch (e) {
-        logger.warn('Could not restore heraldry during force sync:', e);
-      }
-    }
-
-    // Restore heraldry links
-    for (const link of cloudData.heraldryLinks || []) {
-      const { createdAt, syncedAt, localId, ...linkData } = link;
-      try {
-        await localDb.heraldryLinks.put({ ...linkData, id: parseInt(link.id) || link.id });
-      } catch (e) {
-        logger.warn('Could not restore heraldry link during force sync:', e);
-      }
-    }
-
-    // Restore dignities
-    for (const dignity of cloudData.dignities || []) {
-      const { createdAt, updatedAt, syncedAt, localId, ...dignityData } = dignity;
-      try {
-        await localDb.dignities.put({ ...dignityData, id: parseInt(dignity.id) || dignity.id });
-      } catch (e) {
-        logger.warn('Could not restore dignity during force sync:', e);
-      }
-    }
-
-    // Restore dignity tenures
-    for (const tenure of cloudData.dignityTenures || []) {
-      const { createdAt, syncedAt, localId, ...tenureData } = tenure;
-      try {
-        await localDb.dignityTenures.put({ ...tenureData, id: parseInt(tenure.id) || tenure.id });
-      } catch (e) {
-        logger.warn('Could not restore dignity tenure during force sync:', e);
-      }
-    }
-
-    // Restore dignity links
-    for (const link of cloudData.dignityLinks || []) {
-      const { createdAt, syncedAt, localId, ...linkData } = link;
-      try {
-        await localDb.dignityLinks.put({ ...linkData, id: parseInt(link.id) || link.id });
-      } catch (e) {
-        logger.warn('Could not restore dignity link during force sync:', e);
-      }
-    }
-
-    // Restore household roles
-    for (const role of cloudData.householdRoles || []) {
-      const { createdAt, updatedAt, syncedAt, localId, ...roleData } = role;
-      try {
-        await localDb.householdRoles.put({ ...roleData, id: parseInt(role.id) || role.id });
-      } catch (e) {
-        logger.warn('Could not restore household role during force sync:', e);
-      }
-    }
-
-    // Restore writings
-    for (const writing of cloudData.writings || []) {
-      const { createdAt, updatedAt, syncedAt, localId, ...writingData } = writing;
-      try {
-        await localRestoreWriting({ ...writingData, id: parseInt(writing.id) || writing.id }, dsId);
-      } catch (e) {
-        logger.warn('Could not restore writing during force sync:', e);
-      }
-    }
-
-    // Restore chapters
-    for (const chapter of cloudData.chapters || []) {
-      const { createdAt, updatedAt, syncedAt, localId, ...chapterData } = chapter;
-      try {
-        await localRestoreChapter({ ...chapterData, id: parseInt(chapter.id) || chapter.id }, dsId);
-      } catch (e) {
-        logger.warn('Could not restore chapter during force sync:', e);
-      }
-    }
-
-    // Restore writing links
-    for (const link of cloudData.writingLinks || []) {
-      const { createdAt, syncedAt, localId, ...linkData } = link;
-      try {
-        await localRestoreWritingLink({ ...linkData, id: parseInt(link.id) || link.id }, dsId);
-      } catch (e) {
-        logger.warn('Could not restore writing link during force sync:', e);
-      }
-    }
-
-    // Restore story plans
-    for (const plan of cloudData.storyPlans || []) {
-      const { createdAt, updatedAt, syncedAt, localId, ...planData } = plan;
-      try {
-        await localRestoreStoryPlan({ ...planData, id: parseInt(plan.id) || plan.id }, dsId);
-      } catch (e) {
-        logger.warn('Could not restore story plan during force sync:', e);
-      }
-    }
-
-    // Restore story arcs
-    for (const arc of cloudData.storyArcs || []) {
-      const { createdAt, updatedAt, syncedAt, localId, ...arcData } = arc;
-      try {
-        await localRestoreStoryArc({ ...arcData, id: parseInt(arc.id) || arc.id }, dsId);
-      } catch (e) {
-        logger.warn('Could not restore story arc during force sync:', e);
-      }
-    }
-
-    // Restore story beats
-    for (const beat of cloudData.storyBeats || []) {
-      const { createdAt, updatedAt, syncedAt, localId, ...beatData } = beat;
-      try {
-        await localRestoreStoryBeat({ ...beatData, id: parseInt(beat.id) || beat.id }, dsId);
-      } catch (e) {
-        logger.warn('Could not restore story beat during force sync:', e);
-      }
-    }
-
-    // Restore scene plans
-    for (const scene of cloudData.scenePlans || []) {
-      const { createdAt, updatedAt, syncedAt, localId, ...sceneData } = scene;
-      try {
-        await localRestoreScenePlan({ ...sceneData, id: parseInt(scene.id) || scene.id }, dsId);
-      } catch (e) {
-        logger.warn('Could not restore scene plan during force sync:', e);
-      }
-    }
-
-    // Restore plot threads
-    for (const thread of cloudData.plotThreads || []) {
-      const { createdAt, updatedAt, syncedAt, localId, ...threadData } = thread;
-      try {
-        await localRestorePlotThread({ ...threadData, id: parseInt(thread.id) || thread.id }, dsId);
-      } catch (e) {
-        logger.warn('Could not restore plot thread during force sync:', e);
-      }
-    }
-
-    // Restore character arcs
-    for (const arc of cloudData.characterArcs || []) {
-      const { createdAt, updatedAt, syncedAt, localId, ...arcData } = arc;
-      try {
-        await localRestoreCharacterArc({ ...arcData, id: parseInt(arc.id) || arc.id }, dsId);
-      } catch (e) {
-        logger.warn('Could not restore character arc during force sync:', e);
-      }
-    }
+    await restoreAllFromCloud(cloudData, dsId, { logSuffix: ' during force sync' });
 
 
     updateSyncStatus({ isSyncing: false, lastSyncTime: new Date() });
