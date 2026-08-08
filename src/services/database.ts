@@ -1925,7 +1925,17 @@ export async function markSynced(queueId: number, datasetId?: DatasetId): Promis
 }
 
 /**
- * Mark sync queue entries as synced by entity (called after cloud confirms)
+ * Mark **every** pending sync queue entry for an entity as synced.
+ *
+ * **This has no call sites, and confirming a cloud write is not one.** It was
+ * how all 56 sync wrappers used to confirm a write, and it is why a second edit
+ * made while the first was still uploading was marked synced without ever being
+ * sent — see the note in `syncEngine.ts`. Use `markSynced(queueId)` to confirm a
+ * write; `addToSyncQueue` returns the id you need.
+ *
+ * Kept because "retire every pending row for this entity" is a coherent
+ * operation for queue maintenance to want. If nothing has claimed it by the
+ * time the sync refactor finishes, delete it.
  *
  * @param {string} entityType - The entity type
  * @param {number|string} entityId - The entity ID
