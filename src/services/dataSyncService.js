@@ -729,14 +729,14 @@ export async function initializeSync(userId, datasetId = DEFAULT_DATASET_ID) {
  * @param {Object} personData - The person data
  */
 export async function syncAddPerson(userId, datasetId, personId, personData) {
-  await syncOp('person', 'add', { userId, datasetId, id: personId, data: personData, retry: true });
+  await syncOp('person', 'add', { userId, datasetId, id: personId, data: personData });
 }
 
 /**
  * Update a person (local + cloud)
  */
 export async function syncUpdatePerson(userId, datasetId, personId, updates) {
-  await syncOp('person', 'update', { userId, datasetId, id: personId, data: updates, retry: true });
+  await syncOp('person', 'update', { userId, datasetId, id: personId, data: updates });
 }
 
 /**
@@ -786,14 +786,14 @@ export async function syncDeletePerson(userId, datasetId, personId, relationship
  * Add a house (local + cloud)
  */
 export async function syncAddHouse(userId, datasetId, houseId, houseData) {
-  await syncOp('house', 'add', { userId, datasetId, id: houseId, data: houseData, retry: true });
+  await syncOp('house', 'add', { userId, datasetId, id: houseId, data: houseData });
 }
 
 /**
  * Update a house (local + cloud)
  */
 export async function syncUpdateHouse(userId, datasetId, houseId, updates) {
-  await syncOp('house', 'update', { userId, datasetId, id: houseId, data: updates, retry: true });
+  await syncOp('house', 'update', { userId, datasetId, id: houseId, data: updates });
 }
 
 /**
@@ -807,13 +807,7 @@ export async function syncDeleteHouse(userId, datasetId, houseId) {
  * Add a relationship (local + cloud)
  */
 export async function syncAddRelationship(userId, datasetId, relationshipId, relationshipData) {
-  await syncOp('relationship', 'add', {
-    userId,
-    datasetId,
-    id: relationshipId,
-    data: relationshipData,
-    retry: true
-  });
+  await syncOp('relationship', 'add', { userId, datasetId, id: relationshipId, data: relationshipData });
 }
 
 /**

@@ -49,24 +49,27 @@
  * is nothing to lose and the mistake is loud. It cannot fire from the 56 shims
  * — every one was checked against the manifest — so this guards new callers.
  *
- * ## What is deliberately preserved, including a wart
+ * ### Every send retries
  *
- * **Retry is opt-in, and only five callers opt in.** `retryWithBackoff` wraps
- * the cloud call in exactly 5 of the 56 wrappers: add and update for person and
- * house, and add for relationship. `syncUpdateRelationship` does not retry.
- * Neither does any delete, or anything in the Codex, the Armory, Dignities, the
- * Writing Studio or the Story Planner.
+ * `retryWithBackoff` used to wrap the cloud call in exactly 5 of the 56
+ * wrappers — add and update for person and house, add for relationship. Not
+ * `syncUpdateRelationship`. No delete. Nothing in the Codex, the Armory,
+ * Dignities, the Writing Studio or the Story Planner. That was not a policy
+ * anyone chose: it was a feature that reached the first few wrappers and
+ * stopped, and it split *within* an entity, so it could not even be expressed
+ * per-entity in the manifest the way the write policies are.
  *
- * That is not a policy anyone chose — it is a feature added to the first few
- * wrappers that never reached the other 51, and it splits *within* an entity,
- * so it cannot even be declared per-entity in the manifest the way the write
- * policies are. Turning it on everywhere is very likely right and is recorded
- * as a finding for the owner. It is not done here, because a refactor commit
- * that also changes the network behaviour of 51 sync paths is one nobody can
- * review, and this layer has no test that would catch it going wrong.
+ * It is now unconditional, on the owner's decision. The 51 paths that gained it
+ * were never at risk of losing data without it — a failed send leaves the queue
+ * row pending either way — they just waited up to five minutes for the periodic
+ * sync to reattempt something a transient blip would have cleared on the second
+ * try.
  *
- * So `retry` is a per-call flag, the five callers that had it keep it, and
- * `syncEngine.test.js` pins which five.
+ * The cost of retrying is bounded and worth naming: `SYNC_RETRY_CONFIG` is 3
+ * attempts over roughly 7 seconds, so a *permanently* failing write (a rules
+ * rejection, say) now occupies its caller for that long before falling back to
+ * the queue. Sync calls are fire-and-forget by design — nothing awaits them on
+ * a render path — so this delays the queue row being marked, not the UI.
  */
 import { addToSyncQueue, markSynced } from './database';
 import type { DatasetId } from './types';
@@ -87,11 +90,6 @@ export interface SyncOpArgs {
   id: number | string;
   /** Required for `add` and `update`; ignored for `delete`. */
   data?: SyncPayload;
-  /**
-   * Wrap the cloud call in `retryWithBackoff`. Defaults to `false`, which is
-   * what 51 of the 56 wrappers did. See the note on preserved warts above.
-   */
-  retry?: boolean;
   /**
    * How a failed send is logged. Defaults to `error`.
    *
@@ -205,13 +203,13 @@ export async function push(
   queueId: number,
   args: SyncOpArgs
 ): Promise<boolean> {
-  const { userId, datasetId, id, data, retry = false, logLevel = 'error' } = args;
+  const { userId, datasetId, id, data, logLevel = 'error' } = args;
 
   if (!userId || !isOnline()) return false;
 
   try {
     const send = () => sendToCloud(entityType, operation, userId, datasetId, id, data);
-    await (retry ? retryWithBackoff(send, SYNC_RETRY_CONFIG) : send());
+    await retryWithBackoff(send, SYNC_RETRY_CONFIG);
 
     // The row that was sent, and only that row. See the header note.
     await markSynced(queueId, datasetId ?? undefined);

@@ -20,7 +20,19 @@ vi.mock('./cloudRepo', () => ({
   deleteCloud: vi.fn(async () => undefined)
 }));
 
+// Wrapped, not replaced: the engine must genuinely route through the retry
+// helper, but three real backoff waits per failing test would make the suite
+// crawl. maxRetries: 0 keeps the call path and drops the delays.
+vi.mock('../utils/retryWithBackoff', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    retryWithBackoff: vi.fn((fn, config) => actual.retryWithBackoff(fn, { ...config, maxRetries: 0 }))
+  };
+});
+
 import { addCloud, updateCloud, deleteCloud } from './cloudRepo';
+import { retryWithBackoff, SYNC_RETRY_CONFIG } from '../utils/retryWithBackoff';
 import { syncOp, enqueue, push, sendToCloud, isOnline, setOnlineForTesting } from './syncEngine';
 import { getDatabase, closeDatabaseInstance, deleteDatabaseForDataset, getPendingChanges } from './database';
 
@@ -196,32 +208,40 @@ describe('operations the manifest does not declare are refused', () => {
   });
 });
 
-describe('the retry wart is pinned, not blessed', () => {
-  // `retryWithBackoff` wraps the cloud call in 5 of the 56 wrappers. It is
-  // almost certainly accidental — it splits within an entity, so relationship
-  // add retries and relationship update does not — and turning it on
-  // everywhere is a live question for the owner. Until that is decided, this
-  // test exists so the set cannot drift in either direction unnoticed: making
-  // it uniform is a decision, not a tidy-up.
-  const EXPECTED_RETRYING = [
-    'syncAddPerson',
-    'syncUpdatePerson',
-    'syncAddHouse',
-    'syncUpdateHouse',
-    'syncAddRelationship'
-  ];
+describe('every send retries', () => {
+  // Retry used to be opt-in and only 5 of the 56 wrappers opted in — not
+  // syncUpdateRelationship, no delete, nothing outside genealogy. It is now
+  // unconditional. These cover the paths that previously had none, so a
+  // regression to per-call opt-in fails here rather than silently halving the
+  // resilience of the other 51.
+  it.each([
+    ['relationship', 'update'],
+    ['codexEntry', 'delete'],
+    ['dignityTenure', 'add'],
+    ['chapter', 'update'],
+    ['storyBeat', 'delete']
+  ])('routes %s %s through retryWithBackoff', async (entityType, operation) => {
+    await syncOp(entityType, operation, {
+      userId: USER, datasetId: DATASET, id: 1, data: { note: 'x' }
+    });
 
-  it('is passed by exactly the five wrappers that always had it', async () => {
-    const { readFileSync } = await import('node:fs');
-    // Read from disk rather than importing: pulling in dataSyncService would
-    // drag firestoreService and the Firebase SDK into a suite that has neither.
-    // Path is relative to the Vitest working directory, which is the repo root.
-    const src = readFileSync('src/services/dataSyncService.js', 'utf8');
+    expect(retryWithBackoff).toHaveBeenCalledTimes(1);
+    // Passed the shared sync config, not an ad-hoc one.
+    expect(retryWithBackoff).toHaveBeenCalledWith(expect.any(Function), SYNC_RETRY_CONFIG);
+  });
 
-    const retrying = [...src.matchAll(
-      /export async function (sync\w+)\([^)]*\)\s*\{([\s\S]*?)\n\}/g
-    )].filter(([, , body]) => /retry:\s*true/.test(body)).map(([, name]) => name);
+  it('retries the cascade legs of a person delete too', async () => {
+    const queueId = await enqueue('relationship', 'delete', { datasetId: DATASET, id: 4 });
+    await push('relationship', 'delete', queueId, {
+      userId: USER, datasetId: DATASET, id: 4, logLevel: 'warn'
+    });
 
-    expect(retrying.sort()).toEqual([...EXPECTED_RETRYING].sort());
+    expect(retryWithBackoff).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not reach the retry helper at all when offline', async () => {
+    setOnlineForTesting(false);
+    await syncOp('person', 'add', { userId: USER, datasetId: DATASET, id: 1, data: {} });
+    expect(retryWithBackoff).not.toHaveBeenCalled();
   });
 });
