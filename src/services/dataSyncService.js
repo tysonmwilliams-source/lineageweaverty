@@ -50,7 +50,7 @@ import {
   isOnline
 } from './syncEngine';
 
-import { getEntity } from './syncManifest';
+import { allEntities, getEntity } from './syncManifest';
 
 // The 56 per-entity *Cloud imports are gone: every sync wrapper below now goes
 // through syncEngine, which resolves the collection from the manifest. What is
@@ -322,6 +322,85 @@ export function stopPeriodicSync() {
   periodicSyncDatasetId = null;
 }
 
+// ==================== LOCAL SNAPSHOT ====================
+
+/**
+ * How each entity's rows are read out of the local database.
+ *
+ * Same shape as `CLOUD_RESTORE`, and the same rule: the default is a plain
+ * `toArray()` on the manifest's table, so only the nine entities that need a
+ * service function are listed. They need one because reading them is not just
+ * a table scan — `getAllPeople` and friends apply the service layer's own
+ * shaping, and uploading rows that differ from what the app reads would put a
+ * different world in the cloud than the one on screen.
+ *
+ * `storyPlans` deliberately does NOT use `getAllStoryPlans`, which is why that
+ * import is unused. The assembly this replaces read the raw table, and the
+ * service getter is not a drop-in for it.
+ */
+const LOCAL_READ = {
+  person: (dsId) => getAllPeople(dsId),
+  house: (dsId) => getAllHouses(dsId),
+  relationship: (dsId) => getAllRelationships(dsId),
+  codexEntry: (dsId) => getAllCodexEntries(dsId),
+  heraldry: (dsId) => localGetAllHeraldry(dsId),
+  householdRole: (dsId) => localGetAllHouseholdRoles(dsId),
+  writing: (dsId) => localGetAllWritings(dsId),
+  chapter: (dsId) => localGetAllChapters(dsId),
+  writingLink: (dsId) => localGetAllWritingLinks(dsId)
+};
+
+/**
+ * Read every local table for a dataset, keyed by table name.
+ *
+ * Replaces ~70 lines of hand-written assembly that existed twice, and fixes the
+ * flaw that made pruning unsafe to add.
+ *
+ * **A table that could not be read is absent from `data`, not empty.** The old
+ * assembly initialised every array to `[]` and overwrote it inside a `try`, so
+ * a throwing Dexie call left `[]` behind and "no rows" and "could not read"
+ * became the same value. That was harmless while upload was pure upsert — you
+ * simply uploaded nothing for that table — and it is exactly what makes a
+ * prune leg dangerous, since "nothing locally" is the signal to delete the
+ * cloud copy. Omitting the key instead means a failed read cannot be mistaken
+ * for an empty table by anything downstream.
+ *
+ * Failures are also isolated per entity now. The old code grouped reads into
+ * six `try` blocks, so one throwing call skipped every later read in its group
+ * — a failure to read codex entries silently zeroed codex links too.
+ *
+ * @param {string} dsId - The dataset ID
+ * @returns {Promise<{data: Object, failed: string[]}>} Rows by table name, and
+ *   the entity types that could not be read.
+ */
+async function collectLocalData(dsId) {
+  const database = getDatabase(dsId);
+  const data = {};
+  const failed = [];
+
+  for (const entity of allEntities()) {
+    const read = LOCAL_READ[entity.entityType]
+      ?? (() => database[entity.table].toArray());
+
+    try {
+      data[entity.table] = await read(dsId);
+    } catch (e) {
+      failed.push(entity.entityType);
+      logger.warn(`Could not read local ${entity.table} for upload:`, e);
+    }
+  }
+
+  if (failed.length > 0) {
+    logger.error(
+      `⚠️ Local snapshot is incomplete — could not read: ${failed.join(', ')}. ` +
+      'Upload will skip those tables and must not prune them.'
+    );
+  }
+
+  return { data, failed };
+}
+
+
 // ==================== RESTORE FROM CLOUD ====================
 
 /**
@@ -462,7 +541,6 @@ export async function initializeSync(userId, datasetId = DEFAULT_DATASET_ID) {
   }
 
   const dsId = datasetId || DEFAULT_DATASET_ID;
-  const localDb = getDatabase(dsId);
 
   try {
     updateSyncStatus({ isSyncing: true, error: null });
@@ -497,98 +575,9 @@ export async function initializeSync(userId, datasetId = DEFAULT_DATASET_ID) {
     if (hasLocalData && !userHasCloudData) {
       logger.log('⬆️ Uploading local data to cloud...');
 
-      let codexEntries = [];
-      let codexLinks = [];
-      let heraldry = [];
-      let heraldryLinks = [];
+      const { data: localData, failed } = await collectLocalData(dsId);
 
-      try {
-        codexEntries = await getAllCodexEntries(dsId);
-        codexLinks = await localDb.codexLinks.toArray();
-      } catch (e) {
-        logger.warn('Could not get codex entries/links:', e);
-      }
-
-      try {
-        heraldry = await localGetAllHeraldry(dsId);
-        heraldryLinks = await localDb.heraldryLinks.toArray();
-      } catch (e) {
-        logger.warn('Could not get heraldry:', e);
-      }
-
-      // Get dignities data
-      let dignities = [];
-      let dignityTenures = [];
-      let dignityLinks = [];
-
-      try {
-        dignities = await localDb.dignities.toArray();
-        dignityTenures = await localDb.dignityTenures.toArray();
-        dignityLinks = await localDb.dignityLinks.toArray();
-      } catch (e) {
-        logger.warn('Could not get dignities:', e);
-      }
-
-      // Get household roles
-      let householdRoles = [];
-      try {
-        householdRoles = await localGetAllHouseholdRoles(dsId);
-      } catch (e) {
-        logger.warn('Could not get household roles:', e);
-      }
-
-      // Get writings data
-      let writings = [];
-      let chapters = [];
-      let writingLinks = [];
-      try {
-        writings = await localGetAllWritings(dsId);
-        chapters = await localGetAllChapters(dsId);
-        writingLinks = await localGetAllWritingLinks(dsId);
-      } catch (e) {
-        logger.warn('Could not get writings data:', e);
-      }
-
-      // Get planning data
-      let storyPlans = [];
-      let storyArcs = [];
-      let storyBeats = [];
-      let scenePlans = [];
-      let plotThreads = [];
-      let characterArcs = [];
-        try {
-        storyPlans = await localDb.storyPlans.toArray();
-        storyArcs = await localDb.storyArcs.toArray();
-        storyBeats = await localDb.storyBeats.toArray();
-        scenePlans = await localDb.scenePlans.toArray();
-        plotThreads = await localDb.plotThreads.toArray();
-        characterArcs = await localDb.characterArcs.toArray();
-      } catch (e) {
-        logger.warn('Could not get planning data:', e);
-      }
-
-      await syncAllToCloud(userId, dsId, {
-        people: localPeople,
-        houses: localHouses,
-        relationships: localRelationships,
-        codexEntries,
-        codexLinks,
-        heraldry,
-        heraldryLinks,
-        dignities,
-        dignityTenures,
-        dignityLinks,
-        householdRoles,
-        writings,
-        chapters,
-        writingLinks,
-        storyPlans,
-        storyArcs,
-        storyBeats,
-        scenePlans,
-        plotThreads,
-        characterArcs
-      });
+      await syncAllToCloud(userId, dsId, localData);
 
       updateSyncStatus({ isSyncing: false, lastSyncTime: new Date() });
       return {
@@ -597,7 +586,10 @@ export async function initializeSync(userId, datasetId = DEFAULT_DATASET_ID) {
           people: localPeople,
           houses: localHouses,
           relationships: localRelationships
-        }
+        },
+        // Empty unless a local table could not be read. Non-empty means what
+        // reached the cloud is a partial snapshot of this dataset.
+        unreadable: failed
       };
     }
 
@@ -1243,7 +1235,6 @@ export async function forceUploadToCloud(userId, datasetId = DEFAULT_DATASET_ID)
   if (!userId) return { status: 'no-user' };
 
   const dsId = datasetId || DEFAULT_DATASET_ID;
-  const localDb = getDatabase(dsId);
 
   updateSyncStatus({ isSyncing: true, error: null });
 
@@ -1251,121 +1242,37 @@ export async function forceUploadToCloud(userId, datasetId = DEFAULT_DATASET_ID)
     logger.log('⬆️ Force uploading all local data to cloud...');
 
     // Gather all local data
-    const localPeople = await getAllPeople(dsId);
-    const localHouses = await getAllHouses(dsId);
-    const localRelationships = await getAllRelationships(dsId);
-
-    let codexEntries = [];
-    let codexLinks = [];
-    let heraldry = [];
-    let heraldryLinks = [];
-    let dignities = [];
-    let dignityTenures = [];
-    let dignityLinks = [];
-    let householdRoles = [];
-
-    try {
-      codexEntries = await getAllCodexEntries(dsId);
-      codexLinks = await localDb.codexLinks.toArray();
-    } catch (e) {
-      logger.warn('Could not get codex data for upload:', e);
-    }
-
-    try {
-      heraldry = await localGetAllHeraldry(dsId);
-      heraldryLinks = await localDb.heraldryLinks.toArray();
-    } catch (e) {
-      logger.warn('Could not get heraldry data for upload:', e);
-    }
-
-    try {
-      dignities = await localDb.dignities.toArray();
-      dignityTenures = await localDb.dignityTenures.toArray();
-      dignityLinks = await localDb.dignityLinks.toArray();
-    } catch (e) {
-      logger.warn('Could not get dignities data for upload:', e);
-    }
-
-    try {
-      householdRoles = await localGetAllHouseholdRoles(dsId);
-    } catch (e) {
-      logger.warn('Could not get household roles for upload:', e);
-    }
-
-    // Get writings data
-    let writings = [];
-    let chapters = [];
-    let writingLinks = [];
-    try {
-      writings = await localGetAllWritings(dsId);
-      chapters = await localGetAllChapters(dsId);
-      writingLinks = await localGetAllWritingLinks(dsId);
-    } catch (e) {
-      logger.warn('Could not get writings data for upload:', e);
-    }
-
-    // Get planning data
-    let storyPlans = [];
-    let storyArcs = [];
-    let storyBeats = [];
-    let scenePlans = [];
-    let plotThreads = [];
-    let characterArcs = [];
-    try {
-      storyPlans = await localDb.storyPlans.toArray();
-      storyArcs = await localDb.storyArcs.toArray();
-      storyBeats = await localDb.storyBeats.toArray();
-      scenePlans = await localDb.scenePlans.toArray();
-      plotThreads = await localDb.plotThreads.toArray();
-      characterArcs = await localDb.characterArcs.toArray();
-    } catch (e) {
-      logger.warn('Could not get planning data for upload:', e);
-    }
+    const { data: localData, failed } = await collectLocalData(dsId);
 
     // Upload everything to cloud
-    await syncAllToCloud(userId, dsId, {
-      people: localPeople,
-      houses: localHouses,
-      relationships: localRelationships,
-      codexEntries,
-      codexLinks,
-      heraldry,
-      heraldryLinks,
-      dignities,
-      dignityTenures,
-      dignityLinks,
-      householdRoles,
-      writings,
-      chapters,
-      writingLinks,
-      storyPlans,
-      storyArcs,
-      storyBeats,
-      scenePlans,
-      plotThreads,
-      characterArcs
-    });
+    await syncAllToCloud(userId, dsId, localData);
 
     // Clear the sync queue since everything is now synced
     await clearSyncQueue(dsId);
 
+    const counts = (table) => localData[table]?.length ?? 0;
+
     logger.log('✅ Force upload complete:', {
-      people: localPeople.length,
-      houses: localHouses.length,
-      relationships: localRelationships.length,
-      codexEntries: codexEntries.length,
-      writings: writings.length
+      people: counts('people'),
+      houses: counts('houses'),
+      relationships: counts('relationships'),
+      codexEntries: counts('codexEntries'),
+      writings: counts('writings'),
+      // Empty unless a local table could not be read. Non-empty means the
+      // upload was a partial snapshot, and says which tables are missing.
+      unreadable: failed
     });
 
     updateSyncStatus({ isSyncing: false, lastSyncTime: new Date() });
     return {
       status: 'success',
       uploaded: {
-        people: localPeople.length,
-        houses: localHouses.length,
-        relationships: localRelationships.length,
-        codexEntries: codexEntries.length
-      }
+        people: counts('people'),
+        houses: counts('houses'),
+        relationships: counts('relationships'),
+        codexEntries: counts('codexEntries')
+      },
+      unreadable: failed
     };
   } catch (error) {
     logger.error('❌ Force upload failed:', error);
