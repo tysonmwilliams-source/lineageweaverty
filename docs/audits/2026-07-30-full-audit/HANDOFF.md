@@ -121,7 +121,7 @@ converted.
 Lint is now a **blocking gate** (decision F3). `no-undef`, `no-dupe-keys`,
 `rules-of-hooks` and — as of `bb8fd32` — `react-hooks/static-components` are hard
 errors and all sit at zero, so a new violation fails the build. Everything else
-is a warning, and **339 is the yardstick — it should go down, never up.** The
+is a warning, and **338 is the yardstick — it should go down, never up.** The
 breakdown, as of `033e161` (total was 340 then): `no-unused-vars` 244 plus its TS twin 2,
 `react-hooks/*` 64 (36 of them `exhaustive-deps`),
 `react-refresh/only-export-components` 21, `no-case-declarations` 8,
@@ -302,12 +302,16 @@ rest of this section is kept because the conventions in it still govern.
 **Toolchain is done and is not the job.** `4208429` added `typescript@5.x`,
 `tsconfig.json`, `npm run typecheck`, a blocking CI step, and an ESLint config
 block for `.ts`. `src/utils/succession` is converted as the beachhead. All four
-gates are green: build, typecheck, 773 tests, lint 0 errors / 340 warnings.
+gates were green at that commit: build, typecheck, 773 tests, lint 0 errors /
+340 warnings. (Those are the figures as of `4208429`, kept as a record of the
+beachhead — the current baselines are at the top of this file.)
 
 ### Read this before converting anything in src/services
 
-**Do not convert `dataSyncService.js` or `firestoreService.js` yet.** They are
-2,385 and 2,154 lines, and the sync-manifest refactor (designed in
+**Do not convert `dataSyncService.js` or `firestoreService.js` yet.** They were
+2,385 and 2,154 lines when this was written and are 1,469 and 795 now, because
+the sync-manifest refactor is eating them — which is exactly why the order
+still holds. The refactor (designed in
 [`sections/02-data-sync.md`](sections/02-data-sync.md), still green-light-gated)
 collapses those ~4,500 lines to roughly 980. Typing them first means carefully
 typing 4,500 lines that are meant to be deleted, and then doing it again.
