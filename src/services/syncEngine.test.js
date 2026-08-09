@@ -1,7 +1,7 @@
 /**
  * Sync engine tests — the first tests this layer has ever had.
  *
- * `dataSyncService.js` and `firestoreService.js` were 4,700 lines with zero
+ * `dataSyncService` and `firestoreService` were 4,700 lines with zero
  * coverage, because everything in them ran through the Firebase SDK and the
  * suite has no Firebase. That is why the audit's data-loss findings survived so
  * long: a green suite said nothing about them.
@@ -13,6 +13,7 @@
  * only checks whether a single write succeeded.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { readFileSync, existsSync } from 'node:fs';
 
 vi.mock('./cloudRepo', () => ({
   addCloud: vi.fn(async () => 'doc-id'),
@@ -45,6 +46,23 @@ import {
 } from './syncEngine';
 import { getDatabase, closeDatabaseInstance, deleteDatabaseForDataset, getPendingChanges } from './database';
 import { allEntities } from './syncManifest';
+
+/**
+ * Read a service's source, whichever extension it currently has.
+ *
+ * Two tests below scan source text rather than importing it, because importing
+ * dataSyncService drags the Firebase SDK into a suite that has none. That makes
+ * them sensitive to a rename, and F4 renames these files one at a time — so
+ * resolve the extension instead of hardcoding it, and fail with a message that
+ * says what was looked for rather than a bare ENOENT.
+ */
+function readService(name) {
+  for (const ext of ['.ts', '.js']) {
+    const path = `src/services/${name}${ext}`;
+    if (existsSync(path)) return readFileSync(path, 'utf8');
+  }
+  throw new Error(`No src/services/${name}.ts or .js — has it been renamed again?`);
+}
 
 const DATASET = 'sync-engine-test';
 const USER = 'test-uid';
@@ -225,13 +243,16 @@ describe('the restore order covers the manifest', () => {
   // that can fall behind ENTITIES again — which is the exact failure the
   // manifest exists to prevent, so it is asserted rather than trusted.
   it('lists every synced entity exactly once', async () => {
-    const { readFileSync } = await import('node:fs');
-    const src = readFileSync('src/services/dataSyncService.js', 'utf8');
+    const src = readService('dataSyncService');
 
-    const listed = src
-      .match(/const RESTORE_ORDER = \[([\s\S]*?)\];/)[1]
-      .match(/'([^']+)'/g)
-      .map(s => s.slice(1, -1));
+    // Tolerates a type annotation: the declaration became
+    // `const RESTORE_ORDER: string[] = [` when the file converted to TS.
+    const declaration = src.match(/const RESTORE_ORDER(?::[^=]+)? = \[([\s\S]*?)\];/);
+    // Without this the failure is "cannot read properties of null", which says
+    // nothing about which of the two things went wrong.
+    expect(declaration, 'RESTORE_ORDER declaration not found — renamed or reformatted?').not.toBeNull();
+
+    const listed = declaration[1].match(/'([^']+)'/g).map(s => s.slice(1, -1));
 
     const declared = allEntities().map(e => e.entityType);
 
@@ -406,8 +427,7 @@ describe('nothing in the sync path forgets the dataset', () => {
   // one wrote its Codex back into the default world. Both looked like ordinary
   // calls. A zero-argument call in this file is the shape of that bug.
   it('has no zero-argument calls to dataset-scoped helpers', async () => {
-    const { readFileSync } = await import('node:fs');
-    const src = readFileSync('src/services/dataSyncService.js', 'utf8');
+    const src = readService('dataSyncService');
 
     const bare = [...src.matchAll(/await ([a-zA-Z][a-zA-Z0-9]*)\(\)/g)].map(m => m[1]);
 

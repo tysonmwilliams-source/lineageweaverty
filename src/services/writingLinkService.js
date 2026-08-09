@@ -31,7 +31,7 @@ export const LINK_TARGET_TYPES = {
  * @param {string} [data.displayText] - Display text used in [[wiki-link]]
  * @param {string} [data.context] - Surrounding text for context
  * @param {Object} [data.position] - Position in document { from, to }
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<number>} New link ID
  */
 export async function createWritingLink(data, datasetId) {
@@ -56,7 +56,7 @@ export async function createWritingLink(data, datasetId) {
 /**
  * Get a link by ID
  * @param {number} id - Link ID
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<Object|undefined>} Link data
  */
 export async function getWritingLink(id, datasetId) {
@@ -67,7 +67,7 @@ export async function getWritingLink(id, datasetId) {
 /**
  * Get all links for a writing
  * @param {number} writingId - Writing ID
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<Array>} Array of links
  */
 export async function getLinksByWriting(writingId, datasetId) {
@@ -78,7 +78,7 @@ export async function getLinksByWriting(writingId, datasetId) {
 /**
  * Get all links for a chapter
  * @param {number} chapterId - Chapter ID
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<Array>} Array of links
  */
 export async function getLinksByChapter(chapterId, datasetId) {
@@ -91,7 +91,7 @@ export async function getLinksByChapter(chapterId, datasetId) {
  * (backlinks - find writings that reference an entity)
  * @param {string} targetType - Entity type
  * @param {number} targetId - Entity ID
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<Array>} Array of links
  */
 export async function getLinksByTarget(targetType, targetId, datasetId) {
@@ -105,7 +105,7 @@ export async function getLinksByTarget(targetType, targetId, datasetId) {
 
 /**
  * Get all links
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<Array>} Array of links
  */
 export async function getAllWritingLinks(datasetId) {
@@ -116,7 +116,7 @@ export async function getAllWritingLinks(datasetId) {
 /**
  * Delete a link
  * @param {number} id - Link ID
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  */
 export async function deleteWritingLink(id, datasetId) {
   const db = getDatabase(datasetId);
@@ -127,7 +127,7 @@ export async function deleteWritingLink(id, datasetId) {
 /**
  * Delete all links for a chapter
  * @param {number} chapterId - Chapter ID
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<number>} Number deleted
  */
 export async function deleteLinksByChapter(chapterId, datasetId) {
@@ -140,7 +140,7 @@ export async function deleteLinksByChapter(chapterId, datasetId) {
 /**
  * Delete all links for a writing
  * @param {number} writingId - Writing ID
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<number>} Number deleted
  */
 export async function deleteLinksByWriting(writingId, datasetId) {
@@ -153,7 +153,7 @@ export async function deleteLinksByWriting(writingId, datasetId) {
 /**
  * Restore a link (for cloud sync)
  * @param {Object} data - Full link data including id
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<number>} Link ID
  */
 export async function restoreWritingLink(data, datasetId) {
@@ -185,7 +185,7 @@ function linkSignature(link) {
  * @param {number} chapterId - Chapter ID
  * @param {number} writingId - Writing ID
  * @param {Array} parsedLinks - Array of { targetType, targetId, displayText, context, position }
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @param {string} [userId] - Firebase uid; when present, changes are synced to the cloud
  */
 export async function syncChapterLinks(chapterId, writingId, parsedLinks, datasetId, userId = null) {
@@ -235,7 +235,7 @@ export async function syncChapterLinks(chapterId, writingId, parsedLinks, datase
 /**
  * Get unique entities referenced in a writing
  * @param {number} writingId - Writing ID
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<Object>} Object grouped by entity type
  */
 export async function getReferencedEntities(writingId, datasetId) {
@@ -260,7 +260,7 @@ export async function getReferencedEntities(writingId, datasetId) {
 /**
  * Get link count by entity type for a writing
  * @param {number} writingId - Writing ID
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<Object>} Counts by type
  */
 export async function getLinkCountsByType(writingId, datasetId) {

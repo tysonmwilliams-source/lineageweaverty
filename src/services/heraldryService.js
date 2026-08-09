@@ -150,7 +150,7 @@ export async function getAllHeraldry(datasetId = null) {
 /**
  * Get count of heraldry records without loading all data
  * More efficient than getAllHeraldry().length for stats
- * @param {string} [datasetId] - Dataset ID (optional)
+ * @param {string|null} [datasetId] - Dataset ID (optional)
  * @returns {Promise<number>} Count of heraldry records
  */
 export async function getHeraldryCount(datasetId = null) {

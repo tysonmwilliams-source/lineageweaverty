@@ -117,11 +117,26 @@ import {
 } from './planningService';
 
 import { logger } from '../utils/logger';
+import { tableByName } from './database';
+import { errorMessage } from '../utils/errorMessage';
+import type { DatasetId } from './types';
+import type { SyncOperation } from './syncManifest';
+import type { LocalSnapshot, SnapshotRow } from './syncEngine';
+import type { CloudRecord } from './cloudRepo';
+import type { SyncPayload } from './syncEngine';
 
 // ==================== SYNC STATE ====================
 
 // Track sync status for UI feedback
-let syncStatus = {
+/** UI-facing sync state. `getSyncStatus` returns a copy of this plus `isOnline`. */
+export interface SyncStatus {
+  isSyncing: boolean;
+  lastSyncTime: Date | null;
+  pendingChanges: number;
+  error: string | null;
+}
+
+let syncStatus: SyncStatus = {
   isSyncing: false,
   lastSyncTime: null,
   pendingChanges: 0,
@@ -129,20 +144,20 @@ let syncStatus = {
 };
 
 // Listeners for sync status changes
-const syncStatusListeners = new Set();
+const syncStatusListeners = new Set<(status: SyncStatus) => void>();
 
 // Periodic sync interval (5 minutes = 300000ms)
 const PERIODIC_SYNC_INTERVAL = 5 * 60 * 1000;
-let periodicSyncIntervalId = null;
-let periodicSyncUserId = null;
-let periodicSyncDatasetId = null;
+let periodicSyncIntervalId: ReturnType<typeof setInterval> | null = null;
+let periodicSyncUserId: string | null = null;
+let periodicSyncDatasetId: DatasetId = null;
 
 /**
  * Subscribe to sync status changes
  * @param {Function} callback - Called when sync status changes
  * @returns {Function} Unsubscribe function
  */
-export function onSyncStatusChange(callback) {
+export function onSyncStatusChange(callback: (status: SyncStatus) => void): () => void {
   syncStatusListeners.add(callback);
   // Immediately call with current status
   callback(syncStatus);
@@ -152,7 +167,7 @@ export function onSyncStatusChange(callback) {
 /**
  * Update sync status and notify listeners
  */
-function updateSyncStatus(updates) {
+function updateSyncStatus(updates: Partial<SyncStatus>): void {
   syncStatus = { ...syncStatus, ...updates };
   syncStatusListeners.forEach(callback => callback(syncStatus));
 }
@@ -173,7 +188,7 @@ function updateSyncStatus(updates) {
  * @param {string} datasetId - The dataset ID
  * @returns {Object} Result with status and counts
  */
-export async function syncPendingChanges(userId, datasetId = DEFAULT_DATASET_ID) {
+export async function syncPendingChanges(userId: SyncUserId, datasetId: SyncDatasetId = DEFAULT_DATASET_ID) {
   if (!userId || !isOnline()) {
     return { status: 'skipped', reason: !userId ? 'no-user' : 'offline' };
   }
@@ -198,13 +213,24 @@ export async function syncPendingChanges(userId, datasetId = DEFAULT_DATASET_ID)
     for (const [entityType, changes] of Object.entries(pendingByType)) {
       for (const change of changes) {
         try {
-          await sendToCloud(entityType, change.operation, userId, dsId, change.entityId, change.data);
+          await sendToCloud(
+            entityType,
+            change.operation,
+            userId,
+            dsId,
+            change.entityId,
+            // `syncQueue.data` is typed `unknown` because the queue stores rows
+            // of twenty different shapes. Everything downstream treats a
+            // payload as an opaque bag of fields, which is exactly what
+            // `SyncPayload` is.
+            change.data as SyncPayload | undefined
+          );
           // By queue row, not by entity. Marking every pending row for an
           // entity confirmed changes that had not been sent — see syncEngine.ts.
           await markSynced(change.id, dsId);
           syncedCount++;
         } catch (error) {
-          errors.push({ entityType, entityId: change.entityId, error: error.message });
+          errors.push({ entityType, entityId: change.entityId, error: errorMessage(error) });
           logger.error(`❌ Failed to sync ${entityType}:${change.entityId}:`, error);
         }
       }
@@ -220,7 +246,7 @@ export async function syncPendingChanges(userId, datasetId = DEFAULT_DATASET_ID)
     };
   } catch (error) {
     logger.error('❌ Pending changes sync failed:', error);
-    return { status: 'error', error: error.message };
+    return { status: 'error', error: errorMessage(error) };
   }
 }
 
@@ -284,7 +310,7 @@ async function performPeriodicSync() {
  * @param {string} userId - The user's Firebase UID
  * @param {string} datasetId - The dataset ID
  */
-export function startPeriodicSync(userId, datasetId = DEFAULT_DATASET_ID) {
+export function startPeriodicSync(userId: string, datasetId: SyncDatasetId = DEFAULT_DATASET_ID): void {
   // Stop any existing interval
   stopPeriodicSync();
 
@@ -331,7 +357,9 @@ export function stopPeriodicSync() {
  * table, and the service getter is not a drop-in for it — so the import went in
  * step 7 rather than the read changing.
  */
-const LOCAL_READ = {
+type LocalReader = (dsId: SyncDatasetId) => Promise<SnapshotRow[]>;
+
+const LOCAL_READ: Record<string, LocalReader | undefined> = {
   person: (dsId) => getAllPeople(dsId),
   house: (dsId) => getAllHouses(dsId),
   relationship: (dsId) => getAllRelationships(dsId),
@@ -366,14 +394,18 @@ const LOCAL_READ = {
  * @returns {Promise<{data: Object, failed: string[]}>} Rows by table name, and
  *   the entity types that could not be read.
  */
-async function collectLocalData(dsId) {
+async function collectLocalData(dsId: DatasetId): Promise<{ data: LocalSnapshot; failed: string[] }> {
   const database = getDatabase(dsId);
-  const data = {};
-  const failed = [];
+  const data: LocalSnapshot = {};
+  const failed: string[] = [];
 
   for (const entity of allEntities()) {
-    const read = LOCAL_READ[entity.entityType]
-      ?? (() => database[entity.table].toArray());
+    const read: LocalReader = LOCAL_READ[entity.entityType]
+      ?? (async () => {
+        const table = tableByName(database, entity.table);
+        if (!table) throw new Error(`No local table "${entity.table}"`);
+        return table.toArray() as Promise<SnapshotRow[]>;
+      });
 
     try {
       data[entity.table] = await read(dsId);
@@ -412,11 +444,29 @@ async function collectLocalData(dsId) {
  * must not re-create a Codex entry, and the writing and planning tables have
  * restore helpers that preserve ids rather than autoincrementing new ones.
  */
-const CLOUD_RESTORE = {
-  house: (row, dsId) => localAddHouse(row, { skipCodexCreation: true, datasetId: dsId }),
-  person: (row, dsId) => localAddPerson(row, dsId),
-  relationship: (row, dsId) => localAddRelationship(row, dsId),
-  codexEntry: (row, dsId) => localRestoreCodexEntry(row, dsId),
+type CloudRestorer = (row: Record<string, unknown>, dsId: SyncDatasetId) => Promise<unknown>;
+
+/**
+ * Hand a cloud row to a local writer that wants a typed input.
+ *
+ * The row arrived from Firestore as untyped JSON. It was written there by this
+ * same app, from a local row of exactly the type being asserted — so the claim
+ * is sound in the only way an assertion ever is, by writer and reader agreeing
+ * on a shape. There is no validation layer to turn the claim into a check, and
+ * adding one is a behaviour change rather than a conversion.
+ *
+ * Confined to the four restorers whose callee is itself converted; the rest go
+ * to `.js` services that take `any` regardless.
+ */
+function restored<T>(row: Record<string, unknown>): T {
+  return row as T;
+}
+
+const CLOUD_RESTORE: Record<string, CloudRestorer | undefined> = {
+  house: (row, dsId) => localAddHouse(restored(row), { skipCodexCreation: true, datasetId: dsId }),
+  person: (row, dsId) => localAddPerson(restored(row), dsId),
+  relationship: (row, dsId) => localAddRelationship(restored(row), dsId),
+  codexEntry: (row, dsId) => localRestoreCodexEntry(restored(row), dsId),
   writing: (row, dsId) => localRestoreWriting(row, dsId),
   chapter: (row, dsId) => localRestoreChapter(row, dsId),
   writingLink: (row, dsId) => localRestoreWritingLink(row, dsId),
@@ -436,7 +486,7 @@ const CLOUD_RESTORE = {
  * house makes everything referencing them meaningless, so failing loudly beats
  * a half-populated tree. A dropped link or beat does not.
  */
-const RESTORE_MUST_SUCCEED = new Set(['house', 'person', 'relationship']);
+const RESTORE_MUST_SUCCEED = new Set<string>(['house', 'person', 'relationship']);
 
 /**
  * The order entities are restored in.
@@ -448,7 +498,7 @@ const RESTORE_MUST_SUCCEED = new Set(['house', 'person', 'relationship']);
  * `syncEngine.test.js` asserts this covers every manifest entity, so adding one
  * without placing it here fails rather than silently skipping it on restore.
  */
-const RESTORE_ORDER = [
+const RESTORE_ORDER: string[] = [
   'house', 'person', 'relationship',
   'codexEntry', 'codexLink',
   'heraldry', 'heraldryLink',
@@ -466,7 +516,7 @@ const RESTORE_ORDER = [
  * `unstamped`) mean none of them can ever carry an `updatedAt` — so stripping
  * it uniformly changes nothing today and stays correct if a policy changes.
  */
-function stripCloudFields(row) {
+function stripCloudFields(row: CloudRecord): Record<string, unknown> {
   const { createdAt, updatedAt, syncedAt, localId, ...data } = row;
   return data;
 }
@@ -479,23 +529,38 @@ function stripCloudFields(row) {
  * @param {Object} [options]
  * @param {string} [options.logSuffix] - Appended to warnings, to say which caller
  */
-async function restoreAllFromCloud(cloudData, dsId, { logSuffix = '' } = {}) {
+async function restoreAllFromCloud(
+  cloudData: Record<string, CloudRecord[] | undefined>,
+  dsId: SyncDatasetId,
+  { logSuffix = '' }: { logSuffix?: string } = {}
+): Promise<void> {
   const database = getDatabase(dsId);
 
   for (const entityType of RESTORE_ORDER) {
     const entity = getEntity(entityType);
-    const rows = cloudData[entity.table] || [];
+    // RESTORE_ORDER is asserted by syncEngine.test.js to cover exactly the
+    // manifest, so this cannot miss — but the type says it can, and a silent
+    // skip here would drop an entity from every restore.
+    if (!entity) throw new Error(`RESTORE_ORDER names "${entityType}", which is not in the manifest`);
+    const rows = cloudData[entity.table] ?? [];
     if (rows.length === 0) continue;
 
-    const restore = CLOUD_RESTORE[entityType]
-      ?? ((row) => database[entity.table].put(row));
+    const restore: CloudRestorer = CLOUD_RESTORE[entityType]
+      ?? (async (row) => {
+        const table = tableByName(database, entity.table);
+        if (!table) throw new Error(`No local table "${entity.table}"`);
+        return table.put(row);
+      });
     const mustSucceed = RESTORE_MUST_SUCCEED.has(entityType);
 
     for (const row of rows) {
       // `parseInt(x) || x` leaves a non-numeric id untouched instead of turning
       // it into NaN. It also mishandles id 0 — unreachable, because Dexie's
       // autoincrement never issues one. Was written out 42 times; now once.
-      const data = { ...stripCloudFields(row), id: parseInt(row.id) || row.id };
+      // `String()` because `parseInt` takes one; `parseInt(5)` coerced identically
+      // at runtime, so this is the same value for every input including a
+      // non-numeric id, which `|| row.id` leaves untouched.
+      const data = { ...stripCloudFields(row), id: parseInt(String(row.id)) || row.id };
 
       if (mustSucceed) {
         await restore(data, dsId);
@@ -527,7 +592,7 @@ async function restoreAllFromCloud(cloudData, dsId, { logSuffix = '' } = {}) {
  * @param {string} [datasetId='default'] - The dataset ID
  * @returns {Object} Sync result with status and data
  */
-export async function initializeSync(userId, datasetId = DEFAULT_DATASET_ID) {
+export async function initializeSync(userId: SyncUserId, datasetId: SyncDatasetId = DEFAULT_DATASET_ID) {
   if (!userId) {
     logger.warn('⚠️ No userId provided to initializeSync');
     return { status: 'no-user', data: null };
@@ -626,14 +691,58 @@ export async function initializeSync(userId, datasetId = DEFAULT_DATASET_ID) {
 
   } catch (error) {
     logger.error('❌ Sync initialization failed:', error);
-    updateSyncStatus({ isSyncing: false, error: error.message });
+    updateSyncStatus({ isSyncing: false, error: errorMessage(error) });
 
     // Don't throw - return error status so app can continue with local data
-    return { status: 'error', error: error.message };
+    return { status: 'error', error: errorMessage(error) };
   }
 }
 
 // ==================== SYNC WRAPPERS ====================
+
+/**
+ * The four positional arguments every sync wrapper takes, in order.
+ *
+ * Typing these is the single highest-value thing in this conversion. The shape
+ * is `(userId, datasetId, localId, data)` and it has been got wrong before:
+ * Phase 4 found live calls passing `(userId, id, data, datasetId)`, which put an
+ * entity id where the dataset id belongs and spun up phantom
+ * `LineageweaverDB_<id>` databases — a whole parallel world per mistyped call,
+ * silently. Two `string | null` parameters side by side is exactly the shape a
+ * transposition hides in, so the two that are *not* strings are now the wrong
+ * type rather than merely the wrong position.
+ */
+
+/** A Firebase UID, or null/undefined when signed out. Wrappers queue either way. */
+type SyncUserId = string | null | undefined;
+
+/**
+ * A dataset id as the wrappers receive it.
+ *
+ * `| undefined` because most callers hold an optional `datasetId` and pass it
+ * straight through; `getDatabase` already treats undefined as the default
+ * dataset. Making the wrappers reject it would push a `?? 'default'` to every
+ * call site, which is the version of this that goes wrong.
+ */
+type SyncDatasetId = DatasetId | undefined;
+
+/** A local Dexie key. Autoincrement integers in practice. */
+type LocalId = number;
+
+/** The row, or the changed fields of it, depending on the operation. */
+type SyncData = Record<string, unknown>;
+
+/**
+ * Ids of the rows a writing or chapter delete cascaded to locally.
+ *
+ * Required rather than optional on the two wrappers that take it — see
+ * `syncDeleteWriting`. `chapterIds` is absent for a chapter, which cascades
+ * only to links.
+ */
+interface WritingCascade {
+  chapterIds?: LocalId[];
+  linkIds?: LocalId[];
+}
 // These wrap the local operations and add cloud sync
 
 /**
@@ -643,14 +752,14 @@ export async function initializeSync(userId, datasetId = DEFAULT_DATASET_ID) {
  * @param {number} personId - The local person ID (after local add)
  * @param {Object} personData - The person data
  */
-export async function syncAddPerson(userId, datasetId, personId, personData) {
+export async function syncAddPerson(userId: SyncUserId, datasetId: SyncDatasetId, personId: LocalId, personData: SyncData) {
   await syncOp('person', 'add', { userId, datasetId, id: personId, data: personData });
 }
 
 /**
  * Update a person (local + cloud)
  */
-export async function syncUpdatePerson(userId, datasetId, personId, updates) {
+export async function syncUpdatePerson(userId: SyncUserId, datasetId: SyncDatasetId, personId: LocalId, updates: SyncData) {
   await syncOp('person', 'update', { userId, datasetId, id: personId, data: updates });
 }
 
@@ -663,7 +772,7 @@ export async function syncUpdatePerson(userId, datasetId, personId, updates) {
  * @param {number} personId - Person ID to delete
  * @param {number[]} relationshipIds - IDs of relationships to cascade delete (captured before local delete)
  */
-export async function syncDeletePerson(userId, datasetId, personId, relationshipIds = []) {
+export async function syncDeletePerson(userId: SyncUserId, datasetId: SyncDatasetId, personId: LocalId, relationshipIds: LocalId[]= []) {
   // The manifest declares that deleting a person cascades to relationships, so
   // this is now the generic cascade rather than the one hand-written wrapper.
   // The relationship ids are passed in because the local cascade has already
@@ -679,63 +788,63 @@ export async function syncDeletePerson(userId, datasetId, personId, relationship
 /**
  * Add a house (local + cloud)
  */
-export async function syncAddHouse(userId, datasetId, houseId, houseData) {
+export async function syncAddHouse(userId: SyncUserId, datasetId: SyncDatasetId, houseId: LocalId, houseData: SyncData) {
   await syncOp('house', 'add', { userId, datasetId, id: houseId, data: houseData });
 }
 
 /**
  * Update a house (local + cloud)
  */
-export async function syncUpdateHouse(userId, datasetId, houseId, updates) {
+export async function syncUpdateHouse(userId: SyncUserId, datasetId: SyncDatasetId, houseId: LocalId, updates: SyncData) {
   await syncOp('house', 'update', { userId, datasetId, id: houseId, data: updates });
 }
 
 /**
  * Delete a house (local + cloud)
  */
-export async function syncDeleteHouse(userId, datasetId, houseId) {
+export async function syncDeleteHouse(userId: SyncUserId, datasetId: SyncDatasetId, houseId: LocalId) {
   await syncOp('house', 'delete', { userId, datasetId, id: houseId });
 }
 
 /**
  * Add a relationship (local + cloud)
  */
-export async function syncAddRelationship(userId, datasetId, relationshipId, relationshipData) {
+export async function syncAddRelationship(userId: SyncUserId, datasetId: SyncDatasetId, relationshipId: LocalId, relationshipData: SyncData) {
   await syncOp('relationship', 'add', { userId, datasetId, id: relationshipId, data: relationshipData });
 }
 
 /**
  * Update a relationship (local + cloud)
  */
-export async function syncUpdateRelationship(userId, datasetId, relationshipId, updates) {
+export async function syncUpdateRelationship(userId: SyncUserId, datasetId: SyncDatasetId, relationshipId: LocalId, updates: SyncData) {
   await syncOp('relationship', 'update', { userId, datasetId, id: relationshipId, data: updates });
 }
 
 /**
  * Delete a relationship (local + cloud)
  */
-export async function syncDeleteRelationship(userId, datasetId, relationshipId) {
+export async function syncDeleteRelationship(userId: SyncUserId, datasetId: SyncDatasetId, relationshipId: LocalId) {
   await syncOp('relationship', 'delete', { userId, datasetId, id: relationshipId });
 }
 
 /**
  * Add a codex entry (local + cloud)
  */
-export async function syncAddCodexEntry(userId, datasetId, entryId, entryData) {
+export async function syncAddCodexEntry(userId: SyncUserId, datasetId: SyncDatasetId, entryId: LocalId, entryData: SyncData) {
   await syncOp('codexEntry', 'add', { userId, datasetId, id: entryId, data: entryData });
 }
 
 /**
  * Update a codex entry (local + cloud)
  */
-export async function syncUpdateCodexEntry(userId, datasetId, entryId, updates) {
+export async function syncUpdateCodexEntry(userId: SyncUserId, datasetId: SyncDatasetId, entryId: LocalId, updates: SyncData) {
   await syncOp('codexEntry', 'update', { userId, datasetId, id: entryId, data: updates });
 }
 
 /**
  * Delete a codex entry (local + cloud)
  */
-export async function syncDeleteCodexEntry(userId, datasetId, entryId) {
+export async function syncDeleteCodexEntry(userId: SyncUserId, datasetId: SyncDatasetId, entryId: LocalId) {
   await syncOp('codexEntry', 'delete', { userId, datasetId, id: entryId });
 }
 
@@ -748,14 +857,14 @@ export async function syncDeleteCodexEntry(userId, datasetId, entryId) {
  * @param {number} linkId - The local link ID (after local add)
  * @param {Object} linkData - The link data
  */
-export async function syncAddCodexLink(userId, datasetId, linkId, linkData) {
+export async function syncAddCodexLink(userId: SyncUserId, datasetId: SyncDatasetId, linkId: LocalId, linkData: SyncData) {
   await syncOp('codexLink', 'add', { userId, datasetId, id: linkId, data: linkData });
 }
 
 /**
  * Delete codex link (local + cloud)
  */
-export async function syncDeleteCodexLink(userId, datasetId, linkId) {
+export async function syncDeleteCodexLink(userId: SyncUserId, datasetId: SyncDatasetId, linkId: LocalId) {
   await syncOp('codexLink', 'delete', { userId, datasetId, id: linkId });
 }
 
@@ -768,35 +877,35 @@ export async function syncDeleteCodexLink(userId, datasetId, linkId) {
  * @param {number} heraldryId - The local heraldry ID (after local add)
  * @param {Object} heraldryData - The heraldry data
  */
-export async function syncAddHeraldry(userId, datasetId, heraldryId, heraldryData) {
+export async function syncAddHeraldry(userId: SyncUserId, datasetId: SyncDatasetId, heraldryId: LocalId, heraldryData: SyncData) {
   await syncOp('heraldry', 'add', { userId, datasetId, id: heraldryId, data: heraldryData });
 }
 
 /**
  * Update heraldry (local + cloud)
  */
-export async function syncUpdateHeraldry(userId, datasetId, heraldryId, updates) {
+export async function syncUpdateHeraldry(userId: SyncUserId, datasetId: SyncDatasetId, heraldryId: LocalId, updates: SyncData) {
   await syncOp('heraldry', 'update', { userId, datasetId, id: heraldryId, data: updates });
 }
 
 /**
  * Delete heraldry (local + cloud)
  */
-export async function syncDeleteHeraldry(userId, datasetId, heraldryId) {
+export async function syncDeleteHeraldry(userId: SyncUserId, datasetId: SyncDatasetId, heraldryId: LocalId) {
   await syncOp('heraldry', 'delete', { userId, datasetId, id: heraldryId });
 }
 
 /**
  * Add heraldry link (local + cloud)
  */
-export async function syncAddHeraldryLink(userId, datasetId, linkId, linkData) {
+export async function syncAddHeraldryLink(userId: SyncUserId, datasetId: SyncDatasetId, linkId: LocalId, linkData: SyncData) {
   await syncOp('heraldryLink', 'add', { userId, datasetId, id: linkId, data: linkData });
 }
 
 /**
  * Delete heraldry link (local + cloud)
  */
-export async function syncDeleteHeraldryLink(userId, datasetId, linkId) {
+export async function syncDeleteHeraldryLink(userId: SyncUserId, datasetId: SyncDatasetId, linkId: LocalId) {
   await syncOp('heraldryLink', 'delete', { userId, datasetId, id: linkId });
 }
 
@@ -809,7 +918,7 @@ export async function syncDeleteHeraldryLink(userId, datasetId, linkId) {
  * @param {number} dignityId - The local id (after the local write)
  * @param {Object} dignityData - The dignity data
  */
-export async function syncAddDignity(userId, datasetId, dignityId, dignityData) {
+export async function syncAddDignity(userId: SyncUserId, datasetId: SyncDatasetId, dignityId: LocalId, dignityData: SyncData) {
   await syncOp('dignity', 'add', { userId, datasetId, id: dignityId, data: dignityData });
 }
 
@@ -820,7 +929,7 @@ export async function syncAddDignity(userId, datasetId, dignityId, dignityData) 
  * @param {number} dignityId - The local id (after the local write)
  * @param {Object} updates - The changed fields
  */
-export async function syncUpdateDignity(userId, datasetId, dignityId, updates) {
+export async function syncUpdateDignity(userId: SyncUserId, datasetId: SyncDatasetId, dignityId: LocalId, updates: SyncData) {
   await syncOp('dignity', 'update', { userId, datasetId, id: dignityId, data: updates });
 }
 
@@ -830,7 +939,7 @@ export async function syncUpdateDignity(userId, datasetId, dignityId, updates) {
  * @param {string|null} datasetId - The dataset ID
  * @param {number} dignityId - The local id
  */
-export async function syncDeleteDignity(userId, datasetId, dignityId) {
+export async function syncDeleteDignity(userId: SyncUserId, datasetId: SyncDatasetId, dignityId: LocalId) {
   await syncOp('dignity', 'delete', { userId, datasetId, id: dignityId });
 }
 
@@ -841,7 +950,7 @@ export async function syncDeleteDignity(userId, datasetId, dignityId) {
  * @param {number} tenureId - The local id (after the local write)
  * @param {Object} tenureData - The tenure data
  */
-export async function syncAddDignityTenure(userId, datasetId, tenureId, tenureData) {
+export async function syncAddDignityTenure(userId: SyncUserId, datasetId: SyncDatasetId, tenureId: LocalId, tenureData: SyncData) {
   await syncOp('dignityTenure', 'add', { userId, datasetId, id: tenureId, data: tenureData });
 }
 
@@ -852,7 +961,7 @@ export async function syncAddDignityTenure(userId, datasetId, tenureId, tenureDa
  * @param {number} tenureId - The local id (after the local write)
  * @param {Object} updates - The changed fields
  */
-export async function syncUpdateDignityTenure(userId, datasetId, tenureId, updates) {
+export async function syncUpdateDignityTenure(userId: SyncUserId, datasetId: SyncDatasetId, tenureId: LocalId, updates: SyncData) {
   await syncOp('dignityTenure', 'update', { userId, datasetId, id: tenureId, data: updates });
 }
 
@@ -862,7 +971,7 @@ export async function syncUpdateDignityTenure(userId, datasetId, tenureId, updat
  * @param {string|null} datasetId - The dataset ID
  * @param {number} tenureId - The local id
  */
-export async function syncDeleteDignityTenure(userId, datasetId, tenureId) {
+export async function syncDeleteDignityTenure(userId: SyncUserId, datasetId: SyncDatasetId, tenureId: LocalId) {
   await syncOp('dignityTenure', 'delete', { userId, datasetId, id: tenureId });
 }
 
@@ -873,7 +982,7 @@ export async function syncDeleteDignityTenure(userId, datasetId, tenureId) {
  * @param {number} linkId - The local id (after the local write)
  * @param {Object} linkData - The link data
  */
-export async function syncAddDignityLink(userId, datasetId, linkId, linkData) {
+export async function syncAddDignityLink(userId: SyncUserId, datasetId: SyncDatasetId, linkId: LocalId, linkData: SyncData) {
   await syncOp('dignityLink', 'add', { userId, datasetId, id: linkId, data: linkData });
 }
 
@@ -883,7 +992,7 @@ export async function syncAddDignityLink(userId, datasetId, linkId, linkData) {
  * @param {string|null} datasetId - The dataset ID
  * @param {number} linkId - The local id
  */
-export async function syncDeleteDignityLink(userId, datasetId, linkId) {
+export async function syncDeleteDignityLink(userId: SyncUserId, datasetId: SyncDatasetId, linkId: LocalId) {
   await syncOp('dignityLink', 'delete', { userId, datasetId, id: linkId });
 }
 
@@ -896,21 +1005,21 @@ export async function syncDeleteDignityLink(userId, datasetId, linkId) {
  * @param {number} roleId - The local role ID (after local add)
  * @param {Object} roleData - The role data
  */
-export async function syncAddHouseholdRole(userId, datasetId, roleId, roleData) {
+export async function syncAddHouseholdRole(userId: SyncUserId, datasetId: SyncDatasetId, roleId: LocalId, roleData: SyncData) {
   await syncOp('householdRole', 'add', { userId, datasetId, id: roleId, data: roleData });
 }
 
 /**
  * Update household role (local + cloud)
  */
-export async function syncUpdateHouseholdRole(userId, datasetId, roleId, updates) {
+export async function syncUpdateHouseholdRole(userId: SyncUserId, datasetId: SyncDatasetId, roleId: LocalId, updates: SyncData) {
   await syncOp('householdRole', 'update', { userId, datasetId, id: roleId, data: updates });
 }
 
 /**
  * Delete household role (local + cloud)
  */
-export async function syncDeleteHouseholdRole(userId, datasetId, roleId) {
+export async function syncDeleteHouseholdRole(userId: SyncUserId, datasetId: SyncDatasetId, roleId: LocalId) {
   await syncOp('householdRole', 'delete', { userId, datasetId, id: roleId });
 }
 
@@ -923,21 +1032,21 @@ export async function syncDeleteHouseholdRole(userId, datasetId, roleId) {
  * @param {number} writingId - The local writing ID (after local add)
  * @param {Object} writingData - The writing data
  */
-export async function syncAddWriting(userId, datasetId, writingId, writingData) {
+export async function syncAddWriting(userId: SyncUserId, datasetId: SyncDatasetId, writingId: LocalId, writingData: SyncData) {
   await syncOp('writing', 'add', { userId, datasetId, id: writingId, data: writingData });
 }
 
 /**
  * Update writing (local + cloud)
  */
-export async function syncUpdateWriting(userId, datasetId, writingId, updates) {
+export async function syncUpdateWriting(userId: SyncUserId, datasetId: SyncDatasetId, writingId: LocalId, updates: SyncData) {
   await syncOp('writing', 'update', { userId, datasetId, id: writingId, data: updates });
 }
 
 /**
  * Delete writing (local + cloud)
  */
-export async function syncDeleteWriting(userId, datasetId, writingId, cascade) {
+export async function syncDeleteWriting(userId: SyncUserId, datasetId: SyncDatasetId, writingId: LocalId, cascade: WritingCascade) {
   // Required, not defaulted. A default of `{}` would turn "the caller forgot
   // the cascade" into "this writing had no chapters" — which is the exact bug
   // step 6 exists to make unrepresentable. `deleteWriting` returns the ids.
@@ -966,21 +1075,21 @@ export async function syncDeleteWriting(userId, datasetId, writingId, cascade) {
  * @param {number} chapterId - The local chapter ID (after local add)
  * @param {Object} chapterData - The chapter data
  */
-export async function syncAddChapter(userId, datasetId, chapterId, chapterData) {
+export async function syncAddChapter(userId: SyncUserId, datasetId: SyncDatasetId, chapterId: LocalId, chapterData: SyncData) {
   await syncOp('chapter', 'add', { userId, datasetId, id: chapterId, data: chapterData });
 }
 
 /**
  * Update chapter (local + cloud)
  */
-export async function syncUpdateChapter(userId, datasetId, chapterId, updates) {
+export async function syncUpdateChapter(userId: SyncUserId, datasetId: SyncDatasetId, chapterId: LocalId, updates: SyncData) {
   await syncOp('chapter', 'update', { userId, datasetId, id: chapterId, data: updates });
 }
 
 /**
  * Delete chapter (local + cloud)
  */
-export async function syncDeleteChapter(userId, datasetId, chapterId, cascade) {
+export async function syncDeleteChapter(userId: SyncUserId, datasetId: SyncDatasetId, chapterId: LocalId, cascade: WritingCascade) {
   // Required for the same reason as syncDeleteWriting. `deleteChapter` returns
   // `linkIds`, and also `reorderedChapterIds` — those are updates rather than
   // cascade deletes, and the caller syncs them separately.
@@ -1004,14 +1113,14 @@ export async function syncDeleteChapter(userId, datasetId, chapterId, cascade) {
 /**
  * Add writing link (local + cloud)
  */
-export async function syncAddWritingLink(userId, datasetId, linkId, linkData) {
+export async function syncAddWritingLink(userId: SyncUserId, datasetId: SyncDatasetId, linkId: LocalId, linkData: SyncData) {
   await syncOp('writingLink', 'add', { userId, datasetId, id: linkId, data: linkData });
 }
 
 /**
  * Delete writing link (local + cloud)
  */
-export async function syncDeleteWritingLink(userId, datasetId, linkId) {
+export async function syncDeleteWritingLink(userId: SyncUserId, datasetId: SyncDatasetId, linkId: LocalId) {
   await syncOp('writingLink', 'delete', { userId, datasetId, id: linkId });
 }
 
@@ -1020,21 +1129,21 @@ export async function syncDeleteWritingLink(userId, datasetId, linkId) {
 /**
  * Add story plan (local + cloud)
  */
-export async function syncAddStoryPlan(userId, datasetId, planId, planData) {
+export async function syncAddStoryPlan(userId: SyncUserId, datasetId: SyncDatasetId, planId: LocalId, planData: SyncData) {
   await syncOp('storyPlan', 'add', { userId, datasetId, id: planId, data: planData });
 }
 
 /**
  * Update story plan (local + cloud)
  */
-export async function syncUpdateStoryPlan(userId, datasetId, planId, updates) {
+export async function syncUpdateStoryPlan(userId: SyncUserId, datasetId: SyncDatasetId, planId: LocalId, updates: SyncData) {
   await syncOp('storyPlan', 'update', { userId, datasetId, id: planId, data: updates });
 }
 
 /**
  * Delete story plan (local + cloud)
  */
-export async function syncDeleteStoryPlan(userId, datasetId, planId) {
+export async function syncDeleteStoryPlan(userId: SyncUserId, datasetId: SyncDatasetId, planId: LocalId) {
   await syncOp('storyPlan', 'delete', { userId, datasetId, id: planId });
 }
 
@@ -1043,21 +1152,21 @@ export async function syncDeleteStoryPlan(userId, datasetId, planId) {
 /**
  * Add story arc (local + cloud)
  */
-export async function syncAddStoryArc(userId, datasetId, arcId, arcData) {
+export async function syncAddStoryArc(userId: SyncUserId, datasetId: SyncDatasetId, arcId: LocalId, arcData: SyncData) {
   await syncOp('storyArc', 'add', { userId, datasetId, id: arcId, data: arcData });
 }
 
 /**
  * Update story arc (local + cloud)
  */
-export async function syncUpdateStoryArc(userId, datasetId, arcId, updates) {
+export async function syncUpdateStoryArc(userId: SyncUserId, datasetId: SyncDatasetId, arcId: LocalId, updates: SyncData) {
   await syncOp('storyArc', 'update', { userId, datasetId, id: arcId, data: updates });
 }
 
 /**
  * Delete story arc (local + cloud)
  */
-export async function syncDeleteStoryArc(userId, datasetId, arcId) {
+export async function syncDeleteStoryArc(userId: SyncUserId, datasetId: SyncDatasetId, arcId: LocalId) {
   await syncOp('storyArc', 'delete', { userId, datasetId, id: arcId });
 }
 
@@ -1066,21 +1175,21 @@ export async function syncDeleteStoryArc(userId, datasetId, arcId) {
 /**
  * Add story beat (local + cloud)
  */
-export async function syncAddStoryBeat(userId, datasetId, beatId, beatData) {
+export async function syncAddStoryBeat(userId: SyncUserId, datasetId: SyncDatasetId, beatId: LocalId, beatData: SyncData) {
   await syncOp('storyBeat', 'add', { userId, datasetId, id: beatId, data: beatData });
 }
 
 /**
  * Update story beat (local + cloud)
  */
-export async function syncUpdateStoryBeat(userId, datasetId, beatId, updates) {
+export async function syncUpdateStoryBeat(userId: SyncUserId, datasetId: SyncDatasetId, beatId: LocalId, updates: SyncData) {
   await syncOp('storyBeat', 'update', { userId, datasetId, id: beatId, data: updates });
 }
 
 /**
  * Delete story beat (local + cloud)
  */
-export async function syncDeleteStoryBeat(userId, datasetId, beatId) {
+export async function syncDeleteStoryBeat(userId: SyncUserId, datasetId: SyncDatasetId, beatId: LocalId) {
   await syncOp('storyBeat', 'delete', { userId, datasetId, id: beatId });
 }
 
@@ -1089,21 +1198,21 @@ export async function syncDeleteStoryBeat(userId, datasetId, beatId) {
 /**
  * Add scene plan (local + cloud)
  */
-export async function syncAddScenePlan(userId, datasetId, sceneId, sceneData) {
+export async function syncAddScenePlan(userId: SyncUserId, datasetId: SyncDatasetId, sceneId: LocalId, sceneData: SyncData) {
   await syncOp('scenePlan', 'add', { userId, datasetId, id: sceneId, data: sceneData });
 }
 
 /**
  * Update scene plan (local + cloud)
  */
-export async function syncUpdateScenePlan(userId, datasetId, sceneId, updates) {
+export async function syncUpdateScenePlan(userId: SyncUserId, datasetId: SyncDatasetId, sceneId: LocalId, updates: SyncData) {
   await syncOp('scenePlan', 'update', { userId, datasetId, id: sceneId, data: updates });
 }
 
 /**
  * Delete scene plan (local + cloud)
  */
-export async function syncDeleteScenePlan(userId, datasetId, sceneId) {
+export async function syncDeleteScenePlan(userId: SyncUserId, datasetId: SyncDatasetId, sceneId: LocalId) {
   await syncOp('scenePlan', 'delete', { userId, datasetId, id: sceneId });
 }
 
@@ -1112,21 +1221,21 @@ export async function syncDeleteScenePlan(userId, datasetId, sceneId) {
 /**
  * Add plot thread (local + cloud)
  */
-export async function syncAddPlotThread(userId, datasetId, threadId, threadData) {
+export async function syncAddPlotThread(userId: SyncUserId, datasetId: SyncDatasetId, threadId: LocalId, threadData: SyncData) {
   await syncOp('plotThread', 'add', { userId, datasetId, id: threadId, data: threadData });
 }
 
 /**
  * Update plot thread (local + cloud)
  */
-export async function syncUpdatePlotThread(userId, datasetId, threadId, updates) {
+export async function syncUpdatePlotThread(userId: SyncUserId, datasetId: SyncDatasetId, threadId: LocalId, updates: SyncData) {
   await syncOp('plotThread', 'update', { userId, datasetId, id: threadId, data: updates });
 }
 
 /**
  * Delete plot thread (local + cloud)
  */
-export async function syncDeletePlotThread(userId, datasetId, threadId) {
+export async function syncDeletePlotThread(userId: SyncUserId, datasetId: SyncDatasetId, threadId: LocalId) {
   await syncOp('plotThread', 'delete', { userId, datasetId, id: threadId });
 }
 
@@ -1135,21 +1244,21 @@ export async function syncDeletePlotThread(userId, datasetId, threadId) {
 /**
  * Add character arc (local + cloud)
  */
-export async function syncAddCharacterArc(userId, datasetId, arcId, arcData) {
+export async function syncAddCharacterArc(userId: SyncUserId, datasetId: SyncDatasetId, arcId: LocalId, arcData: SyncData) {
   await syncOp('characterArc', 'add', { userId, datasetId, id: arcId, data: arcData });
 }
 
 /**
  * Update character arc (local + cloud)
  */
-export async function syncUpdateCharacterArc(userId, datasetId, arcId, updates) {
+export async function syncUpdateCharacterArc(userId: SyncUserId, datasetId: SyncDatasetId, arcId: LocalId, updates: SyncData) {
   await syncOp('characterArc', 'update', { userId, datasetId, id: arcId, data: updates });
 }
 
 /**
  * Delete character arc (local + cloud)
  */
-export async function syncDeleteCharacterArc(userId, datasetId, arcId) {
+export async function syncDeleteCharacterArc(userId: SyncUserId, datasetId: SyncDatasetId, arcId: LocalId) {
   await syncOp('characterArc', 'delete', { userId, datasetId, id: arcId });
 }
 
@@ -1175,7 +1284,11 @@ export function getSyncStatus() {
  * @param {string} userId - The user's Firebase UID
  * @param {string} [datasetId='default'] - The dataset ID
  */
-export async function forceCloudSync(userId, datasetId = DEFAULT_DATASET_ID, options = {}) {
+export async function forceCloudSync(
+  userId: SyncUserId,
+  datasetId: SyncDatasetId = DEFAULT_DATASET_ID,
+  options: { forceClear?: boolean } = {}
+) {
   if (!userId) return { status: 'no-user' };
 
   const dsId = datasetId || DEFAULT_DATASET_ID;
@@ -1218,8 +1331,8 @@ export async function forceCloudSync(userId, datasetId = DEFAULT_DATASET_ID, opt
     updateSyncStatus({ isSyncing: false, lastSyncTime: new Date() });
     return { status: 'success', data: cloudData };
   } catch (error) {
-    updateSyncStatus({ isSyncing: false, error: error.message });
-    return { status: 'error', error: error.message };
+    updateSyncStatus({ isSyncing: false, error: errorMessage(error) });
+    return { status: 'error', error: errorMessage(error) };
   }
 }
 
@@ -1234,7 +1347,7 @@ export async function forceCloudSync(userId, datasetId = DEFAULT_DATASET_ID, opt
  * @param {string} [datasetId='default'] - The dataset ID
  * @returns {Promise<Object>} Upload result
  */
-export async function forceUploadToCloud(userId, datasetId = DEFAULT_DATASET_ID) {
+export async function forceUploadToCloud(userId: SyncUserId, datasetId: SyncDatasetId = DEFAULT_DATASET_ID) {
   if (!userId) return { status: 'no-user' };
 
   const dsId = datasetId || DEFAULT_DATASET_ID;
@@ -1271,7 +1384,7 @@ export async function forceUploadToCloud(userId, datasetId = DEFAULT_DATASET_ID)
     // Clear the sync queue since everything is now synced
     await clearSyncQueue(dsId);
 
-    const counts = (table) => localData[table]?.length ?? 0;
+    const counts = (table: string) => localData[table]?.length ?? 0;
 
     logger.log('✅ Force upload complete:', {
       people: counts('people'),
@@ -1297,8 +1410,8 @@ export async function forceUploadToCloud(userId, datasetId = DEFAULT_DATASET_ID)
     };
   } catch (error) {
     logger.error('❌ Force upload failed:', error);
-    updateSyncStatus({ isSyncing: false, error: error.message });
-    return { status: 'error', error: error.message };
+    updateSyncStatus({ isSyncing: false, error: errorMessage(error) });
+    return { status: 'error', error: errorMessage(error) };
   }
 }
 

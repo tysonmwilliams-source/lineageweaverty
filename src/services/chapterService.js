@@ -36,7 +36,7 @@ export const CHAPTER_STATUS_LABELS = {
  * @param {Object} [data.content] - TipTap JSON content
  * @param {string} [data.notes] - Author notes
  * @param {number} [data.povCharacter] - POV character ID
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<number>} New chapter ID
  */
 export async function createChapter(data, datasetId) {
@@ -76,7 +76,7 @@ export async function createChapter(data, datasetId) {
 /**
  * Get a chapter by ID
  * @param {number} id - Chapter ID
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<Object|undefined>} Chapter data
  */
 export async function getChapter(id, datasetId) {
@@ -87,7 +87,7 @@ export async function getChapter(id, datasetId) {
 /**
  * Get all chapters for a writing
  * @param {number} writingId - Writing ID
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<Array>} Array of chapters sorted by order
  */
 export async function getChaptersByWriting(writingId, datasetId) {
@@ -100,7 +100,7 @@ export async function getChaptersByWriting(writingId, datasetId) {
 
 /**
  * Get all chapters
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<Array>} Array of chapters
  */
 export async function getAllChapters(datasetId) {
@@ -112,7 +112,7 @@ export async function getAllChapters(datasetId) {
  * Update a chapter
  * @param {number} id - Chapter ID
  * @param {Object} updates - Fields to update
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<number>} Number of records updated
  */
 export async function updateChapter(id, updates, datasetId) {
@@ -145,7 +145,7 @@ export async function updateChapter(id, updates, datasetId) {
  * @param {Object} content - TipTap JSON content
  * @param {string} contentHtml - HTML version
  * @param {string} contentPlainText - Plain text version
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  */
 export async function updateChapterContent(id, content, contentHtml, contentPlainText, datasetId) {
   const wordCount = countWords(contentPlainText);
@@ -161,7 +161,7 @@ export async function updateChapterContent(id, content, contentHtml, contentPlai
 /**
  * Delete a chapter and reorder remaining chapters
  * @param {number} id - Chapter ID
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<Object>} Deletion info
  */
 export async function deleteChapter(id, datasetId) {
@@ -209,7 +209,7 @@ export async function deleteChapter(id, datasetId) {
 /**
  * Restore a chapter (for cloud sync)
  * @param {Object} data - Full chapter data including id
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<number>} Chapter ID
  */
 export async function restoreChapter(data, datasetId) {
@@ -231,7 +231,7 @@ export async function restoreChapter(data, datasetId) {
  *
  * @param {number} writingId - Writing ID
  * @param {number[]} chapterIds - Array of chapter IDs in new order
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @param {string} [userId] - For cloud sync
  */
 export async function reorderChapters(writingId, chapterIds, datasetId, userId = null) {
@@ -269,7 +269,7 @@ async function syncChapterOrders(changes, datasetId, userId) {
  * Move a chapter to a new position
  * @param {number} chapterId - Chapter ID
  * @param {number} newOrder - New position (1-based)
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @param {string} [userId] - For cloud sync
  */
 export async function moveChapter(chapterId, newOrder, datasetId, userId = null) {
@@ -323,7 +323,7 @@ export async function moveChapter(chapterId, newOrder, datasetId, userId = null)
 /**
  * Get chapter count for a writing
  * @param {number} writingId - Writing ID
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<number>} Count
  */
 export async function getChapterCount(writingId, datasetId) {
@@ -347,7 +347,7 @@ export function countWords(text) {
 /**
  * Get first chapter for a writing
  * @param {number} writingId - Writing ID
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<Object|undefined>} First chapter
  */
 export async function getFirstChapter(writingId, datasetId) {

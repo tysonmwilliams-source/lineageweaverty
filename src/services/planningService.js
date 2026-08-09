@@ -210,7 +210,7 @@ export const PLAN_STATUS = {
  * @param {string} [planData.theme] - Central theme
  * @param {string[]} [planData.genre] - Genre tags
  * @param {number} [planData.targetWordCount] - Target word count
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<number>} The new story plan ID
  */
 export async function createStoryPlan(planData, datasetId, userId = null) {

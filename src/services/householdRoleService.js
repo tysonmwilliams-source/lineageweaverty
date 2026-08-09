@@ -34,7 +34,7 @@ import { logger } from '../utils/logger';
  * @param {string} [roleData.startDate] - When current holder started
  * @param {string} [roleData.notes] - Additional notes
  * @param {string} [userId] - Optional user ID for cloud sync
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<number>} New role ID
  */
 export async function createHouseholdRole(roleData, userId = null, datasetId = null) {
@@ -73,7 +73,7 @@ export async function createHouseholdRole(roleData, userId = null, datasetId = n
  * Get a household role by ID
  *
  * @param {number} id - Role ID
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<Object|undefined>} Role object or undefined
  */
 export async function getHouseholdRole(id, datasetId = null) {
@@ -88,7 +88,7 @@ export async function getHouseholdRole(id, datasetId = null) {
 /**
  * Get all household roles
  *
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<Object[]>} Array of all roles
  */
 export async function getAllHouseholdRoles(datasetId = null) {
@@ -104,7 +104,7 @@ export async function getAllHouseholdRoles(datasetId = null) {
  * Get all roles for a specific house
  *
  * @param {number} houseId - House ID
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<Object[]>} Array of roles for the house
  */
 export async function getRolesForHouse(houseId, datasetId = null) {
@@ -130,7 +130,7 @@ export async function getRolesForHouse(houseId, datasetId = null) {
  * Get all roles held by a specific person
  *
  * @param {number} personId - Person ID
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<Object[]>} Array of roles held by the person
  */
 export async function getRolesForPerson(personId, datasetId = null) {
@@ -151,7 +151,7 @@ export async function getRolesForPerson(personId, datasetId = null) {
  * @param {number} id - Role ID
  * @param {Object} updates - Fields to update
  * @param {string} [userId] - Optional user ID for cloud sync
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<number>} Number of records updated (1 if successful)
  */
 export async function updateHouseholdRole(id, updates, userId = null, datasetId = null) {
@@ -182,7 +182,7 @@ export async function updateHouseholdRole(id, updates, userId = null, datasetId 
  *
  * @param {number} id - Role ID
  * @param {string} [userId] - Optional user ID for cloud sync
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<void>}
  */
 export async function deleteHouseholdRole(id, userId = null, datasetId = null) {
@@ -208,7 +208,7 @@ export async function deleteHouseholdRole(id, userId = null, datasetId = null) {
  * @param {number} personId - Person to assign
  * @param {string} [startDate] - When they started (defaults to now)
  * @param {string} [userId] - Optional user ID for cloud sync
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<number>} Number of records updated
  */
 export async function assignRoleHolder(roleId, personId, startDate = null, userId = null, datasetId = null) {
@@ -223,7 +223,7 @@ export async function assignRoleHolder(roleId, personId, startDate = null, userI
  *
  * @param {number} roleId - Role ID
  * @param {string} [userId] - Optional user ID for cloud sync
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<number>} Number of records updated
  */
 export async function vacateRole(roleId, userId = null, datasetId = null) {
@@ -239,7 +239,7 @@ export async function vacateRole(roleId, userId = null, datasetId = null) {
  * Get filled roles for a house (roles with current holders)
  *
  * @param {number} houseId - House ID
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<Object[]>} Array of filled roles
  */
 export async function getFilledRolesForHouse(houseId, datasetId = null) {
@@ -251,7 +251,7 @@ export async function getFilledRolesForHouse(houseId, datasetId = null) {
  * Get vacant roles for a house (roles without current holders)
  *
  * @param {number} houseId - House ID
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<Object[]>} Array of vacant roles
  */
 export async function getVacantRolesForHouse(houseId, datasetId = null) {
@@ -264,7 +264,7 @@ export async function getVacantRolesForHouse(houseId, datasetId = null) {
  *
  * @param {number} houseId - House ID
  * @param {string} roleType - Role type ID
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<boolean>} True if house has this role type
  */
 export async function houseHasRoleType(houseId, roleType, datasetId = null) {
@@ -276,7 +276,7 @@ export async function houseHasRoleType(houseId, roleType, datasetId = null) {
  * Get role statistics for a house
  *
  * @param {number} houseId - House ID
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<Object>} Statistics object
  */
 export async function getRoleStatsForHouse(houseId, datasetId = null) {
@@ -314,7 +314,7 @@ export async function getRoleStatsForHouse(houseId, datasetId = null) {
  *
  * @param {number} houseId - House ID
  * @param {string} [userId] - Optional user ID for cloud sync
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<number>} Number of roles deleted
  */
 export async function deleteRolesForHouse(houseId, userId = null, datasetId = null) {
@@ -338,7 +338,7 @@ export async function deleteRolesForHouse(houseId, userId = null, datasetId = nu
  *
  * @param {number} personId - Person ID
  * @param {string} [userId] - Optional user ID for cloud sync
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<number>} Number of roles updated
  */
 export async function clearHolderFromAllRoles(personId, userId = null, datasetId = null) {

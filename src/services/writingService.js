@@ -53,7 +53,7 @@ export const WRITING_STATUS_LABELS = {
  * @param {string[]} [data.tags] - Tags for organization
  * @param {number} [data.targetWordCount] - Target word count
  * @param {Object} [data.metadata] - Additional metadata (genre, timeline, etc.)
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<number>} New writing ID
  */
 export async function createWriting(data, datasetId) {
@@ -98,7 +98,7 @@ export async function createWriting(data, datasetId) {
 /**
  * Get a writing by ID
  * @param {number} id - Writing ID
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<Object|undefined>} Writing data
  */
 export async function getWriting(id, datasetId) {
@@ -108,7 +108,7 @@ export async function getWriting(id, datasetId) {
 
 /**
  * Get all writings
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<Array>} Array of writings
  */
 export async function getAllWritings(datasetId) {
@@ -119,7 +119,7 @@ export async function getAllWritings(datasetId) {
 /**
  * Get writings by type
  * @param {string} type - Writing type
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<Array>} Array of writings
  */
 export async function getWritingsByType(type, datasetId) {
@@ -130,7 +130,7 @@ export async function getWritingsByType(type, datasetId) {
 /**
  * Get writings by status
  * @param {string} status - Writing status
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<Array>} Array of writings
  */
 export async function getWritingsByStatus(status, datasetId) {
@@ -142,7 +142,7 @@ export async function getWritingsByStatus(status, datasetId) {
  * Update a writing
  * @param {number} id - Writing ID
  * @param {Object} updates - Fields to update
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<number>} Number of records updated
  */
 export async function updateWriting(id, updates, datasetId) {
@@ -161,7 +161,7 @@ export async function updateWriting(id, updates, datasetId) {
 /**
  * Delete a writing and all its chapters and links
  * @param {number} id - Writing ID
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<Object>} Deletion info
  */
 export async function deleteWriting(id, datasetId) {
@@ -198,7 +198,7 @@ export async function deleteWriting(id, datasetId) {
  * Restore a writing (for cloud sync)
  * Preserves original ID
  * @param {Object} data - Full writing data including id
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<number>} Writing ID
  */
 export async function restoreWriting(data, datasetId) {
@@ -214,7 +214,7 @@ export async function restoreWriting(data, datasetId) {
 /**
  * Get total word count across all chapters
  * @param {number} writingId - Writing ID
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<number>} Total word count
  */
 export async function getWritingWordCount(writingId, datasetId) {
@@ -226,7 +226,7 @@ export async function getWritingWordCount(writingId, datasetId) {
 /**
  * Update word count on writing based on chapters
  * @param {number} writingId - Writing ID
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  */
 export async function updateWritingWordCount(writingId, datasetId) {
   const wordCount = await getWritingWordCount(writingId, datasetId);
@@ -235,7 +235,7 @@ export async function updateWritingWordCount(writingId, datasetId) {
 
 /**
  * Get writings count
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<number>} Count
  */
 export async function getWritingsCount(datasetId) {
@@ -246,7 +246,7 @@ export async function getWritingsCount(datasetId) {
 /**
  * Search writings by title
  * @param {string} query - Search query
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<Array>} Matching writings
  */
 export async function searchWritings(query, datasetId) {
@@ -263,7 +263,7 @@ export async function searchWritings(query, datasetId) {
 /**
  * Get writing with all its chapters
  * @param {number} id - Writing ID
- * @param {string} [datasetId] - Dataset ID
+ * @param {string|null} [datasetId] - Dataset ID
  * @returns {Promise<Object>} Writing with chapters
  */
 export async function getWritingWithChapters(id, datasetId) {

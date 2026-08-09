@@ -108,7 +108,7 @@ export interface SyncOpArgs {
  *
  * Called before anything is queued, so it is safe to throw.
  */
-function assertSupported(entityType: string, operation: SyncOperation): void {
+function assertSupported(entityType: string, operation: string): asserts operation is SyncOperation {
   const entity = getEntity(entityType);
   if (!entity) {
     throw new Error(
@@ -116,7 +116,7 @@ function assertSupported(entityType: string, operation: SyncOperation): void {
       'an entity that is not in the manifest is not synced by anything.'
     );
   }
-  if (!entity.ops.includes(operation)) {
+  if (!(entity.ops as readonly string[]).includes(operation)) {
     throw new Error(
       `Entity "${entityType}" declares no "${operation}" operation ` +
       `(it has: ${entity.ops.join(', ')}). Either the call is wrong, or the ` +
@@ -148,7 +148,11 @@ function assertSupported(entityType: string, operation: SyncOperation): void {
  */
 export async function sendToCloud(
   entityType: string,
-  operation: SyncOperation,
+  // `string`, not `SyncOperation`: the replay path passes `syncQueue.operation`,
+  // which is whatever was written to the queue. `assertSupported` is a type
+  // predicate, so the switch below still sees a narrowed union — the check and
+  // the narrowing are the same act rather than a check followed by a cast.
+  operation: string,
   userId: string,
   datasetId: DatasetId | undefined,
   id: number | string,
@@ -353,11 +357,17 @@ export async function syncDeleteCascade(
 /**
  * A local row as the bulk snapshot carries it.
  *
- * Only `id` is named because only `id` is read here, but the index signature
- * matters: these are full entity rows, and a type that admitted nothing else
- * would make spreading one lose every other field.
+ * Only `id` is named, and deliberately **without** an index signature. The
+ * entity types in `types.ts` are `interface` declarations, and TypeScript does
+ * not treat an interface as assignable to `Record<string, unknown>` — so
+ * widening this to admit arbitrary keys makes `Person[]` stop being a valid
+ * snapshot, which is the one thing it has to be.
+ *
+ * Nothing is lost by the narrow type. Spreading a value of it still copies
+ * every field at runtime; only the *static* view is narrowed, and the only
+ * field anything downstream reads is `id`.
  */
-export type SnapshotRow = Record<string, unknown> & { id?: number | string };
+export type SnapshotRow = { id?: number | string };
 
 /**
  * A whole-dataset snapshot of local rows, keyed by **table** name.

@@ -67,8 +67,14 @@ async function notifyContextChange(
  *
  * Still returns `undefined` for an absent table: an older database opened
  * before a store was added genuinely will not have it.
+ *
+ * Exported so that `dataSyncService`'s two manifest-driven loops — the local
+ * snapshot read and the cloud restore — can share this one cast rather than
+ * writing their own. There is exactly one place in the codebase that turns a
+ * `Dexie` into an `AppDatabase`, and exactly one that indexes an `AppDatabase`
+ * by a runtime string. Keep it that way.
  */
-function tableByName(database: AppDatabase, name: string): Table<unknown, number> | undefined {
+export function tableByName(database: AppDatabase, name: string): Table<unknown, number> | undefined {
   return (database as unknown as Record<string, Table<unknown, number> | undefined>)[name];
 }
 
