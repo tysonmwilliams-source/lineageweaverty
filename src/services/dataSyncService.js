@@ -71,12 +71,9 @@ import {
   getDatabase,
   // Sync queue functions for data loss prevention
   markSynced,
-  hasPendingChanges,
   getPendingChangeCount,
-  getPendingChanges,
   getPendingChangesByType,
   clearSyncQueue,
-  clearSyncedItems,
   // Sync queue maintenance
   performSyncQueueMaintenance
 } from './database';
@@ -89,10 +86,7 @@ import {
   restoreEntry as localRestoreCodexEntry // Use restore, not create, to preserve IDs
 } from './codexService';
 
-import {
-  getAllHeraldry as localGetAllHeraldry,
-  createHeraldry as localCreateHeraldry
-} from './heraldryService';
+import { getAllHeraldry as localGetAllHeraldry } from './heraldryService';
 
 import {
   getAllHouseholdRoles as localGetAllHouseholdRoles
@@ -114,7 +108,6 @@ import {
 } from './writingLinkService';
 
 import {
-  getAllStoryPlans as localGetAllStoryPlans,
   restoreStoryPlan as localRestoreStoryPlan,
   restoreStoryArc as localRestoreStoryArc,
   restoreStoryBeat as localRestoreStoryBeat,
@@ -333,9 +326,10 @@ export function stopPeriodicSync() {
  * shaping, and uploading rows that differ from what the app reads would put a
  * different world in the cloud than the one on screen.
  *
- * `storyPlans` deliberately does NOT use `getAllStoryPlans`, which is why that
- * import is unused. The assembly this replaces read the raw table, and the
- * service getter is not a drop-in for it.
+ * `storyPlans` deliberately reads the raw table rather than going through
+ * `planningService.getAllStoryPlans`. The assembly this replaced read the raw
+ * table, and the service getter is not a drop-in for it — so the import went in
+ * step 7 rather than the read changing.
  */
 const LOCAL_READ = {
   person: (dsId) => getAllPeople(dsId),
