@@ -63,7 +63,18 @@ export default defineConfig([
       // .tsx landed: the five contexts each export a provider, a hook and their
       // types from one file, which is the ordinary React idiom.
       'react-refresh/only-export-components': 'warn',
+
+      // The same four React Compiler downgrades the .js/.jsx block makes below,
+      // and for the same reason — see the longer note there. All four must be
+      // mirrored, not a subset: the first version of this block carried only
+      // `preserve-manual-memoization`, so converting a component that happened
+      // to trip `set-state-in-effect` turned a warning into a build failure.
+      // The rules describe a scheduled restructuring pass, and a file does not
+      // acquire that debt by changing extension.
+      'react-hooks/set-state-in-effect': 'warn',
       'react-hooks/preserve-manual-memoization': 'warn',
+      'react-hooks/refs': 'warn',
+      'react-hooks/immutability': 'warn',
     },
   },
   {

@@ -16,13 +16,26 @@
  */
 
 import { motion } from 'framer-motion';
+import type { MotionStyle } from 'framer-motion';
+import type { Variants } from 'framer-motion';
 import Icon from '../icons';
 import './GroupHeader.css';
 
 const CHEVRON_VARIANTS = {
   collapsed: { rotate: -90 },
   expanded: { rotate: 0 }
-};
+} satisfies Variants;
+
+export interface GroupHeaderProps {
+  /** A lucide icon name. */
+  icon?: string;
+  title: string;
+  count?: number;
+  /** A CSS colour, usually a house's colourCode. */
+  color?: string | null;
+  collapsed?: boolean;
+  onToggle?: () => void;
+}
 
 function GroupHeader({
   icon = 'castle',
@@ -31,12 +44,14 @@ function GroupHeader({
   color,
   collapsed = false,
   onToggle
-}) {
+}: GroupHeaderProps) {
   return (
     <motion.button
       className="group-header"
       onClick={onToggle}
-      style={color ? { '--group-accent': color } : undefined}
+      // A CSS custom property. `MotionStyle` has no index signature for them,
+      // and React's own `CSSProperties` only tolerates them via this cast.
+      style={color ? ({ '--group-accent': color } as MotionStyle) : undefined}
       whileHover={{ backgroundColor: 'var(--bg-elevated, var(--bg-tertiary))' }}
       whileTap={{ scale: 0.995 }}
     >

@@ -17,9 +17,21 @@
  */
 
 import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import type { ChangeEvent as ReactChangeEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Icon from '../icons';
 import './ListSearchBar.css';
+
+export interface ListSearchBarProps {
+  value: string;
+  /** Fires on every keystroke, for the controlled input. */
+  onChange: (value: string) => void;
+  /** Fires once typing pauses. Use this for the expensive filter. */
+  onChangeDebounced?: (value: string) => void;
+  placeholder?: string;
+  debounceMs?: number;
+  autoFocus?: boolean;
+}
 
 const ListSearchBar = forwardRef(function ListSearchBar({
   value,
@@ -28,10 +40,10 @@ const ListSearchBar = forwardRef(function ListSearchBar({
   placeholder = 'Search...',
   debounceMs = 300,
   autoFocus = false
-}, ref) {
+}: ListSearchBarProps, ref) {
   const [localValue, setLocalValue] = useState(value || '');
-  const inputRef = useRef(null);
-  const debounceTimerRef = useRef(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Forward the ref to allow parent to focus the input
   useImperativeHandle(ref, () => ({
@@ -47,7 +59,7 @@ const ListSearchBar = forwardRef(function ListSearchBar({
   }, [value]);
 
   // Handle input change with optional debouncing
-  const handleChange = (e) => {
+  const handleChange = (e: ReactChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     setLocalValue(newValue);
 

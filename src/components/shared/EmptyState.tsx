@@ -16,6 +16,7 @@
 
 import { forwardRef, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
+import type { Variants } from 'framer-motion';
 import Icon from '../icons';
 import ActionButton from './ActionButton';
 import './EmptyState.css';
@@ -32,7 +33,7 @@ const EMPTY_VARIANTS = {
       staggerChildren: 0.1
     }
   }
-};
+} satisfies Variants;
 
 const ITEM_VARIANTS = {
   hidden: { opacity: 0, y: 10 },
@@ -41,7 +42,7 @@ const ITEM_VARIANTS = {
     y: 0,
     transition: { duration: 0.4, ease: 'easeOut' }
   }
-};
+} satisfies Variants;
 
 /**
  * EmptyState Component
@@ -56,7 +57,31 @@ const ITEM_VARIANTS = {
  * @param {boolean} props.animate - Enable entrance animation (default: true)
  * @param {string} props.className - Additional CSS classes
  */
-const EmptyState = forwardRef(function EmptyState(
+import type { ReactNode } from 'react';
+import type { MouseEvent as ReactMouseEvent } from 'react';
+
+/** A button offered alongside an empty state. */
+export interface EmptyStateAction {
+  label: string;
+  /** Receives the click event — the wrapper forwards it. */
+  onClick: (event: ReactMouseEvent<HTMLButtonElement>) => void;
+  icon?: string;
+}
+
+export interface EmptyStateProps {
+  /** A lucide icon name. */
+  icon?: string;
+  title?: ReactNode;
+  description?: ReactNode;
+  action?: EmptyStateAction;
+  secondaryAction?: EmptyStateAction;
+  size?: 'sm' | 'md' | 'lg';
+  animate?: boolean;
+  className?: string;
+  [key: string]: unknown;
+}
+
+const EmptyState = forwardRef<HTMLDivElement, EmptyStateProps>(function EmptyState(
   {
     icon = 'info',
     title,
@@ -67,7 +92,7 @@ const EmptyState = forwardRef(function EmptyState(
     animate = true,
     className = '',
     ...props
-  },
+  }: EmptyStateProps,
   ref
 ) {
   // Build class names
@@ -95,11 +120,11 @@ const EmptyState = forwardRef(function EmptyState(
   }, [animate]);
 
   // Memoize action handler
-  const handleAction = useCallback((e) => {
+  const handleAction = useCallback((e: ReactMouseEvent<HTMLButtonElement>) => {
     if (action?.onClick) action.onClick(e);
   }, [action]);
 
-  const handleSecondaryAction = useCallback((e) => {
+  const handleSecondaryAction = useCallback((e: ReactMouseEvent<HTMLButtonElement>) => {
     if (secondaryAction?.onClick) secondaryAction.onClick(e);
   }, [secondaryAction]);
 

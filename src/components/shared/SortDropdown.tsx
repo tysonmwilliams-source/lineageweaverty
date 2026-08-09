@@ -13,15 +13,29 @@
  */
 
 import Icon from '../icons';
+import type { ChangeEvent as ReactChangeEvent } from 'react';
 import './SortDropdown.css';
+
+/** One sort order. */
+export interface SortOption {
+  value: string;
+  label: string;
+}
+
+export interface SortDropdownProps {
+  value: string;
+  onChange: (value: string) => void;
+  options: SortOption[];
+  label?: string;
+}
 
 function SortDropdown({
   value,
   onChange,
   options,
   label = 'Sort:'
-}) {
-  const handleChange = (e) => {
+}: SortDropdownProps) {
+  const handleChange = (e: ReactChangeEvent<HTMLSelectElement>) => {
     onChange(e.target.value);
   };
 

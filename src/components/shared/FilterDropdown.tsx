@@ -15,8 +15,26 @@
  * - icon: Optional icon name for the label
  */
 
+import type { ChangeEvent as ReactChangeEvent } from 'react';
 import Icon from '../icons';
 import './FilterDropdown.css';
+
+/** One selectable filter value. */
+export interface FilterOption {
+  value: string;
+  label: string;
+}
+
+export interface FilterDropdownProps {
+  value: string;
+  onChange: (value: string) => void;
+  options: FilterOption[];
+  label?: string;
+  /** Text for the "no filter" entry. */
+  allLabel?: string;
+  /** A lucide icon name. */
+  icon?: string;
+}
 
 function FilterDropdown({
   value,
@@ -25,8 +43,8 @@ function FilterDropdown({
   label,
   allLabel = 'All',
   icon
-}) {
-  const handleChange = (e) => {
+}: FilterDropdownProps) {
+  const handleChange = (e: ReactChangeEvent<HTMLSelectElement>) => {
     onChange(e.target.value);
   };
 

@@ -17,10 +17,11 @@
 
 import { Children, forwardRef, useMemo, cloneElement, isValidElement } from 'react';
 import { motion } from 'framer-motion';
+import type { Variants } from 'framer-motion';
 import './AnimatedList.css';
 
 // Animation variants for different directions
-const createContainerVariants = (stagger) => ({
+const createContainerVariants = (stagger: number): Variants => ({
   hidden: {},
   visible: {
     transition: {
@@ -29,7 +30,7 @@ const createContainerVariants = (stagger) => ({
   }
 });
 
-const createItemVariants = (direction) => {
+const createItemVariants = (direction: string): Variants => {
   const baseHidden = { opacity: 0 };
   const baseVisible = {
     opacity: 1,
@@ -37,7 +38,7 @@ const createItemVariants = (direction) => {
       duration: 0.4,
       ease: 'easeOut'
     }
-  };
+  } as const;
 
   switch (direction) {
     case 'left':
@@ -82,7 +83,23 @@ const createItemVariants = (direction) => {
  * @param {string} props.as - HTML element to render as (default: 'div')
  * @param {string} props.className - Additional CSS classes
  */
-const AnimatedList = forwardRef(function AnimatedList(
+import type { ReactElement, ReactNode } from 'react';
+
+export interface AnimatedListProps {
+  children?: ReactNode;
+  /** Seconds between each child's entrance. */
+  stagger?: number;
+  direction?: 'down' | 'up' | 'left' | 'right' | 'scale';
+  animate?: boolean;
+  layout?: 'vertical' | 'horizontal' | 'grid';
+  gap?: string;
+  /** The element to render as. */
+  as?: string;
+  className?: string;
+  [key: string]: unknown;
+}
+
+const AnimatedList = forwardRef<HTMLElement, AnimatedListProps>(function AnimatedList(
   {
     children,
     stagger = 0.1,
@@ -93,7 +110,7 @@ const AnimatedList = forwardRef(function AnimatedList(
     as = 'div',
     className = '',
     ...props
-  },
+  }: AnimatedListProps,
   ref
 ) {
   // Build class names
@@ -136,8 +153,17 @@ const AnimatedList = forwardRef(function AnimatedList(
       if (!isValidElement(child)) return child;
 
       // If child is already a motion component, just add variants
-      if (child.type?.displayName?.startsWith('motion.')) {
-        return cloneElement(child, {
+      // `type` is a string for host elements and a component otherwise; only
+      // the component form carries `displayName`, so this narrows rather than
+      // reaching through an optional chain the type does not allow.
+      const childType = child.type;
+      const displayName = typeof childType === 'string'
+        ? undefined
+        // `JSXElementConstructor` has no `displayName` in the type, but every
+        // motion component sets one — which is exactly what this checks for.
+        : (childType as { displayName?: string }).displayName;
+      if (displayName?.startsWith('motion.')) {
+        return cloneElement(child as ReactElement<{ variants?: Variants }>, {
           variants: itemVariants,
           key: child.key || index
         });
@@ -156,11 +182,15 @@ const AnimatedList = forwardRef(function AnimatedList(
     });
   }, [children, animate, itemVariants]);
 
-  const Component = motion[as] || motion.div;
+  // `as` is a free-form tag name from props; `motion` is a callable proxy whose
+  // index signature TypeScript cannot express. Unknown tags fall back to a div,
+  // which is the pre-existing behaviour.
+  const Component = (motion as unknown as Record<string, typeof motion.div>)[as] || motion.div;
 
   return (
     <Component
-      ref={ref}
+      // `as` picks the element, so the ref's type is only known at runtime.
+      ref={ref as never}
       className={listClass}
       {...containerProps}
       {...props}

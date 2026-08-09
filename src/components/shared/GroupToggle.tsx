@@ -14,11 +14,17 @@
 import Icon from '../icons';
 import './GroupToggle.css';
 
+export interface GroupToggleProps {
+  enabled: boolean;
+  onChange: (enabled: boolean) => void;
+  label?: string;
+}
+
 function GroupToggle({
   enabled,
   onChange,
   label = 'Group by House'
-}) {
+}: GroupToggleProps) {
   return (
     <button
       className={`group-toggle ${enabled ? 'group-toggle--active' : ''}`}

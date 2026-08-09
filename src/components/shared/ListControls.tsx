@@ -14,6 +14,7 @@
  */
 
 import { motion } from 'framer-motion';
+import type { Variants } from 'framer-motion';
 import Icon from '../icons';
 import './ListControls.css';
 
@@ -24,7 +25,19 @@ const CONTAINER_VARIANTS = {
     y: 0,
     transition: { duration: 0.2 }
   }
-};
+} satisfies Variants;
+
+import type { ReactNode } from 'react';
+
+export interface ListControlsProps {
+  children?: ReactNode;
+  /** Rows after filtering. */
+  resultCount?: number;
+  /** Rows before filtering. Shown as "n of m". */
+  totalCount?: number;
+  onClearFilters?: () => void;
+  hasActiveFilters?: boolean;
+}
 
 function ListControls({
   children,
@@ -32,7 +45,7 @@ function ListControls({
   totalCount,
   onClearFilters,
   hasActiveFilters = false
-}) {
+}: ListControlsProps) {
   const showResultCount = resultCount !== undefined && totalCount !== undefined;
   const isFiltered = showResultCount && resultCount !== totalCount;
 

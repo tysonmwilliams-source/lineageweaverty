@@ -12,6 +12,7 @@
 
 import { forwardRef, useMemo } from 'react';
 import { motion } from 'framer-motion';
+import type { HTMLMotionProps, Variants } from 'framer-motion';
 import Icon from '../icons';
 import './SectionHeader.css';
 
@@ -26,7 +27,7 @@ const HEADER_VARIANTS = {
       ease: 'easeOut'
     }
   }
-};
+} satisfies Variants;
 
 /**
  * SectionHeader Component
@@ -41,7 +42,22 @@ const HEADER_VARIANTS = {
  * @param {number} props.delay - Animation delay in seconds
  * @param {string} props.className - Additional CSS classes
  */
-const SectionHeader = forwardRef(function SectionHeader(
+import type { HTMLAttributes, ReactNode } from 'react';
+
+export interface SectionHeaderProps extends Omit<HTMLAttributes<HTMLElement>, 'title'> {
+  /** A lucide icon name. */
+  icon?: string;
+  title: ReactNode;
+  subtitle?: ReactNode;
+  size?: 'sm' | 'md' | 'lg';
+  align?: 'left' | 'center' | 'right';
+  animate?: boolean;
+  /** Entrance delay, in seconds. */
+  delay?: number;
+  className?: string;
+}
+
+const SectionHeader = forwardRef<HTMLElement, SectionHeaderProps>(function SectionHeader(
   {
     icon,
     title,
@@ -52,7 +68,7 @@ const SectionHeader = forwardRef(function SectionHeader(
     delay = 0,
     className = '',
     ...props
-  },
+  }: SectionHeaderProps,
   ref
 ) {
   // Build class names
@@ -85,7 +101,7 @@ const SectionHeader = forwardRef(function SectionHeader(
       ref={ref}
       className={headerClass}
       {...animationProps}
-      {...props}
+      {...(props as HTMLMotionProps<'header'>)}
     >
       <h2 className="section-header__title">
         {icon && (

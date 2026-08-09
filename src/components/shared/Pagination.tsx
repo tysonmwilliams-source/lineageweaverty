@@ -16,12 +16,20 @@ import { motion } from 'framer-motion';
 import Icon from '../icons';
 import './Pagination.css';
 
+export interface PaginationProps {
+  /** 1-based. */
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  showInfo?: boolean;
+}
+
 function Pagination({
   currentPage,
   totalPages,
   onPageChange,
   showInfo = true
-}) {
+}: PaginationProps) {
   // Don't render if only one page or no pages
   if (totalPages <= 1) {
     return null;

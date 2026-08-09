@@ -13,10 +13,15 @@
 import Icon from '../icons';
 import './ViewDensityToggle.css';
 
+export interface ViewDensityToggleProps {
+  density: string;
+  onChange: (density: string) => void;
+}
+
 function ViewDensityToggle({
   density,
   onChange
-}) {
+}: ViewDensityToggleProps) {
   return (
     <div className="view-density" role="group" aria-label="View density">
       <button

@@ -13,6 +13,7 @@
 
 import { forwardRef, useMemo } from 'react';
 import { motion } from 'framer-motion';
+import type { Variants } from 'framer-motion';
 import './LoadingState.css';
 
 // Spinner animation variants
@@ -25,7 +26,7 @@ const SPINNER_VARIANTS = {
       ease: 'linear'
     }
   }
-};
+} satisfies Variants;
 
 // Pulse animation for dots
 const DOT_VARIANTS = {
@@ -38,7 +39,7 @@ const DOT_VARIANTS = {
       ease: 'easeInOut'
     }
   }
-};
+} satisfies Variants;
 
 /**
  * LoadingState Component
@@ -50,7 +51,17 @@ const DOT_VARIANTS = {
  * @param {boolean} props.inline - Display inline vs full container (default: false)
  * @param {string} props.className - Additional CSS classes
  */
-const LoadingState = forwardRef(function LoadingState(
+export interface LoadingStateProps {
+  message?: string;
+  size?: 'sm' | 'md' | 'lg';
+  variant?: 'spinner' | 'dots' | 'pulse';
+  /** Render inline rather than filling its container. */
+  inline?: boolean;
+  className?: string;
+  [key: string]: unknown;
+}
+
+const LoadingState = forwardRef<HTMLDivElement, LoadingStateProps>(function LoadingState(
   {
     message,
     size = 'md',
@@ -58,7 +69,7 @@ const LoadingState = forwardRef(function LoadingState(
     inline = false,
     className = '',
     ...props
-  },
+  }: LoadingStateProps,
   ref
 ) {
   // Build class names

@@ -13,6 +13,7 @@
 
 import { forwardRef, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
+import type { HTMLMotionProps, MotionProps } from 'framer-motion';
 import Icon from '../icons';
 import './ActionButton.css';
 
@@ -21,7 +22,7 @@ const HOVER_CONFIG = {
   y: -2,
   scale: 1.02,
   transition: { duration: 0.15, ease: 'easeOut' }
-};
+} as const;
 
 const TAP_CONFIG = { scale: 0.98 };
 
@@ -41,7 +42,25 @@ const TAP_CONFIG = { scale: 0.98 };
  * @param {string} props.type - Button type ('button', 'submit', 'reset')
  * @param {string} props.className - Additional CSS classes
  */
-const ActionButton = forwardRef(function ActionButton(
+import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import type { MouseEvent as ReactMouseEvent } from 'react';
+
+export interface ActionButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'type'> {
+  children?: ReactNode;
+  /** A lucide icon name, before the text. */
+  icon?: string;
+  /** A lucide icon name, after the text. */
+  iconRight?: string;
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
+  size?: 'sm' | 'md' | 'lg';
+  disabled?: boolean;
+  loading?: boolean;
+  fullWidth?: boolean;
+  type?: 'button' | 'submit' | 'reset';
+  className?: string;
+}
+
+const ActionButton = forwardRef<HTMLButtonElement, ActionButtonProps>(function ActionButton(
   {
     children,
     icon,
@@ -55,7 +74,7 @@ const ActionButton = forwardRef(function ActionButton(
     type = 'button',
     className = '',
     ...props
-  },
+  }: ActionButtonProps,
   ref
 ) {
   // Build class names
@@ -83,7 +102,7 @@ const ActionButton = forwardRef(function ActionButton(
   }, [size]);
 
   // Memoize click handler
-  const handleClick = useCallback((e) => {
+  const handleClick = useCallback((e: ReactMouseEvent<HTMLButtonElement>) => {
     if (disabled || loading) {
       e.preventDefault();
       return;
@@ -92,7 +111,7 @@ const ActionButton = forwardRef(function ActionButton(
   }, [disabled, loading, onClick]);
 
   // Animation props (disabled when button is disabled/loading)
-  const animationProps = useMemo(() => {
+  const animationProps = useMemo((): MotionProps => {
     if (disabled || loading) return {};
     return {
       whileHover: HOVER_CONFIG,
@@ -102,13 +121,18 @@ const ActionButton = forwardRef(function ActionButton(
 
   return (
     <motion.button
+      // `ActionButtonProps` extends `ButtonHTMLAttributes`, but `motion.button`
+      // takes `HTMLMotionProps`, which *replaces* several DOM handlers
+      // (onAnimationStart, onDrag…) with Framer's own. The rest props are
+      // narrowed here rather than the public prop type being written against
+      // Framer's, which would leak the animation library into every caller.
       ref={ref}
       type={type}
       className={buttonClass}
       onClick={handleClick}
       disabled={disabled || loading}
       {...animationProps}
-      {...props}
+      {...(props as HTMLMotionProps<'button'>)}
     >
       {loading ? (
         <span className="action-btn__spinner" />

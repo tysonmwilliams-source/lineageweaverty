@@ -13,6 +13,7 @@
 
 import { forwardRef, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
+import type { MotionProps, Variants } from 'framer-motion';
 import './Card.css';
 
 // Animation variants defined outside component
@@ -27,13 +28,13 @@ const CARD_VARIANTS = {
       ease: [0.25, 0.46, 0.45, 0.94]
     }
   }
-};
+} satisfies Variants;
 
 // Hover animation configuration
 const HOVER_CONFIG = {
   y: -4,
   transition: { duration: 0.2, ease: 'easeOut' }
-};
+} as const;
 
 const TAP_CONFIG = { scale: 0.98 };
 
@@ -52,7 +53,29 @@ const TAP_CONFIG = { scale: 0.98 };
  * @param {string} props.className - Additional CSS classes
  * @param {Object} props.style - Additional inline styles
  */
-const Card = forwardRef(function Card(
+import type { CSSProperties, MouseEventHandler, ReactNode } from 'react';
+// Aliased: the bare names resolve to the DOM globals, which are not generic.
+import type { KeyboardEvent as ReactKeyboardEvent, MouseEvent as ReactMouseEvent } from 'react';
+
+export interface CardProps {
+  children?: ReactNode;
+  variant?: 'default' | 'elevated' | 'outlined';
+  accent?: 'primary' | 'success' | 'warning' | 'error' | null;
+  padding?: 'none' | 'sm' | 'md' | 'lg';
+  hover?: boolean;
+  animate?: boolean;
+  /** Entrance delay, in seconds. */
+  delay?: number;
+  /** Supplying this makes the card interactive. */
+  onClick?: MouseEventHandler<HTMLElement>;
+  className?: string;
+  style?: CSSProperties;
+  /** The element to render as. */
+  as?: string;
+  [key: string]: unknown;
+}
+
+const Card = forwardRef<HTMLElement, CardProps>(function Card(
   {
     children,
     variant = 'default',
@@ -66,7 +89,7 @@ const Card = forwardRef(function Card(
     style = {},
     as = 'div',
     ...props
-  },
+  }: CardProps,
   ref
 ) {
   // Build class names
@@ -84,13 +107,21 @@ const Card = forwardRef(function Card(
   }, [variant, padding, accent, onClick, hover, className]);
 
   // Memoize click handler
-  const handleClick = useCallback((e) => {
-    if (onClick) onClick(e);
+  // Accepts a keyboard event too: `handleKeyDown` below forwards Enter and
+  // Space here so an interactive card behaves like a button. `onClick` is
+  // declared as a mouse handler because that is what every caller passes, so
+  // the forward is narrowed at the call rather than the prop being widened for
+  // all consumers.
+  const handleClick = useCallback((e: ReactMouseEvent<HTMLElement> | ReactKeyboardEvent<HTMLElement>) => {
+    if (onClick) onClick(e as ReactMouseEvent<HTMLElement>);
   }, [onClick]);
 
   // Build animation props
   const animationProps = useMemo(() => {
-    const result = {};
+    // Typed up front rather than accumulated onto `{}`: an empty object literal
+    // has no properties, so every assignment below would be an error on a type
+    // that grows by mutation. `MotionProps` is the union the element accepts.
+    const result: MotionProps = {};
 
     if (animate) {
       result.variants = CARD_VARIANTS;
@@ -112,14 +143,18 @@ const Card = forwardRef(function Card(
     return result;
   }, [animate, delay, hover, onClick]);
 
-  const Component = motion[as] || motion.div;
+  // `as` is a free-form tag name from props, and `motion` is a callable proxy
+  // whose index signature TypeScript cannot express — so the lookup is narrowed
+  // here rather than at each use. An unknown tag falls back to a div, which is
+  // the pre-existing behaviour.
+  const Component = (motion as unknown as Record<string, typeof motion.div>)[as] || motion.div;
 
   // Setting role="button" and tabIndex={0} without a key handler is worse than
   // leaving it a plain div: it announces itself as a button to assistive tech
   // and then does nothing when activated. Space is preventDefault'd so the
   // page doesn't scroll, matching native button behaviour.
   const handleKeyDown = onClick
-    ? (event) => {
+    ? (event: ReactKeyboardEvent<HTMLElement>) => {
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault();
           handleClick(event);
@@ -129,7 +164,8 @@ const Card = forwardRef(function Card(
 
   return (
     <Component
-      ref={ref}
+      // `as` picks the element, so the ref's type is only known at runtime.
+      ref={ref as never}
       className={cardClass}
       style={style}
       onClick={onClick ? handleClick : undefined}
