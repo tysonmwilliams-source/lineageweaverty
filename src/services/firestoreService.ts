@@ -1,5 +1,5 @@
 /**
- * firestoreService.js — the three whole-dataset cloud operations.
+ * firestoreService.ts — the three whole-dataset cloud operations.
  *
  * Once 2,238 lines and 87 functions; now three. Per-entity CRUD moved to
  * `cloudRepo.ts` in step 3 of the sync-layer refactor and the 79 compatibility
@@ -45,6 +45,9 @@ import { logger } from '../utils/logger';
 import { allEntities } from './syncManifest';
 import { pruneTargets } from './syncEngine';
 import { getAllCloud, getUserCollection, getUserDoc } from './cloudRepo';
+import type { CloudRecord } from './cloudRepo';
+import type { DatasetId } from './types';
+import type { LocalSnapshot } from './syncEngine';
 
 // ==================== BULK OPERATIONS ====================
 
@@ -67,11 +70,15 @@ import { getAllCloud, getUserCollection, getUserDoc } from './cloudRepo';
  * and it deliberately does not claim to know when each row was made. Preserved
  * exactly as it was.
  *
- * @param {string} userId - The user's Firebase UID
- * @param {string} datasetId - The dataset ID
- * @param {Object} localData - Rows keyed by table name
+ * `prune` is opt-in and deletes cloud documents. See `pruneTargets` for the two
+ * guards that decide what is eligible; nothing here overrides them.
  */
-export async function syncAllToCloud(userId, datasetId, localData, options = {}) {
+export async function syncAllToCloud(
+  userId: string,
+  datasetId: DatasetId,
+  localData: LocalSnapshot,
+  options: { prune?: boolean } = {}
+): Promise<boolean> {
   const { prune = false } = options;
   try {
     logger.log('☁️ Starting full sync to cloud for dataset:', datasetId);
@@ -91,7 +98,7 @@ export async function syncAllToCloud(userId, datasetId, localData, options = {})
       }
     };
 
-    const counts = {};
+    const counts: Record<string, number> = {};
 
     // The old code ran houses before people, with a comment saying people
     // reference houses. That ordering was inert — Firestore has no referential
@@ -118,19 +125,26 @@ export async function syncAllToCloud(userId, datasetId, localData, options = {})
       // tables actually present in the snapshot are read — a table the snapshot
       // omitted could not be read locally, and must not be pruned.
       const present = allEntities().filter((entity) => localData[entity.table] !== undefined);
-      const snapshots = await Promise.all(
-        present.map((entity) => getDocs(getUserCollection(userId, datasetId, entity.collection)))
-      );
 
-      const cloudIdsByTable = {};
-      present.forEach((entity, index) => {
-        cloudIdsByTable[entity.table] = snapshots[index].docs.map((docSnap) => docSnap.id);
-      });
+      // Read into {table, ids} pairs rather than two parallel arrays indexed by
+      // position. Same result, but nothing here depends on the two staying the
+      // same length — and under `noUncheckedIndexedAccess` the parallel-array
+      // form needs a `?? []` that would read like a meaningful default for a
+      // value that decides what gets deleted.
+      const cloudIdsByTable: Record<string, string[]> = {};
+      const reads = await Promise.all(
+        present.map(async (entity) => ({
+          table: entity.table,
+          ids: (await getDocs(getUserCollection(userId, datasetId, entity.collection)))
+            .docs.map((docSnap) => docSnap.id)
+        }))
+      );
+      for (const read of reads) cloudIdsByTable[read.table] = read.ids;
 
       const targets = pruneTargets(localData, cloudIdsByTable);
 
       for (const entity of present) {
-        for (const docId of targets[entity.table] || []) {
+        for (const docId of targets[entity.table] ?? []) {
           batch.delete(getUserDoc(userId, datasetId, entity.collection, docId));
           pruned++;
           await checkBatch();
@@ -161,25 +175,28 @@ export async function syncAllToCloud(userId, datasetId, localData, options = {})
  * separate lists that had to agree, in the function whose whole job is to not
  * miss a collection.
  *
- * @param {string} userId - The user's Firebase UID
- * @param {string} datasetId - The dataset ID
- * @returns {Object} Rows keyed by table name
+ * Returns rows keyed by **table** name, matching what `syncAllToCloud` accepts.
  */
-export async function downloadAllFromCloud(userId, datasetId) {
+export async function downloadAllFromCloud(
+  userId: string,
+  datasetId: DatasetId
+): Promise<Record<string, CloudRecord[]>> {
   try {
     logger.log('☁️ Downloading all data from cloud for dataset:', datasetId);
 
-    const entities = allEntities();
-    const results = await Promise.all(
-      entities.map((entity) => getAllCloud(entity.entityType, userId, datasetId))
+    const reads = await Promise.all(
+      allEntities().map(async (entity) => ({
+        table: entity.table,
+        rows: await getAllCloud(entity.entityType, userId, datasetId)
+      }))
     );
 
-    const data = {};
-    const counts = {};
-    entities.forEach((entity, index) => {
-      data[entity.table] = results[index];
-      counts[entity.table] = results[index].length;
-    });
+    const data: Record<string, CloudRecord[]> = {};
+    const counts: Record<string, number> = {};
+    for (const read of reads) {
+      data[read.table] = read.rows;
+      counts[read.table] = read.rows.length;
+    }
 
     logger.log('☁️ Download complete!', { dataset: datasetId, ...counts });
 
@@ -191,14 +208,29 @@ export async function downloadAllFromCloud(userId, datasetId) {
 }
 
 /**
- * Check if user has any data in cloud for a specific dataset
- * @param {string} userId - The user's Firebase UID
- * @param {string} datasetId - The dataset ID
- * @returns {boolean} True if user has cloud data in this dataset
+ * Does this dataset exist in the cloud at all?
+ *
+ * Returns false on error rather than throwing, which is load-bearing: the
+ * caller uses this to choose between "restore from cloud" and "upload local",
+ * and an exception here would abort startup sync entirely.
+ *
+ * **Two known defects, not fixed here.** The audit records both
+ * (`sections/02-data-sync.md`, "hasCloudData probes only houses"), and this is a
+ * conversion commit — the value of one is that nothing runs differently after
+ * it.
+ *
+ *   1. It probes `houses` alone. A dataset holding people, a Codex and no
+ *      houses answers *false*, which routes `initializeSync` into "fresh start
+ *      / upload local" and can overwrite real cloud data.
+ *   2. There is no `limit(1)`. The whole collection is read to compute a
+ *      boolean, so 500 houses is 500 document reads on every sign-in.
+ *
+ * Fixing (2) is a one-line change. Fixing (1) means deciding what "has data"
+ * means when the answer is used to choose which side wins, which is why neither
+ * is done in passing.
  */
-export async function hasCloudData(userId, datasetId) {
+export async function hasCloudData(userId: string, datasetId: DatasetId): Promise<boolean> {
   try {
-    // Just check if there are any houses (quick check)
     const housesRef = getUserCollection(userId, datasetId, 'houses');
     const snapshot = await getDocs(query(housesRef));
     return !snapshot.empty;
@@ -207,83 +239,3 @@ export async function hasCloudData(userId, datasetId) {
     return false;
   }
 }
-
-// ==================== HERALDRY OPERATIONS ====================
-
-
-
-
-
-
-
-
-
-
-
-// ==================== DIGNITIES OPERATIONS ====================
-
-
-
-
-
-
-
-
-
-// ==================== DIGNITY TENURES OPERATIONS ====================
-
-
-
-
-
-
-
-
-
-// ==================== DIGNITY LINKS OPERATIONS ====================
-
-
-
-
-
-
-
-// ==================== HERALDRY LINKS OPERATIONS ====================
-
-
-
-
-
-
-
-// ==================== HOUSEHOLD ROLES OPERATIONS ====================
-
-
-
-
-
-
-
-
-
-// ==================== WRITINGS OPERATIONS ====================
-
-
-
-
-
-
-
-
-
-// ==================== CHAPTERS OPERATIONS ====================
-
-
-
-
-
-
-
-
-
-// ==================== WRITING LINKS OPERATIONS ====================

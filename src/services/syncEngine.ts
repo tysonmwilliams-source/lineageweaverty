@@ -350,8 +350,23 @@ export async function syncDeleteCascade(
 
 // ==================== PRUNE POLICY ====================
 
-/** A local row as the bulk snapshot carries it. */
-type SnapshotRow = { id?: number | string };
+/**
+ * A local row as the bulk snapshot carries it.
+ *
+ * Only `id` is named because only `id` is read here, but the index signature
+ * matters: these are full entity rows, and a type that admitted nothing else
+ * would make spreading one lose every other field.
+ */
+export type SnapshotRow = Record<string, unknown> & { id?: number | string };
+
+/**
+ * A whole-dataset snapshot of local rows, keyed by **table** name.
+ *
+ * A missing key means the table could not be read, and is not the same as an
+ * empty array. `pruneTargets` depends on that distinction and so does every
+ * caller that builds one.
+ */
+export type LocalSnapshot = Record<string, SnapshotRow[] | undefined>;
 
 /**
  * Decide which cloud documents a full upload should delete.
@@ -379,7 +394,7 @@ type SnapshotRow = { id?: number | string };
  * @returns Ids to delete, keyed by table. Tables with nothing to delete are omitted.
  */
 export function pruneTargets(
-  localData: Record<string, SnapshotRow[] | undefined>,
+  localData: LocalSnapshot,
   cloudIdsByTable: Record<string, string[] | undefined>
 ): Record<string, string[]> {
   const targets: Record<string, string[]> = {};
