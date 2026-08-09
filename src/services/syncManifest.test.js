@@ -141,9 +141,14 @@ describe('every manifest entity is permitted in the cloud', () => {
 
 describe('destructive operations cover everything', () => {
   it('sweeps the two collections nothing syncs to', () => {
-    // deleteDataset and deleteAllCloudData both iterate cloudCollections().
-    // Missing these would leave documents under a dataset the user deleted,
-    // which the next dataset created with the same id would inherit.
+    // `datasetService.deleteDataset` iterates cloudCollections(). Missing these
+    // would leave documents under a dataset the user deleted, which the next
+    // dataset created with the same id would inherit.
+    //
+    // There used to be a second wipe — `firestoreService.deleteAllCloudData` —
+    // saying the same thing in its own words. It had no callers and was deleted
+    // in step 7. Two implementations of "remove everything" is the drift this
+    // manifest exists to prevent, so one is the right number.
     for (const name of RULES_WITHOUT_SYNC) {
       expect(cloudCollections()).toContain(name);
     }
