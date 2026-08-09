@@ -163,7 +163,7 @@ function findEldestLivingLegitimate(houseId, maps) {
  *
  * @param {Array} houses - All houses
  * @param {Object} maps - Lookup maps
- * @returns {Suggestion[]} Suggestions for houses without titles
+ * @returns {import('./types').DignitySuggestion[]} Suggestions for houses without titles
  */
 function analyzeHousesWithoutTitles(houses, maps) {
   const suggestions = [];
@@ -251,7 +251,7 @@ function analyzeHousesWithoutTitles(houses, maps) {
  *
  * @param {Array} dignities - All dignities
  * @param {Object} maps - Lookup maps
- * @returns {Suggestion[]} Suggestions for deceased holders
+ * @returns {import('./types').DignitySuggestion[]} Suggestions for deceased holders
  */
 function analyzeDeceasedHolders(dignities, maps) {
   const suggestions = [];
@@ -330,7 +330,7 @@ function analyzeDeceasedHolders(dignities, maps) {
  * @param {Array} dignities - All dignities
  * @param {Map} tenuresByDignity - Map of dignityId -> tenures[]
  * @param {Object} maps - Lookup maps
- * @returns {Suggestion[]} Suggestions for missing tenure records
+ * @returns {import('./types').DignitySuggestion[]} Suggestions for missing tenure records
  */
 function analyzeNoTenureRecords(dignities, tenuresByDignity, maps) {
   const suggestions = [];
@@ -423,7 +423,7 @@ function analyzeNoTenureRecords(dignities, tenuresByDignity, maps) {
  * @param {Array} dignities - All dignities
  * @param {Map} tenuresByDignity - Map of dignityId -> tenures[]
  * @param {Object} maps - Lookup maps
- * @returns {Suggestion[]} Suggestions for tenure chains
+ * @returns {import('./types').DignitySuggestion[]} Suggestions for tenure chains
  */
 function analyzeTenureGaps(dignities, tenuresByDignity, maps) {
   const suggestions = [];
@@ -518,7 +518,7 @@ function analyzeTenureGaps(dignities, tenuresByDignity, maps) {
  *
  * @param {Array} dignities - All dignities
  * @param {Object} maps - Lookup maps
- * @returns {Suggestion[]} Suggestions for orphaned dignities
+ * @returns {import('./types').DignitySuggestion[]} Suggestions for orphaned dignities
  */
 function analyzeOrphanedDignities(dignities, maps) {
   const suggestions = [];
@@ -583,7 +583,7 @@ function analyzeOrphanedDignities(dignities, maps) {
  * @param {Array} dignities - All dignities
  * @param {Map} tenuresByDignity - Map of dignityId -> tenures[]
  * @param {Object} maps - Lookup maps
- * @returns {Suggestion[]} Suggestions for temporal issues
+ * @returns {import('./types').DignitySuggestion[]} Suggestions for temporal issues
  */
 function analyzeTemporalIssues(dignities, tenuresByDignity, maps) {
   const suggestions = [];
@@ -665,7 +665,7 @@ function analyzeTemporalIssues(dignities, tenuresByDignity, maps) {
  * Detects when feudal hierarchy contains loops (A sworn to B sworn to C sworn to A).
  *
  * @param {Array} dignities - All dignities
- * @returns {Suggestion[]} Suggestions for circular chains
+ * @returns {import('./types').DignitySuggestion[]} Suggestions for circular chains
  */
 function analyzeCircularFeudalChains(dignities) {
   const suggestions = [];
@@ -739,7 +739,7 @@ function analyzeCircularFeudalChains(dignities) {
  * Detects people holding an unusually high number of major titles.
  *
  * @param {Object} maps - Lookup maps
- * @returns {Suggestion[]} Suggestions for potential errors
+ * @returns {import('./types').DignitySuggestion[]} Suggestions for potential errors
  */
 function analyzeOverTitledPeople(maps) {
   const suggestions = [];
@@ -791,7 +791,7 @@ function analyzeOverTitledPeople(maps) {
  *
  * @param {Array} dignities - All dignities
  * @param {Object} maps - Lookup maps
- * @returns {Suggestion[]} Suggestions for orphaned links
+ * @returns {import('./types').DignitySuggestion[]} Suggestions for orphaned links
  */
 function analyzeWidowedDignities(dignities, maps) {
   const suggestions = [];
@@ -855,7 +855,7 @@ function analyzeWidowedDignities(dignities, maps) {
  *
  * @param {Array} houses - All houses
  * @param {Object} maps - Lookup maps
- * @returns {Suggestion[]} Suggestions for cadet houses
+ * @returns {import('./types').DignitySuggestion[]} Suggestions for cadet houses
  */
 function analyzeCadetHousesWithoutTitles(houses, maps) {
   const suggestions = [];
@@ -926,11 +926,12 @@ function analyzeCadetHousesWithoutTitles(houses, maps) {
  * 4. Deduplicates and sorts results
  * 5. Returns unified analysis result
  *
- * @param {Object} options - Analysis options
- * @param {string[]} options.analyzers - Which analyzers to run (default: all)
- * @param {string[]} options.severities - Which severities to include (default: all)
- * @param {number} options.minConfidence - Minimum confidence threshold (default: 0)
- * @returns {Promise<AnalysisResult>} Analysis results
+ * @param {Object} [options] - Analysis options
+ * @param {string[]} [options.analyzers] - Which analyzers to run (default: all)
+ * @param {string[]} [options.severities] - Which severities to include (default: all)
+ * @param {number} [options.minConfidence] - Minimum confidence threshold (default: 0)
+ * @param {string|null} [options.datasetId] - Dataset to analyse (default: the active one)
+ * @returns {Promise<import('./types').DignityAnalysisResult>} Analysis results
  */
 export async function runFullAnalysis(options = {}) {
   const {
@@ -1056,8 +1057,10 @@ export async function runFullAnalysis(options = {}) {
  * Returns only suggestions relevant to a particular house, person, or dignity.
  *
  * @param {string} entityType - 'house' | 'person' | 'dignity'
- * @param {number} entityId - Entity ID
- * @returns {Promise<Suggestion[]>} Relevant suggestions
+ * @param {number|null} entityId - Entity ID. Null matches nothing, which is what a scope with no entity means.
+ * @param {string|null} [datasetId] - Dataset ID. Undeclared before, so TypeScript
+ *   inferred its type from the `= null` default and rejected every real caller.
+ * @returns {Promise<import('./types').DignitySuggestion[]>} Relevant suggestions
  */
 export async function analyzeEntity(entityType, entityId, datasetId = null) {
   const result = await runFullAnalysis({ datasetId });

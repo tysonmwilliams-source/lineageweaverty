@@ -27,17 +27,34 @@ import {
   getCurrentTenure
 } from '../services/dignityService';
 import { logger } from '../utils/logger';
+import { errorMessage } from '../utils/errorMessage';
+import type {
+  DignitySuggestion,
+  DignityAnalysisStats
+} from '../services/types';
+
+/** Overrides for a single run, passed straight to `runFullAnalysis`. */
+export interface AnalysisRunOptions {
+  analyzers?: string[];
+  severities?: string[];
+  minConfidence?: number;
+}
+
+/** Which slice of the world to analyse. */
+export interface DignityAnalysisOptions {
+  /** 'all' | 'house' | 'person' | 'dignity' */
+  scope?: string;
+  /** Required unless scope is 'all'. */
+  entityId?: number | null;
+  /** Run once on mount rather than waiting for a button. */
+  autoRun?: boolean;
+}
 
 /**
  * Custom hook for dignity analysis
  *
- * @param {Object} options - Hook options
- * @param {string} options.scope - 'all' | 'house' | 'person' | 'dignity'
- * @param {number} options.entityId - Entity ID if scope is not 'all'
- * @param {boolean} [options.autoRun=false] - Run the analysis on mount
- * @returns {Object} Analysis state and actions
  */
-export function useDignityAnalysis(options = {}) {
+export function useDignityAnalysis(options: DignityAnalysisOptions = {}) {
   // `autoRun` was documented and passed by both DignityView and
   // DignitiesLanding, but was never destructured and no effect existed to act
   // on it — so their suggestion panels were permanently empty.
@@ -47,11 +64,11 @@ export function useDignityAnalysis(options = {}) {
 
   // ==================== CORE STATE ====================
 
-  const [suggestions, setSuggestions] = useState([]);
+  const [suggestions, setSuggestions] = useState<DignitySuggestion[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [lastAnalyzed, setLastAnalyzed] = useState(null);
-  const [stats, setStats] = useState(null);
+  const [error, setError] = useState<string | null>(null);
+  const [lastAnalyzed, setLastAnalyzed] = useState<string | null>(null);
+  const [stats, setStats] = useState<DignityAnalysisStats | null>(null);
 
   // ==================== LOOKUP MAPS ====================
 
@@ -125,12 +142,10 @@ export function useDignityAnalysis(options = {}) {
    * Suggestions grouped by type
    */
   const suggestionsByType = useMemo(() => {
-    const grouped = {};
+    const grouped: Record<string, DignitySuggestion[]> = {};
     for (const suggestion of activeSuggestions) {
-      if (!grouped[suggestion.type]) {
-        grouped[suggestion.type] = [];
-      }
-      grouped[suggestion.type].push(suggestion);
+      const bucket = grouped[suggestion.type] ?? (grouped[suggestion.type] = []);
+      bucket.push(suggestion);
     }
     return grouped;
   }, [activeSuggestions]);
@@ -142,7 +157,7 @@ export function useDignityAnalysis(options = {}) {
    *
    * @param {Object} analysisOptions - Options passed to runFullAnalysis
    */
-  const runAnalysis = useCallback(async (analysisOptions = {}) => {
+  const runAnalysis = useCallback(async (analysisOptions: AnalysisRunOptions = {}) => {
     setLoading(true);
     setError(null);
     const datasetId = activeDataset?.id;
@@ -175,7 +190,7 @@ export function useDignityAnalysis(options = {}) {
       return result;
     } catch (err) {
       logger.error('Analysis failed:', err);
-      setError(err.message || 'Analysis failed');
+      setError(errorMessage(err) || 'Analysis failed');
       throw err;
     } finally {
       setLoading(false);
@@ -202,7 +217,7 @@ export function useDignityAnalysis(options = {}) {
    * @param {string} suggestionId - Suggestion to apply
    * @param {Object} overrideData - Optional data to override suggestion defaults
    */
-  const applySuggestion = useCallback(async (suggestionId, overrideData = {}) => {
+  const applySuggestion = useCallback(async (suggestionId: string, overrideData: Record<string, unknown> = {}) => {
     const suggestion = suggestionMap.get(suggestionId);
     if (!suggestion) {
       throw new Error('Suggestion not found');
@@ -212,21 +227,43 @@ export function useDignityAnalysis(options = {}) {
     const data = { ...action.data, ...overrideData };
     const datasetId = activeDataset?.id;
 
+    /**
+     * The dignity an action operates on.
+     *
+     * Every action type below that reaches for this is built by the analyser
+     * with a `dignityId` set, so the throw is unreachable by construction. It
+     * exists because the alternative — passing `undefined` to a service that
+     * takes a key — is how a record gets written against no dignity at all, and
+     * `applySuggestion`'s catch already turns a throw into a visible error
+     * rather than a silent bad write.
+     */
+    const requireDignityId = (): number => {
+      if (data.dignityId === undefined) {
+        throw new Error(`Suggestion action "${action.type}" has no dignityId`);
+      }
+      return data.dignityId;
+    };
+
     try {
       // Execute action based on type
       switch (action.type) {
         case 'create-dignity':
-          await createDignity(data, user?.uid, datasetId);
+          // The payload for this action type *is* the dignity record. It comes
+          // from the analyser rather than a form, so there is no validation
+          // layer to make this a check rather than a claim.
+          await createDignity(data as Parameters<typeof createDignity>[0], user?.uid, datasetId);
           break;
 
         case 'update-dignity':
-          await updateDignity(data.dignityId, data, user?.uid, datasetId);
+          // Same boundary as `create-dignity` below: the payload is the set of
+          // dignity fields to write, produced by the analyser rather than a form.
+          await updateDignity(requireDignityId(), data as Parameters<typeof updateDignity>[1], user?.uid, datasetId);
           break;
 
         case 'transfer-dignity':
           // End current tenure
           if (data.endCurrentTenure) {
-            const currentTenure = await getCurrentTenure(data.dignityId, datasetId);
+            const currentTenure = await getCurrentTenure(requireDignityId(), datasetId);
             if (currentTenure) {
               await updateDignityTenure(currentTenure.id, data.endCurrentTenure, user?.uid, datasetId);
             }
@@ -234,7 +271,7 @@ export function useDignityAnalysis(options = {}) {
           // Calculate and assign heir if requested
           if (data.calculateHeir) {
             // Mark as vacant for now - heir calculation requires user confirmation
-            await updateDignity(data.dignityId, {
+            await updateDignity(requireDignityId(), {
               currentHolderId: null,
               isVacant: true
             }, user?.uid, datasetId);
@@ -242,13 +279,13 @@ export function useDignityAnalysis(options = {}) {
           break;
 
         case 'create-tenure':
-          await createDignityTenure(data, user?.uid, datasetId);
+          await createDignityTenure(data as Parameters<typeof createDignityTenure>[0], user?.uid, datasetId);
           break;
 
         case 'create-tenure-chain':
-          for (const tenureData of data.tenures) {
+          for (const tenureData of data.tenures ?? []) {
             await createDignityTenure({
-              dignityId: data.dignityId,
+              dignityId: requireDignityId(),
               personId: tenureData.personId,
               dateStarted: tenureData.dateStarted,
               dateEnded: tenureData.dateEnded,
@@ -259,14 +296,14 @@ export function useDignityAnalysis(options = {}) {
           break;
 
         case 'mark-vacant':
-          await updateDignity(data.dignityId, {
+          await updateDignity(requireDignityId(), {
             currentHolderId: null,
             isVacant: true
           }, user?.uid, datasetId);
           break;
 
         case 'fix-feudal-chain':
-          await updateDignity(data.dignityId, {
+          await updateDignity(requireDignityId(), {
             swornToId: null
           }, user?.uid, datasetId);
           break;
@@ -276,23 +313,34 @@ export function useDignityAnalysis(options = {}) {
           if (data.promptForHouse) {
             throw new Error('This action requires selecting a house first');
           }
-          await updateDignity(data.dignityId, {
+          await updateDignity(requireDignityId(), {
             currentHouseId: data.houseId
           }, user?.uid, datasetId);
           break;
 
-        case 'delete-dignity':
+        case 'delete-dignity': {
+          // Braces because the binding below would otherwise be scoped to the
+          // whole switch, visible-but-uninitialised in every other case.
           // Import dynamically to avoid circular dependency
           const { deleteDignity } = await import('../services/dignityService');
-          await deleteDignity(data.dignityId, user?.uid, datasetId);
+          await deleteDignity(requireDignityId(), user?.uid, datasetId);
           break;
+        }
 
         case 'update-tenure':
           // This requires user input for correction
           if (data.promptForCorrection) {
             throw new Error('This action requires manual date correction');
           }
-          await updateDignityTenure(data.tenureId, data, user?.uid, datasetId);
+          if (data.tenureId === undefined) {
+            throw new Error('Suggestion action "update-tenure" has no tenureId');
+          }
+          await updateDignityTenure(
+            data.tenureId,
+            data as Parameters<typeof updateDignityTenure>[1],
+            user?.uid,
+            datasetId
+          );
           break;
 
         case 'review':
@@ -324,7 +372,7 @@ export function useDignityAnalysis(options = {}) {
    * @param {number} actionIndex - Index of alternative action
    * @param {Object} overrideData - Optional data override
    */
-  const applyAlternativeAction = useCallback(async (suggestionId, actionIndex, overrideData = {}) => {
+  const applyAlternativeAction = useCallback(async (suggestionId: string, actionIndex: number, overrideData: Record<string, unknown> = {}) => {
     const suggestion = suggestionMap.get(suggestionId);
     if (!suggestion) {
       throw new Error('Suggestion not found');
@@ -338,28 +386,37 @@ export function useDignityAnalysis(options = {}) {
     const data = { ...altAction.data, ...overrideData };
     const datasetId = activeDataset?.id;
 
+    // The same invariant as in `applySuggestion`, which this switch duplicates.
+    const requireDignityId = (): number => {
+      if (data.dignityId === undefined) {
+        throw new Error(`Alternative action "${altAction.type}" has no dignityId`);
+      }
+      return data.dignityId;
+    };
+
     try {
       // Execute based on action type (same as applySuggestion)
       switch (altAction.type) {
         case 'create-dignity':
-          await createDignity(data, user?.uid, datasetId);
+          await createDignity(data as Parameters<typeof createDignity>[0], user?.uid, datasetId);
           break;
 
         case 'update-dignity':
-          await updateDignity(data.dignityId, data, user?.uid, datasetId);
+          await updateDignity(requireDignityId(), data as Parameters<typeof updateDignity>[1], user?.uid, datasetId);
           break;
 
         case 'mark-vacant':
-          await updateDignity(data.dignityId, {
+          await updateDignity(requireDignityId(), {
             currentHolderId: null,
             isVacant: true
           }, user?.uid, datasetId);
           break;
 
-        case 'delete-dignity':
+        case 'delete-dignity': {
           const { deleteDignity } = await import('../services/dignityService');
-          await deleteDignity(data.dignityId, user?.uid, datasetId);
+          await deleteDignity(requireDignityId(), user?.uid, datasetId);
           break;
+        }
 
         default:
           logger.warn('Unknown alternative action type:', altAction.type);
@@ -385,7 +442,7 @@ export function useDignityAnalysis(options = {}) {
    * @param {string} suggestionId - Suggestion to dismiss
    * @param {string} reason - Why it was dismissed
    */
-  const dismissSuggestion = useCallback((suggestionId, reason = null) => {
+  const dismissSuggestion = useCallback((suggestionId: string, reason: string | null = null) => {
     setSuggestions(prev => prev.map(s =>
       s.id === suggestionId
         ? { ...s, dismissed: true, dismissedReason: reason }
@@ -398,7 +455,7 @@ export function useDignityAnalysis(options = {}) {
    *
    * @param {string} suggestionId - Suggestion to defer
    */
-  const deferSuggestion = useCallback((suggestionId) => {
+  const deferSuggestion = useCallback((suggestionId: string) => {
     setSuggestions(prev => prev.map(s =>
       s.id === suggestionId
         ? { ...s, deferred: true }
@@ -411,7 +468,7 @@ export function useDignityAnalysis(options = {}) {
    *
    * @param {string} suggestionId - Suggestion to undefer
    */
-  const undeferSuggestion = useCallback((suggestionId) => {
+  const undeferSuggestion = useCallback((suggestionId: string) => {
     setSuggestions(prev => prev.map(s =>
       s.id === suggestionId
         ? { ...s, deferred: false }
@@ -426,7 +483,7 @@ export function useDignityAnalysis(options = {}) {
    * @param {number} entityId - Entity ID
    * @returns {Suggestion[]} Matching suggestions
    */
-  const getSuggestionsForEntity = useCallback((entityType, entId) => {
+  const getSuggestionsForEntity = useCallback((entityType: string, entId: number) => {
     return activeSuggestions.filter(s =>
       s.affectedEntities.some(e => e.type === entityType && e.id === entId)
     );
@@ -457,7 +514,7 @@ export function useDignityAnalysis(options = {}) {
    * @param {string} type - Suggestion type to dismiss
    * @param {string} reason - Reason for dismissal
    */
-  const dismissAllOfType = useCallback((type, reason = null) => {
+  const dismissAllOfType = useCallback((type: string, reason: string | null = null) => {
     setSuggestions(prev => prev.map(s =>
       s.type === type && !s.dismissed && !s.applied
         ? { ...s, dismissed: true, dismissedReason: reason }
@@ -471,7 +528,7 @@ export function useDignityAnalysis(options = {}) {
    * @param {string} id - Suggestion ID
    * @returns {Suggestion|undefined} The suggestion or undefined
    */
-  const getSuggestion = useCallback((id) => {
+  const getSuggestion = useCallback((id: string) => {
     return suggestionMap.get(id);
   }, [suggestionMap]);
 

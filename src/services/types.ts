@@ -380,6 +380,126 @@ export interface BugStatistics {
   unresolvedCritical: number;
 }
 
+/** An entity a suggestion is about, for rendering links back to it. */
+export interface SuggestionEntity {
+  /** 'house' | 'person' | 'dignity' */
+  type: string;
+  id: number;
+  name: string;
+}
+
+/**
+ * The payload of a suggested action.
+ *
+ * Every field is optional because which ones are present depends on
+ * `SuggestedAction.type` — this is a discriminated union in spirit, written by
+ * `dignityAnalysisService` and read by `useDignityAnalysis`'s switch. Listing
+ * the fields the applier actually reads is what makes the contract between the
+ * two visible; the alternative is `Record<string, unknown>` and a cast at each
+ * use, which documents nothing.
+ *
+ * The index signature carries the rest: `create-dignity` and `create-tenure`
+ * pass the whole payload straight to the service as the record to write.
+ */
+/** One tenure a `create-tenure-chain` action will write. */
+export interface SuggestedTenure {
+  personId: number;
+  dateStarted?: string | null;
+  dateEnded?: string | null;
+  /** Why the tenure ended — a key of the end-type table. */
+  endType?: string | null;
+}
+
+export interface SuggestedActionData {
+  dignityId?: number;
+  tenureId?: number;
+  houseId?: number;
+  /** Fields to write onto the tenure being closed. */
+  endCurrentTenure?: Record<string, unknown>;
+  /** Tenures to create in order, oldest first. */
+  tenures?: SuggestedTenure[];
+  /** The UI must resolve these before the action can run. */
+  promptForHouse?: boolean;
+  promptForCorrection?: boolean;
+  calculateHeir?: boolean;
+  [key: string]: unknown;
+}
+
+/** Something a suggestion offers to do, and the payload to do it with. */
+export interface SuggestedAction {
+  /** 'create-dignity' | 'update-dignity' | 'end-tenure' | … */
+  type: string;
+  /** Button text. */
+  label: string;
+  data?: SuggestedActionData;
+  /** One line describing the outcome, shown before the user commits. */
+  preview?: string;
+}
+
+/**
+ * One finding from the dignity analyser.
+ *
+ * Generated in memory and never persisted — `id` is a generated string, not a
+ * database key, and `dismissed`/`applied` live only for the session. Reloading
+ * the page re-runs the analysis and re-derives the lot.
+ */
+export interface DignitySuggestion {
+  id: string;
+  /** 'house-no-head' | 'deceased-holder' | … — which rule produced it. */
+  type: string;
+  /** 'critical' | 'warning' | 'info' */
+  severity: string;
+  /** 0–1. Drives ordering within a severity band. */
+  confidence: number;
+  title: string;
+  description: string;
+  /** Why the analyser thinks so, in prose, for a human to judge. */
+  reasoning: string;
+  affectedEntities: SuggestionEntity[];
+  suggestedAction: SuggestedAction;
+  alternativeActions?: SuggestedAction[];
+  /** Ids of suggestions that must be applied first. */
+  dependsOn?: string[];
+  /** Ids of suggestions this one unblocks. */
+  enables?: string[];
+  created: string;
+  dismissed: boolean;
+  dismissedReason?: string | null;
+  applied: boolean;
+  appliedAt?: string | null;
+  deferred?: boolean;
+}
+
+/** Counts across one analysis run, for the summary bar. */
+export interface DignityAnalysisStats {
+  total: number;
+  bySeverity: Record<string, number>;
+  /**
+   * Keyed by rule name, built at runtime.
+   *
+   * Optional because only the full run computes it — the entity-scoped path in
+   * `useDignityAnalysis` builds its own stats from a filtered list and omits
+   * this. Nothing reads it today; typed as absent rather than pretending the
+   * two paths agree.
+   */
+  byType?: Record<string, number>;
+}
+
+/** One run of the dignity analyser. */
+export interface DignityAnalysisResult {
+  suggestions: DignitySuggestion[];
+  stats: DignityAnalysisStats;
+  analyzedAt: string;
+  /** Milliseconds the run took. Logged in dev only. */
+  duration: number;
+  /** What the run saw, so a stale result can be recognised as stale. */
+  dataSnapshot: {
+    peopleCount: number;
+    housesCount: number;
+    dignitiesCount: number;
+  };
+}
+
 /** A pair of people the user has confirmed are not duplicates of each other. */
 export interface AcknowledgedDuplicate {
   id: number;
