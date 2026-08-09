@@ -104,14 +104,15 @@ gated on a green light for timing. See "What is left" below.
 | `e6dd1ee` | — | The Codex syncs to its own dataset, not always the default |
 | `a671cc9` | — | **Step 5c**: one local snapshot; empty stops meaning unreadable |
 | `1f97dd6` | — | **Step 5 complete**: a full upload prunes cloud documents deleted locally |
+| `fa8a7d2` | — | **Step 6**: cascades declared in the manifest; the two Writing Studio cascades finally sync |
 
 **Current baselines** (verify these still hold before and after your work):
 
 ```bash
 npm run build      # passes, ~10s
 npm run typecheck  # tsc --noEmit, passes, exits 0 — CI blocks on it (F4)
-npx vitest run     # 824 tests pass, 30 files, exits 0
-npx eslint .       # 0 errors, 338 warnings — exits 0, and CI blocks on it
+npx vitest run     # 838 tests pass, 30 files, exits 0
+npx eslint .       # 0 errors, 337 warnings — exits 0, and CI blocks on it
 ```
 
 **`npm run typecheck` is not optional and not decorative.** Vite strips
@@ -123,7 +124,7 @@ converted.
 Lint is now a **blocking gate** (decision F3). `no-undef`, `no-dupe-keys`,
 `rules-of-hooks` and — as of `bb8fd32` — `react-hooks/static-components` are hard
 errors and all sit at zero, so a new violation fails the build. Everything else
-is a warning, and **338 is the yardstick — it should go down, never up.** The
+is a warning, and **337 is the yardstick — it should go down, never up.** The
 breakdown, as of `033e161` (total was 340 then): `no-unused-vars` 244 plus its TS twin 2,
 `react-hooks/*` 64 (36 of them `exhaustive-deps`),
 `react-refresh/only-export-components` 21, `no-case-declarations` 8,
@@ -641,6 +642,34 @@ because it is pure and therefore testable, which nothing else in the upload path
 is. If more of this layer needs covering, that is the move: extract the decision
 from the Firestore call.
 
+### Step 6 is done
+
+`fa8a7d2`. Cascades are declared in the manifest — per entity, which children a
+delete affects, by which foreign keys, and whether the child is deleted or has
+the reference cleared. `syncDeleteCascade` reads those rules and **refuses to
+run without ids for every declared child**. That refusal is the fix; the loop
+around it is incidental.
+
+It closed two live bugs of the same class as the house-delete cascade the audit
+named (which an earlier phase had already fixed by hand): deleting a writing
+left its chapters and links in Firestore, and deleting a chapter left its links
+and the stale ordering of its siblings. Both came back on the next download.
+
+`syncDeleteWriting` and `syncDeleteChapter` take the cascade as a **required**
+argument. Do not add a `= {}` default — it converts "the caller forgot" back
+into "this writing had no chapters", which is the whole bug.
+
+`heraldry`, `codexEntry`, `dignity` and `storyPlan` sync their own cascades
+correctly and were left alone. Their rules are declared anyway; the value of
+writing a cascade down does not depend on which function runs it.
+
+**The hand inventory said seven cascading entities and it was wrong.** A script
+comparing the declarations against every `where(...).delete()` in `src/services`
+found an eighth — `storyPlan`, which cascades to five entity types and is the
+widest in the app. It was missed because the inventory grep did not look in
+`planningService.js`. Third time in this sequence that a count taken by reading
+has been wrong; the script is in the loop for a reason.
+
 ### A bug class the manifest work keeps turning up
 
 `e6dd1ee` fixed three calls that dropped the dataset argument — two
@@ -657,9 +686,9 @@ calls at all**, which is the shape of the entire class. Keep it passing rather
 than reasoning about each new call site.
 
 Remaining, unchanged from the design in
-[`sections/02-data-sync.md`](sections/02-data-sync.md): the prune leg and the
-localData assembly (the rest of step 5), move cascades into the manifest
-(step 6), delete the shims (step 7). **Then**
+[`sections/02-data-sync.md`](sections/02-data-sync.md): delete the shims
+(step 7) — and that is the one where `export const` is not hoisted, so re-check
+for a TDZ error that neither the build nor the suite catches. **Then**
 convert what remains of those two files to TypeScript — the tail of F4.
 
 Step 5's targets are already visible: `syncAllToCloud` and `downloadAllFromCloud`
