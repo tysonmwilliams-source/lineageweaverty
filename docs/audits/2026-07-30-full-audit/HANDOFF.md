@@ -105,6 +105,8 @@ gated on a green light for timing. See "What is left" below.
 | `a671cc9` | — | **Step 5c**: one local snapshot; empty stops meaning unreadable |
 | `1f97dd6` | — | **Step 5 complete**: a full upload prunes cloud documents deleted locally |
 | `fa8a7d2` | — | **Step 6**: cascades declared in the manifest; the two Writing Studio cascades finally sync |
+| `83e698f` | — | **Step 7**: the 79 cloud shims deleted; firestoreService 826 → 294 |
+| `e1c3bf6` | — | Step 7 cleanup: five dead imports; dataSyncService is lint-clean |
 
 **Current baselines** (verify these still hold before and after your work):
 
@@ -112,7 +114,7 @@ gated on a green light for timing. See "What is left" below.
 npm run build      # passes, ~10s
 npm run typecheck  # tsc --noEmit, passes, exits 0 — CI blocks on it (F4)
 npx vitest run     # 838 tests pass, 30 files, exits 0
-npx eslint .       # 0 errors, 337 warnings — exits 0, and CI blocks on it
+npx eslint .       # 0 errors, 332 warnings — exits 0, and CI blocks on it
 ```
 
 **`npm run typecheck` is not optional and not decorative.** Vite strips
@@ -124,7 +126,7 @@ converted.
 Lint is now a **blocking gate** (decision F3). `no-undef`, `no-dupe-keys`,
 `rules-of-hooks` and — as of `bb8fd32` — `react-hooks/static-components` are hard
 errors and all sit at zero, so a new violation fails the build. Everything else
-is a warning, and **337 is the yardstick — it should go down, never up.** The
+is a warning, and **332 is the yardstick — it should go down, never up.** The
 breakdown, as of `033e161` (total was 340 then): `no-unused-vars` 244 plus its TS twin 2,
 `react-hooks/*` 64 (36 of them `exhaustive-deps`),
 `react-refresh/only-export-components` 21, `no-case-declarations` 8,
@@ -670,6 +672,44 @@ widest in the app. It was missed because the inventory grep did not look in
 `planningService.js`. Third time in this sequence that a count taken by reading
 has been wrong; the script is in the loop for a reason.
 
+### Step 7 is done, and half of it was deliberately not done
+
+`83e698f` deleted the 79 `*Cloud` aliases. firestoreService 826 → 294 lines,
+from 2,238 at the start. They were step 3's compatibility layer and **a search
+of the whole tree found zero references to any of them** outside their own file
+— the compatibility was for callers that never existed. The default export went
+with them (no importers), along with `deleteAllCloudData` (no callers, and a
+second implementation of `datasetService.deleteDataset`'s wipe that had not kept
+up — it never learned to remove the metadata document).
+
+**The TDZ hazard this handoff told step 7 to re-check is now structurally
+gone.** `export const` is not hoisted, so an alias referenced above its own
+definition is a runtime error neither gate catches. That risk lived entirely in
+those 79 aliases. firestoreService now has zero `export const`; all three
+remaining exports are hoisted function declarations, and the verification script
+asserts it.
+
+**The 56 `sync*` wrappers were NOT deleted, and should not be.** The design says
+"delete the shims once call sites migrate to `syncOp`". That instruction was
+written when the wrappers were 800 lines of duplicated bodies. Three things have
+changed since:
+
+1. **All 56 are live.** The audit said 21 were dead; a per-name search now finds
+   call sites for every one — 69 across 15 files. That is the opposite situation
+   to the `*Cloud` aliases, which had none.
+2. **The duplication is already gone.** Step 4 made them one-liners over
+   `syncOp`. The 800 lines the design objected to no longer exist, so deleting
+   them buys tidiness, not deduplication.
+3. **Three of them now enforce something.** `syncDeletePerson`,
+   `syncDeleteWriting` and `syncDeleteChapter` carry the cascade contract from
+   step 6 — `syncDeleteWriting` *requires* its cascade ids. Deleting them pushes
+   cascade knowledge back out to 69 call sites, which is precisely the bug step
+   6 closed.
+
+Migrating those call sites would also trade named functions for stringly-typed
+`syncOp('person', 'add', …)` in contexts and five UI pages. **The named wrappers
+are the public API of this layer.** Treat them as the intended end state.
+
 ### A bug class the manifest work keeps turning up
 
 `e6dd1ee` fixed three calls that dropped the dataset argument — two
@@ -686,9 +726,11 @@ calls at all**, which is the shape of the entire class. Keep it passing rather
 than reasoning about each new call site.
 
 Remaining, unchanged from the design in
-[`sections/02-data-sync.md`](sections/02-data-sync.md): delete the shims
-(step 7) — and that is the one where `export const` is not hoisted, so re-check
-for a TDZ error that neither the build nor the suite catches. **Then**
+[`sections/02-data-sync.md`](sections/02-data-sync.md): **nothing. All seven
+steps are done.** What follows is the tail of F4 — converting what is left of
+`dataSyncService.js` (1,394 lines) and `firestoreService.js` (289) to
+TypeScript. Both are now small enough that the reason for deferring them no
+longer applies. **Then**
 convert what remains of those two files to TypeScript — the tail of F4.
 
 Step 5's targets are already visible: `syncAllToCloud` and `downloadAllFromCloud`
