@@ -51,6 +51,26 @@ export type CreateStamp = 'created-and-updated' | 'created-only' | 'synced';
  */
 export type UpdateMode = 'stamped' | 'unstamped' | 'merge';
 
+/**
+ * What deleting a row does to rows that reference it.
+ *
+ * `delete` removes the referencing row; `clear` nulls the reference and keeps
+ * the row. Which one an entity uses is a modelling decision, not a detail: a
+ * relationship with a missing person is meaningless and goes, a person whose
+ * house was dissolved is still a person and stays.
+ */
+export interface CascadeRule {
+  /** The `entityType` of the rows affected. */
+  entity: string;
+  /**
+   * Fields on that entity holding the deleted row's id. A row matches if *any*
+   * of them does — `relationship` names both `person1Id` and `person2Id`
+   * because a person can be either end of one.
+   */
+  on: readonly string[];
+  action: 'delete' | 'clear';
+}
+
 export interface SyncEntity {
   /**
    * The key written into `syncQueue.entityType`, and the key this map is
@@ -86,6 +106,17 @@ export interface SyncEntity {
   create?: CreateStamp;
   /** How an update writes. Defaults to `'stamped'`. See `cloudRepo.ts`. */
   update?: UpdateMode;
+  /**
+   * What deleting one of these rows does to rows referencing it.
+   *
+   * Declared for every entity that cascades, whether or not the sync side goes
+   * through `syncDeleteCascade` yet — the point of writing them down is that
+   * "deleting a writing also removes its chapters" stops being knowledge held
+   * in one function in one service. `syncManifest.test.js` asserts each rule
+   * names a real entity, and each field is one the referencing entity's rows
+   * actually carry.
+   */
+  cascades?: readonly CascadeRule[];
 }
 
 /**
@@ -97,21 +128,57 @@ export interface SyncEntity {
  */
 export const ENTITIES = {
   // ---- Genealogy ----
-  person: { entityType: 'person', table: 'people', collection: 'people', ops: ['add', 'update', 'delete'] },
-  house: { entityType: 'house', table: 'houses', collection: 'houses', ops: ['add', 'update', 'delete'] },
+  person: {
+    entityType: 'person', table: 'people', collection: 'people', ops: ['add', 'update', 'delete'],
+    // database.ts `deletePerson`. A relationship with a missing end is
+    // meaningless, so it goes rather than being nulled.
+    cascades: [{ entity: 'relationship', on: ['person1Id', 'person2Id'], action: 'delete' }]
+  },
+  house: {
+    entityType: 'house', table: 'houses', collection: 'houses', ops: ['add', 'update', 'delete'],
+    // database.ts `deleteHouse`. Members survive the house losing its name —
+    // they are cleared, not deleted. The Codex entry describes the house and
+    // does not outlive it.
+    cascades: [
+      { entity: 'person', on: ['houseId'], action: 'clear' },
+      { entity: 'codexEntry', on: ['houseId'], action: 'delete' }
+    ]
+  },
   relationship: { entityType: 'relationship', table: 'relationships', collection: 'relationships', ops: ['add', 'update', 'delete'] },
 
   // ---- The Codex ----
-  codexEntry: { entityType: 'codexEntry', table: 'codexEntries', collection: 'codexEntries', ops: ['add', 'update', 'delete'] },
+  codexEntry: {
+    entityType: 'codexEntry', table: 'codexEntries', collection: 'codexEntries', ops: ['add', 'update', 'delete'],
+    // codexService `deleteLinksForEntry`. A link is directional, so an entry
+    // can be either end of one.
+    cascades: [{ entity: 'codexLink', on: ['sourceId', 'targetId'], action: 'delete' }]
+  },
   // No update: a link is created or removed, never edited in place.
   codexLink: { entityType: 'codexLink', table: 'codexLinks', collection: 'codexLinks', ops: ['add', 'delete'], create: 'synced' },
 
   // ---- The Armory ----
-  heraldry: { entityType: 'heraldry', table: 'heraldry', collection: 'heraldry', ops: ['add', 'update', 'delete'] },
+  heraldry: {
+    entityType: 'heraldry', table: 'heraldry', collection: 'heraldry', ops: ['add', 'update', 'delete'],
+    // heraldryService `deleteHeraldry`. Bearers keep existing without arms.
+    cascades: [
+      { entity: 'house', on: ['heraldryId'], action: 'clear' },
+      { entity: 'person', on: ['heraldryId'], action: 'clear' },
+      { entity: 'heraldryLink', on: ['heraldryId'], action: 'delete' }
+    ]
+  },
   heraldryLink: { entityType: 'heraldryLink', table: 'heraldryLinks', collection: 'heraldryLinks', ops: ['add', 'delete'], create: 'created-only' },
 
   // ---- Dignities ----
-  dignity: { entityType: 'dignity', table: 'dignities', collection: 'dignities', ops: ['add', 'update', 'delete'] },
+  dignity: {
+    entityType: 'dignity', table: 'dignities', collection: 'dignities', ops: ['add', 'update', 'delete'],
+    // dignityService `deleteDignity`. A tenure is a holding *of this dignity*
+    // and cannot outlive it.
+    cascades: [
+      { entity: 'dignityTenure', on: ['dignityId'], action: 'delete' },
+      { entity: 'dignityLink', on: ['dignityId'], action: 'delete' },
+      { entity: 'codexEntry', on: ['dignityId'], action: 'delete' }
+    ]
+  },
   dignityTenure: { entityType: 'dignityTenure', table: 'dignityTenures', collection: 'dignityTenures', ops: ['add', 'update', 'delete'], create: 'created-only', update: 'unstamped' },
   dignityLink: { entityType: 'dignityLink', table: 'dignityLinks', collection: 'dignityLinks', ops: ['add', 'delete'], create: 'created-only' },
 
@@ -119,12 +186,37 @@ export const ENTITIES = {
   householdRole: { entityType: 'householdRole', table: 'householdRoles', collection: 'householdRoles', ops: ['add', 'update', 'delete'], create: 'created-only' },
 
   // ---- Writing Studio ----
-  writing: { entityType: 'writing', table: 'writings', collection: 'writings', ops: ['add', 'update', 'delete'], update: 'merge' },
-  chapter: { entityType: 'chapter', table: 'chapters', collection: 'chapters', ops: ['add', 'update', 'delete'], update: 'merge' },
+  writing: {
+    entityType: 'writing', table: 'writings', collection: 'writings', ops: ['add', 'update', 'delete'], update: 'merge',
+    // writingService `deleteWriting`.
+    cascades: [
+      { entity: 'chapter', on: ['writingId'], action: 'delete' },
+      { entity: 'writingLink', on: ['writingId'], action: 'delete' }
+    ]
+  },
+  chapter: {
+    entityType: 'chapter', table: 'chapters', collection: 'chapters', ops: ['add', 'update', 'delete'], update: 'merge',
+    // chapterService `deleteChapter`. It also renumbers the surviving
+    // chapters and recomputes the writing's word count; neither is a cascade
+    // in this sense, and both are handled by the service.
+    cascades: [{ entity: 'writingLink', on: ['chapterId'], action: 'delete' }]
+  },
   writingLink: { entityType: 'writingLink', table: 'writingLinks', collection: 'writingLinks', ops: ['add', 'delete'], create: 'created-only' },
 
   // ---- Story Planner ----
-  storyPlan: { entityType: 'storyPlan', table: 'storyPlans', collection: 'storyPlans', ops: ['add', 'update', 'delete'] },
+  storyPlan: {
+    entityType: 'storyPlan', table: 'storyPlans', collection: 'storyPlans', ops: ['add', 'update', 'delete'],
+    // planningService `deleteStoryPlan`. The widest cascade in the app: a plan
+    // owns every arc, beat, scene, character arc and thread beneath it, and
+    // none of them mean anything without it.
+    cascades: [
+      { entity: 'storyArc', on: ['storyPlanId'], action: 'delete' },
+      { entity: 'storyBeat', on: ['storyPlanId'], action: 'delete' },
+      { entity: 'scenePlan', on: ['storyPlanId'], action: 'delete' },
+      { entity: 'characterArc', on: ['storyPlanId'], action: 'delete' },
+      { entity: 'plotThread', on: ['storyPlanId'], action: 'delete' }
+    ]
+  },
   storyArc: { entityType: 'storyArc', table: 'storyArcs', collection: 'storyArcs', ops: ['add', 'update', 'delete'] },
   storyBeat: { entityType: 'storyBeat', table: 'storyBeats', collection: 'storyBeats', ops: ['add', 'update', 'delete'] },
   scenePlan: { entityType: 'scenePlan', table: 'scenePlans', collection: 'scenePlans', ops: ['add', 'update', 'delete'] },

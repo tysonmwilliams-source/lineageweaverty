@@ -46,6 +46,9 @@ const DATASET = 'sync-manifest-test';
 /** Table names as Dexie itself reports them, from a real opened database. */
 let schemaTables = [];
 
+/** Indexed field names per table, primary key included. */
+let schemaIndexes = {};
+
 /** Collection names with a `match /<name>/` block in firestore.rules. */
 let rulesCollections = [];
 
@@ -53,6 +56,12 @@ beforeAll(async () => {
   const db = getDatabase(DATASET);
   await db.open();
   schemaTables = db.tables.map((table) => table.name);
+  schemaIndexes = Object.fromEntries(
+    db.tables.map((table) => [
+      table.name,
+      [table.schema.primKey.name, ...table.schema.indexes.map((index) => index.name)]
+    ])
+  );
 
   // Resolved from this file rather than from cwd: `process` is not in the
   // test environment's globals (jsdom), and a path relative to the module is
@@ -251,5 +260,79 @@ describe('coverage is total', () => {
       expect(schemaTables, `${table} is declared local-only but is not in the schema`).toContain(table);
       expect(reason.length).toBeGreaterThan(20);
     }
+  });
+});
+
+describe('the cascade declarations describe real relationships', () => {
+  // Cascades were knowledge held inside one function per service — deleting a
+  // writing also removes its chapters, and the only place that said so was
+  // `deleteWriting`. Two of the seven never reached the cloud because of it.
+  // Declaring them here is only worth anything if the declarations are true,
+  // so each is checked against the schema it claims to describe.
+  const cascading = allEntities().filter((entity) => entity.cascades?.length);
+
+  it('names an entity that is in the manifest', () => {
+    const unknown = cascading.flatMap((entity) =>
+      entity.cascades
+        .filter((rule) => !getEntity(rule.entity))
+        .map((rule) => `${entity.entityType} -> ${rule.entity}`)
+    );
+    expect(unknown).toEqual([]);
+  });
+
+  it('names foreign-key fields that the schema actually indexes', () => {
+    // A cascade keys off a field, and a field the schema does not index means
+    // the cascade is a full table scan at best and a typo at worst.
+    const notIndexed = cascading.flatMap((entity) =>
+      entity.cascades.flatMap((rule) => {
+        const target = getEntity(rule.entity);
+        const indexes = schemaIndexes[target.table] || [];
+        return rule.on
+          .filter((field) => !indexes.includes(field))
+          .map((field) => `${entity.entityType} -> ${rule.entity}.${field}`);
+      })
+    );
+    expect(notIndexed).toEqual([]);
+  });
+
+  it('never cascades an entity into itself', () => {
+    const selfReferential = cascading
+      .filter((entity) => entity.cascades.some((rule) => rule.entity === entity.entityType))
+      .map((entity) => entity.entityType);
+    expect(selfReferential).toEqual([]);
+  });
+
+  it('only deletes rows whose entity declares a delete op', () => {
+    // A cascade that deletes rows of an entity with no `delete` op would queue
+    // a change nothing can replay — the class that silently discarded
+    // dignityTenure, dignityLink and heraldryLink changes.
+    const unreplayable = cascading.flatMap((entity) =>
+      entity.cascades
+        .filter((rule) => rule.action === 'delete' && !getEntity(rule.entity).ops.includes('delete'))
+        .map((rule) => `${entity.entityType} -> delete ${rule.entity}`)
+    );
+    expect(unreplayable).toEqual([]);
+  });
+
+  it('only clears fields on entities that can be updated', () => {
+    const unclearable = cascading.flatMap((entity) =>
+      entity.cascades
+        .filter((rule) => rule.action === 'clear' && !getEntity(rule.entity).ops.includes('update'))
+        .map((rule) => `${entity.entityType} -> clear ${rule.entity}`)
+    );
+    expect(unclearable).toEqual([]);
+  });
+
+  it('covers the eight entities known to cascade', () => {
+    // Pinned so that adding a cascade to a service without declaring it here,
+    // or vice versa, is a failing test rather than a silent divergence.
+    //
+    // It started as seven. `storyPlan` was missed by a hand inventory that did
+    // not think to grep planningService, and turned up only when a script
+    // compared the declarations against every `where(...).delete()` in the
+    // service layer. It is the widest cascade in the app.
+    expect(cascading.map((e) => e.entityType).sort()).toEqual(
+      ['chapter', 'codexEntry', 'dignity', 'heraldry', 'house', 'person', 'storyPlan', 'writing'].sort()
+    );
   });
 });

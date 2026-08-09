@@ -33,7 +33,16 @@ vi.mock('../utils/retryWithBackoff', async (importOriginal) => {
 
 import { addCloud, updateCloud, deleteCloud } from './cloudRepo';
 import { retryWithBackoff, SYNC_RETRY_CONFIG } from '../utils/retryWithBackoff';
-import { syncOp, enqueue, push, sendToCloud, isOnline, setOnlineForTesting, pruneTargets } from './syncEngine';
+import {
+  syncOp,
+  syncDeleteCascade,
+  enqueue,
+  push,
+  sendToCloud,
+  isOnline,
+  setOnlineForTesting,
+  pruneTargets
+} from './syncEngine';
 import { getDatabase, closeDatabaseInstance, deleteDatabaseForDataset, getPendingChanges } from './database';
 import { allEntities } from './syncManifest';
 
@@ -228,6 +237,111 @@ describe('the restore order covers the manifest', () => {
 
     expect(listed.slice().sort()).toEqual(declared.slice().sort());
     expect(new Set(listed).size).toBe(listed.length);
+  });
+});
+
+describe('syncDeleteCascade — a cascade cannot silently miss a child', () => {
+  it('queues the parent and every cascaded child', async () => {
+    await syncDeleteCascade('writing', {
+      userId: USER, datasetId: DATASET, id: 5,
+      cascaded: { chapter: [11, 12], writingLink: [21] }
+    });
+
+    const rows = await allQueueRows();
+    expect(rows.map(r => `${r.entityType}:${r.entityId}`)).toEqual([
+      'writing:5', 'chapter:11', 'chapter:12', 'writingLink:21'
+    ]);
+    expect(rows.every(r => r.synced === 1)).toBe(true);
+    expect(deleteCloud).toHaveBeenCalledTimes(4);
+  });
+
+  it('queues everything before sending anything', async () => {
+    // The guarantee that makes an interrupted cascade recoverable. If the
+    // connection drops mid-cascade, the queue still describes the whole delete.
+    const queuedWhenFirstSent = [];
+    deleteCloud.mockImplementation(async () => {
+      queuedWhenFirstSent.push((await allQueueRows()).length);
+    });
+
+    await syncDeleteCascade('writing', {
+      userId: USER, datasetId: DATASET, id: 5,
+      cascaded: { chapter: [11, 12], writingLink: [21] }
+    });
+
+    // All four rows already existed by the time the first send ran.
+    expect(queuedWhenFirstSent[0]).toBe(4);
+  });
+
+  it('sends children before the parent', async () => {
+    const order = [];
+    deleteCloud.mockImplementation(async (entityType) => { order.push(entityType); });
+
+    await syncDeleteCascade('writing', {
+      userId: USER, datasetId: DATASET, id: 5,
+      cascaded: { chapter: [11], writingLink: [21] }
+    });
+
+    expect(order[order.length - 1]).toBe('writing');
+  });
+
+  // The bug this whole step exists for. Deleting a writing removed its chapters
+  // locally and synced only the writing.
+  it('refuses a cascade that omits a declared child', async () => {
+    await expect(
+      syncDeleteCascade('writing', {
+        userId: USER, datasetId: DATASET, id: 5,
+        cascaded: { chapter: [11] }          // writingLink forgotten
+      })
+    ).rejects.toThrow(/cascades to writingLink/);
+
+    // And nothing was queued, so the caller's local delete is unaffected.
+    expect(await allQueueRows()).toHaveLength(0);
+  });
+
+  it('accepts an empty array — none found is not the same as forgotten', async () => {
+    await syncDeleteCascade('writing', {
+      userId: USER, datasetId: DATASET, id: 5,
+      cascaded: { chapter: [], writingLink: [] }
+    });
+
+    const rows = await allQueueRows();
+    expect(rows.map(r => r.entityType)).toEqual(['writing']);
+  });
+
+  it('rejects a child the manifest does not declare', async () => {
+    await expect(
+      syncDeleteCascade('chapter', {
+        userId: USER, datasetId: DATASET, id: 5,
+        cascaded: { writingLink: [], person: [1] }
+      })
+    ).rejects.toThrow(/does not cascade to person/);
+  });
+
+  it('queues the whole cascade while offline, sending none of it', async () => {
+    setOnlineForTesting(false);
+
+    await syncDeleteCascade('person', {
+      userId: USER, datasetId: DATASET, id: 3, cascaded: { relationship: [7, 8] }
+    });
+
+    const rows = await allQueueRows();
+    expect(rows).toHaveLength(3);
+    expect(rows.every(r => r.synced === 0)).toBe(true);
+    expect(deleteCloud).not.toHaveBeenCalled();
+  });
+
+  it('still deletes the parent when a child fails to send', async () => {
+    deleteCloud.mockImplementation(async (entityType) => {
+      if (entityType === 'relationship') throw new Error('permission-denied');
+    });
+
+    await syncDeleteCascade('person', {
+      userId: USER, datasetId: DATASET, id: 3, cascaded: { relationship: [7] }
+    });
+
+    const rows = await allQueueRows();
+    expect(rows.find(r => r.entityType === 'relationship').synced).toBe(0);
+    expect(rows.find(r => r.entityType === 'person').synced).toBe(1);
   });
 });
 

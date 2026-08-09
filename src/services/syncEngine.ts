@@ -238,6 +238,116 @@ export async function syncOp(
   return push(entityType, operation, queueId, args);
 }
 
+// ==================== CASCADES ====================
+
+/**
+ * Delete a row and everything the manifest says goes with it.
+ *
+ * Sync manifest, step 6. Deleting a parent removes child rows locally, and the
+ * cloud only learns about the children if the caller remembers to say so. Five
+ * of the seven cascades in this codebase remembered. Two did not: deleting a
+ * writing removed its chapters and links locally and synced only the writing,
+ * so the next download restored every chapter of a writing that no longer
+ * exists.
+ *
+ * The fix that matters is not the loop below, it is `assertCascadesSupplied`.
+ * The caller cannot sync a cascading delete while forgetting a child, because
+ * the manifest says which children exist and this refuses to proceed without
+ * them. Forgetting is what happened, twice, and it is the kind of mistake that
+ * shows up months later as orphaned rows rather than as an error.
+ *
+ * `cascaded` maps each cascaded `entityType` to the ids affected — **an empty
+ * array is a valid answer** and means the query found nothing. It is the
+ * *missing key* that is the bug, which is why the two are distinguished here
+ * for the same reason `collectLocalData` distinguishes them.
+ *
+ * Entities whose own service already syncs their cascade (`heraldry`,
+ * `codexEntry`, `dignity`, and `house`'s Codex entry) do not route through
+ * here. Their rules are still declared in the manifest, because the value of
+ * writing a cascade down does not depend on which function executes it.
+ */
+export interface CascadeArgs extends Omit<SyncOpArgs, 'data'> {
+  /** Ids of cascaded rows, keyed by entityType. A key is required per rule. */
+  cascaded: Record<string, Array<number | string>>;
+}
+
+/**
+ * Refuse a cascade that does not account for every child the manifest declares.
+ *
+ * Runs before anything is queued, so throwing is safe.
+ */
+function assertCascadesSupplied(
+  entityType: string,
+  cascaded: Record<string, Array<number | string>>
+): readonly string[] {
+  const entity = getEntity(entityType);
+  if (!entity) {
+    throw new Error(`Unknown sync entity "${entityType}".`);
+  }
+
+  const required = (entity.cascades ?? [])
+    .filter((rule) => rule.action === 'delete')
+    .map((rule) => rule.entity);
+
+  const missing = required.filter((child) => !(child in cascaded));
+  if (missing.length > 0) {
+    throw new Error(
+      `Deleting a "${entityType}" cascades to ${missing.join(', ')}, and no ids were ` +
+      'supplied for them. Pass an empty array if the local delete found none — ' +
+      'omitting the key is how a cascade stops reaching the cloud.'
+    );
+  }
+
+  const unexpected = Object.keys(cascaded).filter((child) => !required.includes(child));
+  if (unexpected.length > 0) {
+    throw new Error(
+      `Deleting a "${entityType}" does not cascade to ${unexpected.join(', ')}. ` +
+      'Either the call is wrong or syncManifest.ts needs the rule adding.'
+    );
+  }
+
+  return required;
+}
+
+export async function syncDeleteCascade(
+  entityType: string,
+  args: CascadeArgs
+): Promise<void> {
+  const { userId, datasetId, id, cascaded } = args;
+  const children = assertCascadesSupplied(entityType, cascaded);
+
+  // Queue everything before sending anything, so an interrupted cascade still
+  // leaves a complete record of what needs sending. Queue-then-send-then-queue
+  // would lose the tail — and the tail is the orphan.
+  const parentQueueId = await enqueue(entityType, 'delete', { datasetId, id });
+
+  const childQueue = [];
+  for (const child of children) {
+    for (const childId of cascaded[child] ?? []) {
+      childQueue.push({
+        entityType: child,
+        id: childId,
+        queueId: await enqueue(child, 'delete', { datasetId, id: childId })
+      });
+    }
+  }
+
+  // Children before the parent: an interrupted cascade should leave a parent
+  // with no children rather than children pointing at nothing.
+  for (const child of childQueue) {
+    await push(child.entityType, 'delete', child.queueId, {
+      userId,
+      datasetId,
+      id: child.id,
+      // A failed leg is a warning, not an error: the row stays queued and the
+      // periodic sync retries it.
+      logLevel: 'warn'
+    });
+  }
+
+  await push(entityType, 'delete', parentQueueId, { userId, datasetId, id });
+}
+
 // ==================== PRUNE POLICY ====================
 
 /** A local row as the bulk snapshot carries it. */

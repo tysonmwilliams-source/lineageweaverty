@@ -433,16 +433,26 @@ export default function WritingEditor() {
     if (chapters.length <= 1) return; // Can't delete last chapter
 
     const datasetId = activeDataset?.id;
-    await deleteChapter(chapterId, datasetId);
+    const { linkIds = [], reorderedChapterIds = [] } = await deleteChapter(chapterId, datasetId);
 
-    // Sync to cloud
-    if (user && activeDataset) {
-      syncDeleteChapter(user.uid, datasetId, chapterId);
-    }
-
-    // Reload chapters
+    // Reload chapters first: the local delete renumbered the survivors, and the
+    // reordering has to be read back before it can be synced.
     const updatedChapters = await getChaptersByWriting(parseInt(id), datasetId);
     setChapters(updatedChapters);
+
+    // Sync to cloud, cascade included. Syncing only the chapter left its links
+    // in Firestore and the old ordering on every surviving chapter, both of
+    // which came back on the next download.
+    if (user && activeDataset) {
+      syncDeleteChapter(user.uid, datasetId, chapterId, { linkIds });
+
+      const reordered = new Set(reorderedChapterIds);
+      for (const chapter of updatedChapters) {
+        if (reordered.has(chapter.id)) {
+          syncUpdateChapter(user.uid, datasetId, chapter.id, { order: chapter.order });
+        }
+      }
+    }
 
     // Select first chapter if deleted was active
     if (activeChapterId === chapterId && updatedChapters.length > 0) {

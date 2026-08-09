@@ -411,12 +411,14 @@ export default function WritingStudio() {
 
   const handleDelete = useCallback(async (writingId) => {
     const datasetId = activeDataset?.id;
-    await deleteWriting(writingId, datasetId);
+    const { chapterIds, linkIds } = await deleteWriting(writingId, datasetId);
     setWritings(prev => prev.filter(w => w.id !== writingId));
 
-    // Sync to cloud
+    // Sync to cloud, cascade included. Syncing only the writing left every
+    // chapter and link of it in Firestore, and the next download restored them
+    // as rows pointing at a writing that no longer exists.
     if (user && activeDataset) {
-      syncDeleteWriting(user.uid, datasetId, writingId);
+      syncDeleteWriting(user.uid, datasetId, writingId, { chapterIds, linkIds });
     }
   }, [user, activeDataset]);
 

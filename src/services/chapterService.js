@@ -174,6 +174,11 @@ export async function deleteChapter(id, datasetId) {
   const writingId = chapter.writingId;
   const deletedOrder = chapter.order;
 
+  // Collect ids before deleting: the caller needs them to remove the cloud
+  // copies, which otherwise survive and come back on the next download.
+  const links = await db.writingLinks.where('chapterId').equals(id).toArray();
+  const linkIds = links.map(l => l.id);
+
   // Delete writing links for this chapter
   const linksDeleted = await db.writingLinks.where('chapterId').equals(id).delete();
 
@@ -195,7 +200,10 @@ export async function deleteChapter(id, datasetId) {
   await updateWritingWordCount(writingId, datasetId);
 
   logger.log('Chapter deleted:', id, { linksDeleted });
-  return { deleted: true, linksDeleted };
+  // `reorderedChapterIds` are the surviving chapters whose `order` shifted down.
+  // They are updates, not cascade deletes, and the caller must sync them or the
+  // cloud keeps the old ordering and restores it on the next download.
+  return { deleted: true, linksDeleted, linkIds, reorderedChapterIds: remaining.map(c => c.id) };
 }
 
 /**

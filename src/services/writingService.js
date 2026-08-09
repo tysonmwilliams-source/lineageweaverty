@@ -167,9 +167,15 @@ export async function updateWriting(id, updates, datasetId) {
 export async function deleteWriting(id, datasetId) {
   const db = getDatabase(datasetId);
 
-  // Get chapters to delete
+  // Collect the ids before deleting, not just the counts. The caller needs
+  // them to propagate the cascade to the cloud: deleting the writing alone
+  // left every chapter and link in Firestore, and the next download restored
+  // them as rows pointing at a writing that no longer exists.
   const chapters = await db.chapters.where('writingId').equals(id).toArray();
   const chapterIds = chapters.map(c => c.id);
+
+  const links = await db.writingLinks.where('writingId').equals(id).toArray();
+  const linkIds = links.map(l => l.id);
 
   // Delete writing links
   const linksDeleted = await db.writingLinks.where('writingId').equals(id).delete();
@@ -185,7 +191,7 @@ export async function deleteWriting(id, datasetId) {
     linksDeleted
   });
 
-  return { chaptersDeleted, linksDeleted };
+  return { chaptersDeleted, linksDeleted, chapterIds, linkIds };
 }
 
 /**

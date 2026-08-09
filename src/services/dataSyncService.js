@@ -44,8 +44,7 @@
 
 import {
   syncOp,
-  enqueue,
-  push,
+  syncDeleteCascade,
   sendToCloud,
   isOnline
 } from './syncEngine';
@@ -671,37 +670,16 @@ export async function syncUpdatePerson(userId, datasetId, personId, updates) {
  * @param {number[]} relationshipIds - IDs of relationships to cascade delete (captured before local delete)
  */
 export async function syncDeletePerson(userId, datasetId, personId, relationshipIds = []) {
-  // The only wrapper that is not a one-liner, because it is the only one that
-  // touches two entity types. Queue *everything* before sending *anything*:
-  // if the tab closes or the connection drops half way through, the queue then
-  // still describes the whole delete. Queueing each relationship immediately
-  // before its own send would leave the untouched tail unrecorded, and a
-  // relationship that is gone locally but present in the cloud comes back on
-  // the next download as an edge pointing at a person who no longer exists.
-  const personQueueId = await enqueue('person', 'delete', { datasetId, id: personId });
-
-  const relationshipQueueIds = [];
-  for (const relId of relationshipIds) {
-    relationshipQueueIds.push(await enqueue('relationship', 'delete', { datasetId, id: relId }));
-    logger.log(`☁️ Queued cascade delete for relationship ${relId} (person ${personId})`);
-  }
-
-  // Relationships before the person, so an interrupted cascade leaves orphaned
-  // people rather than orphaned edges — the former is visible in the UI and
-  // fixable, the latter is not.
-  for (const [index, relId] of relationshipIds.entries()) {
-    const sent = await push('relationship', 'delete', relationshipQueueIds[index], {
-      userId,
-      datasetId,
-      id: relId,
-      // Preserved from the original: a failed cascade leg warns rather than
-      // errors. See the note on `logLevel` in syncEngine.ts.
-      logLevel: 'warn'
-    });
-    if (sent) logger.log(`☁️ Cascade deleted relationship ${relId} from cloud`);
-  }
-
-  await push('person', 'delete', personQueueId, { userId, datasetId, id: personId });
+  // The manifest declares that deleting a person cascades to relationships, so
+  // this is now the generic cascade rather than the one hand-written wrapper.
+  // The relationship ids are passed in because the local cascade has already
+  // run by the time this is called and the rows are gone.
+  await syncDeleteCascade('person', {
+    userId,
+    datasetId,
+    id: personId,
+    cascaded: { relationship: relationshipIds }
+  });
 }
 
 /**
@@ -965,8 +943,24 @@ export async function syncUpdateWriting(userId, datasetId, writingId, updates) {
 /**
  * Delete writing (local + cloud)
  */
-export async function syncDeleteWriting(userId, datasetId, writingId) {
-  await syncOp('writing', 'delete', { userId, datasetId, id: writingId });
+export async function syncDeleteWriting(userId, datasetId, writingId, cascade) {
+  // Required, not defaulted. A default of `{}` would turn "the caller forgot
+  // the cascade" into "this writing had no chapters" — which is the exact bug
+  // step 6 exists to make unrepresentable. `deleteWriting` returns the ids.
+  if (!cascade) {
+    throw new Error(
+      'syncDeleteWriting needs the cascade ids returned by deleteWriting(): ' +
+      '{ chapterIds, linkIds }. Without them the chapters survive in the cloud ' +
+      'and come back on the next download.'
+    );
+  }
+  const { chapterIds = [], linkIds = [] } = cascade;
+  await syncDeleteCascade('writing', {
+    userId,
+    datasetId,
+    id: writingId,
+    cascaded: { chapter: chapterIds, writingLink: linkIds }
+  });
 }
 
 // ==================== CHAPTERS SYNC ====================
@@ -992,8 +986,23 @@ export async function syncUpdateChapter(userId, datasetId, chapterId, updates) {
 /**
  * Delete chapter (local + cloud)
  */
-export async function syncDeleteChapter(userId, datasetId, chapterId) {
-  await syncOp('chapter', 'delete', { userId, datasetId, id: chapterId });
+export async function syncDeleteChapter(userId, datasetId, chapterId, cascade) {
+  // Required for the same reason as syncDeleteWriting. `deleteChapter` returns
+  // `linkIds`, and also `reorderedChapterIds` — those are updates rather than
+  // cascade deletes, and the caller syncs them separately.
+  if (!cascade) {
+    throw new Error(
+      'syncDeleteChapter needs the cascade ids returned by deleteChapter(): ' +
+      '{ linkIds }. Without them the links survive in the cloud.'
+    );
+  }
+  const { linkIds = [] } = cascade;
+  await syncDeleteCascade('chapter', {
+    userId,
+    datasetId,
+    id: chapterId,
+    cascaded: { writingLink: linkIds }
+  });
 }
 
 // ==================== WRITING LINKS SYNC ====================
