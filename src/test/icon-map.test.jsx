@@ -17,7 +17,11 @@ function walk(dir, out = []) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
     const p = path.join(dir, e.name);
     if (e.isDirectory()) walk(p, out);
-    else if (/\.jsx$/.test(e.name)) out.push(p);
+    // `.tsx` as well as `.jsx`: this walker silently lost coverage with every
+    // file the TypeScript migration converted — a page that moved to .tsx
+    // stopped having its icon names checked at all, and the failure mode was a
+    // *falling* test count rather than a red test.
+    else if (/\.(jsx|tsx)$/.test(e.name)) out.push(p);
   }
   return out;
 }
@@ -54,6 +58,6 @@ describe('Icon name map', () => {
   it.each([...usedNames].sort())('renders "%s" as an svg, not null', (name) => {
     const { container } = render(<Icon name={name} />);
     const svg = container.querySelector('svg');
-    expect(svg, `Icon name="${name}" rendered nothing — add it to LUCIDE_ICONS in Icon.jsx`).not.toBeNull();
+    expect(svg, `Icon name="${name}" rendered nothing — add it to LUCIDE_ICONS in Icon.tsx`).not.toBeNull();
   });
 });

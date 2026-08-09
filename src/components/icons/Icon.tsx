@@ -16,6 +16,7 @@
  */
 
 import { forwardRef, useMemo } from 'react';
+import type { CSSProperties, HTMLAttributes, Ref, SVGProps } from 'react';
 
 // Import Lucide icons we'll use throughout the app
 import {
@@ -522,21 +523,47 @@ const LUCIDE_ICONS = {
  * @param {number} props.size - Icon size in pixels (default: 24)
  * @param {string} props.color - Icon color (default: currentColor)
  * @param {number} props.strokeWidth - Stroke width for Lucide icons (default: 2)
- * @param {string} props.className - Additional CSS classes
- * @param {string} props.variant - 'lucide' (default) or 'game' for game-icons.net
- * @param {Object} props.style - Additional inline styles
  */
-const Icon = forwardRef(function Icon(
-  { 
-    name, 
-    size = 24, 
+export interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'name' | 'ref'> {
+  /**
+   * A key of `LUCIDE_ICONS` when `variant` is 'lucide', or a game-icons.net
+   * file stem when it is 'game'.
+   *
+   * Typed `string` rather than `keyof typeof LUCIDE_ICONS`: half the call sites
+   * compute the name (`categoryIcon`, a field off a stored record), so the
+   * literal union would reject them all. An unknown name already warns in dev
+   * and renders nothing.
+   */
+  name: string;
+  size?: number;
+  color?: string;
+  strokeWidth?: number;
+  className?: string;
+  /** 'lucide' (default) or 'game' for game-icons.net. */
+  variant?: 'lucide' | 'game';
+  style?: CSSProperties;
+}
+
+/**
+ * The ref target depends on the variant: a lucide icon forwards to the `<svg>`,
+ * a game icon to the wrapping `<span>`. The union says so rather than picking
+ * one and casting the other away.
+ *
+ * No caller passes a ref today — the `forwardRef` is vestigial — which is why
+ * the union costs nothing and is left in place rather than removed. Dropping it
+ * would be a public-API change to a component 24 files import.
+ */
+const Icon = forwardRef<SVGSVGElement | HTMLSpanElement, IconProps>(function Icon(
+  {
+    name,
+    size = 24,
     color = 'currentColor',
     strokeWidth = 2,
     className = '',
     variant = 'lucide',
     style = {},
-    ...props 
-  }, 
+    ...props
+  },
   ref
 ) {
   // Build the className
@@ -546,7 +573,9 @@ const Icon = forwardRef(function Icon(
   
   // For Lucide icons
   if (variant === 'lucide') {
-    const LucideIcon = LUCIDE_ICONS[name];
+    // `name` is a free-form string, so this can miss — which the guard below
+    // already handles by warning in dev and rendering nothing.
+    const LucideIcon = (LUCIDE_ICONS as Record<string, typeof LUCIDE_ICONS[keyof typeof LUCIDE_ICONS] | undefined>)[name];
     
     if (!LucideIcon) {
       if (import.meta.env.DEV) {
@@ -557,7 +586,7 @@ const Icon = forwardRef(function Icon(
     
     return (
       <LucideIcon
-        ref={ref}
+        ref={ref as Ref<SVGSVGElement>}
         size={size}
         color={color}
         strokeWidth={strokeWidth}
@@ -572,8 +601,8 @@ const Icon = forwardRef(function Icon(
   // For game-icons.net SVGs (loaded as images)
   if (variant === 'game') {
     return (
-      <span 
-        ref={ref}
+      <span
+        ref={ref as Ref<HTMLSpanElement>}
         className={`${iconClass} lw-icon--game`}
         style={{
           display: 'inline-flex',
@@ -584,7 +613,14 @@ const Icon = forwardRef(function Icon(
           ...style
         }}
         aria-hidden="true"
-        {...props}
+        {
+          // The two variants render different element types from one prop set.
+          // The props are declared as SVG attributes because that is what the
+          // common case takes; the span branch narrows them here rather than
+          // the type being widened to the intersection, which would accept
+          // neither element's real attributes.
+          ...(props as HTMLAttributes<HTMLSpanElement>)
+        }
       >
         <img 
           src={`/icons/${name}.svg`}
