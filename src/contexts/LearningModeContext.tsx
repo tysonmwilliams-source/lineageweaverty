@@ -12,9 +12,24 @@
  */
 
 import { createContext, useContext, useState, useCallback, useEffect , useMemo} from 'react';
+import type { ReactNode } from 'react';
 
 // Storage key
 const STORAGE_KEY = 'lineageweaver-learning-mode';
+
+/** One selectable mode, as the mode picker renders it. */
+export interface LearningModeInfo {
+  /**
+   * Duplicates this entry's key in `LEARNING_MODES`. Typed `string` rather than
+   * `LearningMode` because `LearningMode` is derived from the table's keys, and
+   * annotating the table with a type that reads its own keys is circular.
+   */
+  id: string;
+  name: string;
+  description: string;
+  /** A lucide icon name. */
+  icon: string;
+}
 
 // Available modes
 export const LEARNING_MODES = {
@@ -36,22 +51,44 @@ export const LEARNING_MODES = {
     description: 'Modern equivalents only',
     icon: 'languages'
   }
-};
+} as const satisfies Record<string, LearningModeInfo>;
+
+/**
+ * The three modes, derived from the table rather than restated.
+ *
+ * `cycleMode` walks `Object.keys(LEARNING_MODES)`, so a fourth mode added above
+ * joins the cycle and the union at once — restating the union here is how the
+ * two would drift.
+ */
+export type LearningMode = keyof typeof LEARNING_MODES;
 
 // Default mode
-const DEFAULT_MODE = 'learning';
+const DEFAULT_MODE: LearningMode = 'learning';
 
-// Create context
-const LearningModeContext = createContext(null);
+export interface LearningModeContextValue {
+  mode: LearningMode;
+  setMode: (mode: LearningMode) => void;
+  /** Advance to the next mode, wrapping. Drives the single-button toggle. */
+  cycleMode: () => void;
+  /** True in 'scholar' and 'learning' — show the original term. */
+  showOriginal: boolean;
+  /** True in 'modern' and 'learning' — show the modern equivalent. */
+  showModern: boolean;
+  modeInfo: LearningModeInfo;
+}
+
+const LearningModeContext = createContext<LearningModeContextValue | null>(null);
 
 /**
  * Load saved mode from localStorage
  */
-function loadSavedMode() {
+function loadSavedMode(): LearningMode {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved && LEARNING_MODES[saved]) {
-      return saved;
+    // The stored string is untrusted — it is whatever is in localStorage — so
+    // membership in the table is what makes it a LearningMode.
+    if (saved && saved in LEARNING_MODES) {
+      return saved as LearningMode;
     }
   } catch {
     // Ignore storage errors
@@ -62,7 +99,7 @@ function loadSavedMode() {
 /**
  * Save mode to localStorage
  */
-function saveMode(mode) {
+function saveMode(mode: LearningMode): void {
   try {
     localStorage.setItem(STORAGE_KEY, mode);
   } catch {
@@ -73,11 +110,11 @@ function saveMode(mode) {
 /**
  * Learning Mode Provider
  */
-export function LearningModeProvider({ children }) {
+export function LearningModeProvider({ children }: { children: ReactNode }) {
   const [mode, setModeState] = useState(loadSavedMode);
 
   // Set mode and persist
-  const setMode = useCallback((newMode) => {
+  const setMode = useCallback((newMode: LearningMode) => {
     if (LEARNING_MODES[newMode]) {
       setModeState(newMode);
       saveMode(newMode);
@@ -86,10 +123,10 @@ export function LearningModeProvider({ children }) {
 
   // Cycle through modes
   const cycleMode = useCallback(() => {
-    const modes = Object.keys(LEARNING_MODES);
+    const modes = Object.keys(LEARNING_MODES) as LearningMode[];
     const currentIndex = modes.indexOf(mode);
-    const nextIndex = (currentIndex + 1) % modes.length;
-    setMode(modes[nextIndex]);
+    const next = modes[(currentIndex + 1) % modes.length];
+    if (next) setMode(next);
   }, [mode, setMode]);
 
   // Check if showing original terms
@@ -118,7 +155,7 @@ export function LearningModeProvider({ children }) {
 /**
  * Hook to use learning mode
  */
-export function useLearningMode() {
+export function useLearningMode(): LearningModeContextValue {
   const context = useContext(LearningModeContext);
   if (!context) {
     throw new Error('useLearningMode must be used within a LearningModeProvider');
@@ -130,7 +167,7 @@ export function useLearningMode() {
  * Hook that returns formatted term based on current mode
  * Can be used outside of React components
  */
-export function useFormattedTerm(original, modern) {
+export function useFormattedTerm(original: string, modern?: string | null): string {
   const { mode } = useLearningMode();
 
   switch (mode) {

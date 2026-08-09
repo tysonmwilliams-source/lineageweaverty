@@ -79,8 +79,16 @@ import type { SyncOperation } from './syncManifest';
 import { retryWithBackoff, SYNC_RETRY_CONFIG } from '../utils/retryWithBackoff';
 import { logger } from '../utils/logger';
 
-/** The payload of an add or update. Deletes carry none. */
-export type SyncPayload = Record<string, unknown>;
+/**
+ * The payload of an add or update. Deletes carry none.
+ *
+ * `object`, not `Record<string, unknown>`. Callers pass typed entity
+ * interfaces — `House`, `Partial<Person>` — and TypeScript does not consider an
+ * `interface` assignable to an index-signature type, so the stricter-looking
+ * alias would reject every real caller and force a cast at each one. The engine
+ * only ever spreads this value, so the index signature bought nothing.
+ */
+export type SyncPayload = object;
 
 export interface SyncOpArgs {
   /** Firebase UID. Falsy means signed out — queue only, never send. */

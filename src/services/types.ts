@@ -334,6 +334,52 @@ export interface SyncQueueEntry {
 
 export type SyncQueueEntryInput = Omit<SyncQueueEntry, 'id'> & { id?: number };
 
+/**
+ * A report from the built-in bug tracker.
+ *
+ * Local-only and **not dataset-scoped** — the `bugs` table has no `datasetId`,
+ * so reports are per-browser and shared across every world. `syncManifest`
+ * declares it local-only for that reason. `BugContext` mirrors each row into
+ * Firestore under `users/{uid}/bugs` by hand, on its own path.
+ */
+export interface Bug {
+  id: number;
+  title: string;
+  description?: string | null;
+  stepsToReproduce?: string | null;
+  /** 'critical' | 'high' | 'medium' | 'low' */
+  priority: string;
+  /** 'open' | 'in-progress' | 'resolved' */
+  status: string;
+  /** Which subsystem, e.g. 'heraldry'. Defaults to 'general'. */
+  system: string;
+  /** Auto-captured at report time. */
+  page?: string | null;
+  browser?: string | null;
+  viewport?: string | null;
+  theme?: string | null;
+  /** A data: URI. The only field that makes a report large. */
+  screenshot?: string | null;
+  notes?: string | null;
+  created: string;
+  updated: string;
+  /** ISO timestamp, set when status becomes 'resolved'. */
+  resolved?: string | null;
+}
+
+export type BugInput = Omit<Bug, 'id'> & { id?: number };
+
+/** Counts for the bug tracker's summary bar. */
+export interface BugStatistics {
+  total: number;
+  byStatus: Record<string, number>;
+  byPriority: Record<string, number>;
+  /** Keyed by subsystem, built at runtime, so any key is possible. */
+  bySystem: Record<string, number>;
+  withScreenshot: number;
+  unresolvedCritical: number;
+}
+
 /** A pair of people the user has confirmed are not duplicates of each other. */
 export interface AcknowledgedDuplicate {
   id: number;
@@ -401,6 +447,26 @@ export type AppDatabase = Dexie & {
 
 /** An identifier for the dataset (world) an operation runs against. */
 export type DatasetId = string | null;
+
+/**
+ * A world: one dataset's metadata.
+ *
+ * Each has its own IndexedDB database (`LineageweaverDB_{id}`) and its own
+ * Firestore subtree (`users/{uid}/datasets/{id}/…`), which is why `id` is
+ * threaded through every data call rather than read from context at the point
+ * of use — a component that reads the active dataset at render time and a write
+ * that lands after a switch would disagree about where the row belongs.
+ *
+ * `createdAt`/`updatedAt` exist in Firestore but are `serverTimestamp()`
+ * sentinels on write and `Timestamp` on read, and nothing in the app reads
+ * them, so they are not named here.
+ */
+export interface Dataset {
+  id: string;
+  name: string;
+  /** The dataset every account starts with. Cannot be deleted. */
+  isDefault?: boolean;
+}
 
 /** A Firebase user id, or null when signed out — the guard on every cloud sync. */
 export type UserId = string | null;

@@ -79,6 +79,18 @@ import {
 import { useAuth } from './AuthContext';
 import { useDataset } from './DatasetContext';
 import { logger } from '../utils/logger';
+import { errorMessage } from '../utils/errorMessage';
+import type { ReactNode } from 'react';
+import type {
+  Person, PersonInput, House, HouseInput, Relationship, RelationshipInput
+} from '../services/types';
+import type { CadetCeremonyData } from '../services/database';
+
+/** What founding a cadet branch returns. Both are read back after the write. */
+export interface CadetCeremonyResult {
+  house: House | undefined;
+  founder: Person | undefined;
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CONTEXT OBJECTS
@@ -92,11 +104,62 @@ import { logger } from '../utils/logger';
 // Components that need both can use the combined useGenealogy() hook
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const GenealogyStateContext = createContext(null);
-const GenealogyDispatchContext = createContext(null);
+/**
+ * The read half. Components that only display data subscribe to this.
+ *
+ * Split from the dispatch half deliberately: a form that only mutates should
+ * not re-render when an unrelated person changes, and the two contexts are what
+ * make that possible. `useGenealogy()` returns both merged, for the components
+ * that predate the split.
+ */
+export interface GenealogyState {
+  people: Person[];
+  houses: House[];
+  relationships: Relationship[];
+  loading: boolean;
+  error: string | null;
+  /** Bumped on every mutation. Memo keys that must not miss an in-place edit. */
+  dataVersion: number;
+  /** 'idle' | 'syncing' | 'synced' | 'error' */
+  syncStatus: SyncPhase;
+  getPersonById: (id: number) => Person | undefined;
+  getHouseById: (id: number) => House | undefined;
+  getPeopleByHouse: (houseId: number) => Person[];
+  getRelationshipsForPerson: (personId: number) => Relationship[];
+}
+
+/** How far the startup cloud sync has got. */
+export type SyncPhase = 'idle' | 'syncing' | 'synced' | 'error';
+
+/**
+ * The write half. Every function here follows the golden rule in CLAUDE.md:
+ * local IndexedDB first, then React state, then a non-blocking cloud sync.
+ */
+export interface GenealogyDispatch {
+  /** Resolves to the new local id. */
+  addPerson: (personData: PersonInput) => Promise<number>;
+  updatePerson: (id: number, updates: Partial<Person>) => Promise<void>;
+  deletePerson: (id: number) => Promise<void>;
+  addHouse: (houseData: HouseInput) => Promise<number>;
+  updateHouse: (id: number, updates: Partial<House>) => Promise<void>;
+  deleteHouse: (id: number) => Promise<void>;
+  addRelationship: (relationshipData: RelationshipInput) => Promise<number>;
+  updateRelationship: (id: number, updates: Partial<Relationship>) => Promise<void>;
+  deleteRelationship: (id: number) => Promise<void>;
+  /** Splits a cadet branch off an existing house. Reloads everything after. */
+  foundCadetHouse: (ceremonyData: CadetCeremonyData) => Promise<CadetCeremonyResult>;
+  deleteAllData: () => Promise<void>;
+  refreshData: () => Promise<void>;
+}
+
+/** Both halves, for components written before the split. */
+export type GenealogyContextValue = GenealogyState & GenealogyDispatch;
+
+const GenealogyStateContext = createContext<GenealogyState | null>(null);
+const GenealogyDispatchContext = createContext<GenealogyDispatch | null>(null);
 
 // Legacy context for backward compatibility
-const GenealogyContext = createContext(null);
+const GenealogyContext = createContext<GenealogyContextValue | null>(null);
 
 /**
  * GenealogyProvider Component
@@ -104,17 +167,17 @@ const GenealogyContext = createContext(null);
  * This wraps your app (or part of it) and provides the shared data to all children.
  * Any component inside this provider can access the data via useGenealogy().
  */
-export function GenealogyProvider({ children }) {
+export function GenealogyProvider({ children }: { children: ReactNode }) {
   // ==================== STATE ====================
-  const [people, setPeople] = useState([]);
-  const [houses, setHouses] = useState([]);
-  const [relationships, setRelationships] = useState([]);
+  const [people, setPeople] = useState<Person[]>([]);
+  const [houses, setHouses] = useState<House[]>([]);
+  const [relationships, setRelationships] = useState<Relationship[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [dataVersion, setDataVersion] = useState(0);
   
   // ☁️ Cloud sync state
-  const [syncStatus, setSyncStatus] = useState('idle'); // 'idle' | 'syncing' | 'synced' | 'error'
+  const [syncStatus, setSyncStatus] = useState<SyncPhase>('idle'); // 'idle' | 'syncing' | 'synced' | 'error'
   const [syncInitialized, setSyncInitialized] = useState(false);
   
   // Get current user from auth context
@@ -152,6 +215,10 @@ export function GenealogyProvider({ children }) {
       setError(null);
 
       const datasetId = activeDataset?.id || 'default';
+      // The effect that calls this already checks for a user, but the closure
+      // cannot see that. Re-reading here also closes the gap where a sign-out
+      // lands between the check and this line.
+      if (!user) return;
       logger.log('🔄 Starting sync initialization for dataset:', datasetId);
 
       // Initialize sync - this will either upload local data or download cloud data
@@ -171,7 +238,7 @@ export function GenealogyProvider({ children }) {
     } catch (err) {
       logger.error('❌ Sync initialization failed:', err);
       setSyncStatus('error');
-      setError(err.message);
+      setError(errorMessage(err));
 
       // Still try to load local data
       await loadAllData();
@@ -212,7 +279,7 @@ export function GenealogyProvider({ children }) {
       });
     } catch (err) {
       logger.error('❌ GenealogyContext: Failed to load data', err);
-      setError(err.message);
+      setError(errorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -224,7 +291,7 @@ export function GenealogyProvider({ children }) {
    * Add a new person
    * Now includes cloud sync!
    */
-  const addPerson = useCallback(async (personData) => {
+  const addPerson = useCallback(async (personData: PersonInput) => {
     try {
       const datasetId = activeDataset?.id || 'default';
 
@@ -288,7 +355,7 @@ export function GenealogyProvider({ children }) {
           });
         }
       } catch (codexErr) {
-        logger.warn('⚠️ Failed to auto-create Codex entry:', codexErr.message);
+        logger.warn('⚠️ Failed to auto-create Codex entry:', errorMessage(codexErr));
       }
       
       // 3. Update local state
@@ -312,7 +379,7 @@ export function GenealogyProvider({ children }) {
   /**
    * Update an existing person
    */
-  const updatePerson = useCallback(async (id, updates) => {
+  const updatePerson = useCallback(async (id: number, updates: Partial<Person>) => {
     try {
       const datasetId = activeDataset?.id || 'default';
       // userId is passed so a rename can propagate to the linked Codex entry
@@ -340,7 +407,7 @@ export function GenealogyProvider({ children }) {
   /**
    * Delete a person with CASCADE delete of relationships
    */
-  const deletePerson = useCallback(async (id) => {
+  const deletePerson = useCallback(async (id: number) => {
     try {
       const datasetId = activeDataset?.id || 'default';
       const personToDelete = people.find(p => p.id === id);
@@ -351,7 +418,11 @@ export function GenealogyProvider({ children }) {
       const relationshipsToDelete = relationships.filter(
         rel => rel.person1Id === id || rel.person2Id === id
       );
-      const relationshipIds = relationshipsToDelete.map(r => r.id);
+      // `Relationship.id` is optional on the type because a row on its way in
+      // has no key yet. These came out of the database, so every one has one.
+      const relationshipIds = relationshipsToDelete
+        .map(r => r.id)
+        .filter((relId): relId is number => relId !== undefined);
 
       // Delete person (and cascade relationships) from local DB
       await dbDeletePerson(id, datasetId);
@@ -363,7 +434,7 @@ export function GenealogyProvider({ children }) {
           await deleteCodexEntry(codexEntryId, datasetId, user?.uid);
           logger.log('📖 Codex entry cascade-deleted:', codexEntryId);
         } catch (codexErr) {
-          logger.warn('⚠️ Failed to cascade-delete Codex entry:', codexErr.message);
+          logger.warn('⚠️ Failed to cascade-delete Codex entry:', errorMessage(codexErr));
         }
       }
 
@@ -387,7 +458,7 @@ export function GenealogyProvider({ children }) {
 
   // ==================== HOUSE OPERATIONS ====================
 
-  const addHouse = useCallback(async (houseData) => {
+  const addHouse = useCallback(async (houseData: HouseInput) => {
     try {
       const datasetId = activeDataset?.id || 'default';
       const newId = await dbAddHouse(houseData, { datasetId });
@@ -408,7 +479,7 @@ export function GenealogyProvider({ children }) {
     }
   }, [user, activeDataset]);
 
-  const updateHouse = useCallback(async (id, updates) => {
+  const updateHouse = useCallback(async (id: number, updates: Partial<House>) => {
     try {
       const datasetId = activeDataset?.id || 'default';
       // See updatePerson: userId lets the Codex title rename sync.
@@ -430,7 +501,7 @@ export function GenealogyProvider({ children }) {
     }
   }, [user, activeDataset]);
 
-  const deleteHouse = useCallback(async (id) => {
+  const deleteHouse = useCallback(async (id: number) => {
     try {
       const datasetId = activeDataset?.id || 'default';
       const { clearedPersonIds = [] } = await dbDeleteHouse(id, {
@@ -466,7 +537,7 @@ export function GenealogyProvider({ children }) {
 
   // ==================== RELATIONSHIP OPERATIONS ====================
 
-  const addRelationship = useCallback(async (relationshipData) => {
+  const addRelationship = useCallback(async (relationshipData: RelationshipInput) => {
     try {
       const datasetId = activeDataset?.id || 'default';
       const newId = await dbAddRelationship(relationshipData, datasetId);
@@ -487,7 +558,7 @@ export function GenealogyProvider({ children }) {
     }
   }, [user, activeDataset]);
 
-  const updateRelationship = useCallback(async (id, updates) => {
+  const updateRelationship = useCallback(async (id: number, updates: Partial<Relationship>) => {
     try {
       const datasetId = activeDataset?.id || 'default';
       await dbUpdateRelationship(id, updates, datasetId);
@@ -508,7 +579,7 @@ export function GenealogyProvider({ children }) {
     }
   }, [user, activeDataset]);
 
-  const deleteRelationship = useCallback(async (id) => {
+  const deleteRelationship = useCallback(async (id: number) => {
     try {
       const datasetId = activeDataset?.id || 'default';
       await dbDeleteRelationship(id, datasetId);
@@ -529,19 +600,24 @@ export function GenealogyProvider({ children }) {
 
   // ==================== SPECIAL OPERATIONS ====================
 
-  const foundCadetHouse = useCallback(async (ceremonyData) => {
+  const foundCadetHouse = useCallback(async (ceremonyData: CadetCeremonyData) => {
     try {
       const datasetId = activeDataset?.id || 'default';
       const result = await dbFoundCadetHouse(ceremonyData, datasetId);
       await loadAllData();
 
-      // ☁️ Sync the new house and updated person
-      if (user && activeDataset) {
+      // ☁️ Sync the new house and updated person.
+      //
+      // `foundCadetHouse` types both as possibly undefined — it reads them back
+      // after writing, and a read can miss. Syncing an undefined would have
+      // thrown inside a fire-and-forget call, so the guard is what the code
+      // already assumed rather than a new rule.
+      if (user && activeDataset && result.house?.id && result.founder?.id) {
         syncAddHouse(user.uid, activeDataset.id, result.house.id, result.house);
         syncUpdatePerson(user.uid, activeDataset.id, result.founder.id, result.founder);
       }
 
-      logger.log('✅ Cadet house founded:', result.house.houseName);
+      logger.log('✅ Cadet house founded:', result.house?.houseName);
       return result;
     } catch (err) {
       logger.error('❌ Failed to found cadet house:', err);
@@ -572,19 +648,19 @@ export function GenealogyProvider({ children }) {
 
   // ==================== HELPER FUNCTIONS ====================
 
-  const getPersonById = useCallback((id) => {
+  const getPersonById = useCallback((id: number) => {
     return people.find(p => p.id === id);
   }, [people]);
 
-  const getHouseById = useCallback((id) => {
+  const getHouseById = useCallback((id: number) => {
     return houses.find(h => h.id === id);
   }, [houses]);
 
-  const getPeopleByHouse = useCallback((houseId) => {
+  const getPeopleByHouse = useCallback((houseId: number) => {
     return people.filter(p => p.houseId === houseId);
   }, [people]);
 
-  const getRelationshipsForPerson = useCallback((personId) => {
+  const getRelationshipsForPerson = useCallback((personId: number) => {
     return relationships.filter(r => 
       r.person1Id === personId || r.person2Id === personId
     );
@@ -696,7 +772,7 @@ export function GenealogyProvider({ children }) {
  * Returns: { people, houses, relationships, loading, error, dataVersion, syncStatus,
  *            getPersonById, getHouseById, getPeopleByHouse, getRelationshipsForPerson }
  */
-export function useGenealogyState() {
+export function useGenealogyState(): GenealogyState {
   const context = useContext(GenealogyStateContext);
 
   if (context === null) {
@@ -720,7 +796,7 @@ export function useGenealogyState() {
  *            addRelationship, updateRelationship, deleteRelationship, foundCadetHouse,
  *            deleteAllData, refreshData }
  */
-export function useGenealogyDispatch() {
+export function useGenealogyDispatch(): GenealogyDispatch {
   const context = useContext(GenealogyDispatchContext);
 
   if (context === null) {
@@ -744,7 +820,7 @@ export function useGenealogyDispatch() {
  * - useGenealogyState() for read-only components
  * - useGenealogyDispatch() for action-only components
  */
-export function useGenealogy() {
+export function useGenealogy(): GenealogyContextValue {
   const context = useContext(GenealogyContext);
 
   if (context === null) {

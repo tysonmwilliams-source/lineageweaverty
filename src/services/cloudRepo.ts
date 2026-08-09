@@ -194,7 +194,9 @@ export async function updateCloud(
   userId: string,
   datasetId: string | null | undefined,
   id: number | string,
-  updates: Record<string, unknown>
+  // Permissive for the same reason as `SyncPayload`: the callers hold typed
+  // entity interfaces, and this function only spreads what it is given.
+  updates: object
 ): Promise<void> {
   const collectionName = collectionFor(entityType);
   const mode: UpdateMode = updateModeFor(entityType);

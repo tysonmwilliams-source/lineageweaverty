@@ -45,13 +45,60 @@ import {
 } from 'firebase/firestore';
 import { db as firestoreDb } from '../config/firebase';
 import { logger } from '../utils/logger';
+import { errorMessage } from '../utils/errorMessage';
+import type { ReactNode } from 'react';
+import type { Bug } from '../services/types';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CREATE THE CONTEXT
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // This creates an empty "container" that we'll fill with bug data
-const BugContext = createContext(null);
+/** What `useBugTracker()` hands back. */
+export interface BugContextValue {
+  bugs: Bug[];
+  loading: boolean;
+  error: string | null;
+  /** Recomputed from `bugs` on every change, not read from the database. */
+  statistics: BugSummary;
+  openBugs: Bug[];
+  inProgressBugs: Bug[];
+  resolvedBugs: Bug[];
+  addBug: (bugData: Partial<Bug>) => Promise<number>;
+  updateBug: (id: number, updates: Partial<Bug>) => Promise<void>;
+  deleteBug: (id: number) => Promise<void>;
+  /** Sets status to 'resolved' and stamps `resolved`. */
+  resolveBug: (id: number) => Promise<void>;
+  refreshBugs: () => Promise<void>;
+  /** Markdown for pasting into a Claude Code session. */
+  exportForClaudeCode: (options?: BugExportOptions) => Promise<string>;
+  downloadExport: () => Promise<void>;
+}
+
+/**
+ * The in-memory tally this context derives.
+ *
+ * Distinct from `BugStatistics` in types.ts, which is what
+ * `bugService.getBugStatistics` reads out of Dexie. This one is computed from
+ * the `bugs` array already in state, so it stays in step with the list the user
+ * is looking at without a second read.
+ */
+/** Which bugs an export includes. Both default inside `bugService`. */
+export interface BugExportOptions {
+  /** Defaults to ['open', 'in-progress'] — a resolved bug is not a task. */
+  statuses?: string[];
+  priorities?: string[];
+}
+
+export interface BugSummary {
+  total: number;
+  open: number;
+  inProgress: number;
+  resolved: number;
+  critical: number;
+}
+
+const BugContext = createContext<BugContextValue | null>(null);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CLOUD SYNC HELPERS
@@ -59,10 +106,8 @@ const BugContext = createContext(null);
 
 /**
  * Add a bug to Firestore
- * @param {string} userId - The user's Firebase UID
- * @param {Object} bugData - Bug data including local id
  */
-async function syncBugToCloud(userId, bugData) {
+async function syncBugToCloud(userId: string, bugData: Bug) {
   try {
     const bugsRef = collection(firestoreDb, 'users', userId, 'bugs');
     const docRef = doc(bugsRef, String(bugData.id));
@@ -85,7 +130,7 @@ async function syncBugToCloud(userId, bugData) {
  * @param {string} userId - The user's Firebase UID
  * @param {number} bugId - The bug's local ID
  */
-async function deleteBugFromCloud(userId, bugId) {
+async function deleteBugFromCloud(userId: string, bugId: number) {
   try {
     const docRef = doc(firestoreDb, 'users', userId, 'bugs', String(bugId));
     await deleteDoc(docRef);
@@ -100,7 +145,7 @@ async function deleteBugFromCloud(userId, bugId) {
  * @param {string} userId - The user's Firebase UID
  * @returns {Array} Array of bug objects
  */
-async function getAllBugsFromCloud(userId) {
+async function getAllBugsFromCloud(userId: string) {
   try {
     const bugsRef = collection(firestoreDb, 'users', userId, 'bugs');
     const snapshot = await getDocs(bugsRef);
@@ -125,15 +170,14 @@ async function getAllBugsFromCloud(userId) {
  * Any component inside this provider can access bugs via useBugTracker().
  * 
  * @param {Object} props
- * @param {React.ReactNode} props.children - Child components to wrap
  */
-export function BugTrackerProvider({ children }) {
+export function BugTrackerProvider({ children }: { children: ReactNode }) {
   // ==================== STATE ====================
   // These are the "buckets" that hold our bug data
   
-  const [bugs, setBugs] = useState([]);           // Array of all bug records
+  const [bugs, setBugs] = useState<Bug[]>([]);           // Array of all bug records
   const [loading, setLoading] = useState(true);   // True while loading from DB
-  const [error, setError] = useState(null);       // Error message if something fails
+  const [error, setError] = useState<string | null>(null);       // Error message if something fails
   
   // Get current user from auth context (for cloud sync)
   const { user } = useAuth();
@@ -155,7 +199,7 @@ export function BugTrackerProvider({ children }) {
       logger.log('🐛 Loaded', allBugs.length, 'bugs');
     } catch (err) {
       logger.error('❌ Error loading bugs:', err);
-      setError(err.message);
+      setError(errorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -178,20 +222,22 @@ export function BugTrackerProvider({ children }) {
    * @param {Object} bugData - The bug information
    * @returns {Promise<number>} The new bug's ID
    */
-  const addBug = useCallback(async (bugData) => {
+  const addBug = useCallback(async (bugData: Partial<Bug>) => {
     try {
       // Save to local database (instant)
       const id = await dbCreateBug(bugData);
       
       // Get the full record with ID
       const newBug = await dbGetBug(id);
-      
-      // Update state so UI refreshes immediately
-      setBugs(prev => [...prev, newBug]);
-      
-      // Sync to cloud in background (if logged in)
-      if (user) {
-        syncBugToCloud(user.uid, newBug);
+
+      // `dbGetBug` can return undefined — for the row just written it will not,
+      // but pushing an undefined into `bugs` would crash the list on render,
+      // which is a worse failure than skipping the optimistic update.
+      if (newBug) {
+        setBugs(prev => [...prev, newBug]);
+        if (user) {
+          syncBugToCloud(user.uid, newBug);
+        }
       }
       
       return id;
@@ -207,7 +253,7 @@ export function BugTrackerProvider({ children }) {
    * @param {number} id - The bug's ID
    * @param {Object} updates - Fields to update
    */
-  const updateBug = useCallback(async (id, updates) => {
+  const updateBug = useCallback(async (id: number, updates: Partial<Bug>) => {
     try {
       // Update in local database
       await dbUpdateBug(id, updates);
@@ -215,9 +261,12 @@ export function BugTrackerProvider({ children }) {
       // Get updated record
       const updatedBug = await dbGetBug(id);
       
-      // Update state
-      setBugs(prev => prev.map(bug => 
-        bug.id === id ? updatedBug : bug
+      // Keep the existing row when the refetch came back empty. The `if (user
+      // && updatedBug)` below already treats undefined as possible; mapping it
+      // in unconditionally would have put a hole in the list the guard then
+      // declined to sync.
+      setBugs(prev => prev.map(bug =>
+        bug.id === id && updatedBug ? updatedBug : bug
       ));
       
       // Sync to cloud
@@ -235,7 +284,7 @@ export function BugTrackerProvider({ children }) {
    * 
    * @param {number} id - The bug's ID
    */
-  const deleteBug = useCallback(async (id) => {
+  const deleteBug = useCallback(async (id: number) => {
     try {
       // Delete from local database
       await dbDeleteBug(id);
@@ -259,7 +308,7 @@ export function BugTrackerProvider({ children }) {
    * 
    * @param {number} id - The bug's ID
    */
-  const resolveBug = useCallback(async (id) => {
+  const resolveBug = useCallback(async (id: number) => {
     await updateBug(id, { status: 'resolved' });
   }, [updateBug]);
 
@@ -305,7 +354,7 @@ export function BugTrackerProvider({ children }) {
    * @param {Object} options - Export options
    * @returns {Promise<string>} Markdown content
    */
-  const exportForClaudeCode = useCallback(async (options = {}) => {
+  const exportForClaudeCode = useCallback(async (options: BugExportOptions = {}) => {
     return exportBugsForClaudeCode(options);
   }, []);
 
@@ -414,7 +463,7 @@ export function BugTrackerProvider({ children }) {
  * 
  * @returns {Object} Bug tracker context value
  */
-export function useBugTracker() {
+export function useBugTracker(): BugContextValue {
   const context = useContext(BugContext);
   
   if (!context) {

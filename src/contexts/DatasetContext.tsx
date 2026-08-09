@@ -37,10 +37,29 @@ import {
   generateDatasetId,
   DEFAULT_DATASET_ID
 } from '../services/datasetService';
+import type { ReactNode } from 'react';
+import type { Dataset } from '../services/types';
 import { logger } from '../utils/logger';
+import { errorMessage } from '../utils/errorMessage';
 
 // Create the context
-const DatasetContext = createContext(null);
+export interface DatasetContextValue {
+  datasets: Dataset[];
+  /** Null until the list loads, and while no dataset is selected. */
+  activeDataset: Dataset | null;
+  isLoading: boolean;
+  isInitialized: boolean;
+  error: string | null;
+  /** Resolves to the dataset now active — the same one when already selected. */
+  switchDataset: (datasetId: string) => Promise<Dataset>;
+  createDataset: (name: string) => Promise<Dataset>;
+  renameDataset: (datasetId: string, newName: string) => Promise<void>;
+  deleteDataset: (datasetId: string) => Promise<void>;
+  refreshDatasets: () => Promise<void>;
+  clearError: () => void;
+}
+
+const DatasetContext = createContext<DatasetContextValue | null>(null);
 
 /**
  * DatasetProvider Component
@@ -48,22 +67,22 @@ const DatasetContext = createContext(null);
  * Wraps your app to provide dataset state to all children.
  * Must be placed after AuthProvider (needs user context).
  */
-export function DatasetProvider({ children }) {
+export function DatasetProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
 
   // ==================== STATE ====================
 
   // All datasets for the user
-  const [datasets, setDatasets] = useState([]);
+  const [datasets, setDatasets] = useState<Dataset[]>([]);
 
   // The currently active dataset
-  const [activeDataset, setActiveDataset] = useState(null);
+  const [activeDataset, setActiveDataset] = useState<Dataset | null>(null);
 
   // Loading state
   const [isLoading, setIsLoading] = useState(true);
 
   // Error state
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Track if we've initialized
   const [isInitialized, setIsInitialized] = useState(false);
@@ -113,7 +132,7 @@ export function DatasetProvider({ children }) {
       logger.log('📂 Datasets loaded:', userDatasets.length, 'Active:', active?.name);
     } catch (err) {
       logger.error('❌ Error loading datasets:', err);
-      setError(err.message);
+      setError(errorMessage(err));
     } finally {
       setIsLoading(false);
     }
@@ -131,7 +150,7 @@ export function DatasetProvider({ children }) {
    * @param {string} datasetId - The ID of the dataset to switch to
    * @returns {Promise<Object>} The switched-to dataset
    */
-  const switchDataset = useCallback(async (datasetId) => {
+  const switchDataset = useCallback(async (datasetId: string) => {
     if (!user?.uid) {
       throw new Error('Must be logged in to switch datasets');
     }
@@ -145,7 +164,9 @@ export function DatasetProvider({ children }) {
       setError(null);
 
       // Find dataset in our list or fetch it
-      let dataset = datasets.find(d => d.id === datasetId);
+      // `find` yields undefined and `getDataset` yields null, so the variable
+      // has to admit both rather than one being coerced to the other.
+      let dataset: Dataset | null | undefined = datasets.find(d => d.id === datasetId);
       if (!dataset) {
         dataset = await getDataset(user.uid, datasetId);
       }
@@ -162,7 +183,7 @@ export function DatasetProvider({ children }) {
       return dataset;
     } catch (err) {
       logger.error('❌ Error switching dataset:', err);
-      setError(err.message);
+      setError(errorMessage(err));
       throw err;
     }
   }, [user?.uid, activeDataset, datasets]);
@@ -172,7 +193,7 @@ export function DatasetProvider({ children }) {
    * @param {string} name - Display name for the new dataset
    * @returns {Promise<Object>} The created dataset
    */
-  const createDataset = useCallback(async (name) => {
+  const createDataset = useCallback(async (name: string) => {
     if (!user?.uid) {
       throw new Error('Must be logged in to create datasets');
     }
@@ -194,7 +215,7 @@ export function DatasetProvider({ children }) {
       return newDataset;
     } catch (err) {
       logger.error('❌ Error creating dataset:', err);
-      setError(err.message);
+      setError(errorMessage(err));
       throw err;
     }
   }, [user?.uid]);
@@ -204,7 +225,7 @@ export function DatasetProvider({ children }) {
    * @param {string} datasetId - The dataset ID
    * @param {string} newName - The new name
    */
-  const renameDataset = useCallback(async (datasetId, newName) => {
+  const renameDataset = useCallback(async (datasetId: string, newName: string) => {
     if (!user?.uid) {
       throw new Error('Must be logged in to rename datasets');
     }
@@ -221,13 +242,19 @@ export function DatasetProvider({ children }) {
 
       // Update active dataset if it's the one being renamed
       if (activeDataset?.id === datasetId) {
-        setActiveDataset(prev => ({ ...prev, name: newName }));
+        // The guard reads `activeDataset` from the closure while the updater
+        // receives the *latest* state, so the two can differ if a switch lands
+        // in between. Spreading a null `prev` used to produce `{ name }` with no
+        // `id` — an active dataset that scopes nothing. Returning `prev`
+        // unchanged is the same thing in every reachable case and safe in the
+        // race.
+        setActiveDataset(prev => (prev ? { ...prev, name: newName } : prev));
       }
 
       logger.log('📂 Renamed dataset:', datasetId, 'to', newName);
     } catch (err) {
       logger.error('❌ Error renaming dataset:', err);
-      setError(err.message);
+      setError(errorMessage(err));
       throw err;
     }
   }, [user?.uid, activeDataset]);
@@ -238,7 +265,7 @@ export function DatasetProvider({ children }) {
    *
    * @param {string} datasetId - The dataset ID to delete
    */
-  const deleteDataset = useCallback(async (datasetId) => {
+  const deleteDataset = useCallback(async (datasetId: string) => {
     if (!user?.uid) {
       throw new Error('Must be logged in to delete datasets');
     }
@@ -262,7 +289,7 @@ export function DatasetProvider({ children }) {
       logger.log('📂 Deleted dataset:', datasetId);
     } catch (err) {
       logger.error('❌ Error deleting dataset:', err);
-      setError(err.message);
+      setError(errorMessage(err));
       throw err;
     }
   }, [user?.uid, datasets, activeDataset]);
@@ -333,7 +360,7 @@ export function DatasetProvider({ children }) {
  *   );
  * }
  */
-export function useDataset() {
+export function useDataset(): DatasetContextValue {
   const context = useContext(DatasetContext);
 
   if (context === null) {

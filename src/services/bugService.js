@@ -28,7 +28,7 @@ import { logger } from '../utils/logger';
 /**
  * Create a new bug report
  * 
- * @param {Object} bugData - The bug data to save
+ * @param {Partial<import('./types').Bug>} bugData - The bug data to save
  * @returns {Promise<number>} The ID of the newly created bug
  * 
  * REQUIRED FIELDS:
@@ -93,7 +93,7 @@ export async function createBug(bugData) {
  * Get a single bug by ID
  * 
  * @param {number} id - The bug ID
- * @returns {Promise<Object|undefined>} The bug record or undefined
+ * @returns {Promise<import('./types').Bug|undefined>} The bug record or undefined
  */
 export async function getBug(id) {
   try {
@@ -108,7 +108,7 @@ export async function getBug(id) {
 /**
  * Get all bugs
  * 
- * @returns {Promise<Array>} Array of all bug records
+ * @returns {Promise<import('./types').Bug[]>} Array of all bug records
  */
 export async function getAllBugs() {
   try {
@@ -124,7 +124,7 @@ export async function getAllBugs() {
  * Update an existing bug
  * 
  * @param {number} id - The bug ID to update
- * @param {Object} updates - The fields to update
+ * @param {Partial<import('./types').Bug>} updates - The fields to update
  * @returns {Promise<number>} Number of records updated (1 or 0)
  */
 export async function updateBug(id, updates) {
@@ -170,7 +170,7 @@ export async function deleteBug(id) {
  * Get bugs by status
  * 
  * @param {string} status - 'open' | 'in-progress' | 'resolved'
- * @returns {Promise<Array>} Matching bug records
+ * @returns {Promise<import('./types').Bug[]>} Matching bug records
  */
 export async function getBugsByStatus(status) {
   try {
@@ -186,7 +186,7 @@ export async function getBugsByStatus(status) {
  * Get bugs by priority
  * 
  * @param {string} priority - 'low' | 'medium' | 'high' | 'critical'
- * @returns {Promise<Array>} Matching bug records
+ * @returns {Promise<import('./types').Bug[]>} Matching bug records
  */
 export async function getBugsByPriority(priority) {
   try {
@@ -202,7 +202,7 @@ export async function getBugsByPriority(priority) {
  * Get bugs by system
  * 
  * @param {string} system - 'tree' | 'codex' | 'armory' | 'dignities' | 'general'
- * @returns {Promise<Array>} Matching bug records
+ * @returns {Promise<import('./types').Bug[]>} Matching bug records
  */
 export async function getBugsBySystem(system) {
   try {
@@ -218,7 +218,7 @@ export async function getBugsBySystem(system) {
  * Search bugs by title or description
  * 
  * @param {string} searchTerm - The search term
- * @returns {Promise<Array>} Matching bug records
+ * @returns {Promise<import('./types').Bug[]>} Matching bug records
  */
 export async function searchBugs(searchTerm) {
   try {
@@ -239,7 +239,7 @@ export async function searchBugs(searchTerm) {
 /**
  * Get bug statistics
  * 
- * @returns {Promise<Object>} Statistics object
+ * @returns {Promise<import('./types').BugStatistics>} Statistics object
  */
 export async function getBugStatistics() {
   try {
@@ -440,9 +440,9 @@ ${bug.notes}
  * Export all open bugs to a single markdown document
  * Perfect for starting a Claude Code session
  * 
- * @param {Object} options - Export options
- * @param {Array<string>} options.statuses - Statuses to include (default: ['open', 'in-progress'])
- * @param {Array<string>} options.priorities - Priorities to include (default: all)
+ * @param {Object} [options] - Export options
+ * @param {Array<string>} [options.statuses] - Statuses to include (default: ['open', 'in-progress'])
+ * @param {Array<string>} [options.priorities] - Priorities to include (default: all)
  * @returns {Promise<string>} Combined markdown document
  */
 export async function exportBugsForClaudeCode(options = {}) {

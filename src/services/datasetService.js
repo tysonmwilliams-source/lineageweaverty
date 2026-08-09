@@ -93,10 +93,10 @@ export function clearActiveDatasetId() {
 /**
  * Create a new dataset in Firestore
  * @param {string} userId - The user's Firebase UID
- * @param {Object} datasetData - Dataset data
+ * @param {Partial<import('./types').Dataset>} datasetData - Dataset data
  * @param {string} datasetData.name - Display name for the dataset
  * @param {boolean} [datasetData.isDefault=false] - Whether this is the default dataset
- * @returns {Promise<Object>} The created dataset object
+ * @returns {Promise<import('./types').Dataset>} The created dataset object
  */
 export async function createDataset(userId, datasetData) {
   try {
@@ -124,7 +124,7 @@ export async function createDataset(userId, datasetData) {
 /**
  * Get all datasets for a user
  * @param {string} userId - The user's Firebase UID
- * @returns {Promise<Array>} Array of dataset objects
+ * @returns {Promise<import('./types').Dataset[]>} Array of dataset objects
  */
 export async function getAllDatasets(userId) {
   try {
@@ -149,7 +149,7 @@ export async function getAllDatasets(userId) {
  * Get a specific dataset by ID
  * @param {string} userId - The user's Firebase UID
  * @param {string} datasetId - The dataset ID
- * @returns {Promise<Object|null>} Dataset object or null
+ * @returns {Promise<import('./types').Dataset|null>} Dataset object or null
  */
 export async function getDataset(userId, datasetId) {
   try {
@@ -250,7 +250,7 @@ export async function hasDatasets(userId) {
  * Creates it if it doesn't exist
  *
  * @param {string} userId - The user's Firebase UID
- * @returns {Promise<Object>} The default dataset
+ * @returns {Promise<import('./types').Dataset>} The default dataset
  */
 export async function ensureDefaultDataset(userId) {
   try {

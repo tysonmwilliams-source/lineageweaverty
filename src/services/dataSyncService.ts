@@ -729,8 +729,12 @@ type SyncDatasetId = DatasetId | undefined;
 /** A local Dexie key. Autoincrement integers in practice. */
 type LocalId = number;
 
-/** The row, or the changed fields of it, depending on the operation. */
-type SyncData = Record<string, unknown>;
+/**
+ * The row, or the changed fields of it, depending on the operation.
+ *
+ * Aliases `SyncPayload` so the permissiveness is explained in one place.
+ */
+type SyncData = SyncPayload;
 
 /**
  * Ids of the rows a writing or chapter delete cascaded to locally.

@@ -33,6 +33,8 @@
  */
 
 import { createContext, useContext, useState, useEffect , useMemo} from 'react';
+import type { ReactNode } from 'react';
+import type { User } from 'firebase/auth';
 import { 
   onAuthStateChanged, 
   signInWithPopup, 
@@ -42,9 +44,52 @@ import {
 } from 'firebase/auth';
 import { auth, googleProvider } from '../config/firebase';
 import { logger } from '../utils/logger';
+import { errorMessage } from '../utils/errorMessage';
 
-// Create the context
-const AuthContext = createContext(null);
+/**
+ * The signed-in user as this app stores it.
+ *
+ * **A projection, not Firebase's `User`.** The auth listener copies four fields
+ * out and drops the rest, so `getIdToken()`, `metadata`, `providerData` and the
+ * other thirty members are not available from `useAuth()` — reaching for one
+ * is a type error rather than a runtime `undefined`, which is the point of
+ * naming the shape.
+ *
+ * Four is the right number: consumers read `uid` (44 sites), `displayName`,
+ * `photoURL` and `email`, and nothing else.
+ */
+export interface AuthUser {
+  /** The key every cloud-sync call is scoped by. */
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
+}
+
+/** What `useAuth()` hands back. */
+export interface AuthContextValue {
+  user: AuthUser | null;
+  /** True until the initial auth check settles. Gates the whole app. */
+  loading: boolean;
+  error: string | null;
+  /**
+   * Resolves to the user, or null when sign-in was cancelled or blocked.
+   *
+   * Note the asymmetry: this returns Firebase's **full** `User`, while `user`
+   * above holds the four-field projection the listener stores. Nothing depends
+   * on it — the one call site (`LoginPage`) awaits and discards the result, and
+   * state arrives via `onAuthStateChanged` regardless. Recorded rather than
+   * reconciled, because narrowing a return value nobody reads is a behaviour
+   * change dressed as a tidy-up.
+   */
+  signInWithGoogle: () => Promise<User | null>;
+  signOut: () => Promise<void>;
+  isAuthenticated: () => boolean;
+  clearError: () => void;
+}
+
+// Null until a provider mounts, which is what `useAuth` checks for.
+const AuthContext = createContext<AuthContextValue | null>(null);
 
 /**
  * AuthProvider Component
@@ -52,22 +97,20 @@ const AuthContext = createContext(null);
  * Wraps your app to provide authentication state to all children.
  * Must be placed high in the component tree (usually in App.jsx).
  * 
- * @param {Object} props
- * @param {React.ReactNode} props.children - Child components
  */
-export function AuthProvider({ children }) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   // ==================== STATE ====================
   
   // The current user object from Firebase
   // Contains: uid, email, displayName, photoURL, etc.
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   
   // True while we're checking if user was previously signed in
   // Prevents flash of login screen on page refresh
   const [loading, setLoading] = useState(true);
   
   // Error state for auth operations
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   // ==================== AUTH STATE LISTENER ====================
   
@@ -100,13 +143,13 @@ export function AuthProvider({ children }) {
     }, (error) => {
       // Auth state listener error (rare)
       logger.error('🔥 Auth state error:', error);
-      setError(error.message);
+      setError(errorMessage(error));
       setLoading(false);
     });
 
     // Check for redirect result (in case signInWithRedirect was used)
     getRedirectResult(auth).catch((error) => {
-      if (error.code !== 'auth/no-current-user') {
+      if ((error as { code?: string }).code !== 'auth/no-current-user') {
         logger.error('🔥 Redirect result error:', error);
       }
     });
@@ -124,7 +167,7 @@ export function AuthProvider({ children }) {
    * @returns {Promise<Object>} The user object on success
    * @throws {Error} On authentication failure
    */
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = async (): Promise<User | null> => {
     try {
       setError(null);
       
@@ -142,13 +185,13 @@ export function AuthProvider({ children }) {
       logger.error('❌ Sign in failed:', error);
       
       // User closed the popup without signing in
-      if (error.code === 'auth/popup-closed-by-user') {
+      if ((error as { code?: string }).code === 'auth/popup-closed-by-user') {
         setError('Sign-in cancelled. Please try again.');
         return null;
       }
       
       // Popup was blocked by browser
-      if (error.code === 'auth/popup-blocked') {
+      if ((error as { code?: string }).code === 'auth/popup-blocked') {
         setError('Popup was blocked. Please allow popups for this site.');
         // Fallback to redirect method
         try {
@@ -160,13 +203,13 @@ export function AuthProvider({ children }) {
       }
       
       // Domain not authorized in Firebase Console
-      if (error.code === 'auth/unauthorized-domain') {
+      if ((error as { code?: string }).code === 'auth/unauthorized-domain') {
         setError('This domain is not authorized. Please add it in Firebase Console.');
         return null;
       }
       
       // Generic error
-      setError(error.message);
+      setError(errorMessage(error));
       throw error;
     }
   };
@@ -179,14 +222,14 @@ export function AuthProvider({ children }) {
    * 
    * @returns {Promise<void>}
    */
-  const signOut = async () => {
+  const signOut = async (): Promise<void> => {
     try {
       setError(null);
       await firebaseSignOut(auth);
       logger.log('✅ Sign out successful');
     } catch (error) {
       logger.error('❌ Sign out failed:', error);
-      setError(error.message);
+      setError(errorMessage(error));
       throw error;
     }
   };
@@ -197,14 +240,14 @@ export function AuthProvider({ children }) {
    * Check if user is authenticated
    * @returns {boolean}
    */
-  const isAuthenticated = () => {
+  const isAuthenticated = (): boolean => {
     return user !== null;
   };
 
   /**
    * Clear any auth errors
    */
-  const clearError = () => {
+  const clearError = (): void => {
     setError(null);
   };
 
@@ -258,7 +301,7 @@ export function AuthProvider({ children }) {
  *   );
  * }
  */
-export function useAuth() {
+export function useAuth(): AuthContextValue {
   const context = useContext(AuthContext);
   
   if (context === null) {

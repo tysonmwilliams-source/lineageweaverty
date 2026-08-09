@@ -54,6 +54,16 @@ export default defineConfig([
       'no-undef': 'off', // tsc does this properly, and knows about types
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/static-components': 'error',
+
+      // The same two downgrades the .js/.jsx block makes below, for the same
+      // reasons — see the comments there. They live in both blocks because the
+      // presets above default them to `error`, and a rule that means "warning"
+      // in a .jsx file and "build failure" in the .tsx file it converts to is a
+      // config accident, not a decision. This surfaced the moment the first
+      // .tsx landed: the five contexts each export a provider, a hook and their
+      // types from one file, which is the ordinary React idiom.
+      'react-refresh/only-export-components': 'warn',
+      'react-hooks/preserve-manual-memoization': 'warn',
     },
   },
   {
