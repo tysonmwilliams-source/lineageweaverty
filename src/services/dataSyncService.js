@@ -1244,8 +1244,26 @@ export async function forceUploadToCloud(userId, datasetId = DEFAULT_DATASET_ID)
     // Gather all local data
     const { data: localData, failed } = await collectLocalData(dsId);
 
-    // Upload everything to cloud
-    await syncAllToCloud(userId, dsId, localData);
+    // Upload everything, and remove cloud documents with no local counterpart.
+    //
+    // Pruning is what makes this function honest. Without it the upload was
+    // upsert-only, so deleting fifty people offline and then forcing an upload
+    // left all fifty in Firestore — and the clearSyncQueue below then destroyed
+    // the pending deletes that would have removed them, so the next download
+    // brought them all back.
+    //
+    // It only prunes when every local table was readable. A partial snapshot
+    // must never be treated as the truth about what should exist, and
+    // `pruneTargets` independently refuses any table the snapshot omitted.
+    const snapshotComplete = failed.length === 0;
+    if (!snapshotComplete) {
+      logger.error(
+        `⚠️ Skipping prune: could not read ${failed.join(', ')}. ` +
+        'Cloud documents deleted locally will remain until a complete upload runs.'
+      );
+    }
+
+    await syncAllToCloud(userId, dsId, localData, { prune: snapshotComplete });
 
     // Clear the sync queue since everything is now synced
     await clearSyncQueue(dsId);

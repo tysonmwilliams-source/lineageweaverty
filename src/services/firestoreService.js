@@ -40,6 +40,7 @@ import {
 import { db } from '../config/firebase';
 import { logger } from '../utils/logger';
 import { allEntities, cloudCollections } from './syncManifest';
+import { pruneTargets } from './syncEngine';
 import {
   addCloud,
   getCloud,
@@ -436,7 +437,8 @@ export const deleteWritingLinkCloud = (userId, datasetId, linkId) =>
  * @param {string} datasetId - The dataset ID
  * @param {Object} localData - Rows keyed by table name
  */
-export async function syncAllToCloud(userId, datasetId, localData) {
+export async function syncAllToCloud(userId, datasetId, localData, options = {}) {
+  const { prune = false } = options;
   try {
     logger.log('☁️ Starting full sync to cloud for dataset:', datasetId);
 
@@ -475,11 +477,40 @@ export async function syncAllToCloud(userId, datasetId, localData) {
       }
     }
 
+    let pruned = 0;
+
+    if (prune) {
+      // Read what is in the cloud before deciding what to remove. Only the
+      // tables actually present in the snapshot are read — a table the snapshot
+      // omitted could not be read locally, and must not be pruned.
+      const present = allEntities().filter((entity) => localData[entity.table] !== undefined);
+      const snapshots = await Promise.all(
+        present.map((entity) => getDocs(getUserCollection(userId, datasetId, entity.collection)))
+      );
+
+      const cloudIdsByTable = {};
+      present.forEach((entity, index) => {
+        cloudIdsByTable[entity.table] = snapshots[index].docs.map((docSnap) => docSnap.id);
+      });
+
+      const targets = pruneTargets(localData, cloudIdsByTable);
+
+      for (const entity of present) {
+        for (const docId of targets[entity.table] || []) {
+          batch.delete(getUserDoc(userId, datasetId, entity.collection, docId));
+          pruned++;
+          await checkBatch();
+        }
+      }
+
+      if (pruned > 0) logger.log(`☁️ Pruned ${pruned} cloud documents with no local counterpart`);
+    }
+
     if (operationCount > 0) {
       await batch.commit();
     }
 
-    logger.log('☁️ Full sync to cloud complete!', { dataset: datasetId, ...counts });
+    logger.log('☁️ Full sync to cloud complete!', { dataset: datasetId, pruned, ...counts });
 
     return true;
   } catch (error) {

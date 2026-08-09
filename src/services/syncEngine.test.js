@@ -33,7 +33,7 @@ vi.mock('../utils/retryWithBackoff', async (importOriginal) => {
 
 import { addCloud, updateCloud, deleteCloud } from './cloudRepo';
 import { retryWithBackoff, SYNC_RETRY_CONFIG } from '../utils/retryWithBackoff';
-import { syncOp, enqueue, push, sendToCloud, isOnline, setOnlineForTesting } from './syncEngine';
+import { syncOp, enqueue, push, sendToCloud, isOnline, setOnlineForTesting, pruneTargets } from './syncEngine';
 import { getDatabase, closeDatabaseInstance, deleteDatabaseForDataset, getPendingChanges } from './database';
 import { allEntities } from './syncManifest';
 
@@ -228,6 +228,59 @@ describe('the restore order covers the manifest', () => {
 
     expect(listed.slice().sort()).toEqual(declared.slice().sort());
     expect(new Set(listed).size).toBe(listed.length);
+  });
+});
+
+describe('pruneTargets — what a full upload is allowed to delete', () => {
+  it('deletes cloud documents with no local counterpart', () => {
+    const targets = pruneTargets(
+      { people: [{ id: 1 }, { id: 3 }] },
+      { people: ['1', '2', '3', '4'] }
+    );
+    expect(targets).toEqual({ people: ['2', '4'] });
+  });
+
+  it('compares numeric local ids against string document ids', () => {
+    // The upload writes String(row.id) as the document id. Comparing without
+    // coercing would find nothing in common and delete the entire collection.
+    const targets = pruneTargets({ houses: [{ id: 7 }] }, { houses: ['7'] });
+    expect(targets).toEqual({});
+  });
+
+  it('deletes everything in a collection the user genuinely emptied', () => {
+    const targets = pruneTargets({ dignities: [] }, { dignities: ['1', '2'] });
+    expect(targets).toEqual({ dignities: ['1', '2'] });
+  });
+
+  // The guard. An unreadable table is absent from the snapshot, and absent must
+  // never be read as empty — that is the difference between "the user deleted
+  // their dignities" and "one Dexie call threw".
+  it('refuses to prune a table the snapshot does not contain', () => {
+    const targets = pruneTargets(
+      { people: [{ id: 1 }] },        // dignities could not be read
+      { people: ['1'], dignities: ['1', '2', '3'] }
+    );
+    expect(targets).toEqual({});
+  });
+
+  it('still prunes the readable tables when another one failed', () => {
+    const targets = pruneTargets(
+      { people: [] },                  // readable, genuinely empty
+      { people: ['9'], heraldry: ['1'] } // heraldry unreadable
+    );
+    expect(targets).toEqual({ people: ['9'] });
+  });
+
+  it('treats an empty snapshot as authorising nothing', () => {
+    expect(pruneTargets({}, { people: ['1'], houses: ['2'] })).toEqual({});
+  });
+
+  it('omits tables with nothing to delete rather than listing them empty', () => {
+    const targets = pruneTargets(
+      { people: [{ id: 1 }], houses: [{ id: 2 }] },
+      { people: ['1'], houses: ['2', '99'] }
+    );
+    expect(Object.keys(targets)).toEqual(['houses']);
   });
 });
 

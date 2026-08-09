@@ -238,6 +238,60 @@ export async function syncOp(
   return push(entityType, operation, queueId, args);
 }
 
+// ==================== PRUNE POLICY ====================
+
+/** A local row as the bulk snapshot carries it. */
+type SnapshotRow = { id?: number | string };
+
+/**
+ * Decide which cloud documents a full upload should delete.
+ *
+ * The bulk upload is upsert-only, which is the audit's "forceUploadToCloud
+ * resurrects deleted entities" finding: delete fifty people offline, come back
+ * online, force an upload, and all fifty are still in Firestore because nothing
+ * ever removes a document with no local counterpart. The next download brings
+ * them back. `forceUploadToCloud` then clears the sync queue, destroying the
+ * pending deletes that would have fixed it.
+ *
+ * **The rule that makes this safe is the first line of the loop.** A table that
+ * is absent from the snapshot is skipped entirely — not treated as empty. The
+ * snapshot omits a table it could not read (see `collectLocalData`), so a
+ * transient Dexie failure can never present as "this table is empty, delete the
+ * cloud copy". Empty and unreadable are different values, and only one of them
+ * authorises deletion.
+ *
+ * That is deliberately belt and braces: the caller is also expected not to ask
+ * for a prune when any read failed. Both guards are cheap, and the failure mode
+ * they prevent is silent permanent deletion of a user's world.
+ *
+ * @param localData Rows keyed by table name. A missing key means "unreadable".
+ * @param cloudIdsByTable Document ids currently in each collection, keyed by table.
+ * @returns Ids to delete, keyed by table. Tables with nothing to delete are omitted.
+ */
+export function pruneTargets(
+  localData: Record<string, SnapshotRow[] | undefined>,
+  cloudIdsByTable: Record<string, string[] | undefined>
+): Record<string, string[]> {
+  const targets: Record<string, string[]> = {};
+
+  for (const [table, cloudIds] of Object.entries(cloudIdsByTable)) {
+    const localRows = localData[table];
+
+    // Absent, not empty. This is the guard — do not weaken it to `?? []`.
+    if (localRows === undefined) continue;
+    if (!cloudIds || cloudIds.length === 0) continue;
+
+    // Document ids are strings; local ids are numbers. The upload writes
+    // `String(row.id)` as the document id, so compare the same way.
+    const localIds = new Set(localRows.map((row) => String(row.id)));
+    const orphaned = cloudIds.filter((id) => !localIds.has(id));
+
+    if (orphaned.length > 0) targets[table] = orphaned;
+  }
+
+  return targets;
+}
+
 // ==================== ONLINE STATE ====================
 
 /**
