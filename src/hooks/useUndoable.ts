@@ -20,16 +20,42 @@ import { useState, useCallback, useMemo } from 'react';
 
 const DEFAULT_LIMIT = 50;
 
-export default function useUndoable(initial, { limit = DEFAULT_LIMIT } = {}) {
-  const [history, setHistory] = useState(() => ({
+/** What the hook hands back. Generic in the value it holds a history of. */
+export interface Undoable<T> {
+  value: T;
+  /** Set a new value, or derive one from the current. Records history. */
+  set: (next: T | ((current: T) => T)) => void;
+  /** Replace the value *without* recording history. */
+  reset: (value: T) => void;
+  undo: () => void;
+  redo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
+}
+
+interface History<T> {
+  past: T[];
+  present: T;
+  future: T[];
+}
+
+export default function useUndoable<T>(
+  initial: T | (() => T),
+  { limit = DEFAULT_LIMIT }: { limit?: number } = {}
+): Undoable<T> {
+  const [history, setHistory] = useState<History<T>>(() => ({
     past: [],
-    present: typeof initial === 'function' ? initial() : initial,
+    // The lazy-initialiser ambiguity React's own `useState` has: if `T` is
+    // itself a function type there is no way to tell "the value" from "a
+    // producer of the value". Same assertion React's types make, for the same
+    // reason, and no caller here holds a function.
+    present: typeof initial === 'function' ? (initial as () => T)() : initial,
     future: []
   }));
 
-  const set = useCallback((next) => {
+  const set = useCallback((next: T | ((current: T) => T)) => {
     setHistory((h) => {
-      const value = typeof next === 'function' ? next(h.present) : next;
+      const value = typeof next === 'function' ? (next as (current: T) => T)(h.present) : next;
 
       // Identity, not deep equality: the helpers already return the same object
       // for an edit that changed nothing, and a deep compare on every keystroke
@@ -53,16 +79,20 @@ export default function useUndoable(initial, { limit = DEFAULT_LIMIT } = {}) {
    * For loading a record: the state before a load is a blank default the user
    * never drew, so undoing back into it would be meaningless.
    */
-  const reset = useCallback((value) => {
+  const reset = useCallback((value: T) => {
     setHistory({ past: [], present: value, future: [] });
   }, []);
 
   const undo = useCallback(() => {
     setHistory((h) => {
-      if (h.past.length === 0) return h;
+      // Read before testing: `noUncheckedIndexedAccess` does not narrow an
+      // index from a length check, and a bare non-null assertion here would be
+      // the one place a real empty-history bug could hide.
+      const previous = h.past[h.past.length - 1];
+      if (previous === undefined) return h;
       return {
         past: h.past.slice(0, -1),
-        present: h.past[h.past.length - 1],
+        present: previous,
         future: [h.present, ...h.future]
       };
     });
@@ -70,10 +100,11 @@ export default function useUndoable(initial, { limit = DEFAULT_LIMIT } = {}) {
 
   const redo = useCallback(() => {
     setHistory((h) => {
-      if (h.future.length === 0) return h;
+      const next = h.future[0];
+      if (next === undefined) return h;
       return {
         past: [...h.past, h.present],
-        present: h.future[0],
+        present: next,
         future: h.future.slice(1)
       };
     });

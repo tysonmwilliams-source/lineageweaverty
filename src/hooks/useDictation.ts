@@ -1,5 +1,5 @@
 /**
- * useDictation.js - Web Speech API Dictation Hook
+ * Web Speech API dictation for the TipTap editor.
  *
  * Provides speech-to-text dictation for the TipTap editor using the
  * native Web Speech API (built into Chromium/Brave/Chrome/Edge).
@@ -13,20 +13,38 @@
  */
 
 import { useState, useCallback, useEffect, useRef } from 'react';
+import type { Editor } from '@tiptap/react';
 
 const SpeechRecognition = typeof window !== 'undefined'
   ? window.SpeechRecognition || window.webkitSpeechRecognition
   : null;
 
-export default function useDictation({ editor, enabled = true }) {
+export interface DictationOptions {
+  /** The editor to insert into. Null while it is still mounting. */
+  editor: Editor | null;
+  enabled?: boolean;
+}
+
+export interface Dictation {
+  isListening: boolean;
+  /** Provisional text, shown as a preview and never written to the document. */
+  interimText: string;
+  error: string | null;
+  isSupported: boolean;
+  toggleDictation: () => void;
+  startDictation: () => void;
+  stopDictation: () => void;
+}
+
+export default function useDictation({ editor, enabled = true }: DictationOptions) {
   const [isListening, setIsListening] = useState(false);
   const [interimText, setInterimText] = useState('');
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   const isSupported = !!SpeechRecognition;
 
   // Refs for stable access in event handlers (avoids stale closures)
-  const recognitionRef = useRef(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
   const isListeningRef = useRef(false);
   const intentionalStopRef = useRef(false);
   const editorRef = useRef(editor);
@@ -62,10 +80,16 @@ export default function useDictation({ editor, enabled = true }) {
 
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i];
+        // `results` is a live list indexed from `resultIndex`, so a gap is not
+        // reachable — but `noUncheckedIndexedAccess` cannot know that, and an
+        // assertion here would be the one place a real gap could hide.
+        const alternative = result?.[0];
+        if (!alternative) continue;
+
         if (result.isFinal) {
-          finalTranscript += result[0].transcript;
+          finalTranscript += alternative.transcript;
         } else {
-          interim += result[0].transcript;
+          interim += alternative.transcript;
         }
       }
 
@@ -152,6 +176,11 @@ export default function useDictation({ editor, enabled = true }) {
       }
 
       try {
+        // `createRecognition` returns null when the API is missing, leaving the
+        // ref null — and calling through a null ref threw a TypeError that this
+        // same catch reported. Throwing explicitly keeps that outcome identical
+        // rather than becoming a silent `?.` no-op.
+        if (!recognitionRef.current) throw new Error('Speech recognition is unavailable');
         recognitionRef.current.start();
       } catch (e) {
         // Handle InvalidStateError if already started
@@ -164,7 +193,7 @@ export default function useDictation({ editor, enabled = true }) {
   useEffect(() => {
     if (!enabled || !isSupported) return;
 
-    const handleKeyDown = (e) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'D' || e.key === 'd')) {
         e.preventDefault();
         toggleDictation();

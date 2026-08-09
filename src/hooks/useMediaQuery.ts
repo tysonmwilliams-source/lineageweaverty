@@ -1,6 +1,4 @@
 /**
- * useMediaQuery.js
- *
  * Subscribe to a CSS media query from JS.
  *
  * Needed because some responsive decisions can't be made in CSS. The family tree
@@ -13,15 +11,12 @@
  * a browser API: it reads the value during render rather than in an effect, so
  * there is no first-paint flash of the wrong branch, and React handles tearing.
  * The older useState + useEffect pattern renders once with a wrong value.
- *
- * @param {string} query - A media query string, e.g. '(max-width: 768px)'
- * @returns {boolean} Whether the query currently matches
  */
 
 import { useCallback, useSyncExternalStore } from 'react';
 
-export default function useMediaQuery(query) {
-  const subscribe = useCallback((onChange) => {
+export default function useMediaQuery(query: string): boolean {
+  const subscribe = useCallback((onChange: () => void) => {
     if (typeof window === 'undefined' || !window.matchMedia) return () => {};
 
     const list = window.matchMedia(query);

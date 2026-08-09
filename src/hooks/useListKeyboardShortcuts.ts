@@ -11,12 +11,19 @@
  */
 
 import { useEffect, useCallback } from 'react';
+import type { RefObject } from 'react';
+
+interface ListKeyboardShortcuts {
+  /** The search box to focus on `/`. */
+  searchInputRef?: RefObject<HTMLInputElement | null>;
+  onClearSearch?: () => void;
+}
 
 function useListKeyboardShortcuts({
   searchInputRef,
   onClearSearch
-}) {
-  const handleKeyDown = useCallback((e) => {
+}: ListKeyboardShortcuts): void {
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
     // Don't trigger if user is typing in an input or textarea
     const activeElement = document.activeElement;
     const isInputFocused = activeElement?.tagName === 'INPUT' ||
@@ -34,7 +41,10 @@ function useListKeyboardShortcuts({
       if (onClearSearch) {
         onClearSearch();
       }
-      activeElement?.blur();
+      // `document.activeElement` is an `Element`, which has no `blur` — only
+      // `HTMLElement` does. The tag check above already established it is one
+      // of three form controls, but that does not narrow the type.
+      if (activeElement instanceof HTMLElement) activeElement.blur();
     }
   }, [searchInputRef, onClearSearch]);
 

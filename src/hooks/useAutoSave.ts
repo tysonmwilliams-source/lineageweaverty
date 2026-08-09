@@ -1,35 +1,44 @@
 /**
- * useAutoSave.js - Auto-save Hook
+ * Debounced auto-save for the Writing Studio.
  *
- * Provides debounced auto-save functionality for the Writing Studio.
- * Saves content after a period of inactivity.
+ * Saves `data` after it has been still for `delay` ms, and once more on unmount
+ * if anything is outstanding. Change detection is `JSON.stringify` equality
+ * against the last saved snapshot — coarse, but the data here is chapter prose
+ * and metadata, and it is what makes a no-op re-render cheap.
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { logger } from '../utils/logger';
 
-/**
- * useAutoSave Hook
- *
- * @param {Object} options
- * @param {any} options.data - The data to save
- * @param {Function} options.onSave - Callback function to save data
- * @param {number} options.delay - Debounce delay in ms (default: 1000)
- * @param {boolean} options.enabled - Whether auto-save is enabled (default: true)
- * @returns {Object} { isSaving, lastSaved, saveNow, hasUnsavedChanges }
- */
-export default function useAutoSave({
+export interface AutoSaveOptions<T> {
+  /** The value to watch. Falsy values are never saved. */
+  data: T;
+  onSave: (data: T) => void | Promise<void>;
+  /** Quiet period before saving, in ms. */
+  delay?: number;
+  enabled?: boolean;
+}
+
+export interface AutoSave {
+  isSaving: boolean;
+  lastSaved: Date | null;
+  /** Save immediately, cancelling any pending debounce. */
+  saveNow: () => Promise<void>;
+  hasUnsavedChanges: boolean;
+}
+
+export default function useAutoSave<T>({
   data,
   onSave,
   delay = 1000,
   enabled = true
-}) {
+}: AutoSaveOptions<T>): AutoSave {
   const [isSaving, setIsSaving] = useState(false);
-  const [lastSaved, setLastSaved] = useState(null);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-  const timeoutRef = useRef(null);
-  const lastSavedDataRef = useRef(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSavedDataRef = useRef<string | null>(null);
   const onSaveRef = useRef(onSave);
   const dataRef = useRef(data);
 
@@ -45,7 +54,7 @@ export default function useAutoSave({
   }, [data]);
 
   // Perform save
-  const performSave = useCallback(async (dataToSave) => {
+  const performSave = useCallback(async (dataToSave: T) => {
     if (!onSaveRef.current) return;
 
     setIsSaving(true);

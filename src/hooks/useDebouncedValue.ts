@@ -14,8 +14,8 @@
 
 import { useState, useEffect } from 'react';
 
-export default function useDebouncedValue(value, delay = 300) {
-  const [debounced, setDebounced] = useState(value);
+export default function useDebouncedValue<T>(value: T, delay = 300): T {
+  const [debounced, setDebounced] = useState<T>(value);
 
   useEffect(() => {
     // Skip the timer when nothing changed, so the initial render and any
