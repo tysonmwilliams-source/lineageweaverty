@@ -102,13 +102,15 @@ gated on a green light for timing. See "What is left" below.
 | `87e64c0` | — | **Step 5a**: the two bulk operations become manifest loops; firestoreService 1,037 → 795 |
 | `17985d0` | — | **Step 5b**: one restore path instead of two copies; dataSyncService 1,721 → 1,469 |
 | `e6dd1ee` | — | The Codex syncs to its own dataset, not always the default |
+| `a671cc9` | — | **Step 5c**: one local snapshot; empty stops meaning unreadable |
+| `1f97dd6` | — | **Step 5 complete**: a full upload prunes cloud documents deleted locally |
 
 **Current baselines** (verify these still hold before and after your work):
 
 ```bash
 npm run build      # passes, ~10s
 npm run typecheck  # tsc --noEmit, passes, exits 0 — CI blocks on it (F4)
-npx vitest run     # 817 tests pass, 30 files, exits 0
+npx vitest run     # 824 tests pass, 30 files, exits 0
 npx eslint .       # 0 errors, 338 warnings — exits 0, and CI blocks on it
 ```
 
@@ -609,37 +611,35 @@ against a real IndexedDB queue with `cloudRepo` mocked. That is the pattern to
 copy for steps 5–7: `cloudRepo` is the entire Firebase boundary, so mocking that
 one module makes any of this testable without a network.
 
-### Step 5 is two thirds done; the prune leg is deliberately not started
+### Step 5 is complete
 
-`87e64c0` (5a) replaced `syncAllToCloud` and `downloadAllFromCloud` with
-manifest loops. `17985d0` (5b) replaced the two copies of the 190-line restore
-block with one `restoreAllFromCloud`. Both verified by script against
-`git show HEAD:` — same collections, same order, same restore target per
-entity, same per-row error handling.
+`87e64c0` (5a) the two bulk operations became manifest loops. `17985d0` (5b) the
+two copies of the 190-line restore block became one `restoreAllFromCloud`.
+`a671cc9` (5c) the two hand-written localData assemblies became one
+`collectLocalData`. `1f97dd6` added the prune leg. All verified by script
+against `git show HEAD:`.
 
-**Do not add the prune leg without fixing the localData assembly first.** This
-is the one part of step 5 that is not done, and the reason is not effort.
+**5c is the one to understand, because it is what made pruning safe.** The old
+assembly initialised every array to `[]` and overwrote it inside a `try`, so a
+throwing Dexie call left `[]` behind: "this dataset has no dignities" and
+"reading dignities threw" were the same value. Harmless while the upload was
+upsert-only — you just uploaded nothing for that table. Fatal the moment
+"nothing locally" becomes the signal to delete the cloud copy. `collectLocalData`
+now **omits** the key for a table it could not read, and returns the failed
+list, so the difference survives all the way to the prune decision.
 
-The design calls for `syncAllToCloud` to delete cloud documents with no local
-counterpart, fixing the audit's "upload never deletes, so forceUploadToCloud
-resurrects deleted entities" finding. That is correct in isolation. It is
-dangerous in combination with how `localData` is built today: the assembly in
-`initializeSync` and `forceUploadToCloud` wraps each group of local reads in
-`try { … } catch (e) { logger.warn(…) }` and leaves the array at its initial
-`[]` on failure. Empty and failed are indistinguishable downstream.
+Pruning is therefore gated twice, and both guards should stay:
+`forceUploadToCloud` only asks for it when nothing failed to read, and
+`pruneTargets` independently skips any table absent from the snapshot. The
+second is the one with tests; **do not "simplify" its `=== undefined` check to
+`?? []`** — a mutation test fails three assertions if you do, and the real
+consequence is permanent deletion of a user's cloud collections after a
+transient local error.
 
-Add pruning on top of that and a transient local read failure — one throwing
-Dexie call inside a five-table `try` — stops being a warning in the console and
-becomes permanent deletion of those collections from the user's Firestore, on
-the very code path whose job is to protect their data. The pending-changes
-guard does not help: it checks the sync queue, not whether the snapshot it is
-about to upload is complete.
-
-So the order has to be: make the assembly distinguish "no rows" from "could not
-read" (a manifest loop over `syncedTables()` reading through `getDatabase(dsId)`
-would do both jobs, and would have made the codex bug below impossible), and
-only then prune. Pruning should also refuse to run on a snapshot that reported
-any read failure at all.
+`pruneTargets` lives in `syncEngine.ts` rather than `firestoreService.js`
+because it is pure and therefore testable, which nothing else in the upload path
+is. If more of this layer needs covering, that is the move: extract the decision
+from the Firestore call.
 
 ### A bug class the manifest work keeps turning up
 
