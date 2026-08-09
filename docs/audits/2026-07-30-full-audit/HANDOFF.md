@@ -107,6 +107,8 @@ gated on a green light for timing. See "What is left" below.
 | `fa8a7d2` | — | **Step 6**: cascades declared in the manifest; the two Writing Studio cascades finally sync |
 | `83e698f` | — | **Step 7**: the 79 cloud shims deleted; firestoreService 826 → 294 |
 | `e1c3bf6` | — | Step 7 cleanup: five dead imports; dataSyncService is lint-clean |
+| `9a7b1ab` | — | **F4 tail**: `firestoreService` converts to TypeScript |
+| `7d0aeca` | — | **F4 tail**: `dataSyncService` converts — **F4 is complete** |
 
 **Current baselines** (verify these still hold before and after your work):
 
@@ -208,8 +210,9 @@ this codebase's service layer.
   stale branch, G6 lint-as-a-gate and G7 `static-components` are **done**; the
   other 29 React Compiler warnings are scheduled, not open.
 - **F1, F5, F7, F8** — housekeeping calls: `extras/` (29 MB), feature flags,
-  docs restructure, bug-tracker path. F2, F3, F6 are done; **F4 is decided
-  (full TypeScript migration) and not started**.
+  docs restructure, bug-tracker path. F2, F3, F6 are done; **F4 is COMPLETE** —
+  the whole service layer is TypeScript. What is left of the migration is the
+  UI: pages, components and contexts are all still `.jsx`.
 
 ### The C3/F4 batch — answered, and what it means
 
@@ -297,12 +300,53 @@ Still unanswered and worth batching next, in rough order of leverage:
 
 ---
 
-## F4 — converting the services (next session starts here)
+## F4 — converting the services: COMPLETE
 
-**Items 1–7 are all done** (`15b855f`, `e28a24f`, `9736976`, `0a06ec2`). What
-remains of F4 is `dataSyncService.js` and `firestoreService.js`, and **those are
-blocked on the manifest decision — ask the owner before touching either.** The
-rest of this section is kept because the conventions in it still govern.
+**Every item is done.** Items 1–7 in `15b855f`, `e28a24f`, `9736976`,
+`0a06ec2`; the two deferred files in `9a7b1ab` and `7d0aeca`. The conventions
+below still govern anything converted next (the pages and components are all
+still `.jsx`).
+
+The deferral was right. `dataSyncService` was 2,450 lines when F4 was planned
+and 1,394 by the time it was typed; `firestoreService` was 2,238 and 241.
+Typing them first would have meant carefully typing ~3,000 lines that steps 1–7
+then deleted.
+
+**What the conversion found: 55 wrong JSDoc annotations** across six
+unconverted services — `heraldryService`, `householdRoleService`,
+`writingService`, `chapterService`, `writingLinkService`, `planningService`.
+Every one declared `@param {string} [datasetId]` for a parameter its callers
+routinely pass `null` to. Same class as the `updateHeraldry` and dignity-wrapper
+cases already recorded here, at fifty-five times the scale. **This is the
+strongest evidence yet for "annotate the callee, do not cast at the call
+site"** — a cast at each call site would have hidden all 55.
+
+**Three decisions from the last two files, for whoever converts the pages:**
+
+- **`SnapshotRow` is `{ id?: number | string }` and must stay narrow.** It was
+  briefly widened to `Record<string, unknown> & {...}` on the theory that a
+  narrow type loses fields on spread. It does not — spread copies everything at
+  runtime — and the widening broke the thing that matters: the entity types in
+  `types.ts` are `interface` declarations, and TypeScript does not treat an
+  interface as assignable to `Record<string, unknown>`, so `Person[]` stopped
+  being a valid snapshot. Do not widen it again.
+- **Cloud rows and local rows are different types.** A Firestore row genuinely
+  is untyped JSON, so `CloudRecord`'s index signature belongs there. A local row
+  is a typed interface. The four restorers that hand a cloud row to a converted
+  callee go through one documented `restored<T>()` assertion rather than four
+  scattered casts — and it *is* an assertion, not a check.
+- **`tableByName` is exported from `database.ts`.** The manifest-driven loops
+  need a table by runtime string. There is still exactly one
+  `Dexie`-to-`AppDatabase` cast and exactly one place that indexes an
+  `AppDatabase` by string. Keep both at one.
+
+**A rename hazard worth knowing.** Seven `await import('./dataSyncService.js')`
+specifiers now name a `.ts` file. Vite and `moduleResolution: bundler` resolve
+`.js` to `.ts`, and 24 such specifiers already existed from the earlier
+conversions — but this was verified in the running app rather than assumed:
+both modules import cleanly and export what they should. Two source-scanning
+tests in `syncEngine.test.js` *did* break on the rename; they now resolve the
+extension instead of hardcoding it.
 
 **Toolchain is done and is not the job.** `4208429` added `typescript@5.x`,
 `tsconfig.json`, `npm run typecheck`, a blocking CI step, and an ESLint config
