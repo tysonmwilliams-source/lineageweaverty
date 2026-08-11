@@ -17,6 +17,41 @@
  * - 50+ words indicates someone has actually written content
  */
 
+/**
+ * The fields this module reads off a Codex entry.
+ *
+ * Narrower than `CodexEntry` on purpose: biography status is computed from
+ * prose length and a couple of flags, and saying so keeps the helper usable
+ * against anything that carries them.
+ */
+export interface BiographyEntry {
+  content?: string | null;
+  wordCount?: number | null;
+}
+
+/** The colours one status renders in, per theme polarity. */
+export interface BiographyStatusColors {
+  bg: string;
+  border: string;
+  text: string;
+}
+
+/** One entry of `BIOGRAPHY_STATUS`. */
+export interface BiographyStatusDef {
+  key: string;
+  label: string;
+  /** A lucide icon name. */
+  icon: string;
+  description: string;
+  /**
+   * Two full palettes rather than one colour plus a dark override: these are
+   * background, border and text together, and a status that only swapped its
+   * text colour would lose contrast against its own chip.
+   */
+  colors: { dark: BiographyStatusColors; light: BiographyStatusColors };
+}
+
+
 // ==================== STATUS CONSTANTS ====================
 
 /**
@@ -104,7 +139,7 @@ const STUB_THRESHOLD = 50;  // 0-50 words = stub, 50+ = written
  *   const status = getBiographyStatus(codexEntry, isDarkTheme);
  *   // Returns: { key: 'empty', label: 'Empty', icon: '📝', ... }
  */
-export function getBiographyStatus(entry, isDarkTheme = true) {
+export function getBiographyStatus(entry: BiographyEntry | null | undefined, isDarkTheme = true) {
   // No entry at all = empty
   if (!entry) {
     return formatStatus(BIOGRAPHY_STATUS.EMPTY, isDarkTheme);
@@ -126,7 +161,7 @@ export function getBiographyStatus(entry, isDarkTheme = true) {
 /**
  * Format status object with theme-appropriate colors
  */
-function formatStatus(statusDef, isDarkTheme, wordCount = 0) {
+function formatStatus(statusDef: BiographyStatusDef, isDarkTheme: boolean, wordCount = 0) {
   const themeColors = isDarkTheme ? statusDef.colors.dark : statusDef.colors.light;
   
   return {
@@ -149,7 +184,7 @@ function formatStatus(statusDef, isDarkTheme, wordCount = 0) {
  * Calculate word count from content string
  * (Same logic as in codexService.js for consistency)
  */
-function calculateWordCount(content) {
+function calculateWordCount(content: string | null | undefined): number {
   if (!content) return 0;
   
   // Remove markdown syntax for accurate count
@@ -168,7 +203,7 @@ function calculateWordCount(content) {
  * Check if a biography needs attention (empty or stub)
  * Useful for filtering/highlighting
  */
-export function needsAttention(entry) {
+export function needsAttention(entry: BiographyEntry | null | undefined): boolean {
   const status = getBiographyStatus(entry, true); // Theme doesn't matter for this check
   return status.key === 'empty' || status.key === 'stub';
 }
@@ -177,7 +212,7 @@ export function needsAttention(entry) {
  * Get a brief summary text for the status
  * e.g., "Empty - needs biography" or "Written (156 words)"
  */
-export function getStatusSummary(entry, isDarkTheme = true) {
+export function getStatusSummary(entry: BiographyEntry | null | undefined, isDarkTheme = true) {
   const status = getBiographyStatus(entry, isDarkTheme);
   
   switch (status.key) {
@@ -195,7 +230,7 @@ export function getStatusSummary(entry, isDarkTheme = true) {
 /**
  * Get just the icon for compact displays
  */
-export function getStatusIcon(entry) {
+export function getStatusIcon(entry: BiographyEntry | null | undefined): string {
   const status = getBiographyStatus(entry, true);
   return status.icon;
 }

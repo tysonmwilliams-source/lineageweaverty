@@ -27,7 +27,7 @@ const SVG_CACHE_MAX_CHARS = 8_000_000; // ~16MB of UTF-16
 const svgCache = new Map();
 let svgCacheChars = 0;
 
-function cacheGet(input) {
+function cacheGet(input: string): string | undefined {
   const hit = svgCache.get(input);
   if (hit === undefined) return undefined;
   // Refresh recency: delete + re-set moves it to the end of the Map's order.
@@ -36,7 +36,7 @@ function cacheGet(input) {
   return hit;
 }
 
-function cacheSet(input, output) {
+function cacheSet(input: string, output: string): void {
   svgCache.set(input, output);
   svgCacheChars += output.length;
 
@@ -70,7 +70,7 @@ export function clearSanitizeCache() {
  * @example
  * <div dangerouslySetInnerHTML={{ __html: sanitizeSVG(heraldry.heraldrySVG) }} />
  */
-export function sanitizeSVG(svgContent) {
+export function sanitizeSVG(svgContent: string | null | undefined): string {
   if (!svgContent) return '';
 
   const cached = cacheGet(svgContent);
@@ -100,7 +100,7 @@ export function sanitizeSVG(svgContent) {
  * @param {string} htmlContent - Raw HTML string
  * @returns {string} Sanitized HTML string
  */
-export function sanitizeHTML(htmlContent) {
+export function sanitizeHTML(htmlContent: string | null | undefined): string {
   if (!htmlContent) return '';
 
   // First pass: sanitize with DOMPurify
@@ -140,7 +140,7 @@ export function sanitizeHTML(htmlContent) {
  * @param {'svg' | 'html'} type - Type of content
  * @returns {{ __html: string }} Object for dangerouslySetInnerHTML
  */
-export function createSafeHTML(content, type = 'html') {
+export function createSafeHTML(content: string | null | undefined, type: 'html' | 'svg' = 'html'): { __html: string } {
   const sanitized = type === 'svg' ? sanitizeSVG(content) : sanitizeHTML(content);
   return { __html: sanitized };
 }

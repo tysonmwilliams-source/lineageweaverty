@@ -21,12 +21,14 @@
  * @param {string} isoString - ISO timestamp
  * @returns {string}
  */
-export function formatRelativeDate(isoString) {
+export function formatRelativeDate(isoString: string | null | undefined): string {
   if (!isoString) return 'Unknown';
 
   const date = new Date(isoString);
   const now = new Date();
-  const diffInHours = (now - date) / (1000 * 60 * 60);
+  // `.getTime()` because subtracting Dates relies on an implicit valueOf that
+  // TypeScript will not infer. Identical at runtime.
+  const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
 
   if (diffInHours < 1) return 'Just now';
   if (diffInHours < 24) return `${Math.floor(diffInHours)}h ago`;
@@ -47,12 +49,13 @@ export function formatRelativeDate(isoString) {
  * @param {string} dateStr - ISO timestamp, or a worldbuilding date string
  * @returns {string}
  */
-export function formatLongDate(dateStr) {
+export function formatLongDate(dateStr: string | number | null | undefined): string {
   if (!dateStr) return 'Unknown';
   if (String(dateStr).length === 4) return String(dateStr);
 
   const date = new Date(dateStr);
-  if (isNaN(date)) return dateStr;
+  // `isNaN(date)` coerced the Date via valueOf; `getTime()` says so.
+  if (isNaN(date.getTime())) return String(dateStr);
 
   return date.toLocaleDateString('en-US', {
     year: 'numeric',
@@ -67,7 +70,7 @@ export function formatLongDate(dateStr) {
  * @param {string} isoString - ISO timestamp
  * @returns {string}
  */
-export function formatShortDate(isoString) {
+export function formatShortDate(isoString: string | null | undefined): string {
   if (!isoString) return '';
 
   return new Date(isoString).toLocaleDateString('en-US', {
@@ -83,7 +86,7 @@ export function formatShortDate(isoString) {
  * @param {string} isoString - ISO timestamp
  * @returns {string}
  */
-export function formatShortDateTime(isoString) {
+export function formatShortDateTime(isoString: string | null | undefined): string {
   if (!isoString) return 'Unknown';
 
   return new Date(isoString).toLocaleDateString('en-US', {

@@ -17,7 +17,7 @@
  * @param {string|number|null|undefined} value
  * @returns {number|null} The year, or null if absent/unparseable
  */
-export function parseYear(value) {
+export function parseYear(value: unknown): number | null {
   if (value === null || value === undefined || value === '') return null;
   if (typeof value === 'number') return Number.isFinite(value) ? value : null;
 
@@ -37,7 +37,7 @@ export function parseYear(value) {
  * @param {string|number|null} b
  * @returns {number}
  */
-export function compareYears(a, b) {
+export function compareYears(a: unknown, b: unknown): number {
   const ya = parseYear(a);
   const yb = parseYear(b);
   if (ya === null && yb === null) return 0;
@@ -55,7 +55,7 @@ export function compareYears(a, b) {
  * @param {string|number|null} later - the value that should be the later one
  * @returns {boolean}
  */
-export function isOutOfOrder(earlier, later) {
+export function isOutOfOrder(earlier: unknown, later: unknown): boolean {
   const a = parseYear(earlier);
   const b = parseYear(later);
   if (a === null || b === null) return false;

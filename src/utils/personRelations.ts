@@ -15,14 +15,49 @@
  * diverging would make the list disagree with the canvas. Distinguishing them is
  * audit decision D3.
  */
+import type { Person, Relationship } from '../services/types';
+
+/** The lookup maps `buildRelationshipMaps` produces. */
+/**
+ * A spouse link: who, and the relationship row that records the marriage.
+ *
+ * Not a `Person` — the row carries the betrothal, marriage and divorce dates,
+ * and `marriageArmsService` needs it to label each option. Returning the pair
+ * is what saves every caller a second lookup.
+ */
+export interface SpouseLink {
+  id: number;
+  relationship: Relationship;
+}
+
+/**
+ * Siblings split by how many parents they share.
+ *
+ * `full` share every parent this person has, `half` share at least one. The
+ * split is the point — the tree renders them differently.
+ */
+export interface Siblings {
+  /** Ids, not people — sorted by birth year then name. */
+  full: number[];
+  half: number[];
+}
+
+export interface RelationshipMaps {
+  peopleById: Map<number, Person>;
+  parentMap: Map<number, number[]>;
+  childrenMap: Map<number, number[]>;
+}
+
 
 /** Sort helper: by birth year when both have one, then by name. */
-function byBirthThenName(peopleById) {
-  return (a, b) => {
+function byBirthThenName(peopleById: Map<number, Person>) {
+  return (a: number, b: number) => {
     const pa = peopleById.get(a);
     const pb = peopleById.get(b);
-    const ya = parseInt(pa?.dateOfBirth, 10);
-    const yb = parseInt(pb?.dateOfBirth, 10);
+    // `String(...)` because a world year may be stored as a number; `parseInt`
+    // stringifies its argument anyway, so this is the same call.
+    const ya = parseInt(String(pa?.dateOfBirth), 10);
+    const yb = parseInt(String(pb?.dateOfBirth), 10);
     const aHas = Number.isFinite(ya);
     const bHas = Number.isFinite(yb);
 
@@ -51,9 +86,13 @@ function byBirthThenName(peopleById) {
  * @param {Map} peopleById
  * @returns {Array<{id: number, relationship: import('./succession/types').Relationship}>}
  */
-export function getSpouses(personId, relationships, peopleById) {
-  const seen = new Set();
-  const out = [];
+export function getSpouses(
+  personId: number,
+  relationships: Relationship[],
+  peopleById: Map<number, Person>
+): SpouseLink[] {
+  const seen = new Set<number>();
+  const out: SpouseLink[] = [];
 
   for (const rel of relationships || []) {
     if (rel.relationshipType !== 'spouse') continue;
@@ -76,12 +115,17 @@ export function getSpouses(personId, relationships, peopleById) {
  *
  * @returns {{full: number[], half: number[]}}
  */
-export function getSiblings(personId, parentMap, childrenMap, peopleById) {
+export function getSiblings(
+  personId: number,
+  parentMap: Map<number, number[]>,
+  childrenMap: Map<number, number[]>,
+  peopleById: Map<number, Person>
+): Siblings {
   const myParents = (parentMap.get(personId) || []).filter(id => peopleById.has(id));
   if (myParents.length === 0) return { full: [], half: [] };
 
   // Count how many of my parents each candidate shares.
-  const shared = new Map();
+  const shared = new Map<number, number>();
   for (const parentId of myParents) {
     for (const childId of childrenMap.get(parentId) || []) {
       if (childId === personId || !peopleById.has(childId)) continue;
@@ -89,8 +133,8 @@ export function getSiblings(personId, parentMap, childrenMap, peopleById) {
     }
   }
 
-  const full = [];
-  const half = [];
+  const full: number[] = [];
+  const half: number[] = [];
   for (const [childId, count] of shared) {
     // "Full" only means it when I actually have two known parents. With one
     // known parent everything is a half-sibling as far as the data can say.
@@ -110,7 +154,11 @@ export function getSiblings(personId, parentMap, childrenMap, peopleById) {
  * @param {Array} relationships - Raw relationship rows, for multiple spouses
  * @returns {Object|null} null when the person doesn't exist
  */
-export function getPersonRelations(personId, maps, relationships) {
+export function getPersonRelations(
+  personId: number,
+  maps: RelationshipMaps,
+  relationships: Relationship[]
+) {
   const { peopleById, parentMap, childrenMap } = maps;
   const person = peopleById.get(personId);
   if (!person) return null;
@@ -152,7 +200,7 @@ export function getPersonRelations(personId, maps, relationships) {
  * when gender is unset — rather than guessing from position in the array, which
  * carries no meaning.
  */
-export function parentLabel(parent) {
+export function parentLabel(parent: Person): string {
   if (parent?.gender === 'male') return 'Father';
   if (parent?.gender === 'female') return 'Mother';
   return 'Parent';

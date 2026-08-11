@@ -17,9 +17,42 @@
  */
 
 /**
+ * How hard to try, and when to give up.
+ *
+ * Every field is optional; `DEFAULT_CONFIG` supplies the rest. `retryOn` and
+ * `onRetry` are the two hooks callers actually use — the sync layer passes
+ * `onRetry` to log each attempt.
+ */
+/**
+ * The error thrown once every attempt has failed.
+ *
+ * Carries the last underlying error and the attempt count as extra properties,
+ * which is what the sync layer's logs read.
+ */
+export interface RetriedError extends Error {
+  originalError?: unknown;
+  attempts?: number;
+}
+
+export interface RetryConfig {
+  maxRetries?: number;
+  /** Milliseconds before the first retry. Doubles from there. */
+  initialDelay?: number;
+  maxDelay?: number;
+  backoffFactor?: number;
+  /** Spread retries by ±25% so simultaneous failures do not resynchronise. */
+  jitter?: boolean;
+  /** Return false to give up on this error rather than retrying. */
+  retryOn?: ((error: unknown) => boolean) | null;
+  onRetry?: (attempt: number, error: unknown, delay: number) => void;
+}
+
+
+/**
  * Default configuration for retry behavior
  */
 import { logger } from './logger';
+import { errorMessage } from './errorMessage';
 
 const DEFAULT_CONFIG = {
   maxRetries: 3,
@@ -35,7 +68,7 @@ const DEFAULT_CONFIG = {
  * @param {number} ms - Milliseconds to sleep
  * @returns {Promise<void>}
  */
-function sleep(ms) {
+function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
@@ -45,7 +78,7 @@ function sleep(ms) {
  * @param {Object} config - Retry configuration
  * @returns {number} Delay in milliseconds
  */
-function calculateDelay(attempt, config) {
+function calculateDelay(attempt: number, config: Required<Pick<RetryConfig, 'initialDelay' | 'maxDelay' | 'backoffFactor' | 'jitter'>>): number {
   const { initialDelay, maxDelay, backoffFactor, jitter } = config;
 
   // Exponential backoff: delay = initialDelay * (backoffFactor ^ attempt)
@@ -71,14 +104,19 @@ function calculateDelay(attempt, config) {
  * @param {Error} error - The error to check
  * @returns {boolean} Whether to retry
  */
-function isRetryableError(error) {
+function isRetryableError(error: unknown): boolean {
+  // Errors reach here from three sources with three different discriminators:
+  // `fetch` throws a TypeError, the Firebase SDK sets `code`, and HTTP layers
+  // set `status`. Narrowed once rather than at each check below.
+  const err = error as { name?: string; message?: string; code?: string; status?: number };
+
   // Network errors are retryable
-  if (error.name === 'TypeError' && error.message.includes('fetch')) {
+  if (err.name === 'TypeError' && err.message?.includes('fetch')) {
     return true;
   }
 
   // Firebase/Firestore specific errors
-  if (error.code) {
+  if (err.code) {
     const retryableCodes = [
       'unavailable',
       'deadline-exceeded',
@@ -87,20 +125,22 @@ function isRetryableError(error) {
       'internal',
       'unknown',
     ];
-    return retryableCodes.includes(error.code);
+    return retryableCodes.includes(err.code);
   }
 
   // HTTP status codes (if error has status)
-  if (error.status) {
+  if (err.status) {
     // 429 = Too Many Requests (rate limited) - retry with backoff
     // 5xx = Server errors - retry
-    return error.status === 429 || (error.status >= 500 && error.status < 600);
+    return err.status === 429 || (err.status >= 500 && err.status < 600);
   }
 
-  // Default: retry network-like errors
-  return error.message?.toLowerCase().includes('network') ||
-         error.message?.toLowerCase().includes('timeout') ||
-         error.message?.toLowerCase().includes('connection');
+  // Default: retry network-like errors. `?? false` because an error with no
+  // message yields undefined here, and this function promises a boolean.
+  const message = err.message?.toLowerCase();
+  return (message?.includes('network')
+       || message?.includes('timeout')
+       || message?.includes('connection')) ?? false;
 }
 
 /**
@@ -124,13 +164,13 @@ function isRetryableError(error) {
  *   () => fetch('/api/data').then(r => r.json()),
  *   {
  *     maxRetries: 3,
- *     onRetry: (attempt, error, delay) => {
+ *     onRetry: (attempt: number, error: unknown, delay: number) => {
  *       console.log(`Retry ${attempt}, waiting ${delay}ms: ${error.message}`);
  *     }
  *   }
  * );
  */
-export async function retryWithBackoff(fn, options = {}) {
+export async function retryWithBackoff<T>(fn: () => Promise<T> | T, options: RetryConfig = {}): Promise<T> {
   const config = { ...DEFAULT_CONFIG, ...options };
   const { maxRetries, retryOn, onRetry } = config;
 
@@ -172,8 +212,8 @@ export async function retryWithBackoff(fn, options = {}) {
   }
 
   // All retries exhausted
-  const retriedError = new Error(
-    `Operation failed after ${maxRetries + 1} attempts: ${lastError.message}`
+  const retriedError: RetriedError = new Error(
+    `Operation failed after ${maxRetries + 1} attempts: ${errorMessage(lastError)}`
   );
   retriedError.originalError = lastError;
   retriedError.attempts = maxRetries + 1;
@@ -193,8 +233,8 @@ export async function retryWithBackoff(fn, options = {}) {
  * await syncWithRetry(() => uploadPerson(data));
  * await syncWithRetry(() => uploadHouse(data));
  */
-export function createRetryWrapper(options = {}) {
-  return (fn) => retryWithBackoff(fn, options);
+export function createRetryWrapper(options: RetryConfig = {}) {
+  return <T>(fn: () => Promise<T> | T) => retryWithBackoff(fn, options);
 }
 
 /**
@@ -207,10 +247,10 @@ export const SYNC_RETRY_CONFIG = {
   maxDelay: 15000,
   backoffFactor: 2,
   jitter: true,
-  onRetry: (attempt, error, delay) => {
-    logger.log(`☁️ Sync retry ${attempt}, waiting ${delay}ms: ${error.message}`);
+  onRetry: (attempt: number, error: unknown, delay: number) => {
+    logger.log(`☁️ Sync retry ${attempt}, waiting ${delay}ms: ${errorMessage(error)}`);
   }
-};
+} satisfies RetryConfig;
 
 export default {
   retryWithBackoff,
